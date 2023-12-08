@@ -2,20 +2,20 @@
   "name": "vscode-cfml",
   "displayName": "CFML",
   "description": "CFML language",
-  "version": "0.5.4",
+  "version": "0.6.0",
   "preview": true,
-  "author": "KamasamaK",
-  "publisher": "KamasamaK",
+  "author": "garethedwards-tass",
+  "publisher": "garethedwards-tass",
   "license": "MIT",
   "engines": {
     "vscode": "^1.76.2"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/KamasamaK/vscode-cfml.git"
+    "url": "https://github.com/garethedwards-tass/vscode-cfml.git"
   },
   "bugs": {
-    "url": "https://github.com/KamasamaK/vscode-cfml/issues"
+    "url": "https://github.com/garethedwards-tass/vscode-cfml/issues"
   },
   "categories": [
     "Programming Languages"

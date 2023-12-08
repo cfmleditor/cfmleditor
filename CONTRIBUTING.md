@@ -4,7 +4,7 @@ If you would like to contribute enhancements or fixes, please read this document
 
 ## Setup
 
-- Fork [KamasamaK/vscode-cfml](https://github.com/KamasamaK/vscode-cfml)
+- Fork [garethedwards-tass/vscode-cfml](https://github.com/garethedwards-tass/vscode-cfml)
 - Clone your forked repository
 - Install [Node.js with npm](https://nodejs.org) if not already installed
 - Open this project as the workspace in VS Code
