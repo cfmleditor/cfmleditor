@@ -108,6 +108,10 @@ export class BackwardIterator {
       }
     }
 
+    if ( lineCharacterOffset < 0 ) {
+        return undefined;
+    }
+
     return new Position(lineNumber, lineCharacterOffset);
   }
 
@@ -902,11 +906,15 @@ export function getStartSigPosition(iterator: BackwardIterator): Position | unde
     const ch: number = iterator.next();
 
     if (stringRanges) {
-      const position: Position = iterator.getPosition().translate(0, 1);
+      const position: Position = iterator.getPosition();
+      if (position === undefined){
+        break;
+      }
+      const position_translated: Position = position.translate(0, 1);
       const stringRange: Range = stringRanges.find((range: Range) => {
-        return range.contains(position) && !range.end.isEqual(position);
+        return range.contains(position_translated) && !range.end.isEqual(position_translated);
       });
-      if (stringRange && !(stringEmbeddedCfmlRanges && isInRanges(stringEmbeddedCfmlRanges, position, true))) {
+      if (stringRange && !(stringEmbeddedCfmlRanges && isInRanges(stringEmbeddedCfmlRanges, position_translated, true))) {
         iterator.setPosition(stringRange.start.translate(0, -1));
         continue;
       }
