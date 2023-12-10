@@ -8,6 +8,8 @@ An extension for Visual Studio Code to assist in development with CFML.
 
 ## Acknowledgements
 
+- [`vscode-cfml`](https://github.com/vadim-sibiryanskiy-yumasoft/vscode-cfml) fork of the vscode-cfml project used as the base for this fork
+- [`vscode-cfml`](https://github.com/KamasamaK/vscode-cfml) original vscode-cfml project
 - [`vscode-coldfusion`](https://github.com/ilich/vscode-coldfusion/) on which the syntax highlighting is based, which was based on the next extension
 - [`sublimetext-cfml`](https://github.com/jcberquist/sublimetext-cfml) as inspiration for some of the features. Some "parsing" logic (including regexes) was also used.
 - [`cfdocs`](https://github.com/foundeo/cfdocs/) as the default documentation and sample images in this README
