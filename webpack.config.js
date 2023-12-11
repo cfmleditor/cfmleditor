@@ -21,8 +21,8 @@ const webExtensionConfig = {
     alias: {
     },
     fallback: {
-        tls: false,
-        net: false,
+        tls: require.resolve('tls-browserify'),
+        net: require.resolve('net-browserify'),
         console: require.resolve('console-browserify'),
         constants: require.resolve('constants-browserify'),
         crypto: require.resolve('crypto-browserify'),
@@ -35,7 +35,7 @@ const webExtensionConfig = {
         stream: require.resolve('stream-browserify'),
         timers: require.resolve('timers-browserify'),
         tty: require.resolve('tty-browserify'),
-        fs: false,
+        fs: require.resolve('browserify-fs'),
         vm: require.resolve('vm-browserify'),
         zlib: require.resolve('browserify-zlib'),
     },

@@ -533,11 +533,14 @@
   },
   "dependencies": {
     "browserify": "^17.0.0",
+    "browserify-fs": "^1.0.0",
     "findup-sync": "~5.0.0",
     "html-entities": "~2.3.2",
     "micromatch": "~4.0.4",
+    "net-browserify": "^0.2.4",
     "request": "~2.88.2",
     "semver": "~7.3.5",
+    "tls-browserify": "^0.2.2",
     "trie-prefix-tree": "1.5.1",
     "vscode-css-languageservice": "~6.2.4",
     "vscode-html-languageservice": "2.1.11-next.11"

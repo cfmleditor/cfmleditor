@@ -1,6 +1,5 @@
 # VS Code CFML
 
-[![VS Marketplace](https://vsmarketplacebadge.apphb.com/version-short/garethedwards-tass.vscode-cfml.svg)](https://marketplace.visualstudio.com/items?itemName=garethedwards-tass.vscode-cfml)
 [![Open VSX](https://img.shields.io/open-vsx/v/garethedwards-tass/vscode-cfml)](https://open-vsx.org/extension/garethedwards-tass/vscode-cfml)
 [![cfml](https://img.shields.io/badge/cfml-ide-blue.svg?logo=slack&labelColor=555555)](https://cfml-slack.herokuapp.com)
 

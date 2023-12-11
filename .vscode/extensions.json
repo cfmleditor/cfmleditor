@@ -4,6 +4,7 @@
   "recommendations": [
     "ms-vscode.vscode-typescript-tslint-plugin",
     "DavidAnson.vscode-markdownlint",
-    "eg2.vscode-npm-script"
+    "eg2.vscode-npm-script",
+    "amodio.tsl-problem-matcher"
   ]
 }

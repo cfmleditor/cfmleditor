@@ -19,6 +19,18 @@
             ],
             "skipFiles": ["<node_internals>/**"],
             "preLaunchTask": "npm: watch"
+        },
+        {
+            "name": "Web Extension Tests",
+            "type": "extensionHost",
+            "debugWebWorkerHost": true,
+            "request": "launch",
+            "args": [
+              "--extensionDevelopmentPath=${workspaceFolder}",
+              "--extensionDevelopmentKind=web",
+            ],
+            "outFiles": ["${workspaceFolder}/dist/web/*.js"],
+            "preLaunchTask": "npm: watch-web"
         }
     ]
 }
