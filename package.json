@@ -8,7 +8,7 @@
   "publisher": "garethedwards-tass",
   "license": "MIT",
   "engines": {
-    "vscode": "^1.76.2"
+    "vscode": "^1.85.0"
   },
   "repository": {
     "type": "git",
@@ -32,6 +32,7 @@
   ],
   "icon": "images/icon.png",
   "main": "./out/cfmlMain",
+  "browser": "./dist/web/cfmlMain.js",
   "contributes": {
     "languages": [
       {
@@ -521,6 +522,9 @@
   "scripts": {
     "clean": "rimraf out *.vsix",
     "build": "tsc -p ./",
+    "compile-web": "webpack",
+    "watch-web": "webpack --watch",
+    "package-web": "webpack --mode production --devtool hidden-source-map",
     "rebuild": "npm run clean && npm run build",
     "watch": "tsc -watch -p ./",
     "pack": "vsce package",
@@ -528,6 +532,7 @@
     "vscode:prepublish": "npm run build"
   },
   "dependencies": {
+    "browserify": "^17.0.0",
     "findup-sync": "~5.0.0",
     "html-entities": "~2.3.2",
     "micromatch": "~4.0.4",
@@ -544,15 +549,20 @@
     "@types/request": "~2.48.7",
     "@types/semver": "~7.3.9",
     "@types/trie-prefix-tree": "~1.5.0",
-    "@types/vscode": "~1.x",
-    "@typescript-eslint/eslint-plugin": "^5.56.0",
-    "@vscode/vsce": "^2.18.0",
-    "eslint": "^8.36.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@vscode/test-electron": "^1.6.2",
+    "@vscode/test-web": "^0.0.22",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.55.0",
     "eslint-config-standard-with-typescript": "^34.0.1",
-    "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-n": "^15.6.1",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-n": "^15.7.0",
     "eslint-plugin-promise": "^6.1.1",
-    "rimraf": "^4.x",
-    "typescript": "^5.0.2"
+    "rimraf": "^4.4.1",
+    "ts-loader": "^9.2.2",
+    "typescript": "^5.3.3",
+    "webpack": "^5.38.1",
+    "webpack-cli": "^5.1.4"
   }
 }
