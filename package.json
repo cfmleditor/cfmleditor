@@ -159,6 +159,20 @@
           "default": [],
           "scope": "resource"
         },
+        "cfml.suggest.scopes.case": {
+            "type": "string",
+            "description": "What case should be used for the scopes in completion suggestions.",
+            "enum": [
+              "lower",
+              "upper"
+            ],
+            "enumDescriptions": [
+              "Lowercases the scope",
+              "Uppercases the scope"
+            ],
+            "default": "lower",
+            "scope": "resource"
+        },
         "cfml.suggest.globalFunctions.enable": {
           "type": "boolean",
           "description": "Whether global functions are part of completion help.",
@@ -532,8 +546,10 @@
     "vscode:prepublish": "npm run build"
   },
   "dependencies": {
+    "async_hooks": "^1.0.0",
     "browserify": "^17.0.0",
     "browserify-fs": "^1.0.0",
+    "buffer": "^6.0.3",
     "findup-sync": "~5.0.0",
     "html-entities": "~2.3.2",
     "micromatch": "~4.0.4",
