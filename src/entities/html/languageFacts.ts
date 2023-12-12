@@ -1,13 +1,19 @@
 import { IHTMLDataProvider, ITagData, IAttributeData } from "./htmlLanguageTypes";
-import * as htmlData from "vscode-html-languageservice/lib/umd/languageFacts/data/html5";
+import { HTMLDataProvider } from "./dataProvider";
+import { HTML5_TAGS, HTML5_GLOBAL_ATTRIBUTES, HTML5_EVENTS, HTML5_VALUE_MAP } from "./data/html5";
 import { equalsIgnoreCase } from "../../utils/textUtil";
 
-export const htmlDataProvider: IHTMLDataProvider = htmlData.getHTML5DataProvider();
+export const htmlDataProvider: IHTMLDataProvider = new HTMLDataProvider('html5', {
+    version: 1,
+    tags: HTML5_TAGS,
+    globalAttributes: HTML5_GLOBAL_ATTRIBUTES.concat(HTML5_EVENTS),
+    valueSets: HTML5_VALUE_MAP
+});
 
 // Recreate maps since they are private
 const htmlTagMap: { [t: string]: ITagData } = {};
 
-htmlData.HTML5_TAGS.forEach((t) => {
+HTML5_TAGS.forEach((t) => {
   htmlTagMap[t.name] = t;
 });
 
