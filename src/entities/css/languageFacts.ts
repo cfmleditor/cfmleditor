@@ -1,15 +1,19 @@
 /** Adopted from https://github.com/Microsoft/vscode-css-languageservice/blob/27f369f0d527b1952689e223960f779e89457374/src/languageFacts/index.ts */
 
-import * as cssLanguageTypes from "./cssLanguageTypes";
-import * as cssLanguageFacts from "vscode-css-languageservice/lib/umd/languageFacts/facts";
+import { EntryStatus, ICSSDataManager, IEntry } from "./cssLanguageTypes";
+import { colors } from "./colors";
+
+import { CSSDataManager } from "./dataManager";
 
 export const cssWordRegex: RegExp = /(#?-?\d*\.\d\w*%?)|(::?[\w-]*(?=[^,{;]*[,{]))|(([@#.!])?[\w-?]+%?|[@#!.])/;
 
-export const cssDataManager: cssLanguageTypes.ICSSDataManager = cssLanguageFacts.cssDataManager;
+export const cssDataManager: ICSSDataManager = new CSSDataManager({
 
-export const cssColors: { [name: string]: string } = cssLanguageFacts.colors;
+});
 
-function getEntryStatus(status: cssLanguageTypes.EntryStatus): string {
+export const cssColors: { [name: string]: string } = colors;
+
+function getEntryStatus(status: EntryStatus): string {
   switch (status) {
     case "experimental":
       return "⚠️ Property is experimental. Be cautious when using it.\n\n";
@@ -26,7 +30,7 @@ function getEntryStatus(status: cssLanguageTypes.EntryStatus): string {
  * Constructs a description for the given CSS entry
  * @param entry A CSS entry object
  */
-export function getEntryDescription(entry: cssLanguageTypes.IEntry): string | null {
+export function getEntryDescription(entry: IEntry): string | null {
   if (!entry.description || entry.description === "") {
     return null;
   }
@@ -39,7 +43,7 @@ export function getEntryDescription(entry: cssLanguageTypes.IEntry): string | nu
 
   result += entry.description;
 
-  const browserLabel = cssLanguageFacts.getBrowserLabel(entry.browsers);
+  const browserLabel = getBrowserLabel(entry.browsers);
   if (browserLabel) {
     result += `\n(${browserLabel})`;
   }
@@ -51,4 +55,49 @@ export function getEntryDescription(entry: cssLanguageTypes.IEntry): string | nu
   */
 
   return result;
+}
+
+export interface Browsers {
+	E?: string;
+	FF?: string;
+	IE?: string;
+	O?: string;
+	C?: string;
+	S?: string;
+	count: number;
+	all: boolean;
+	onCodeComplete: boolean;
+}
+
+export const browserNames = {
+	E: 'Edge',
+	FF: 'Firefox',
+	S: 'Safari',
+	C: 'Chrome',
+	IE: 'IE',
+	O: 'Opera'
+};
+
+export function getBrowserLabel(browsers: string[] = []): string | null {
+	if (browsers.length === 0) {
+		return null;
+	}
+
+	return browsers
+		.map(b => {
+			let result = '';
+			const matches = b.match(/([A-Z]+)(\d+)?/)!;
+
+			const name = matches[1];
+			const version = matches[2];
+
+			if (name in browserNames) {
+				result += browserNames[name as keyof typeof browserNames];
+			}
+			if (version) {
+				result += ' ' + version;
+			}
+			return result;
+		})
+		.join(', ');
 }
