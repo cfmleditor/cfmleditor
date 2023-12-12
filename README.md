@@ -1,6 +1,6 @@
 # VS Code CFML
 
-[![Open VSX](https://img.shields.io/open-vsx/v/garethedwards-tass/vscode-cfml)](https://open-vsx.org/extension/garethedwards-tass/vscode-cfml)
+[![Open VSX](https://img.shields.io/open-vsx/v/cfmleditor/cfmleditor)](https://open-vsx.org/extension/cfmleditor/cfmleditor)
 [![cfml](https://img.shields.io/badge/cfml-ide-blue.svg?logo=slack&labelColor=555555)](https://cfml-slack.herokuapp.com)
 
 An extension for Visual Studio Code to assist in development with CFML.
@@ -198,7 +198,7 @@ Feel free to open issues for these or any other features you would find helpful 
 VS Code and this extension lack features and functionality that I find useful for development. Below are some supplemental extensions that I believe will improve the development experience for most.
 
 - [Auto Close Tag](https://marketplace.visualstudio.com/items?itemName=formulahendry.auto-close-tag) - Enables automatic closing of tags. There are settings (`cfml.autoCloseTags.*`) for this extension to automate the configuration for CFML tags.
-- [CFLint](https://marketplace.visualstudio.com/items?itemName=garethedwards-tass.vscode-cflint) - Integrates CFLint into VS Code as diagnostics/problems.
+- [CFLint](https://marketplace.visualstudio.com/items?itemName=KamasamaK.vscode-cflint) - Integrates CFLint into VS Code as diagnostics/problems.
 - [highlight-matching-tag](https://marketplace.visualstudio.com/items?itemName=vincaslt.highlight-matching-tag) - This will highlight the relevant tags based on your configuration with a configurable style. There are also some useful commands.
 - [Path Autocomplete](https://marketplace.visualstudio.com/items?itemName=ionutvmi.path-autocomplete) - Provides suggestions when entering file paths
 
@@ -212,4 +212,4 @@ See [CONTRIBUTING.md](/CONTRIBUTING.md)
 
 ## Support
 
-For questions or help, join the `#ide` channel in the [CFML Slack workspace](https://cfml-slack.herokuapp.com/) to talk with people about this or other editor tools. To file a bug or feature request, open a [GitHub issue](https://github.com/garethedwards-tass/vscode-cfml/issues).
+For questions or help, join the `#ide` channel in the [CFML Slack workspace](https://cfml-slack.herokuapp.com/) to talk with people about this or other editor tools. To file a bug or feature request, open a [GitHub issue](https://github.com/cfmleditor/cfmleditor/issues).

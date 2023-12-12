@@ -1,21 +1,21 @@
 {
-  "name": "vscode-cfml",
-  "displayName": "CFML",
-  "description": "CFML language",
+  "name": "cfmleditor",
+  "displayName": "CFML Editor",
+  "description": "CFML Language Editor",
   "version": "0.6.0",
   "preview": true,
-  "author": "garethedwards-tass",
-  "publisher": "garethedwards-tass",
+  "author": "cfmleditor",
+  "publisher": "cfmleditor",
   "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/garethedwards-tass/vscode-cfml.git"
+    "url": "https://github.com/cfmleditor/cfmleditor.git"
   },
   "bugs": {
-    "url": "https://github.com/garethedwards-tass/vscode-cfml/issues"
+    "url": "https://github.com/cfmleditor/cfmleditor/issues"
   },
   "categories": [
     "Programming Languages"

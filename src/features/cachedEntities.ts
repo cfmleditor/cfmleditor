@@ -322,7 +322,7 @@ export async function cacheAllComponents(): Promise<void> {
   return workspace.findFiles(COMPONENT_FILE_GLOB).then(
     async (componentUris: Uri[]) => {
       // TODO: Remove cflint setting update for workspace state when CFLint checks it. Remove workspace state when CFLint can get list of open editors.
-      const cflintExt = extensions.getExtension("garethedwards-tass.vscode-cflint");
+      const cflintExt = extensions.getExtension("KamasamaK.vscode-cflint");
       if (cflintExt) {
         const cflintSettings: WorkspaceConfiguration = workspace.getConfiguration("cflint", null);
         const runModes: {} = cflintSettings.get<{}>("runModes");
