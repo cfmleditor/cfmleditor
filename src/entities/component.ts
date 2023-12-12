@@ -1,4 +1,4 @@
-import findup from "findup-sync";
+//import findup from "findup-sync";
 import * as fs from "fs";
 import * as path from "path";
 import { Position, Range, TextDocument, Uri } from "vscode";
@@ -510,13 +510,16 @@ export function getApplicationUri(baseUri: Uri): Uri | undefined {
   }
 
   let componentUri: Uri;
-  const fileNamesGlob = "Application.@(cfc|cfm)";
-  const currentWorkingDir: string = path.dirname(baseUri.fsPath);
-  const applicationFile: string = findup(fileNamesGlob, { cwd: currentWorkingDir });
-  if (applicationFile) {
-    componentUri = Uri.file(applicationFile);
-  }
 
+//   if ( findup ) {
+//     const fileNamesGlob = "Application.@(cfc|cfm)";
+//     const currentWorkingDir: string = path.dirname(baseUri.fsPath);
+//     console.log(baseUri.fsPath);
+//     const applicationFile: string = findup(fileNamesGlob, { cwd: currentWorkingDir });
+//     if (applicationFile) {
+//         componentUri = Uri.file(applicationFile);
+//     }
+//   }
   return componentUri;
 }
 

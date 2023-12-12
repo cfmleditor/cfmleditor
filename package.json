@@ -552,6 +552,7 @@
     "buffer": "^6.0.3",
     "findup-sync": "~5.0.0",
     "html-entities": "~2.3.2",
+    "isomorphic-fetch": "^3.0.0",
     "micromatch": "~4.0.4",
     "net-browserify": "^0.2.4",
     "request": "~2.88.2",

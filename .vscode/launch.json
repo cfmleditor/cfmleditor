@@ -27,7 +27,7 @@
             "request": "launch",
             "args": [
               "--extensionDevelopmentPath=${workspaceFolder}",
-              "--extensionDevelopmentKind=web",
+              "--extensionDevelopmentKind=web"
             ],
             "outFiles": ["${workspaceFolder}/dist/web/*.js"],
             "preLaunchTask": "npm: watch-web"

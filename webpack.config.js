@@ -12,8 +12,7 @@ const webExtensionConfig = {
   output: {
     filename: 'cfmlMain.js',
     path: path.join(__dirname, 'dist/web'),
-    libraryTarget: 'commonjs',
-    devtoolModuleFilenameTemplate: '../[resource-path]',
+    libraryTarget: 'commonjs'
   },
   resolve: {
     mainFields: ['browser', 'module', 'main'], // look for `browser` entry point in imported node modules
@@ -21,16 +20,15 @@ const webExtensionConfig = {
     alias: {
     },
     fallback: {
+        path: require.resolve('path-browserify'),
         tls: require.resolve('tls-browserify'),
         net: require.resolve('net-browserify'),
         console: require.resolve('console-browserify'),
         constants: require.resolve('constants-browserify'),
         crypto: require.resolve('crypto-browserify'),
         domain: require.resolve('domain-browser'),
-        http: require.resolve('stream-http'),
         https: require.resolve('https-browserify'),
         os: require.resolve('os-browserify/browser'),
-        path: require.resolve('path-browserify'),
         querystring: require.resolve('querystring-es3'),
         stream: require.resolve('stream-browserify'),
         timers: require.resolve('timers-browserify'),
@@ -38,6 +36,9 @@ const webExtensionConfig = {
         fs: require.resolve('browserify-fs'),
         vm: require.resolve('vm-browserify'),
         zlib: require.resolve('browserify-zlib'),
+        "buffer": false,
+        "async_hooks": false,
+        "findup-sync": false,
     },
   },
 
@@ -56,7 +57,8 @@ const webExtensionConfig = {
   },
   plugins: [
     new webpack.ProvidePlugin({
-      process: 'process/browser' // provide a shim for the global `process` variable
+        Buffer: ['buffer', 'Buffer'],
+        process: 'process/browser'
     })
   ],
   externals: {

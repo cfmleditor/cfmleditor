@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
-import request from "request";
+import fetch from 'isomorphic-fetch';
+import vscode from "vscode";
 import { commands, Position, Range, TextDocument, TextLine, Uri, window, workspace, WorkspaceConfiguration, TextEditor } from "vscode";
 import { getFunctionSuffixPattern } from "../../entities/function";
 import { GlobalEntity } from "../../entities/globals";
@@ -9,8 +10,6 @@ import * as cachedEntity from "../../features/cachedEntities";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../documentUtil";
 import { CFMLEngine, CFMLEngineName } from "./cfmlEngine";
 import { CFDocsDefinitionInfo, EngineCompatibilityDetail } from "./definitionInfo";
-
-const httpSuccessStatusCode = 200;
 
 enum CFDocsSource {
   Remote = "remote",
@@ -54,23 +53,20 @@ export default class CFDocsService {
     const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + CFDocsService.getJsonFileName(identifier);
 
     return new Promise<CFDocsDefinitionInfo>((resolve, reject) => {
-      // Unable to utilize GitHub API due to rate limiting
-
-      request(cfDocsLink, (error, response, body) => {
-        if (error) {
-          console.error(`Error with the request for ${identifier}:`, error);
-          reject(error);
-        } else if (response.statusCode === httpSuccessStatusCode) {
-          try {
-            resolve(CFDocsService.constructDefinitionFromJsonDoc(body));
-          } catch (ex) {
-            console.error(`Error with the JSON doc for ${identifier}:`, (<Error>ex).message);
-            reject(ex);
-          }
-        } else {
-          reject(`JSON doc for ${identifier} could not be retrieved`);
-        }
-      });
+        // Unable to utilize GitHub API due to rate limiting
+        fetch(cfDocsLink)
+            .then((response) => response.json())
+            .then((data) => {
+                try {
+                    resolve(CFDocsService.constructDefinitionFromJsonDoc(data));
+                } catch (ex) {
+                    console.error(`Error with the JSON doc for ${identifier}:`, (<Error>ex).message);
+                    reject(ex);
+                }
+            }).catch(function(fex){
+                console.error("Error retrieving all tag names:", (<Error>fex).message);
+                reject(fex);
+            });
     });
   }
 
@@ -78,8 +74,8 @@ export default class CFDocsService {
    * Constructs a CFDocsDefinitionInfo object from the respective JSON string
    * @param jsonTextDoc A JSON string conforming to the CFDocs definition structure
    */
-  private static constructDefinitionFromJsonDoc(jsonTextDoc: string): CFDocsDefinitionInfo {
-    const jsonDoc = JSON.parse(jsonTextDoc);
+  private static constructDefinitionFromJsonDoc(jsonDoc): CFDocsDefinitionInfo {
+    //const jsonDoc = JSON.parse(jsonTextDoc);
 
     return new CFDocsDefinitionInfo(
       jsonDoc.name, jsonDoc.type, jsonDoc.syntax, jsonDoc.member, jsonDoc.script, jsonDoc.returns,
@@ -103,7 +99,7 @@ export default class CFDocsService {
     const jsonFileName: string = CFDocsService.getJsonFileName("functions");
 
     return new Promise<string[]>((resolve, reject) => {
-      if (source === CFDocsSource.Local) {
+      if (source === CFDocsSource.Local && vscode.env.appHost === "desktop" ) {
         const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
         const cfdocsPath: string = cfmlCfDocsSettings.get("localPath");
         let docFilePath: string = path.join(cfdocsPath, jsonFileName);
@@ -121,19 +117,18 @@ export default class CFDocsService {
         }
       } else {
         const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
-
-        request(cfDocsLink, (error, _response, body) => {
-          if (error) {
-            console.error(`Error with the request for ${jsonFileName}:`, error);
-            reject(error);
-          } else {
-            try {
-              resolve(JSON.parse(body).related);
-            } catch (ex) {
-              console.error(`Error with the JSON doc for ${jsonFileName}:`, (<Error>ex).message);
-              reject(ex);
-            }
-          }
+        fetch(cfDocsLink)
+            .then((response) => response.json())
+            .then((data) => {
+                try {
+                    resolve(data.related);
+                } catch (ex) {
+                    console.error("Error retrieving all function names:", (<Error>ex).message);
+                    reject(ex);
+                }
+            }).catch(function(fex){
+                console.error("Error retrieving all function names:", (<Error>fex).message);
+                reject(fex);
         });
       }
     });
@@ -147,7 +142,7 @@ export default class CFDocsService {
     const jsonFileName: string = CFDocsService.getJsonFileName("tags");
 
     return new Promise<string[]>((resolve, reject) => {
-      if (source === CFDocsSource.Local) {
+      if (source === CFDocsSource.Local && vscode.env.appHost === "desktop") {
         const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
         const cfdocsPath: string = cfmlCfDocsSettings.get("localPath");
         let docFilePath: string = path.join(cfdocsPath, jsonFileName);
@@ -166,19 +161,19 @@ export default class CFDocsService {
       } else {
         const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
 
-        request(cfDocsLink, (error, _response, body) => {
-          if (error) {
-            console.error(`Error with the request for ${jsonFileName}:`, error);
-            reject(error);
-          } else {
-            try {
-              resolve(JSON.parse(body).related);
-            } catch (ex) {
-              console.error(`Error with the JSON doc for ${jsonFileName}:`, (<Error>ex).message);
-              reject(ex);
-            }
-          }
-        });
+        fetch(cfDocsLink)
+            .then((response) => response.json())
+            .then((data) => {
+                try {
+                    resolve(data.related);
+                } catch (ex) {
+                    console.error("Error retrieving all tag names:", (<Error>ex).message);
+                    reject(ex);
+                }
+            }).catch(function(fex){
+                console.error("Error retrieving all tag names:", (<Error>fex).message);
+                reject(fex);
+            });
       }
     });
   }
@@ -222,7 +217,7 @@ export default class CFDocsService {
   public static async cacheAll(): Promise<boolean> {
     const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
     const cfdocsSource: CFDocsSource = cfmlCfDocsSettings.get<CFDocsSource>("source", CFDocsSource.Remote);
-    const getDefinitionInfo = cfdocsSource === CFDocsSource.Remote ? CFDocsService.getRemoteDefinitionInfo : CFDocsService.getLocalDefinitionInfo;
+    const getDefinitionInfo = cfdocsSource === CFDocsSource.Remote || vscode.env.appHost !== "desktop" ? CFDocsService.getRemoteDefinitionInfo : CFDocsService.getLocalDefinitionInfo;
 
     CFDocsService.getAllFunctionNames(cfdocsSource).then((allFunctionNames: string[]) => {
       allFunctionNames.forEach((functionName: string) => {

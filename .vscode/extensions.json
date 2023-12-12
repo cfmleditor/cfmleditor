@@ -5,6 +5,7 @@
     "ms-vscode.vscode-typescript-tslint-plugin",
     "DavidAnson.vscode-markdownlint",
     "eg2.vscode-npm-script",
+    "dbaeumer.vscode-eslint",
     "amodio.tsl-problem-matcher"
   ]
 }
