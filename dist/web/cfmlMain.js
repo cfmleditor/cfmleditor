@@ -7988,19 +7988,19 @@ util.inherits(Level, AbstractLevelDOWN)
 
 Level.prototype._open = function(options, callback) {
   var self = this
-
+    
   var idbOpts = {
     storeName: this.location,
     autoIncrement: false,
     keyPath: null,
     onStoreReady: function () {
       callback && callback(null, self.idb)
-    },
+    }, 
     onError: function(err) {
       callback && callback(err)
     }
   }
-
+  
   xtend(idbOpts, options)
   this.IDBOptions = idbOpts
   this.idb = new IDB(idbOpts)
@@ -8071,14 +8071,14 @@ Level.prototype._batch = function (array, options, callback) {
   var copiedOp
   var currentOp
   var modified = []
-
+  
   if (array.length === 0) return setTimeout(callback, 0)
-
+  
   for (i = 0; i < array.length; i++) {
     copiedOp = {}
     currentOp = array[i]
     modified[i] = copiedOp
-
+    
     var converted = this.convertEncoding(currentOp.key, currentOp.value, options)
     currentOp.key = converted.key
     currentOp.value = converted.value
@@ -14476,7 +14476,7 @@ ReadStream.prototype._read = function read () {
   }
   if (self._destroyed)
     return
-
+ 
   self._iterator.next(function(err, key, value) {
     if (err || (key === undefined && value === undefined)) {
       if (!err && !self._destroyed)
@@ -24057,7 +24057,7 @@ var checker = exports.checker = function (range) {
         !max || key <= max
       ) && (
         !range.inner || (
-          range.inner.test
+          range.inner.test 
             ? range.inner.test(key)
             : range.inner(key)
         )
@@ -24080,7 +24080,7 @@ var satifies = exports.satisfies = function (key, range) {
 
 var clone = __webpack_require__(130)
 
-module.exports =
+module.exports = 
 function fixRange(opts) {
   opts = clone(opts)
 
@@ -24226,7 +24226,7 @@ function clone(parent, circular, depth, prototype) {
       if (proto) {
         attrs = Object.getOwnPropertyDescriptor(proto, i);
       }
-
+      
       if (attrs && attrs.set == null) {
         continue;
       }
@@ -24353,7 +24353,7 @@ module.exports = Object.keys || __webpack_require__(133);
 /**!
  * is
  * the definitive JavaScript type testing library
- *
+ * 
  * @copyright 2013 Enrico Marino
  * @license MIT
  */
@@ -25147,7 +25147,7 @@ var ranges = __webpack_require__(128)
 module.exports = function (db) {
 
   if(db.hooks) {
-    return
+    return     
   }
 
   var posthooks = []
@@ -25175,7 +25175,7 @@ module.exports = function (db) {
   function remover (array, item) {
     return function () {
       var i = array.indexOf(item)
-      if(!~i) return false
+      if(!~i) return false        
       array.splice(i, 1)
       return true
     }
@@ -25244,10 +25244,10 @@ module.exports = function (db) {
               if(ch === false)
                 return delete b[i]
               var prefix = (
-                getPrefix(ch.prefix) ||
-                getPrefix(db) ||
+                getPrefix(ch.prefix) || 
+                getPrefix(db) || 
                 h.prefix || ''
-              )
+              )  
               //don't leave a circular json object there incase using multilevel.
               if(prefix) ch.prefix = prefix
               ch.key = prefix + ch.key
@@ -25289,9 +25289,9 @@ module.exports = function (db) {
 
     if(b.length == 1 && !isBatch) {
       var change = b[0]
-      return change.type == 'put'
-        ? put.call(db, change.key, change.value, opts, cb)
-        : del.call(db, change.key, opts, cb)
+      return change.type == 'put' 
+        ? put.call(db, change.key, change.value, opts, cb) 
+        : del.call(db, change.key, opts, cb)  
     }
     return batch.call(db, b, opts, cb)
   }
@@ -27813,10 +27813,10 @@ function once(emitter, events, listener) {
 
 function peek (db, opts, cb) {
   opts.limit = opts.reverse ? 2 : 1
-  var stream = once(db.createReadStream(opts),
+  var stream = once(db.createReadStream(opts), 
     ['data', 'error', 'end'],
     function (event, data) {
-      if(opts.reverse && data && opts.start
+      if(opts.reverse && data && opts.start 
         && (data.key.toString() > opts.start))
         return false
       if(event == 'error') cb(data)
@@ -27831,7 +27831,7 @@ function first (db, opts, cb) {
     opts = {};
   }
   opts.reverse = false
-  return peek(db, fixRange(opts), cb)
+  return peek(db, fixRange(opts), cb)  
 }
 
 //SO, this is pretty horrible,
@@ -27868,7 +27868,7 @@ function last (db, opts, cb) {
 /***/ ((module) => {
 
 
-module.exports =
+module.exports = 
 function fixRange(opts) {
   var reverse = opts.reverse
   var end     = opts.end
@@ -72170,7 +72170,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.multiSigGlobalFunctions = void 0;
 const collections_1 = __webpack_require__(236);
 // TODO: Indicate version when signature was added
-exports.multiSigGlobalFunctions =
+exports.multiSigGlobalFunctions = 
 // Key: Function name. Value: Array of signatures, consisting of array of argument names.
 new collections_1.MyMap()
     /*
@@ -75813,7 +75813,7 @@ exports["default"] = CFMLWorkspaceSymbolProvider;
 /************************************************************************/
 /******/ 	// The module cache
 /******/ 	var __webpack_module_cache__ = {};
-/******/
+/******/ 	
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/ 		// Check if module is in cache
@@ -75827,14 +75827,14 @@ exports["default"] = CFMLWorkspaceSymbolProvider;
 /******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
-/******/
+/******/ 	
 /******/ 		// Execute the module function
 /******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
+/******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-/******/
+/******/ 	
 /************************************************************************/
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
@@ -75847,7 +75847,7 @@ exports["default"] = CFMLWorkspaceSymbolProvider;
 /******/ 			}
 /******/ 		};
 /******/ 	})();
-/******/
+/******/ 	
 /******/ 	/* webpack/runtime/global */
 /******/ 	(() => {
 /******/ 		__webpack_require__.g = (function() {
@@ -75859,12 +75859,12 @@ exports["default"] = CFMLWorkspaceSymbolProvider;
 /******/ 			}
 /******/ 		})();
 /******/ 	})();
-/******/
+/******/ 	
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */
 /******/ 	(() => {
 /******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
 /******/ 	})();
-/******/
+/******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
 /******/ 	(() => {
 /******/ 		// define __esModule on exports
@@ -75875,9 +75875,9 @@ exports["default"] = CFMLWorkspaceSymbolProvider;
 /******/ 			Object.defineProperty(exports, '__esModule', { value: true });
 /******/ 		};
 /******/ 	})();
-/******/
+/******/ 	
 /************************************************************************/
-/******/
+/******/ 	
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
@@ -75885,7 +75885,7 @@ exports["default"] = CFMLWorkspaceSymbolProvider;
 /******/ 	var __webpack_export_target__ = exports;
 /******/ 	for(var i in __webpack_exports__) __webpack_export_target__[i] = __webpack_exports__[i];
 /******/ 	if(__webpack_exports__.__esModule) Object.defineProperty(__webpack_export_target__, "__esModule", { value: true });
-/******/
+/******/ 	
 /******/ })()
 ;
 //# sourceMappingURL=cfmlMain.js.map
