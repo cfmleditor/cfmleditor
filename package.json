@@ -2,7 +2,7 @@
   "name": "cfmleditor",
   "displayName": "CFML Editor",
   "description": "CFML Language Editor",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "preview": true,
   "author": "cfmleditor",
   "publisher": "cfmleditor",
@@ -30,7 +30,7 @@
     "workspaceContains:**/*.cfml",
     "workspaceContains:**/*.cfc"
   ],
-  "icon": "images/icon.png",
+  "icon": "images/icon2x.png",
   "main": "./out/cfmlMain",
   "browser": "./dist/web/cfmlMain.js",
   "contributes": {
