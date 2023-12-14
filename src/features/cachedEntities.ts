@@ -317,36 +317,39 @@ export function cacheComponent(component: Component, documentStateContext: Docum
  * Reads and parses all cfc files in the current workspace and caches their definitions
  */
 export async function cacheAllComponents(): Promise<void> {
-  clearAllCachedComponents();
+    clearAllCachedComponents();
 
-  return workspace.findFiles(COMPONENT_FILE_GLOB).then(
-    async (componentUris: Uri[]) => {
-      // TODO: Remove cflint setting update for workspace state when CFLint checks it. Remove workspace state when CFLint can get list of open editors.
-      const cflintExt = extensions.getExtension("KamasamaK.vscode-cflint");
-      if (cflintExt) {
-        const cflintSettings: WorkspaceConfiguration = workspace.getConfiguration("cflint", null);
-        const runModes: {} = cflintSettings.get<{}>("runModes");
-        if (runModes && runModes.hasOwnProperty("onOpen") && runModes["onOpen"]) {
-          const cflintEnabledValues = cflintSettings.inspect<boolean>("enabled");
-          const cflintEnabledPrevWSValue: boolean = cflintEnabledValues.workspaceValue;
-          cflintSettings.update("enabled", false, ConfigurationTarget.Workspace).then(async () => {
-            await cacheGivenComponents(componentUris);
-            await cacheAllApplicationCfms();
-            cflintSettings.update("enabled", cflintEnabledPrevWSValue, ConfigurationTarget.Workspace);
-          });
-        } else {
-          cacheGivenComponents(componentUris);
-          cacheAllApplicationCfms();
+    return workspace.findFiles(COMPONENT_FILE_GLOB).then(
+        async (componentUris: Uri[]) => {
+            // TODO: Remove cflint setting update for workspace state when CFLint checks it. Remove workspace state when CFLint can get list of open editors.
+            let cflintExt = extensions.getExtension("cfmleditor.cfmleditor-lint");
+            if (!cflintExt) {
+                cflintExt = extensions.getExtension("KamasamaK.vscode-cflint");
+            }
+            if (cflintExt) {
+                const cflintSettings: WorkspaceConfiguration = workspace.getConfiguration("cflint", null);
+                const runModes: {} = cflintSettings.get<{}>("runModes");
+                if (runModes && runModes.hasOwnProperty("onOpen") && runModes["onOpen"]) {
+                    const cflintEnabledValues = cflintSettings.inspect<boolean>("enabled");
+                    const cflintEnabledPrevWSValue: boolean = cflintEnabledValues.workspaceValue;
+                    cflintSettings.update("enabled", false, ConfigurationTarget.Workspace).then(async () => {
+                        await cacheGivenComponents(componentUris);
+                        await cacheAllApplicationCfms();
+                        cflintSettings.update("enabled", cflintEnabledPrevWSValue, ConfigurationTarget.Workspace);
+                    });
+                } else {
+                    cacheGivenComponents(componentUris);
+                    cacheAllApplicationCfms();
+                }
+            } else {
+                cacheGivenComponents(componentUris);
+                cacheAllApplicationCfms();
+            }
+        },
+        (reason) => {
+            console.error(reason);
         }
-      } else {
-        cacheGivenComponents(componentUris);
-        cacheAllApplicationCfms();
-      }
-    },
-    (reason) => {
-      console.error(reason);
-    }
-  );
+    );
 }
 
 /**
