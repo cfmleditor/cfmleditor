@@ -1,9 +1,8 @@
-# VS Code CFML
+# CFML Editor
 
-[![Open VSX](https://img.shields.io/open-vsx/v/cfmleditor/cfmleditor)](https://open-vsx.org/extension/cfmleditor/cfmleditor)
 [![cfml](https://img.shields.io/badge/cfml-ide-blue.svg?logo=slack&labelColor=555555)](https://cfml-slack.herokuapp.com)
 
-An extension for Visual Studio Code to assist in development with CFML.
+An extension for the development of CFML.
 
 ## Acknowledgements
 
