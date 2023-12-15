@@ -2,6 +2,15 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.4]
+- Improved Autoclose. Fixes issues with Undo/Redo ( behaviour options currently limited )
+- Published as `cfmleditor` with new icon
+- Support for `cfmleditor-lint` , recommend using this plugin for using CFLint with `cfmleditor`
+- Update cfDocs service to use `fetch` APIs
+- Update Extension to support vscode.dev web based install
+- Setting for case / scope preference
+- Fixes for crash when typing start of a line
+
 ## [0.5.4] - 2022-01-05
 
 - Improved grammar
