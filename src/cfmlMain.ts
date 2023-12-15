@@ -2,7 +2,7 @@ import * as micromatch from "micromatch";
 import * as path from "path";
 import {
   commands, ConfigurationChangeEvent, ConfigurationTarget, DocumentSelector, ExtensionContext, extensions,
-  FileSystemWatcher, IndentAction, languages, TextDocument, Uri, window, workspace, WorkspaceConfiguration
+  FileSystemWatcher, IndentAction, languages, TextDocument, Uri, workspace, WorkspaceConfiguration
 } from "vscode";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
@@ -24,6 +24,7 @@ import CFMLWorkspaceSymbolProvider from "./features/workspaceSymbolProvider";
 import CFDocsService from "./utils/cfdocs/cfDocsService";
 import { APPLICATION_CFM_GLOB, isCfcFile } from "./utils/contextUtil";
 import { DocumentStateContext, getDocumentStateContext } from "./utils/documentUtil";
+import { insertAutoCloseTag } from "./features/autoclose";
 
 export const LANGUAGE_ID: string = "cfml";
 const DOCUMENT_SELECTOR: DocumentSelector = [
@@ -264,19 +265,9 @@ export function activate(context: ExtensionContext): void {
       }
     }
   } else if (enableAutoCloseTags) {
-    window.showInformationMessage("You have the autoCloseTags setting enabled, but do not have the necessary extension installed/enabled.", "Install/Enable Extension", "Disable Setting").then(
-      (selection: string) => {
-        if (selection === "Install/Enable Extension") {
-          commands.executeCommand("extension.open", autoCloseTagExtId);
-        } else if (selection === "Disable Setting") {
-          cfmlSettings.update(
-            "autoCloseTags.enable",
-            false,
-            getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget"))
-          );
-        }
-      }
-    );
+    workspace.onDidChangeTextDocument(event => {
+        insertAutoCloseTag(event);
+    });
   }
 
   commands.executeCommand("cfml.refreshGlobalDefinitionCache");
