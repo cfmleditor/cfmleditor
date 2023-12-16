@@ -1,0 +1,96 @@
+{
+	"name": "cfmenuitem",
+	"type": "tag",
+	"syntax": "<cfmenuitem>",
+	"related": ["cfmenu"],
+	"description": "Defines an entry in a menu, including an item that is the head of a submenu.",
+	"discouraged": "The use of tags generating UI is generally discouraged by the CFML community. See: https://static.raymondcamden.com/cfuitherightway/cfmenu/index.html",
+	"params": [
+		{
+			"name": "display",
+			"description": "The text to show as the menu item label.",
+			"required": false,
+			"default": "",
+			"type": "string",
+			"values": []
+		},
+		{
+			"name": "childstyle",
+			"description": "A CSS style specification that applies to all child \n menu items, including the children of submenus.",
+			"required": false,
+			"default": "",
+			"type": "string",
+			"values": []
+		},
+		{
+			"name": "divider",
+			"description": "This attribute specifies that the item is a divider. If \n you specify this attribute, you cannot specify any \n other attributes.",
+			"required": false,
+			"default": "",
+			"type": "string",
+			"values": [true, false]
+		},
+		{
+			"name": "href",
+			"description": "A URL link to activate or JavaScript function to \n call when the user clicks the menu item.",
+			"required": false,
+			"default": "",
+			"type": "string",
+			"values": []
+		},
+		{
+			"name": "image",
+			"description": "URL of an image to display at the left side of the \n menu item. The file type can be any format the \n browser can display. \n For most displays, you should use 15x15 pixel \n images, because larger images conflict with the \n menu item text",
+			"required": false,
+			"default": "",
+			"type": "string",
+			"values": []
+		},
+		{
+			"name": "menustyle",
+			"description": "A CSS style specification that controls the overall \n style of any submenu of this menu item. This \n attribute controls the submenu of the current menu \n item, but not to any child submenus of the submenu.",
+			"required": false,
+			"default": "",
+			"type": "string",
+			"values": []
+		},
+		{
+			"name": "name",
+			"description": "The name of the menu item.",
+			"required": false,
+			"default": "",
+			"type": "string",
+			"values": []
+		},
+		{
+			"name": "style",
+			"description": "A CSS style specification that applies to the current \n menu item only. It is not overridden by the \n childStyle attribute.",
+			"required": false,
+			"default": "",
+			"type": "string",
+			"values": []
+		},
+		{
+			"name": "target",
+			"description": "The target in which to display the contents \n returned by the href attribute. The attribute can be \n a browser window or frame name, an HTML target \n value, such as _self.",
+			"required": false,
+			"default": "",
+			"type": "string",
+			"values": []
+		}
+	],
+	"engines": {
+		"coldfusion": { "minimum_version": "", "notes": "", "deprecated":"2016", "docs": "https://helpx.adobe.com/coldfusion/cfml-reference/coldfusion-tags/tags-m-o/cfmenuitem.html" }
+	},
+	"links": [],
+	"examples": [
+		{
+			"title":"MenuItem with example",
+			"description":"Here, We have created simple menu items. The main menu having two submenu items such as My account, Project display.It is supported in cf 10,11 & 16.",
+			"code":"<cfmenu name='menu' type=\"horizontal\" fontsize=\"14\" bgcolor=\"##CCFFFF\">\r\n\t<cfmenuitem name=\"Home\" display=\"Home\"/>\r\n\t<cfmenuitem name=\"Main\" display=\"Main\">\r\n\t\t<cfmenuitem name=\"MyAccount\" display=\"My Account\"/>\r\n\t\t<cfmenuitem name=\"ProjectDisplay\" display=\"Project Displaay\"/>\r\n\t</cfmenuitem>\r\n</cfmenu>",
+			"result":"",
+			"runnable":false
+		}
+		
+	]
+}

@@ -2,7 +2,7 @@
   "name": "cfmleditor",
   "displayName": "CFML Editor",
   "description": "CFML Language Editor",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "preview": true,
   "author": "cfmleditor",
   "publisher": "cfmleditor",
@@ -91,17 +91,20 @@
           "markdownDescription": "Indicates the source location type to be used for CFDocs. Remote is GitHub repo. Local is based on `cfml.cfDocs.localPath`.",
           "enum": [
             "remote",
-            "local"
+            "local",
+            "extension"
           ],
           "enumDescriptions": [
             "Retrieve resources remotely from GitHub.",
-            "Retrieve resources locally using cfml.cfDocs.localPath."
+            "Retrieve resources locally using cfml.cfDocs.localPath.",
+            "Retrieve resources built into the extension."
           ],
           "markdownEnumDescription": [
             "Retrieve resources remotely from GitHub.",
-            "Retrieve resources locally using `cfml.cfDocs.localPath`."
+            "Retrieve resources locally using `cfml.cfDocs.localPath`.",
+            "Retrieve resources built into the extension."
           ],
-          "default": "remote",
+          "default": "extension",
           "scope": "window"
         },
         "cfml.cfDocs.localPath": {

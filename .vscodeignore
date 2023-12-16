@@ -10,3 +10,4 @@ src/**
 .markdownlint.json
 tsconfig.json
 tslint.json
+.vscode-test-web

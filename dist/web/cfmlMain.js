@@ -56,6 +56,7 @@ const workspaceSymbolProvider_1 = __importDefault(__webpack_require__(296));
 const cfDocsService_1 = __importDefault(__webpack_require__(268));
 const contextUtil_1 = __webpack_require__(184);
 const documentUtil_1 = __webpack_require__(186);
+const autoclose_1 = __webpack_require__(297);
 exports.LANGUAGE_ID = "cfml";
 const DOCUMENT_SELECTOR = [
     {
@@ -261,13 +262,8 @@ function activate(context) {
         }
     }
     else if (enableAutoCloseTags) {
-        vscode_1.window.showInformationMessage("You have the autoCloseTags setting enabled, but do not have the necessary extension installed/enabled.", "Install/Enable Extension", "Disable Setting").then((selection) => {
-            if (selection === "Install/Enable Extension") {
-                vscode_1.commands.executeCommand("extension.open", autoCloseTagExtId);
-            }
-            else if (selection === "Disable Setting") {
-                cfmlSettings.update("autoCloseTags.enable", false, getConfigurationTarget(cfmlSettings.get("autoCloseTags.configurationTarget")));
-            }
+        vscode_1.workspace.onDidChangeTextDocument(event => {
+            (0, autoclose_1.insertAutoCloseTag)(event);
         });
     }
     vscode_1.commands.executeCommand("cfml.refreshGlobalDefinitionCache");
@@ -32249,7 +32245,10 @@ async function cacheAllComponents() {
     clearAllCachedComponents();
     return vscode_1.workspace.findFiles(component_1.COMPONENT_FILE_GLOB).then(async (componentUris) => {
         // TODO: Remove cflint setting update for workspace state when CFLint checks it. Remove workspace state when CFLint can get list of open editors.
-        const cflintExt = vscode_1.extensions.getExtension("KamasamaK.vscode-cflint");
+        let cflintExt = vscode_1.extensions.getExtension("cfmleditor.cfmleditor-lint");
+        if (!cflintExt) {
+            cflintExt = vscode_1.extensions.getExtension("KamasamaK.vscode-cflint");
+        }
         if (cflintExt) {
             const cflintSettings = vscode_1.workspace.getConfiguration("cflint", null);
             const runModes = cflintSettings.get("runModes");
@@ -70843,6 +70842,7 @@ exports.foldAllFunctions = foldAllFunctions;
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
+/* provided dependency */ var Buffer = __webpack_require__(54)["Buffer"];
 
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -70881,11 +70881,13 @@ const tag_1 = __webpack_require__(185);
 const cachedEntity = __importStar(__webpack_require__(179));
 const documentUtil_1 = __webpack_require__(186);
 const cfmlEngine_1 = __webpack_require__(187);
+const cfmlMain_1 = __webpack_require__(0);
 const definitionInfo_1 = __webpack_require__(271);
 var CFDocsSource;
 (function (CFDocsSource) {
     CFDocsSource["Remote"] = "remote";
     CFDocsSource["Local"] = "local";
+    CFDocsSource["Extension"] = "extension";
 })(CFDocsSource || (CFDocsSource = {}));
 class CFDocsService {
     /**
@@ -70904,6 +70906,33 @@ class CFDocsService {
                     }
                     resolve(CFDocsService.constructDefinitionFromJsonDoc(data));
                 });
+            }
+            catch (e) {
+                console.error(`Error with the JSON doc for ${identifier}:`, e.message);
+                reject(e);
+            }
+        });
+    }
+    /**
+     * Gets definition information for global identifiers based on a extension resources directory
+     * @param identifier The global identifier for which to get definition info
+     */
+    static async getExtensionDefinitionInfo(identifier) {
+        return new Promise((resolve, reject) => {
+            try {
+                const docFilePath = path.join("./resources/schemas/en/", CFDocsService.getJsonFileName(identifier));
+                const pathUri = vscode_1.default.Uri.file(cfmlMain_1.extensionContext.asAbsolutePath(docFilePath));
+                try {
+                    vscode_2.workspace.fs.readFile(pathUri).then((readData) => {
+                        const readStr = Buffer.from(readData).toString('utf8');
+                        const readJson = JSON.parse(readStr);
+                        resolve(CFDocsService.constructDefinitionFromJsonDoc(readJson));
+                    });
+                }
+                catch (ex) {
+                    console.error(`Error with the JSON doc for ${identifier}:`, ex.message);
+                    reject(ex);
+                }
             }
             catch (e) {
                 console.error(`Error with the JSON doc for ${identifier}:`, e.message);
@@ -70974,6 +71003,21 @@ class CFDocsService {
                     reject(ex);
                 }
             }
+            else if (source === CFDocsSource.Extension) {
+                const extensionDocFilePath = path.join("./resources/schemas/en/", jsonFileName);
+                const extensionPathUri = vscode_1.default.Uri.file(cfmlMain_1.extensionContext.asAbsolutePath(extensionDocFilePath));
+                try {
+                    vscode_2.workspace.fs.readFile(extensionPathUri).then((readData) => {
+                        const readStr = Buffer.from(readData).toString('utf8');
+                        const readJson = JSON.parse(readStr);
+                        resolve(readJson.related);
+                    });
+                }
+                catch (ex) {
+                    console.error("Error retrieving all function names:", ex.message);
+                    reject(ex);
+                }
+            }
             else {
                 const cfDocsLink = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
                 (0, isomorphic_fetch_1.default)(cfDocsLink)
@@ -71010,6 +71054,21 @@ class CFDocsService {
                             reject(err);
                         }
                         resolve(JSON.parse(data).related);
+                    });
+                }
+                catch (ex) {
+                    console.error("Error retrieving all tag names:", ex.message);
+                    reject(ex);
+                }
+            }
+            else if (source === CFDocsSource.Extension) {
+                const extensionDocFilePath = path.join("./resources/schemas/en/", jsonFileName);
+                const extensionPathUri = vscode_1.default.Uri.file(cfmlMain_1.extensionContext.asAbsolutePath(extensionDocFilePath));
+                try {
+                    vscode_2.workspace.fs.readFile(extensionPathUri).then((readData) => {
+                        const readStr = Buffer.from(readData).toString('utf8');
+                        const readJson = JSON.parse(readStr);
+                        resolve(readJson.related);
                     });
                 }
                 catch (ex) {
@@ -71073,7 +71132,9 @@ class CFDocsService {
     static async cacheAll() {
         const cfmlCfDocsSettings = vscode_2.workspace.getConfiguration("cfml.cfDocs");
         const cfdocsSource = cfmlCfDocsSettings.get("source", CFDocsSource.Remote);
-        const getDefinitionInfo = cfdocsSource === CFDocsSource.Remote || vscode_1.default.env.appHost !== "desktop" ? CFDocsService.getRemoteDefinitionInfo : CFDocsService.getLocalDefinitionInfo;
+        const getDefinitionInfo = cfdocsSource === CFDocsSource.Local && vscode_1.default.env.appHost === "desktop" ?
+            CFDocsService.getLocalDefinitionInfo : (cfdocsSource === CFDocsSource.Extension ?
+            CFDocsService.getExtensionDefinitionInfo : CFDocsService.getRemoteDefinitionInfo);
         CFDocsService.getAllFunctionNames(cfdocsSource).then((allFunctionNames) => {
             allFunctionNames.forEach((functionName) => {
                 getDefinitionInfo(functionName).then((definitionInfo) => {
@@ -75806,6 +75867,177 @@ class CFMLWorkspaceSymbolProvider {
     }
 }
 exports["default"] = CFMLWorkspaceSymbolProvider;
+
+
+/***/ }),
+/* 297 */
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.insertCloseTag = exports.insertAutoCloseTag = void 0;
+const vscode_1 = __webpack_require__(45);
+const tag_1 = __webpack_require__(185);
+function insertAutoCloseTag(event) {
+    if (!event.contentChanges[0] || event.reason == vscode_1.TextDocumentChangeReason.Undo || event.reason == vscode_1.TextDocumentChangeReason.Redo) {
+        return;
+    }
+    let isRightAngleBracket = CheckRightAngleBracket(event.contentChanges[0]);
+    if (!isRightAngleBracket && event.contentChanges[0].text !== "/") {
+        return;
+    }
+    const editor = vscode_1.window.activeTextEditor;
+    if (!editor || editor && event.document !== editor.document) {
+        return;
+    }
+    const cfmlSettings = vscode_1.workspace.getConfiguration("cfml");
+    if (!cfmlSettings.get("autoCloseTags.enable", true)) {
+        return;
+    }
+    let languageId = editor.document.languageId;
+    let languages = ["cfml"];
+    let disableOnLanguage = [];
+    if ((languages.indexOf("*") === -1 && languages.indexOf(languageId) === -1) || disableOnLanguage.indexOf(languageId) !== -1) {
+        return;
+    }
+    let selection = editor.selection;
+    let originalPosition = selection.start.translate(0, 1);
+    let excludedTags = tag_1.nonClosingTags;
+    let isSublimeText3Mode = false;
+    let enableAutoCloseSelfClosingTag = true;
+    let isFullMode = true;
+    if ((isSublimeText3Mode || isFullMode) && event.contentChanges[0].text === "/") {
+        let text = editor.document.getText(new vscode_1.Range(new vscode_1.Position(0, 0), originalPosition));
+        let last2chars = "";
+        if (text.length > 2) {
+            last2chars = text.substr(text.length - 2);
+        }
+        if (last2chars === "</") {
+            let closeTag = getCloseTag(text, excludedTags);
+            if (closeTag) {
+                let nextChar = getNextChar(editor, originalPosition);
+                if (nextChar === ">") {
+                    closeTag = closeTag.substr(0, closeTag.length - 1);
+                }
+                editor.edit((editBuilder) => {
+                    editBuilder.insert(originalPosition, closeTag);
+                }).then(() => {
+                    if (nextChar === ">") {
+                        editor.selection = moveSelectionRight(editor.selection, 1);
+                    }
+                });
+            }
+        }
+    }
+    if (((!isSublimeText3Mode || isFullMode) && isRightAngleBracket) ||
+        (enableAutoCloseSelfClosingTag && event.contentChanges[0].text === "/")) {
+        let textLine = editor.document.lineAt(selection.start);
+        let text = textLine.text.substring(0, selection.start.character + 1);
+        let result = /<([_a-zA-Z][a-zA-Z0-9:\-_.]*)(?:\s+[^<>]*?[^\s/<>=]+?)*?\s?(\/|>)$/.exec(text);
+        if (result !== null && ((occurrenceCount(result[0], "'") % 2 === 0)
+            && (occurrenceCount(result[0], "\"") % 2 === 0) && (occurrenceCount(result[0], "`") % 2 === 0))) {
+            if (result[2] === ">") {
+                if (excludedTags.indexOf(result[1].toLowerCase()) === -1) {
+                    editor.edit((editBuilder) => {
+                        editBuilder.insert(originalPosition, "</" + result[1] + ">");
+                    }).then(() => {
+                        editor.selection = new vscode_1.Selection(originalPosition, originalPosition);
+                    });
+                }
+            }
+            else {
+                if (textLine.text.length <= selection.start.character + 1 || textLine.text[selection.start.character + 1] !== '>') { // if not typing "/" just before ">", add the ">" after "/"
+                    editor.edit((editBuilder) => {
+                        // if (config.get<boolean>("insertSpaceBeforeSelfClosingTag")) {
+                        //     const spacePosition = originalPosition.translate(0, -1);
+                        //     editBuilder.insert(spacePosition, " ");
+                        // }
+                        editBuilder.insert(originalPosition, ">");
+                    });
+                }
+            }
+        }
+    }
+}
+exports.insertAutoCloseTag = insertAutoCloseTag;
+function CheckRightAngleBracket(contentChange) {
+    return contentChange.text === ">" || CheckRightAngleBracketInVSCode_1_8(contentChange);
+}
+function CheckRightAngleBracketInVSCode_1_8(contentChange) {
+    return contentChange.text.endsWith(">") && contentChange.range.start.character === 0
+        && contentChange.range.start.line === contentChange.range.end.line
+        && !contentChange.range.end.isEqual(new vscode_1.Position(0, 0));
+}
+function insertCloseTag() {
+    let editor = vscode_1.window.activeTextEditor;
+    if (!editor) {
+        return;
+    }
+    let selection = editor.selection;
+    let originalPosition = selection.start;
+    //let config = workspace.getConfiguration('auto-close-tag', editor.document.uri);
+    let excludedTags = tag_1.nonClosingTags;
+    let text = editor.document.getText(new vscode_1.Range(new vscode_1.Position(0, 0), originalPosition));
+    if (text.length > 2) {
+        let closeTag = getCloseTag(text, excludedTags);
+        if (closeTag) {
+            editor.edit((editBuilder) => {
+                editBuilder.insert(originalPosition, closeTag);
+            }, {
+                undoStopBefore: true,
+                undoStopAfter: true
+            });
+        }
+    }
+}
+exports.insertCloseTag = insertCloseTag;
+function getNextChar(editor, position) {
+    let nextPosition = position.translate(0, 1);
+    let text = editor.document.getText(new vscode_1.Range(position, nextPosition));
+    return text;
+}
+function getCloseTag(text, excludedTags) {
+    let regex = /<(\/?[_a-zA-Z][a-zA-Z0-9:\-_.]*)(?:\s+[^<>]*?[^\s/<>=]+?)*?\s?>/g;
+    let result = null;
+    let stack = [];
+    while ((result = regex.exec(text)) !== null) {
+        let isStartTag = result[1].substr(0, 1) !== "/";
+        let tag = isStartTag ? result[1] : result[1].substr(1);
+        if (excludedTags.indexOf(tag.toLowerCase()) === -1) {
+            if (isStartTag) {
+                stack.push(tag);
+            }
+            else if (stack.length > 0) {
+                let lastTag = stack[stack.length - 1];
+                if (lastTag === tag) {
+                    stack.pop();
+                }
+            }
+        }
+    }
+    if (stack.length > 0) {
+        let closeTag = stack[stack.length - 1];
+        if (text.substr(text.length - 2) === "</") {
+            return closeTag + ">";
+        }
+        if (text.substr(text.length - 1) === "<") {
+            return "/" + closeTag + ">";
+        }
+        return "</" + closeTag + ">";
+    }
+    else {
+        return null;
+    }
+}
+function moveSelectionRight(selection, shift) {
+    let newPosition = selection.active.translate(0, shift);
+    let newSelection = new vscode_1.Selection(newPosition, newPosition);
+    return newSelection;
+}
+function occurrenceCount(source, find) {
+    return source.split(find).length - 1;
+}
 
 
 /***/ })

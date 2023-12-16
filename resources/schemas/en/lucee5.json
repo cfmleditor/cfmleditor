@@ -1,0 +1,4 @@
+{
+	"related":["bundleInfo","cacheRegionExists","cacheRegionNew","cacheRegionRemove","generatePBKDFKey","getLocaleInfo","manifestRead","render","webserviceNew"],
+	"name":"Lucee 5 New Functions and Tags","type":"listing","description":"List of tags and functions added in Lucee 5"
+}

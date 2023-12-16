@@ -9,11 +9,13 @@ import { getTagPrefixPattern } from "../../entities/tag";
 import * as cachedEntity from "../../features/cachedEntities";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../documentUtil";
 import { CFMLEngine, CFMLEngineName } from "./cfmlEngine";
+import { extensionContext } from "../../cfmlMain";
 import { CFDocsDefinitionInfo, EngineCompatibilityDetail } from "./definitionInfo";
 
 enum CFDocsSource {
   Remote = "remote",
-  Local = "local"
+  Local = "local",
+  Extension = "extension"
 }
 
 export default class CFDocsService {
@@ -38,6 +40,33 @@ export default class CFDocsService {
 
           resolve(CFDocsService.constructDefinitionFromJsonDoc(data));
         });
+      } catch (e) {
+        console.error(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
+        reject(e);
+      }
+    });
+  }
+
+  /**
+   * Gets definition information for global identifiers based on a extension resources directory
+   * @param identifier The global identifier for which to get definition info
+   */
+  private static async getExtensionDefinitionInfo(identifier: string): Promise<CFDocsDefinitionInfo> {
+
+    return new Promise<CFDocsDefinitionInfo>((resolve, reject) => {
+      try {
+        const docFilePath: string = path.join("./resources/schemas/en/", CFDocsService.getJsonFileName(identifier));
+        const pathUri: Uri = vscode.Uri.file(extensionContext.asAbsolutePath(docFilePath));
+        try {
+            workspace.fs.readFile(pathUri).then((readData) => {
+                const readStr = Buffer.from(readData).toString('utf8');
+                const readJson = JSON.parse(readStr);
+                resolve(CFDocsService.constructDefinitionFromJsonDoc(readJson));
+            });
+        } catch (ex) {
+            console.error(`Error with the JSON doc for ${identifier}:`, (<Error>ex).message);
+          reject(ex);
+        }
       } catch (e) {
         console.error(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
         reject(e);
@@ -112,6 +141,19 @@ export default class CFDocsService {
             resolve(JSON.parse(data).related);
           });
         } catch (ex) {
+            console.error("Error retrieving all function names:", (<Error>ex).message);
+            reject(ex);
+        }
+      } else if ( source === CFDocsSource.Extension ) {
+        const extensionDocFilePath: string = path.join("./resources/schemas/en/", jsonFileName);
+        const extensionPathUri: Uri = vscode.Uri.file(extensionContext.asAbsolutePath(extensionDocFilePath));
+         try {
+            workspace.fs.readFile(extensionPathUri).then((readData) => {
+                const readStr = Buffer.from(readData).toString('utf8');
+                const readJson = JSON.parse(readStr);
+                resolve(readJson.related);
+            });
+        } catch (ex) {
           console.error("Error retrieving all function names:", (<Error>ex).message);
           reject(ex);
         }
@@ -138,45 +180,59 @@ export default class CFDocsService {
    * Returns a list of all global CFML tags documented on CFDocs
    * @param source Indicates whether the data will be retrieved locally or remotely
    */
-  public static async getAllTagNames(source = CFDocsSource.Remote): Promise<string[]> {
-    const jsonFileName: string = CFDocsService.getJsonFileName("tags");
+    public static async getAllTagNames(source = CFDocsSource.Remote): Promise<string[]> {
+        const jsonFileName: string = CFDocsService.getJsonFileName("tags");
 
-    return new Promise<string[]>((resolve, reject) => {
-      if (source === CFDocsSource.Local && vscode.env.appHost === "desktop") {
-        const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
-        const cfdocsPath: string = cfmlCfDocsSettings.get("localPath");
-        let docFilePath: string = path.join(cfdocsPath, jsonFileName);
+        return new Promise<string[]>((resolve, reject) => {
+            if (source === CFDocsSource.Local && vscode.env.appHost === "desktop" ) {
+                const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
+                const cfdocsPath: string = cfmlCfDocsSettings.get("localPath");
+                let docFilePath: string = path.join(cfdocsPath, jsonFileName);
 
-        try {
-          fs.readFile(docFilePath, "utf8", (err, data) => {
-            if (err) {
-              reject(err);
-            }
-            resolve(JSON.parse(data).related);
-          });
-        } catch (ex) {
-          console.error("Error retrieving all tag names:", (<Error>ex).message);
-          reject(ex);
-        }
-      } else {
-        const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
-
-        fetch(cfDocsLink)
-            .then((response) => response.json())
-            .then((data) => {
                 try {
-                    resolve(data.related);
+                fs.readFile(docFilePath, "utf8", (err, data) => {
+                    if (err) {
+                    reject(err);
+                    }
+                    resolve(JSON.parse(data).related);
+                });
+                } catch (ex) {
+                console.error("Error retrieving all tag names:", (<Error>ex).message);
+                reject(ex);
+                }
+            } else if ( source === CFDocsSource.Extension ) {
+                const extensionDocFilePath: string = path.join("./resources/schemas/en/", jsonFileName);
+                const extensionPathUri: Uri = vscode.Uri.file(extensionContext.asAbsolutePath(extensionDocFilePath));
+                try {
+                    workspace.fs.readFile(extensionPathUri).then((readData) => {
+                        const readStr = Buffer.from(readData).toString('utf8');
+                        const readJson = JSON.parse(readStr);
+                        resolve(readJson.related);
+                    });
                 } catch (ex) {
                     console.error("Error retrieving all tag names:", (<Error>ex).message);
                     reject(ex);
                 }
-            }).catch(function(fex){
-                console.error("Error retrieving all tag names:", (<Error>fex).message);
-                reject(fex);
-            });
-      }
-    });
-  }
+            } else {
+                const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
+
+                fetch(cfDocsLink)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        try {
+                            resolve(data.related);
+                        } catch (ex) {
+                            console.error("Error retrieving all tag names:", (<Error>ex).message);
+                            reject(ex);
+                        }
+                    }).catch(function(fex){
+                        console.error("Error retrieving all tag names:", (<Error>fex).message);
+                        reject(fex);
+                    });
+            }
+
+        });
+    }
 
   /**
    * Sets the given definition as a global function in the cached entities
@@ -217,7 +273,9 @@ export default class CFDocsService {
   public static async cacheAll(): Promise<boolean> {
     const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
     const cfdocsSource: CFDocsSource = cfmlCfDocsSettings.get<CFDocsSource>("source", CFDocsSource.Remote);
-    const getDefinitionInfo = cfdocsSource === CFDocsSource.Remote || vscode.env.appHost !== "desktop" ? CFDocsService.getRemoteDefinitionInfo : CFDocsService.getLocalDefinitionInfo;
+    const getDefinitionInfo = cfdocsSource === CFDocsSource.Local && vscode.env.appHost === "desktop" ?
+        CFDocsService.getLocalDefinitionInfo : ( cfdocsSource === CFDocsSource.Extension ?
+        CFDocsService.getExtensionDefinitionInfo : CFDocsService.getRemoteDefinitionInfo );
 
     CFDocsService.getAllFunctionNames(cfdocsSource).then((allFunctionNames: string[]) => {
       allFunctionNames.forEach((functionName: string) => {
