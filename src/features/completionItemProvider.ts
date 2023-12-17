@@ -9,7 +9,7 @@ import { IPropertyData, IAtDirectiveData } from "../entities/css/cssLanguageType
 import { cssDataManager, getEntryDescription as getCSSEntryDescription, cssWordRegex } from "../entities/css/languageFacts";
 import { DataType } from "../entities/dataType";
 import { constructSyntaxString } from "../entities/function";
-import { constructAttributeSnippet, constructTagSnippet, GlobalFunction, GlobalFunctions, GlobalTag, GlobalTags, globalTagSyntaxToScript } from "../entities/globals";
+import { constructAttributeSnippet, constructTagSnippet, GlobalFunction, GlobalFunctions, GlobalMemberFunction, GlobalMemberFunctions, GlobalTag, GlobalTags, globalTagSyntaxToScript } from "../entities/globals";
 import { IAttributeData as HTMLAttributeData, IValueData as HTMLValueData } from "../entities/html/htmlLanguageTypes";
 import { constructHTMLAttributeSnippet } from "../entities/html/htmlTag";
 import { getAttribute, htmlDataProvider, isKnownTag as isKnownHTMLTag } from "../entities/html/languageFacts";
@@ -27,7 +27,7 @@ import { getCfScriptRanges, isInCss, isInRanges } from "../utils/contextUtil";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { CFMLMapping, filterComponents, filterDirectories, resolveDottedPaths, resolveRootPath } from "../utils/fileUtil";
 import { equalsIgnoreCase, escapeMarkdown, textToMarkdownString } from "../utils/textUtil";
-import { getAllGlobalFunctions, getAllGlobalTags, getComponent, getGlobalTag } from "./cachedEntities";
+import { getAllGlobalFunctions, getAllGlobalMemberFunctions, getAllGlobalTags, getComponent, getGlobalTag } from "./cachedEntities";
 
 const snippets: Snippets = require("../../snippets/snippets.json");
 
@@ -436,6 +436,9 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
     if (shouldProvideGFItems) {
       const globalFunctionCompletions: CompletionItem[] = getGlobalFunctionCompletions(completionState);
       result = result.concat(globalFunctionCompletions);
+
+      const memberFunctionCompletions: CompletionItem[] = getGlobalMemberFunctionCompletions(completionState);
+      result = result.concat(memberFunctionCompletions);
     }
 
     // Global tags
@@ -822,6 +825,41 @@ function getGlobalFunctionCompletions(state: CompletionState): CompletionItem[] 
   }
 
   return globalFunctionCompletions;
+}
+
+function getGlobalMemberFunctionCompletions(state: CompletionState): CompletionItem[] {
+    const cfmlGFFirstLetterCase: string = state.cfmlCompletionSettings.get<string>("globalFunctions.firstLetterCase", "unchanged");
+    let globalMemberFunctionCompletions: CompletionItem[] = [];
+    if (state.isMemberExpression) {
+        const memberFunctions: GlobalMemberFunctions = getAllGlobalMemberFunctions();
+        for (const name in memberFunctions) {
+            if (state.currentWordMatches(name)) {
+                const globalMemberFunction: GlobalMemberFunction = memberFunctions[name];
+
+                let functionDetail = globalMemberFunction.syntax;
+                if (!functionDetail.startsWith("function ")) {
+                    functionDetail = "function " + globalMemberFunction.syntax;
+                }
+
+                let globalMemberFunctionName: string = globalMemberFunction.name;
+                if (cfmlGFFirstLetterCase === "lower") {
+                    globalMemberFunctionName = `${globalMemberFunctionName.charAt(0).toLowerCase()}${globalMemberFunctionName.substr(1)}`;
+                } else if (cfmlGFFirstLetterCase === "upper") {
+                    globalMemberFunctionName = `${globalMemberFunctionName.charAt(0).toUpperCase()}${globalMemberFunctionName.substr(1)}`;
+                }
+
+                globalMemberFunctionCompletions.push(
+                    createNewProposal(
+                        globalMemberFunctionName,
+                        CompletionItemKind.Function,
+                        { detail: globalMemberFunction.syntax, description: globalMemberFunction.description }
+                    )
+                );
+
+            }
+        }
+    }
+    return globalMemberFunctionCompletions;
 }
 
 /**

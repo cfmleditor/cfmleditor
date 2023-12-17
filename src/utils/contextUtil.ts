@@ -12,6 +12,7 @@ const CFM_FILE_EXTS: string[] = [".cfm", ".cfml"];
 export const APPLICATION_CFM_GLOB: string = "**/Application.cfm";
 // const notContinuingExpressionPattern: RegExp = /(?:^|[^\w$.\s])\s*$/;
 const continuingExpressionPattern: RegExp = /(?:\.\s*|[\w$])$/;
+const memberExpressionPattern: RegExp = /(?:\.)$/;
 const cfscriptLineCommentPattern: RegExp = /\/\/[^\r\n]*/g;
 const cfscriptBlockCommentPattern: RegExp = /\/\*[\s\S]*?\*\//g;
 const tagBlockCommentPattern: RegExp = /<!--[\s\S]*?-->/g;
@@ -657,6 +658,15 @@ export function invertRanges(document: TextDocument, ranges: Range[]): Range[] {
 export function isContinuingExpression(prefix: string): boolean {
   return continuingExpressionPattern.test(prefix);
 }
+
+/**
+ * Returns if the given prefix is part of a continuing expression
+ * @param prefix Prefix to the current position
+ */
+export function isMemberExpression(prefix: string): boolean {
+    return memberExpressionPattern.test(prefix);
+  }
+
 
 /**
  * Given a character, gets its respective character pair

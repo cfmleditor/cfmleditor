@@ -2,7 +2,7 @@ import { Position, Range, TextDocument, WorkspaceConfiguration, workspace } from
 import { Component, isScriptComponent } from "../entities/component";
 import { getComponent } from "../features/cachedEntities";
 import { CFMLEngine, CFMLEngineName } from "./cfdocs/cfmlEngine";
-import { getCfScriptRanges, getDocumentContextRanges, isCfcFile, isCfmFile, isContinuingExpression, isInRanges, DocumentContextRanges } from "./contextUtil";
+import { getCfScriptRanges, getDocumentContextRanges, isCfcFile, isCfmFile, isContinuingExpression, isInRanges, DocumentContextRanges, isMemberExpression } from "./contextUtil";
 import { getSanitizedDocumentText } from "./textUtil";
 
 export interface DocumentStateContext {
@@ -26,6 +26,7 @@ export interface DocumentPositionStateContext extends DocumentStateContext {
   wordRange: Range;
   currentWord: string;
   isContinuingExpression: boolean;
+  isMemberExpression: boolean;
 }
 
 /**
@@ -91,7 +92,8 @@ export function getDocumentPositionStateContext(document: TextDocument, position
       docPrefix,
       wordRange,
       currentWord,
-      isContinuingExpression: isContinuingExpression(docPrefix)
+      isContinuingExpression: isContinuingExpression(docPrefix),
+      isMemberExpression: isMemberExpression(docPrefix)
     }
   );
 

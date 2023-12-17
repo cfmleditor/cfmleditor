@@ -1,7 +1,7 @@
 import * as path from "path";
 import { ConfigurationTarget, extensions, ProgressLocation, TextDocument, Uri, window, workspace, WorkspaceConfiguration } from "vscode";
 import { Component, ComponentsByName, ComponentsByUri, COMPONENT_EXT, COMPONENT_FILE_GLOB, parseComponent } from "../entities/component";
-import { GlobalFunction, GlobalFunctions, GlobalTag, GlobalTags } from "../entities/globals";
+import { GlobalFunction, GlobalFunctions, GlobalMemberFunction, GlobalMemberFunctions, GlobalTag, GlobalTags } from "../entities/globals";
 import { Scope } from "../entities/scope";
 import { ComponentFunctions, UserFunction, UserFunctionByUri, UserFunctionsByName } from "../entities/userFunction";
 import { parseVariableAssignments, Variable, VariablesByUri } from "../entities/variable";
@@ -15,6 +15,7 @@ import trie from "trie-prefix-tree";
 let allGlobalEntityDefinitions = new MyMap<string, CFDocsDefinitionInfo>();
 
 let allGlobalFunctions: GlobalFunctions = {};
+let allGlobalMemberFunctions: GlobalMemberFunctions = {};
 let allGlobalTags: GlobalTags = {};
 // let allMemberFunctions: MemberFunctionsByType = new MyMap<DataType, Set<MemberFunction>>();
 
@@ -81,7 +82,37 @@ export function getAllGlobalFunctions(): GlobalFunctions {
  * Clears all of the cached global functions
  */
 export function clearAllGlobalFunctions(): void {
-  allGlobalFunctions = {};
+    allGlobalFunctions = {};
+}
+
+/**
+ * Sets the given global function object into cache
+ * @param functionDefinition The global function object to cache
+ */
+export function setGlobalMemberFunction(functionDefinition: GlobalMemberFunction): void {
+    allGlobalMemberFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+}
+
+/**
+ * Retrieves the cached global member function identified by the given function name
+ * @param functionName The name of the global function to be retrieved
+ */
+export function getGlobalMemberFunction(functionName: string): GlobalMemberFunction {
+    return allGlobalMemberFunctions[functionName.toLowerCase()];
+}
+
+/**
+ * Returns all of the cached global member functions
+ */
+export function getAllGlobalMemberFunctions(): GlobalMemberFunctions {
+    return allGlobalMemberFunctions;
+}
+
+/**
+ * Clears all of the cached global functions
+ */
+export function clearAllGlobalMemberFunctions(): void {
+    allGlobalMemberFunctions = {};
 }
 
 /**

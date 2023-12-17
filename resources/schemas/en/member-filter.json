@@ -1,0 +1,16 @@
+{
+	"name":"filter",
+	"type":"function",
+	"syntax":"filter(function(item){}",
+	"member":"someArray.filter(function(item){}",
+	"returns":"array",
+	"related":["arrayEach", "arraySome","ArrayMap","arrayReduce","arrayFilter"],
+	"description":"Used to filter an array to items for which the closure function returns true.",
+	"params": [
+		{"name":"callback","description":"","required": true,"default":"function(data){}","type":"any","values":[]}
+	],
+	"engines": {
+		"coldfusion": {"minimum_version":"10", "notes":"", "docs":"https://helpx.adobe.com/coldfusion/cfml-reference/coldfusion-functions/functions-a-b/arrayfilter.html"},
+		"lucee": {"minimum_version":"", "notes":"", "docs":"https://docs.lucee.org/reference/functions/arrayfilter.html"}
+	}
+}

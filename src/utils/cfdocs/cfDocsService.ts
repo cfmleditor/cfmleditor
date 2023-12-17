@@ -252,6 +252,23 @@ export default class CFDocsService {
   }
 
   /**
+   * Sets the given definition as a global function in the cached entities
+   * @param definition The definition object to cache
+   */
+  public static setGlobalMemberFunction(definition: CFDocsDefinitionInfo): boolean {
+    const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
+    const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name"));
+    const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version"));
+    if (definition.type === "function" && definition.isCompatible(userEngine)) {
+      cachedEntity.setGlobalMemberFunction(definition.toGlobalFunction());
+      // TODO: Add member function also
+      cachedEntity.setGlobalEntityDefinition(definition);
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Sets the given definition as a global tag in the cached entities
    * @param definition The definition object to cache
    */
@@ -276,6 +293,7 @@ export default class CFDocsService {
     const getDefinitionInfo = cfdocsSource === CFDocsSource.Local && vscode.env.appHost === "desktop" ?
         CFDocsService.getLocalDefinitionInfo : ( cfdocsSource === CFDocsSource.Extension ?
         CFDocsService.getExtensionDefinitionInfo : CFDocsService.getRemoteDefinitionInfo );
+    const getMemberFunctionDefinition = CFDocsService.getExtensionDefinitionInfo;
 
     CFDocsService.getAllFunctionNames(cfdocsSource).then((allFunctionNames: string[]) => {
       allFunctionNames.forEach((functionName: string) => {
@@ -283,6 +301,14 @@ export default class CFDocsService {
           CFDocsService.setGlobalFunction(definitionInfo);
         });
       });
+    });
+
+    CFDocsService.getAllMemberFunctionNames(cfdocsSource).then((allMemberFunctionNames: string[]) => {
+        allMemberFunctionNames.forEach((memberFunctionName: string) => {
+            getMemberFunctionDefinition("member-" + memberFunctionName).then((definitionInfo: CFDocsDefinitionInfo) => {
+                CFDocsService.setGlobalMemberFunction(definitionInfo);
+            });
+        });
     });
 
     CFDocsService.getAllTagNames(cfdocsSource).then((allTagNames: string[]) => {
@@ -384,5 +410,29 @@ export default class CFDocsService {
     }
 
     window.showInformationMessage("No matching compatible entity was found");
+  }
+
+  /**
+   * Returns a list of all global CFML functions documented on CFDocs
+   * @param source Indicates whether the data will be retrieved locally or remotely
+   */
+  public static async getAllMemberFunctionNames(source = CFDocsSource.Remote): Promise<string[]> {
+    const jsonFileName: string = CFDocsService.getJsonFileName("memberfunctions");
+
+    return new Promise<string[]>((resolve, reject) => {
+        const extensionDocFilePath: string = path.join("./resources/schemas/en/", jsonFileName);
+        const extensionPathUri: Uri = vscode.Uri.file(extensionContext.asAbsolutePath(extensionDocFilePath));
+        try {
+            workspace.fs.readFile(extensionPathUri).then((readData) => {
+                const readStr = Buffer.from(readData).toString('utf8');
+                const readJson = JSON.parse(readStr);
+                resolve(readJson.related);
+            });
+        } catch (ex) {
+            console.error("Error retrieving all member function names:", (<Error>ex).message);
+            reject(ex);
+        }
+    });
+
   }
 }

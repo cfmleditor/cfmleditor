@@ -31942,7 +31942,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getServerVariables = exports.removeApplicationVariables = exports.setApplicationVariables = exports.getApplicationVariables = exports.cacheAllApplicationCfms = exports.clearCachedComponent = exports.cacheComponentFromDocument = exports.cacheAllComponents = exports.cacheComponent = exports.componentPathToUri = exports.searchAllFunctionNames = exports.searchAllComponentNames = exports.hasComponent = exports.getComponent = exports.clearAllGlobalEntityDefinitions = exports.getAllGlobalEntityDefinitions = exports.getGlobalEntityDefinition = exports.setGlobalEntityDefinition = exports.clearAllGlobalTags = exports.getAllGlobalTags = exports.getGlobalTag = exports.setGlobalTag = exports.clearAllGlobalFunctions = exports.getAllGlobalFunctions = exports.getGlobalFunction = exports.setGlobalFunction = exports.isGlobalEntity = exports.isGlobalTag = exports.isGlobalFunction = void 0;
+exports.getServerVariables = exports.removeApplicationVariables = exports.setApplicationVariables = exports.getApplicationVariables = exports.cacheAllApplicationCfms = exports.clearCachedComponent = exports.cacheComponentFromDocument = exports.cacheAllComponents = exports.cacheComponent = exports.componentPathToUri = exports.searchAllFunctionNames = exports.searchAllComponentNames = exports.hasComponent = exports.getComponent = exports.clearAllGlobalEntityDefinitions = exports.getAllGlobalEntityDefinitions = exports.getGlobalEntityDefinition = exports.setGlobalEntityDefinition = exports.clearAllGlobalTags = exports.getAllGlobalTags = exports.getGlobalTag = exports.setGlobalTag = exports.clearAllGlobalMemberFunctions = exports.getAllGlobalMemberFunctions = exports.getGlobalMemberFunction = exports.setGlobalMemberFunction = exports.clearAllGlobalFunctions = exports.getAllGlobalFunctions = exports.getGlobalFunction = exports.setGlobalFunction = exports.isGlobalEntity = exports.isGlobalTag = exports.isGlobalFunction = void 0;
 const path = __importStar(__webpack_require__(40));
 const vscode_1 = __webpack_require__(45);
 const component_1 = __webpack_require__(46);
@@ -31955,6 +31955,7 @@ const fileUtil_1 = __webpack_require__(248);
 const trie_prefix_tree_1 = __importDefault(__webpack_require__(249));
 let allGlobalEntityDefinitions = new collections_1.MyMap();
 let allGlobalFunctions = {};
+let allGlobalMemberFunctions = {};
 let allGlobalTags = {};
 // let allMemberFunctions: MemberFunctionsByType = new MyMap<DataType, Set<MemberFunction>>();
 let allComponentsByUri = {};
@@ -32019,6 +32020,36 @@ function clearAllGlobalFunctions() {
     allGlobalFunctions = {};
 }
 exports.clearAllGlobalFunctions = clearAllGlobalFunctions;
+/**
+ * Sets the given global function object into cache
+ * @param functionDefinition The global function object to cache
+ */
+function setGlobalMemberFunction(functionDefinition) {
+    allGlobalMemberFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+}
+exports.setGlobalMemberFunction = setGlobalMemberFunction;
+/**
+ * Retrieves the cached global member function identified by the given function name
+ * @param functionName The name of the global function to be retrieved
+ */
+function getGlobalMemberFunction(functionName) {
+    return allGlobalMemberFunctions[functionName.toLowerCase()];
+}
+exports.getGlobalMemberFunction = getGlobalMemberFunction;
+/**
+ * Returns all of the cached global member functions
+ */
+function getAllGlobalMemberFunctions() {
+    return allGlobalMemberFunctions;
+}
+exports.getAllGlobalMemberFunctions = getAllGlobalMemberFunctions;
+/**
+ * Clears all of the cached global functions
+ */
+function clearAllGlobalMemberFunctions() {
+    allGlobalMemberFunctions = {};
+}
+exports.clearAllGlobalMemberFunctions = clearAllGlobalMemberFunctions;
 /**
  * Sets the given global tag object into cache
  * @param tagDefinition The global tag object to cache
@@ -34012,7 +34043,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getStartSigPosition = exports.getPrecedingIdentifierRange = exports.isValidIdentifier = exports.isValidIdentifierPart = exports.getClosingPosition = exports.getNextCharacterPosition = exports.isStringDelimiter = exports.isContinuingExpression = exports.invertRanges = exports.isInRanges = exports.isInComment = exports.isInCss = exports.isInJavaScript = exports.isPositionScript = exports.isInCfScript = exports.isInCfOutput = exports.getCfOutputRanges = exports.getCssRanges = exports.getJavaScriptRanges = exports.getDocumentContextRanges = exports.getCfScriptRanges = exports.isCfcUri = exports.isCfcFile = exports.isCfmFile = exports.BackwardIterator = exports.APPLICATION_CFM_GLOB = void 0;
+exports.getStartSigPosition = exports.getPrecedingIdentifierRange = exports.isValidIdentifier = exports.isValidIdentifierPart = exports.getClosingPosition = exports.getNextCharacterPosition = exports.isStringDelimiter = exports.isMemberExpression = exports.isContinuingExpression = exports.invertRanges = exports.isInRanges = exports.isInComment = exports.isInCss = exports.isInJavaScript = exports.isPositionScript = exports.isInCfScript = exports.isInCfOutput = exports.getCfOutputRanges = exports.getCssRanges = exports.getJavaScriptRanges = exports.getDocumentContextRanges = exports.getCfScriptRanges = exports.isCfcUri = exports.isCfcFile = exports.isCfmFile = exports.BackwardIterator = exports.APPLICATION_CFM_GLOB = void 0;
 const path = __importStar(__webpack_require__(40));
 const vscode_1 = __webpack_require__(45);
 const component_1 = __webpack_require__(46);
@@ -34024,6 +34055,7 @@ const CFM_FILE_EXTS = [".cfm", ".cfml"];
 exports.APPLICATION_CFM_GLOB = "**/Application.cfm";
 // const notContinuingExpressionPattern: RegExp = /(?:^|[^\w$.\s])\s*$/;
 const continuingExpressionPattern = /(?:\.\s*|[\w$])$/;
+const memberExpressionPattern = /(?:\.)$/;
 const cfscriptLineCommentPattern = /\/\/[^\r\n]*/g;
 const cfscriptBlockCommentPattern = /\/\*[\s\S]*?\*\//g;
 const tagBlockCommentPattern = /<!--[\s\S]*?-->/g;
@@ -34601,6 +34633,14 @@ function isContinuingExpression(prefix) {
     return continuingExpressionPattern.test(prefix);
 }
 exports.isContinuingExpression = isContinuingExpression;
+/**
+ * Returns if the given prefix is part of a continuing expression
+ * @param prefix Prefix to the current position
+ */
+function isMemberExpression(prefix) {
+    return memberExpressionPattern.test(prefix);
+}
+exports.isMemberExpression = isMemberExpression;
 /**
  * Given a character, gets its respective character pair
  * @param character Either character in a character pair
@@ -35546,7 +35586,8 @@ function getDocumentPositionStateContext(document, position, fast = false) {
         docPrefix,
         wordRange,
         currentWord,
-        isContinuingExpression: (0, contextUtil_1.isContinuingExpression)(docPrefix)
+        isContinuingExpression: (0, contextUtil_1.isContinuingExpression)(docPrefix),
+        isMemberExpression: (0, contextUtil_1.isMemberExpression)(docPrefix)
     });
     return documentPositionStateContext;
 }
@@ -71112,6 +71153,22 @@ class CFDocsService {
         return false;
     }
     /**
+     * Sets the given definition as a global function in the cached entities
+     * @param definition The definition object to cache
+     */
+    static setGlobalMemberFunction(definition) {
+        const cfmlEngineSettings = vscode_2.workspace.getConfiguration("cfml.engine");
+        const userEngineName = cfmlEngine_1.CFMLEngineName.valueOf(cfmlEngineSettings.get("name"));
+        const userEngine = new cfmlEngine_1.CFMLEngine(userEngineName, cfmlEngineSettings.get("version"));
+        if (definition.type === "function" && definition.isCompatible(userEngine)) {
+            cachedEntity.setGlobalMemberFunction(definition.toGlobalFunction());
+            // TODO: Add member function also
+            cachedEntity.setGlobalEntityDefinition(definition);
+            return true;
+        }
+        return false;
+    }
+    /**
      * Sets the given definition as a global tag in the cached entities
      * @param definition The definition object to cache
      */
@@ -71135,10 +71192,18 @@ class CFDocsService {
         const getDefinitionInfo = cfdocsSource === CFDocsSource.Local && vscode_1.default.env.appHost === "desktop" ?
             CFDocsService.getLocalDefinitionInfo : (cfdocsSource === CFDocsSource.Extension ?
             CFDocsService.getExtensionDefinitionInfo : CFDocsService.getRemoteDefinitionInfo);
+        const getMemberFunctionDefinition = CFDocsService.getExtensionDefinitionInfo;
         CFDocsService.getAllFunctionNames(cfdocsSource).then((allFunctionNames) => {
             allFunctionNames.forEach((functionName) => {
                 getDefinitionInfo(functionName).then((definitionInfo) => {
                     CFDocsService.setGlobalFunction(definitionInfo);
+                });
+            });
+        });
+        CFDocsService.getAllMemberFunctionNames(cfdocsSource).then((allMemberFunctionNames) => {
+            allMemberFunctionNames.forEach((memberFunctionName) => {
+                getMemberFunctionDefinition("member-" + memberFunctionName).then((definitionInfo) => {
+                    CFDocsService.setGlobalMemberFunction(definitionInfo);
                 });
             });
         });
@@ -71225,6 +71290,28 @@ class CFDocsService {
             return;
         }
         vscode_2.window.showInformationMessage("No matching compatible entity was found");
+    }
+    /**
+     * Returns a list of all global CFML functions documented on CFDocs
+     * @param source Indicates whether the data will be retrieved locally or remotely
+     */
+    static async getAllMemberFunctionNames(source = CFDocsSource.Remote) {
+        const jsonFileName = CFDocsService.getJsonFileName("memberfunctions");
+        return new Promise((resolve, reject) => {
+            const extensionDocFilePath = path.join("./resources/schemas/en/", jsonFileName);
+            const extensionPathUri = vscode_1.default.Uri.file(cfmlMain_1.extensionContext.asAbsolutePath(extensionDocFilePath));
+            try {
+                vscode_2.workspace.fs.readFile(extensionPathUri).then((readData) => {
+                    const readStr = Buffer.from(readData).toString('utf8');
+                    const readJson = JSON.parse(readStr);
+                    resolve(readJson.related);
+                });
+            }
+            catch (ex) {
+                console.error("Error retrieving all member function names:", ex.message);
+                reject(ex);
+            }
+        });
     }
 }
 CFDocsService.cfDocsRepoLinkPrefix = "https://raw.githubusercontent.com/foundeo/cfdocs/master/data/en/";
@@ -72946,6 +73033,8 @@ class CFMLCompletionItemProvider {
         if (shouldProvideGFItems) {
             const globalFunctionCompletions = getGlobalFunctionCompletions(completionState);
             result = result.concat(globalFunctionCompletions);
+            const memberFunctionCompletions = getGlobalMemberFunctionCompletions(completionState);
+            result = result.concat(memberFunctionCompletions);
         }
         // Global tags
         const shouldProvideGTItems = cfmlCompletionSettings.get("globalTags.enable", true);
@@ -73279,6 +73368,31 @@ function getGlobalFunctionCompletions(state) {
         }
     }
     return globalFunctionCompletions;
+}
+function getGlobalMemberFunctionCompletions(state) {
+    const cfmlGFFirstLetterCase = state.cfmlCompletionSettings.get("globalFunctions.firstLetterCase", "unchanged");
+    let globalMemberFunctionCompletions = [];
+    if (state.isMemberExpression) {
+        const memberFunctions = (0, cachedEntities_1.getAllGlobalMemberFunctions)();
+        for (const name in memberFunctions) {
+            if (state.currentWordMatches(name)) {
+                const globalMemberFunction = memberFunctions[name];
+                let functionDetail = globalMemberFunction.syntax;
+                if (!functionDetail.startsWith("function ")) {
+                    functionDetail = "function " + globalMemberFunction.syntax;
+                }
+                let globalMemberFunctionName = globalMemberFunction.name;
+                if (cfmlGFFirstLetterCase === "lower") {
+                    globalMemberFunctionName = `${globalMemberFunctionName.charAt(0).toLowerCase()}${globalMemberFunctionName.substr(1)}`;
+                }
+                else if (cfmlGFFirstLetterCase === "upper") {
+                    globalMemberFunctionName = `${globalMemberFunctionName.charAt(0).toUpperCase()}${globalMemberFunctionName.substr(1)}`;
+                }
+                globalMemberFunctionCompletions.push(createNewProposal(globalMemberFunctionName, vscode_1.CompletionItemKind.Function, { detail: globalMemberFunction.syntax, description: globalMemberFunction.description }));
+            }
+        }
+    }
+    return globalMemberFunctionCompletions;
 }
 /**
  * Gets the global tag completions for the given state

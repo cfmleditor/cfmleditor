@@ -18,6 +18,12 @@ export interface GlobalFunction extends GlobalEntity, Function { }
 export interface GlobalFunctions {
   [name: string]: GlobalFunction;
 }
+
+export interface GlobalMemberFunction extends GlobalEntity, Function { }
+export interface GlobalMemberFunctions {
+  [name: string]: GlobalMemberFunction;
+}
+
 export interface MemberFunction extends Function {
   name: string;
   syntax: string;
