@@ -1,6 +1,6 @@
 # CFML Editor
 
-[![cfml](https://img.shields.io/badge/cfml-ide-blue.svg?logo=slack&labelColor=555555)](https://cfml-slack.herokuapp.com)
+[![cfml](https://img.shields.io/badge/cfml-ide-blue.svg?logo=slack&labelColor=555555)](http://cfml-slack.net/)
 
 An extension for the development of CFML.
 
