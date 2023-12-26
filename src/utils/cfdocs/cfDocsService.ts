@@ -293,7 +293,7 @@ export default class CFDocsService {
     const getDefinitionInfo = cfdocsSource === CFDocsSource.Local && vscode.env.appHost === "desktop" ?
         CFDocsService.getLocalDefinitionInfo : ( cfdocsSource === CFDocsSource.Extension ?
         CFDocsService.getExtensionDefinitionInfo : CFDocsService.getRemoteDefinitionInfo );
-    const getMemberFunctionDefinition = CFDocsService.getExtensionDefinitionInfo;
+    //const getMemberFunctionDefinition = CFDocsService.getExtensionDefinitionInfo;
 
     CFDocsService.getAllFunctionNames(cfdocsSource).then((allFunctionNames: string[]) => {
       allFunctionNames.forEach((functionName: string) => {
@@ -303,13 +303,13 @@ export default class CFDocsService {
       });
     });
 
-    CFDocsService.getAllMemberFunctionNames(cfdocsSource).then((allMemberFunctionNames: string[]) => {
+    /*CFDocsService.getAllMemberFunctionNames(cfdocsSource).then((allMemberFunctionNames: string[]) => {
         allMemberFunctionNames.forEach((memberFunctionName: string) => {
             getMemberFunctionDefinition("member-" + memberFunctionName).then((definitionInfo: CFDocsDefinitionInfo) => {
                 CFDocsService.setGlobalMemberFunction(definitionInfo);
             });
         });
-    });
+    });*/
 
     CFDocsService.getAllTagNames(cfdocsSource).then((allTagNames: string[]) => {
       allTagNames.forEach((tagName: string) => {
@@ -416,7 +416,7 @@ export default class CFDocsService {
    * Returns a list of all global CFML functions documented on CFDocs
    * @param source Indicates whether the data will be retrieved locally or remotely
    */
-  public static async getAllMemberFunctionNames(source = CFDocsSource.Remote): Promise<string[]> {
+  /*public static async getAllMemberFunctionNames(source = CFDocsSource.Remote): Promise<string[]> {
     const jsonFileName: string = CFDocsService.getJsonFileName("memberfunctions");
 
     return new Promise<string[]>((resolve, reject) => {
@@ -434,5 +434,5 @@ export default class CFDocsService {
         }
     });
 
-  }
+  }*/
 }
