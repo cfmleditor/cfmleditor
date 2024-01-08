@@ -11,6 +11,7 @@ import { APPLICATION_CFM_GLOB } from "../utils/contextUtil";
 import { DocumentStateContext, getDocumentStateContext } from "../utils/documentUtil";
 import { resolveCustomMappingPaths, resolveRelativePath, resolveRootPath } from "../utils/fileUtil";
 import trie from "trie-prefix-tree";
+import { Snippet, Snippets } from "../entities/snippet";
 
 let allGlobalEntityDefinitions = new MyMap<string, CFDocsDefinitionInfo>();
 
@@ -31,6 +32,7 @@ let allFunctionNames = trie([]);
 let allServerVariables: VariablesByUri = new VariablesByUri();
 let allApplicationVariables: VariablesByUri = new VariablesByUri();
 
+let customSnippets: Snippets = {};
 /**
  * Checks whether the given identifier is a cached global function
  * @param name The identifier to check
@@ -554,4 +556,27 @@ export function removeApplicationVariables(uri: Uri): boolean {
  */
 export function getServerVariables(uri: Uri): Variable[] {
   return allServerVariables.get(uri.toString());
+}
+
+/**
+ * Returns all of the cached custom snippets
+ */
+export function getAllCustomSnippets(): Snippets {
+    return customSnippets;
+}
+
+/**
+ * Sets the given custom snippet into cache
+ * @param key The snippet object key
+ * @param snippet The snippet object
+ */
+export function setCustomSnippet(key: string, snippet: Snippet): void {
+    customSnippets[key] = snippet;
+}
+
+/**
+ * Clears all of the cached custom snippets
+ */
+export function clearAllCustomSnippets(): void {
+    customSnippets = {};
 }

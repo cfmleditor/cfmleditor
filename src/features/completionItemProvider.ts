@@ -27,7 +27,8 @@ import { getCfScriptRanges, isInCss, isInRanges } from "../utils/contextUtil";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { CFMLMapping, filterComponents, filterDirectories, resolveDottedPaths, resolveRootPath } from "../utils/fileUtil";
 import { equalsIgnoreCase, escapeMarkdown, textToMarkdownString } from "../utils/textUtil";
-import { getAllGlobalFunctions, getAllGlobalMemberFunctions, getAllGlobalTags, getComponent, getGlobalTag } from "./cachedEntities";
+import { getAllCustomSnippets, getAllGlobalFunctions, getAllGlobalMemberFunctions, getAllGlobalTags, getComponent, getGlobalTag } from "./cachedEntities";
+import { Snippet, Snippets } from "../entities/snippet";
 
 const snippets: Snippets = require("../../snippets/snippets.json");
 
@@ -39,16 +40,6 @@ const triggerCompletionCommand: Command = {
 export interface CompletionEntry {
   detail?: string;
   description?: string;
-}
-
-interface Snippets {
-  [key: string]: Snippet;
-}
-
-interface Snippet {
-  prefix: string;
-  body: string | string[];
-  description: string;
 }
 
 /**
@@ -99,7 +90,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
    * @param _token A cancellation token.
    * @param context How the completion was triggered.
    */
-  public async provideCompletionItems(document: TextDocument, position: Position, _token: CancellationToken, context: CompletionContext): Promise<CompletionItem[]> {
+  public async provideCompletionItems(document: TextDocument, position: Position, _token: CancellationToken, context: CompletionContext): Promise<CompletionItem[] | undefined> {
     let result: CompletionItem[] = [];
 
     const documentUri: Uri = document.uri;
@@ -108,6 +99,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
     const shouldProvideCompletions = cfmlCompletionSettings.get<boolean>("enable", true);
     if (!shouldProvideCompletions) {
       return result;
+    }
+
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
     }
 
     const cfscriptRanges: Range[] = getCfScriptRanges(document);
@@ -136,6 +131,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
     if (completionState.positionInComment) {
       return result;
+    }
+
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
     }
 
     // Global tag attributes
@@ -174,6 +173,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       }
     }
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
     // TODO: Global function attributes in CF2018+ and Lucee (don't return)
 
     // HTML tag attributes
@@ -202,6 +205,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       }
     }
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
     if (docIsCfcFile && isInComponentHead(documentPositionStateContext)) {
       // extends and implements path completion. does not apply to docblock
       const componentDottedPathMatch: RegExpExecArray = componentExtendsPathPrefix.exec(docPrefix);
@@ -213,6 +220,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       }
     }
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
     // Snippets
     const shouldProvideSnippetItems = cfmlCompletionSettings.get<boolean>("snippets.enable", true);
     if (shouldProvideSnippetItems && !isContinuingExpression) {
@@ -222,9 +233,16 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       result = result.concat(snippetCompletions);
     }
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
     // Assigned document variables
     let allVariableAssignments: Variable[] = collectDocumentVariableAssignments(documentPositionStateContext);
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
     // TODO: Add struct keys?
 
     // Application variables
@@ -233,20 +251,36 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       return getMatchingVariables(allVariableAssignments, variable.identifier, variable.scope).length === 0;
     }));
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
     // Server variables
     const serverDocVariables: Variable[] = getServerVariables(documentUri);
     allVariableAssignments = allVariableAssignments.concat(serverDocVariables.filter((variable: Variable) => {
       return getMatchingVariables(allVariableAssignments, variable.identifier, variable.scope).length === 0;
     }));
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
     // Variable completions
     result = result.concat(getVariableCompletions(completionState, allVariableAssignments));
+
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
 
     // Catch variable
     const catchInfoArr: CatchInfo[] = parseCatches(documentPositionStateContext, documentPositionStateContext.docIsScript);
     const applicableCatches: CatchInfo[] = catchInfoArr.filter((catchInfo: CatchInfo) => {
       return catchInfo.bodyRange.contains(position);
     });
+
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
 
     if (applicableCatches.length > 0) {
       const closestCatch: CatchInfo = applicableCatches.pop();
@@ -261,6 +295,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         ));
       }
 
+      if (_token && _token.isCancellationRequested) {
+        return undefined;
+      }
+
       if (getVariablePrefixPattern(closestCatch.variableName).test(docPrefix)) {
         for (const propName in catchProperties) {
           const catchProp: CatchPropertyDetails = catchProperties[propName];
@@ -271,7 +309,15 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         }
       }
 
+      if (_token && _token.isCancellationRequested) {
+        return undefined;
+      }
+
       // TODO: rethrow
+    }
+
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
     }
 
     // CGI variables
@@ -281,6 +327,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
           result.push(createNewProposal(name, CompletionItemKind.Property, cgiVariables[name]));
         }
       }
+    }
+
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
     }
 
     // Document user functions
@@ -304,6 +354,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
     } else if (docIsCfcFile) {
       const componentFunctionCompletions: CompletionItem[] = getComponentFunctionCompletions(completionState, thisComponent);
       result = result.concat(componentFunctionCompletions);
+    }
+
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
     }
 
     // External user/member functions
@@ -431,6 +485,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       }
     }
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
     // Global functions
     const shouldProvideGFItems: boolean = cfmlCompletionSettings.get<boolean>("globalFunctions.enable", true);
     if (shouldProvideGFItems) {
@@ -441,6 +499,18 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       result = result.concat(memberFunctionCompletions);
     }
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
+    // Custom Snippets
+    const snippetCompletions: CompletionItem[] = getCustomSnippetCompletions(completionState);
+    result = result.concat(snippetCompletions);
+
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
     // Global tags
     const shouldProvideGTItems: boolean = cfmlCompletionSettings.get<boolean>("globalTags.enable", true);
     if (shouldProvideGTItems) {
@@ -448,10 +518,18 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       result = result.concat(globalTagCompletions);
     }
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
     // HTML tags
     const shouldProvideHtmlTags: boolean = cfmlCompletionSettings.get<boolean>("htmlTags.enable", true);
     if (shouldProvideHtmlTags && docIsCfmFile && !positionIsCfScript) {
       result = result.concat(getHTMLTagCompletions(completionState));
+    }
+
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
     }
 
     // CSS
@@ -477,6 +555,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       }
     }
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
     // Keywords
     if (!isContinuingExpression) {
       for (const name in keywords) {
@@ -488,6 +570,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       if (thisComponent && thisComponent.extends) {
         result.push(createNewProposal("super", CompletionItemKind.Keyword, { description: "Reference to the base component" }));
       }
+    }
+
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
     }
 
     const scopesCase = cfmlCompletionSettings.get<string>("scopes.case", "lower");
@@ -504,6 +590,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       }
     }
 
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
+    }
+
     // Component instantiation
     const componentDottedPathMatch: RegExpExecArray = componentDottedPathPrefix.exec(docPrefix);
     if (componentDottedPathMatch) {
@@ -512,6 +602,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
       const newInstanceCompletions: CompletionItem[] = getDottedPathCompletions(completionState, parentDottedPath);
       result = result.concat(newInstanceCompletions);
+    }
+
+    if (_token && _token.isCancellationRequested) {
+        return undefined;
     }
 
     return result;
@@ -693,8 +787,8 @@ function getStandardSnippetCompletions(state: CompletionState, excludedSnippetIt
   for (const key in snippets) {
     if (!excludedSnippetItems.includes(key)) {
       let snippet: Snippet = snippets[key];
-      // TODO: Use key to determine if script vs tag
-      if (state.currentWordMatches(snippet.prefix) && state.positionIsScript) {
+      // TODO: This implementation of "context" supports "tag" (which is basically only 'not script') and "script", would be nice to have other contexts
+      if (state.currentWordMatches(snippet.prefix) && snippet.scope === "cfml" && ( ( snippet.context.indexOf("script") !== -1 && state.positionIsScript ) || ( snippet.context.indexOf("tag") !== -1 && !state.positionIsScript ) ) ) {
         let standardSnippet = new CompletionItem(snippet.prefix, CompletionItemKind.Snippet);
         standardSnippet.detail = `(snippet) ${snippet.description}`;
         const snippetString: string = Array.isArray(snippet.body) ? snippet.body.join("\n") : snippet.body;
@@ -1089,3 +1183,32 @@ function getDottedPathCompletions(state: CompletionState, parentDottedPath: stri
 
   return newInstanceCompletions;
 }
+
+/**
+ * Gets the standard included snippets as completion items
+ * @param state An object representing the state of completion
+ * @param excludedSnippetItems The snippets that should be excluded
+ */
+function getCustomSnippetCompletions(state: CompletionState): CompletionItem[] {
+    let snippetCompletions: CompletionItem[] = [];
+    let customSnippets: Snippets = getAllCustomSnippets();
+    for (const key in customSnippets) {
+        let snippet: Snippet = customSnippets[key];
+        // TODO: This implementation of "context" supports "tag" (which is basically only 'not script') and "script", would be nice to have other contexts
+        if (snippet && snippet.scope && snippet.context && snippet.prefix && state.currentWordMatches(snippet.prefix) && snippet.scope === "cfml" && ( ( snippet.context.indexOf("script") !== -1 && state.positionIsScript ) || ( snippet.context.indexOf("tag") !== -1 && !state.positionIsScript ) ) ) {
+            let standardSnippet = new CompletionItem(snippet.prefix, CompletionItemKind.Snippet);
+            standardSnippet.detail = `(snippet) ${snippet.description}`;
+            const snippetString: string = Array.isArray(snippet.body) ? snippet.body.join("\n") : snippet.body;
+            // standardSnippet.documentation = snippetString;
+            console.log("test:");
+            console.log(snippetString);
+
+            if ( snippetString ) {
+                standardSnippet.insertText = new SnippetString(snippetString);
+                snippetCompletions.push(standardSnippet);
+            }
+        }
+    }
+
+    return snippetCompletions;
+  }

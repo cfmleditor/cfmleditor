@@ -162,6 +162,15 @@
           "default": [],
           "scope": "resource"
         },
+        "cfml.suggest.snippets.localPath": {
+            "type": [
+                "string",
+                "null"
+              ],
+            "description": "Custom snippets path.",
+            "default": null,
+            "scope": "machine-overridable"
+          },
         "cfml.suggest.scopes.case": {
             "type": "string",
             "description": "What case should be used for the scopes in completion suggestions.",

@@ -4,6 +4,7 @@ import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
 import { isCfcFile } from "../utils/contextUtil";
 import * as cachedEntity from "./cachedEntities";
+import SnippetService from "../utils/snippetService";
 
 /**
  * Refreshes (clears and retrieves) all CFML global definitions
@@ -12,11 +13,14 @@ export async function refreshGlobalDefinitionCache(): Promise<void> {
   cachedEntity.clearAllGlobalFunctions();
   cachedEntity.clearAllGlobalTags();
   cachedEntity.clearAllGlobalEntityDefinitions();
+  cachedEntity.clearAllCustomSnippets();
 
   const cfmlGlobalDefinitionsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.globalDefinitions");
   if (cfmlGlobalDefinitionsSettings.get<string>("source") === "cfdocs") {
     CFDocsService.cacheAll();
   }
+
+  SnippetService.cacheAllCustomSnippets();
 }
 
 /**

@@ -7,7 +7,9 @@
 			"\t$0",
 			"}"
 		],
-		"description": "Component definition"
+		"description": "Component definition",
+        "scope": "cfml",
+        "context": "script"
   },
   "function": {
 		"prefix": "function …",
@@ -17,12 +19,15 @@
 			"\t$5",
 			"}"
 		],
-		"description": "Function definition"
+		"description": "Function definition",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"argument": {
 		"prefix": "arg …",
 		"body": "${1:required }${2|any,array,binary,boolean,component,date,function,guid,numeric,query,string,struct,uuid,variableName,void,xml|} ${3:name}$0",
-		"description": "Argument"
+		"description": "Argument",
+        "context": "script"
 	},
 	"switch": {
 		"prefix": "switch …",
@@ -35,7 +40,9 @@
 			"\t\t${5}",
 			"}$0"
 		],
-		"description": "Switch block"
+		"description": "Switch block",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"case": {
 		"prefix": "case …",
@@ -44,7 +51,9 @@
 			"\t${2}",
 			"\tbreak;$0"
 		],
-		"description": "Case block"
+		"description": "Case block",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"dowhile": {
 		"prefix": "do while …",
@@ -53,7 +62,9 @@
 			"\t${1}",
 			"} while (${2:condition});$0"
 		],
-		"description": "Do-While loop"
+		"description": "Do-While loop",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"while": {
 		"prefix": "while …",
@@ -62,7 +73,9 @@
 			"\t${2}",
 			"}$0"
 		],
-		"description": "While loop"
+		"description": "While loop",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"if": {
 		"prefix": "if …",
@@ -71,7 +84,9 @@
 			"\t${2}",
 			"}$0"
 		],
-		"description": "If block"
+		"description": "If block",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"if else": {
 		"prefix": "ifelse …",
@@ -82,7 +97,9 @@
 			"\t${3}",
 			"}$0"
 		],
-		"description": "If-Else block"
+		"description": "If-Else block",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"else": {
 		"prefix": "else …",
@@ -91,7 +108,9 @@
 			"\t${1}",
 			"}$0"
 		],
-		"description": "Else block"
+		"description": "Else block",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"elseif": {
 		"prefix": "elseif …",
@@ -100,7 +119,9 @@
 			"\t${2}",
 			"}$0"
 		],
-		"description": "Else-if block"
+		"description": "Else-if block",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"for": {
 		"prefix": "for …",
@@ -109,7 +130,9 @@
 			"\t${4}",
 			"}$0"
 		],
-		"description": "For loop"
+		"description": "For loop",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"foreach": {
 		"prefix": "foreach …",
@@ -118,7 +141,9 @@
 			"\t${3}",
 			"}$0"
 		],
-		"description": "For-each loop"
+		"description": "For-each loop",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"trycatch": {
 		"prefix": "try …",
@@ -129,7 +154,9 @@
 			"\t${4}",
 			"}$0"
 		],
-		"description": "Try-catch block"
+		"description": "Try-catch block",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"trycatchfinally": {
 		"prefix": "tryfinally …",
@@ -142,7 +169,9 @@
 			"\t${5}",
 			"}$0"
 		],
-		"description": "Try-catch-finally block"
+		"description": "Try-catch-finally block",
+        "scope": "cfml",
+        "context": "script"
 	},
 	"catch": {
 		"prefix": "catch …",
@@ -151,6 +180,8 @@
 			"\t${4}",
 			"}$0"
 		],
-		"description": "Catch block"
+		"description": "Catch block",
+        "scope": "cfml",
+        "context": "script"
 	}
 }

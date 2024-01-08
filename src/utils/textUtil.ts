@@ -71,13 +71,14 @@ export function escapeMarkdown(text: string): string {
  */
 export function replaceRangeWithSpaces(document: TextDocument, ranges: Range[]): string {
   let documentText: string = document.getText();
+  const stringRegex: RegExp = /\S/g;
 
   ranges.forEach((range: Range) => {
     const rangeStartOffset: number = document.offsetAt(range.start);
     const rangeEndOffset: number = document.offsetAt(range.end);
-    documentText = documentText.substr(0, rangeStartOffset)
-      + documentText.substring(rangeStartOffset, rangeEndOffset).replace(/\S/g, " ")
-      + documentText.substr(rangeEndOffset, documentText.length - rangeEndOffset);
+    documentText = documentText.substring(0, rangeStartOffset)
+      + documentText.substring(rangeStartOffset, rangeEndOffset).replace(stringRegex, " ")
+      + documentText.substring(rangeEndOffset, documentText.length);
   });
 
   return documentText;
