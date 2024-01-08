@@ -405,7 +405,7 @@ async function cacheGivenComponents(componentUris: Uri[]): Promise<void> {
 
         try {
           const document: TextDocument = await workspace.openTextDocument(componentUri);
-          cacheComponentFromDocument(document, true);
+          cacheComponentFromDocument(document, false, false);
         } catch (ex) {
           console.error(`Cannot parse document at ${componentUri}`);
         } finally {
@@ -425,8 +425,8 @@ async function cacheGivenComponents(componentUris: Uri[]): Promise<void> {
  * @param document The text document to parse and cache
  * @param fast Whether to use the faster, but less accurate parsing
  */
-export function cacheComponentFromDocument(document: TextDocument, fast: boolean = false): boolean {
-  const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast);
+export function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false): boolean {
+  const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments);
   const parsedComponent: Component | undefined = parseComponent(documentStateContext);
   if (!parsedComponent) {
     return false;
@@ -513,7 +513,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[]): Promise<void> 
   applicationUris.forEach(async (applicationUri: Uri) => {
     try {
       const document: TextDocument = await workspace.openTextDocument(applicationUri);
-      const documentStateContext: DocumentStateContext = getDocumentStateContext(document);
+      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, false);
       const thisApplicationVariables: Variable[] = parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);

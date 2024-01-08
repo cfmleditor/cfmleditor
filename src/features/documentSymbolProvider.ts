@@ -20,7 +20,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
       return documentSymbols;
     }
 
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(document);
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, false);
 
     if (documentStateContext.isCfcFile) {
       documentSymbols = documentSymbols.concat(CFMLDocumentSymbolProvider.getComponentSymbols(documentStateContext));

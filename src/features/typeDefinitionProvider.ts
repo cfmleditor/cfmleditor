@@ -19,7 +19,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
   public async provideTypeDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<Definition> {
     const results: Definition = [];
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, false);
 
     if (documentPositionStateContext.positionInComment) {
       return null;

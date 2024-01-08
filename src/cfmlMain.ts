@@ -158,9 +158,9 @@ export function activate(context: ExtensionContext): void {
     }
 
     if (isCfcFile(document)) {
-      cachedEntity.cacheComponentFromDocument(document);
+      cachedEntity.cacheComponentFromDocument(document, false, false);
     } else if (path.basename(document.fileName) === "Application.cfm") {
-      const documentStateContext: DocumentStateContext = getDocumentStateContext(document);
+      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true);
       const thisApplicationVariables: Variable[] = parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
@@ -176,7 +176,7 @@ export function activate(context: ExtensionContext): void {
     }
 
     workspace.openTextDocument(componentUri).then((document: TextDocument) => {
-      cachedEntity.cacheComponentFromDocument(document);
+      cachedEntity.cacheComponentFromDocument(document, false, false);
     });
   });
   componentWatcher.onDidDelete((componentUri: Uri) => {
@@ -201,7 +201,7 @@ export function activate(context: ExtensionContext): void {
     }
 
     workspace.openTextDocument(applicationUri).then((document: TextDocument) => {
-      const documentStateContext: DocumentStateContext = getDocumentStateContext(document);
+      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true);
       const thisApplicationVariables: Variable[] = parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);

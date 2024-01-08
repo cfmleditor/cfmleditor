@@ -24,7 +24,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
       return null;
     }
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, false);
 
     if (documentPositionStateContext.positionInComment) {
       return null;

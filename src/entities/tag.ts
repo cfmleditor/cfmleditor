@@ -859,7 +859,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 export async function goToMatchingTag(editor: TextEditor): Promise<void> {
   const position: Position = editor.selection.active;
 
-  const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position);
+  const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, false);
 
   const currentWord: string = documentPositionStateContext.currentWord;
   let globalTag: GlobalTag = getGlobalTag(currentWord);

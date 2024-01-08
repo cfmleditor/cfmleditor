@@ -21,7 +21,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
   public async provideDocumentColors(document: TextDocument, _token: CancellationToken): Promise<ColorInformation[]> {
     let result: ColorInformation[] = [];
 
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(document);
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, false);
     const cssRanges: Range[] = getCssRanges(documentStateContext);
 
     for (const cssRange of cssRanges) {
@@ -138,7 +138,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
     }
     result.push({ label: label, textEdit: TextEdit.replace(context.range, label) });
 
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(context.document);
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(context.document, false, false);
     const hexPrefix = isInCfOutput(documentStateContext, context.range.start) ? "##" : "#";
     if (color.alpha === 1) {
       label = `${hexPrefix}${toTwoDigitHex(red256)}${toTwoDigitHex(green256)}${toTwoDigitHex(blue256)}`;

@@ -89,7 +89,10 @@ export function replaceRangeWithSpaces(document: TextDocument, ranges: Range[]):
  * @param document The text document from which to get text
  * @param commentRanges Optional ranges in which there are CFML comments
  */
-export function getSanitizedDocumentText(document: TextDocument, commentRanges?: Range[]): string {
+export function getSanitizedDocumentText(document: TextDocument, commentRanges?: Range[], replaceComments: boolean = false): string {
+  if ( replaceComments !== true ) {
+    return document.getText();
+  }
   let documentCommentRanges: Range[];
   if (commentRanges) {
     documentCommentRanges = commentRanges;

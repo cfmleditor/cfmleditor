@@ -27,7 +27,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
       return null;
     }
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, false);
 
     if (documentPositionStateContext.positionInComment) {
       return null;
