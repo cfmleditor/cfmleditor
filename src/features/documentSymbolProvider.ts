@@ -1,4 +1,4 @@
-import { CancellationToken, DocumentSymbolProvider, Position, Range, DocumentSymbol, SymbolKind, TextDocument } from "vscode";
+import { CancellationToken, DocumentSymbolProvider, Position, Range, DocumentSymbol, SymbolKind, TextDocument, WorkspaceConfiguration, workspace } from "vscode";
 import { Component } from "../entities/component";
 import { Property } from "../entities/property";
 import { getLocalVariables, UserFunction } from "../entities/userFunction";
@@ -20,7 +20,10 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
       return documentSymbols;
     }
 
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(document);
+    const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments);
 
     if (documentStateContext.isCfcFile) {
       documentSymbols = documentSymbols.concat(CFMLDocumentSymbolProvider.getComponentSymbols(documentStateContext));

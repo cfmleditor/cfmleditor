@@ -34,7 +34,7 @@ export interface DocumentPositionStateContext extends DocumentStateContext {
  * @param document The document for which to provide context
  * @param fast Whether to use the faster, but less accurate parsing
  */
-export function getDocumentStateContext(document: TextDocument, fast: boolean = false): DocumentStateContext {
+export function getDocumentStateContext(document: TextDocument, fast: boolean = false, replaceComments: boolean = false): DocumentStateContext {
   const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
   const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name"));
   const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version"));
@@ -47,7 +47,7 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
   const commentRanges: Range[] = documentRanges.commentRanges;
   const stringRanges: Range[] = documentRanges.stringRanges;
   const stringEmbeddedCfmlRanges: Range[] = documentRanges.stringEmbeddedCfmlRanges;
-  const sanitizedDocumentText: string = getSanitizedDocumentText(document, commentRanges);
+  const sanitizedDocumentText: string = getSanitizedDocumentText(document, commentRanges, replaceComments);
 
   return {
     document,
@@ -69,8 +69,8 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
  * @param position The position within the document for which to provide context
  * @param fast Whether to use the faster, but less accurate parsing
  */
-export function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false): DocumentPositionStateContext {
-  const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast);
+export function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false, replaceComments: boolean = false): DocumentPositionStateContext {
+  const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments);
 
   const docIsScript: boolean = documentStateContext.docIsScript;
   const positionInComment: boolean = isInRanges(documentStateContext.commentRanges, position);

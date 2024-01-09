@@ -1,5 +1,5 @@
 
-import { DocumentColorProvider, TextDocument, CancellationToken, Range, Color, ColorPresentation, TextEdit, ColorInformation } from "vscode";
+import { DocumentColorProvider, TextDocument, CancellationToken, Range, Color, ColorPresentation, TextEdit, ColorInformation, WorkspaceConfiguration, workspace } from "vscode";
 import { getCssRanges, isInCfOutput } from "../utils/contextUtil";
 import { getDocumentStateContext, DocumentStateContext } from "../utils/documentUtil";
 import { cssPropertyPattern } from "../entities/css/property";
@@ -21,7 +21,10 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
   public async provideDocumentColors(document: TextDocument, _token: CancellationToken): Promise<ColorInformation[]> {
     let result: ColorInformation[] = [];
 
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(document);
+    const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments);
     const cssRanges: Range[] = getCssRanges(documentStateContext);
 
     for (const cssRange of cssRanges) {
@@ -138,7 +141,9 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
     }
     result.push({ label: label, textEdit: TextEdit.replace(context.range, label) });
 
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(context.document);
+    const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", context.document.uri);
+    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(context.document, false, replaceComments);
     const hexPrefix = isInCfOutput(documentStateContext, context.range.start) ? "##" : "#";
     if (color.alpha === 1) {
       label = `${hexPrefix}${toTwoDigitHex(red256)}${toTwoDigitHex(green256)}${toTwoDigitHex(blue256)}`;

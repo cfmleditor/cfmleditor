@@ -69,7 +69,10 @@ export default class CFMLHoverProvider implements HoverProvider {
   public async getHover(document: TextDocument, position: Position): Promise<Hover | undefined> {
     let definition: HoverProviderItem;
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position);
+    const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
 
     const userEngine: CFMLEngine = documentPositionStateContext.userEngine;
 

@@ -97,6 +97,8 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
     const shouldProvideCompletions = cfmlCompletionSettings.get<boolean>("enable", true);
+    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+
     if (!shouldProvideCompletions) {
       return result;
     }
@@ -107,7 +109,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
     const cfscriptRanges: Range[] = getCfScriptRanges(document);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
 
     const currentWordMatches = (name: string): boolean => {
       return matches(documentPositionStateContext.currentWord, name);

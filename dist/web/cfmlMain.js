@@ -175,10 +175,12 @@ function activate(context) {
             return;
         }
         if ((0, contextUtil_1.isCfcFile)(document)) {
-            cachedEntity.cacheComponentFromDocument(document);
+            const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", document.uri);
+            const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+            cachedEntity.cacheComponentFromDocument(document, false, replaceComments);
         }
         else if (path.basename(document.fileName) === "Application.cfm") {
-            const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document);
+            const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document, false, true);
             const thisApplicationVariables = (0, variable_1.parseVariableAssignments)(documentStateContext, documentStateContext.docIsScript);
             const thisApplicationFilteredVariables = thisApplicationVariables.filter((variable) => {
                 return [scope_1.Scope.Application, scope_1.Scope.Session, scope_1.Scope.Request].includes(variable.scope);
@@ -192,7 +194,9 @@ function activate(context) {
             return;
         }
         vscode_1.workspace.openTextDocument(componentUri).then((document) => {
-            cachedEntity.cacheComponentFromDocument(document);
+            const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", document.uri);
+            const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+            cachedEntity.cacheComponentFromDocument(document, false, replaceComments);
         });
     });
     componentWatcher.onDidDelete((componentUri) => {
@@ -213,7 +217,7 @@ function activate(context) {
             return;
         }
         vscode_1.workspace.openTextDocument(applicationUri).then((document) => {
-            const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document);
+            const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document, false, true);
             const thisApplicationVariables = (0, variable_1.parseVariableAssignments)(documentStateContext, documentStateContext.docIsScript);
             const thisApplicationFilteredVariables = thisApplicationVariables.filter((variable) => {
                 return [scope_1.Scope.Application, scope_1.Scope.Session, scope_1.Scope.Request].includes(variable.scope);
@@ -32325,7 +32329,9 @@ async function cacheGivenComponents(componentUris) {
             }
             try {
                 const document = await vscode_1.workspace.openTextDocument(componentUri);
-                cacheComponentFromDocument(document, true);
+                const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", document.uri);
+                const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+                cacheComponentFromDocument(document, false, replaceComments);
             }
             catch (ex) {
                 console.error(`Cannot parse document at ${componentUri}`);
@@ -32345,8 +32351,8 @@ async function cacheGivenComponents(componentUris) {
  * @param document The text document to parse and cache
  * @param fast Whether to use the faster, but less accurate parsing
  */
-function cacheComponentFromDocument(document, fast = false) {
-    const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document, fast);
+function cacheComponentFromDocument(document, fast = false, replaceComments = false) {
+    const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document, fast, replaceComments);
     const parsedComponent = (0, component_1.parseComponent)(documentStateContext);
     if (!parsedComponent) {
         return false;
@@ -32425,7 +32431,9 @@ async function cacheGivenApplicationCfms(applicationUris) {
     applicationUris.forEach(async (applicationUri) => {
         try {
             const document = await vscode_1.workspace.openTextDocument(applicationUri);
-            const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document);
+            const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", document.uri);
+            const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+            const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document, false, replaceComments);
             const thisApplicationVariables = (0, variable_1.parseVariableAssignments)(documentStateContext, documentStateContext.docIsScript);
             const thisApplicationFilteredVariables = thisApplicationVariables.filter((variable) => {
                 return [scope_1.Scope.Application, scope_1.Scope.Session, scope_1.Scope.Request].includes(variable.scope);
@@ -33984,12 +33992,13 @@ exports.escapeMarkdown = escapeMarkdown;
  */
 function replaceRangeWithSpaces(document, ranges) {
     let documentText = document.getText();
+    const stringRegex = /\S/g;
     ranges.forEach((range) => {
         const rangeStartOffset = document.offsetAt(range.start);
         const rangeEndOffset = document.offsetAt(range.end);
-        documentText = documentText.substr(0, rangeStartOffset)
-            + documentText.substring(rangeStartOffset, rangeEndOffset).replace(/\S/g, " ")
-            + documentText.substr(rangeEndOffset, documentText.length - rangeEndOffset);
+        documentText = documentText.substring(0, rangeStartOffset)
+            + documentText.substring(rangeStartOffset, rangeEndOffset).replace(stringRegex, " ")
+            + documentText.substring(rangeEndOffset, documentText.length);
     });
     return documentText;
 }
@@ -33999,7 +34008,10 @@ exports.replaceRangeWithSpaces = replaceRangeWithSpaces;
  * @param document The text document from which to get text
  * @param commentRanges Optional ranges in which there are CFML comments
  */
-function getSanitizedDocumentText(document, commentRanges) {
+function getSanitizedDocumentText(document, commentRanges, replaceComments = false) {
+    if (replaceComments !== true) {
+        return document.getText();
+    }
     let documentCommentRanges;
     if (commentRanges) {
         documentCommentRanges = commentRanges;
@@ -35502,7 +35514,10 @@ exports.getCfTags = getCfTags;
  */
 async function goToMatchingTag(editor) {
     const position = editor.selection.active;
-    const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(editor.document, position);
+    const documentUri = editor.document.uri;
+    const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", documentUri);
+    const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+    const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(editor.document, position, false, replaceComments);
     const currentWord = documentPositionStateContext.currentWord;
     let globalTag = (0, cachedEntities_1.getGlobalTag)(currentWord);
     if (!globalTag) {
@@ -35558,7 +35573,7 @@ const textUtil_1 = __webpack_require__(183);
  * @param document The document for which to provide context
  * @param fast Whether to use the faster, but less accurate parsing
  */
-function getDocumentStateContext(document, fast = false) {
+function getDocumentStateContext(document, fast = false, replaceComments = false) {
     const cfmlEngineSettings = vscode_1.workspace.getConfiguration("cfml.engine");
     const userEngineName = cfmlEngine_1.CFMLEngineName.valueOf(cfmlEngineSettings.get("name"));
     const userEngine = new cfmlEngine_1.CFMLEngine(userEngineName, cfmlEngineSettings.get("version"));
@@ -35570,7 +35585,7 @@ function getDocumentStateContext(document, fast = false) {
     const commentRanges = documentRanges.commentRanges;
     const stringRanges = documentRanges.stringRanges;
     const stringEmbeddedCfmlRanges = documentRanges.stringEmbeddedCfmlRanges;
-    const sanitizedDocumentText = (0, textUtil_1.getSanitizedDocumentText)(document, commentRanges);
+    const sanitizedDocumentText = (0, textUtil_1.getSanitizedDocumentText)(document, commentRanges, replaceComments);
     return {
         document,
         isCfmFile: docIsCfmFile,
@@ -35591,8 +35606,8 @@ exports.getDocumentStateContext = getDocumentStateContext;
  * @param position The position within the document for which to provide context
  * @param fast Whether to use the faster, but less accurate parsing
  */
-function getDocumentPositionStateContext(document, position, fast = false) {
-    const documentStateContext = getDocumentStateContext(document, fast);
+function getDocumentPositionStateContext(document, position, fast = false, replaceComments = false) {
+    const documentStateContext = getDocumentStateContext(document, fast, replaceComments);
     const docIsScript = documentStateContext.docIsScript;
     const positionInComment = (0, contextUtil_1.isInRanges)(documentStateContext.commentRanges, position);
     const cfscriptRanges = (0, contextUtil_1.getCfScriptRanges)(document);
@@ -44200,7 +44215,9 @@ class CFMLDocumentColorProvider {
      */
     async provideDocumentColors(document, _token) {
         let result = [];
-        const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document);
+        const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", document.uri);
+        const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+        const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document, false, replaceComments);
         const cssRanges = (0, contextUtil_1.getCssRanges)(documentStateContext);
         for (const cssRange of cssRanges) {
             const rangeTextOffset = document.offsetAt(cssRange.start);
@@ -44291,7 +44308,9 @@ class CFMLDocumentColorProvider {
             label = `rgba(${red256}, ${green256}, ${blue256}, ${color.alpha})`;
         }
         result.push({ label: label, textEdit: vscode_1.TextEdit.replace(context.range, label) });
-        const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(context.document);
+        const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", context.document.uri);
+        const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+        const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(context.document, false, replaceComments);
         const hexPrefix = (0, contextUtil_1.isInCfOutput)(documentStateContext, context.range.start) ? "##" : "#";
         if (color.alpha === 1) {
             label = `${hexPrefix}${toTwoDigitHex(red256)}${toTwoDigitHex(green256)}${toTwoDigitHex(blue256)}`;
@@ -71250,7 +71269,9 @@ class CFDocsService {
     static async openCfDocsForCurrentWord(editor) {
         const document = editor.document;
         const position = editor.selection.start;
-        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position);
+        const cfmlCompletionSettings = vscode_2.workspace.getConfiguration("cfml.suggest", document.uri);
+        const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position, false, replaceComments);
         if (documentPositionStateContext.positionInComment) {
             return;
         }
@@ -71283,7 +71304,9 @@ class CFDocsService {
     static async openEngineDocsForCurrentWord(editor) {
         const document = editor.document;
         const position = editor.selection.start;
-        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position);
+        const cfmlCompletionSettings = vscode_2.workspace.getConfiguration("cfml.suggest", document.uri);
+        const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position, false, replaceComments);
         if (documentPositionStateContext.positionInComment) {
             return;
         }
@@ -72687,7 +72710,6 @@ class SnippetService {
                 try {
                     vscode_1.workspace.fs.readFile(snippetsPathUri).then((readData) => {
                         const readStr = Buffer.from(readData).toString('utf8');
-                        console.log(readStr);
                         const readJson = JSON.parse(readStr);
                         resolve(readJson);
                     });
@@ -72808,11 +72830,15 @@ class CFMLCompletionItemProvider {
         const documentUri = document.uri;
         const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", documentUri);
         const shouldProvideCompletions = cfmlCompletionSettings.get("enable", true);
+        const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
         if (!shouldProvideCompletions) {
             return result;
         }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         const cfscriptRanges = (0, contextUtil_1.getCfScriptRanges)(document);
-        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position);
+        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position, false, replaceComments);
         const currentWordMatches = (name) => {
             return matches(documentPositionStateContext.currentWord, name);
         };
@@ -72830,6 +72856,9 @@ class CFMLCompletionItemProvider {
         const isContinuingExpression = completionState.isContinuingExpression;
         if (completionState.positionInComment) {
             return result;
+        }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
         }
         // Global tag attributes
         if (!positionIsCfScript || userEngine.supportsScriptTags()) {
@@ -72865,6 +72894,9 @@ class CFMLCompletionItemProvider {
                 }
             }
         }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // TODO: Global function attributes in CF2018+ and Lucee (don't return)
         // HTML tag attributes
         if (!positionIsCfScript) {
@@ -72892,6 +72924,9 @@ class CFMLCompletionItemProvider {
                 }
             }
         }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         if (docIsCfcFile && (0, component_1.isInComponentHead)(documentPositionStateContext)) {
             // extends and implements path completion. does not apply to docblock
             const componentDottedPathMatch = component_1.componentExtendsPathPrefix.exec(docPrefix);
@@ -72901,6 +72936,9 @@ class CFMLCompletionItemProvider {
                 return getDottedPathCompletions(completionState, parentDottedPath);
             }
         }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // Snippets
         const shouldProvideSnippetItems = cfmlCompletionSettings.get("snippets.enable", true);
         if (shouldProvideSnippetItems && !isContinuingExpression) {
@@ -72908,26 +72946,44 @@ class CFMLCompletionItemProvider {
             const snippetCompletions = getStandardSnippetCompletions(completionState, excludedSnippetItems);
             result = result.concat(snippetCompletions);
         }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // Assigned document variables
         let allVariableAssignments = (0, variable_1.collectDocumentVariableAssignments)(documentPositionStateContext);
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // TODO: Add struct keys?
         // Application variables
         const applicationDocVariables = (0, variable_1.getApplicationVariables)(documentUri);
         allVariableAssignments = allVariableAssignments.concat(applicationDocVariables.filter((variable) => {
             return (0, variable_1.getMatchingVariables)(allVariableAssignments, variable.identifier, variable.scope).length === 0;
         }));
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // Server variables
         const serverDocVariables = (0, variable_1.getServerVariables)(documentUri);
         allVariableAssignments = allVariableAssignments.concat(serverDocVariables.filter((variable) => {
             return (0, variable_1.getMatchingVariables)(allVariableAssignments, variable.identifier, variable.scope).length === 0;
         }));
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // Variable completions
         result = result.concat(getVariableCompletions(completionState, allVariableAssignments));
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // Catch variable
         const catchInfoArr = (0, catch_1.parseCatches)(documentPositionStateContext, documentPositionStateContext.docIsScript);
         const applicableCatches = catchInfoArr.filter((catchInfo) => {
             return catchInfo.bodyRange.contains(position);
         });
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         if (applicableCatches.length > 0) {
             const closestCatch = applicableCatches.pop();
             if (!isContinuingExpression && currentWordMatches(closestCatch.variableName)) {
@@ -72935,6 +72991,9 @@ class CFMLCompletionItemProvider {
                     detail: closestCatch.variableName,
                     description: "A structure that contains information about the exception"
                 }));
+            }
+            if (_token && _token.isCancellationRequested) {
+                return undefined;
             }
             if ((0, variable_1.getVariablePrefixPattern)(closestCatch.variableName).test(docPrefix)) {
                 for (const propName in catch_1.catchProperties) {
@@ -72945,7 +73004,13 @@ class CFMLCompletionItemProvider {
                     }
                 }
             }
+            if (_token && _token.isCancellationRequested) {
+                return undefined;
+            }
             // TODO: rethrow
+        }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
         }
         // CGI variables
         if ((0, scope_1.getValidScopesPrefixPattern)([scope_1.Scope.CGI], false).test(docPrefix)) {
@@ -72954,6 +73019,9 @@ class CFMLCompletionItemProvider {
                     result.push(createNewProposal(name, vscode_1.CompletionItemKind.Property, cgi_1.cgiVariables[name]));
                 }
             }
+        }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
         }
         // Document user functions
         if (docIsCfmFile) {
@@ -72973,6 +73041,9 @@ class CFMLCompletionItemProvider {
         else if (docIsCfcFile) {
             const componentFunctionCompletions = getComponentFunctionCompletions(completionState, thisComponent);
             result = result.concat(componentFunctionCompletions);
+        }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
         }
         // External user/member functions
         const varPrefixMatch = (0, variable_1.getVariableExpressionPrefixPattern)().exec(docPrefix);
@@ -73080,6 +73151,9 @@ class CFMLCompletionItemProvider {
                 }
             }
         }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // Global functions
         const shouldProvideGFItems = cfmlCompletionSettings.get("globalFunctions.enable", true);
         if (shouldProvideGFItems) {
@@ -73088,19 +73162,31 @@ class CFMLCompletionItemProvider {
             const memberFunctionCompletions = getGlobalMemberFunctionCompletions(completionState);
             result = result.concat(memberFunctionCompletions);
         }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // Custom Snippets
         const snippetCompletions = getCustomSnippetCompletions(completionState);
         result = result.concat(snippetCompletions);
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // Global tags
         const shouldProvideGTItems = cfmlCompletionSettings.get("globalTags.enable", true);
         if (shouldProvideGTItems) {
             const globalTagCompletions = positionIsCfScript ? getGlobalTagScriptCompletions(completionState) : getGlobalTagCompletions(completionState);
             result = result.concat(globalTagCompletions);
         }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // HTML tags
         const shouldProvideHtmlTags = cfmlCompletionSettings.get("htmlTags.enable", true);
         if (shouldProvideHtmlTags && docIsCfmFile && !positionIsCfScript) {
             result = result.concat(getHTMLTagCompletions(completionState));
+        }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
         }
         // CSS
         const shouldProvideCss = cfmlCompletionSettings.get("css.enable", true);
@@ -73121,6 +73207,9 @@ class CFMLCompletionItemProvider {
                 result = result.concat(getCSSAtDirectiveCompletions(completionState));
             }
         }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // Keywords
         if (!isContinuingExpression) {
             for (const name in keyword_1.keywords) {
@@ -73132,6 +73221,9 @@ class CFMLCompletionItemProvider {
             if (thisComponent && thisComponent.extends) {
                 result.push(createNewProposal("super", vscode_1.CompletionItemKind.Keyword, { description: "Reference to the base component" }));
             }
+        }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
         }
         const scopesCase = cfmlCompletionSettings.get("scopes.case", "lower");
         const uppercaseScope = (scopesCase == "upper");
@@ -73146,6 +73238,9 @@ class CFMLCompletionItemProvider {
                 }
             }
         }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
+        }
         // Component instantiation
         const componentDottedPathMatch = component_1.componentDottedPathPrefix.exec(docPrefix);
         if (componentDottedPathMatch) {
@@ -73153,6 +73248,9 @@ class CFMLCompletionItemProvider {
             const parentDottedPath = componentDottedPath.split(".").slice(0, -1).join(".");
             const newInstanceCompletions = getDottedPathCompletions(completionState, parentDottedPath);
             result = result.concat(newInstanceCompletions);
+        }
+        if (_token && _token.isCancellationRequested) {
+            return undefined;
         }
         return result;
     }
@@ -73623,16 +73721,19 @@ function getCustomSnippetCompletions(state) {
     let snippetCompletions = [];
     let customSnippets = (0, cachedEntities_1.getAllCustomSnippets)();
     for (const key in customSnippets) {
-        let snippet = snippets[key];
+        let snippet = customSnippets[key];
         // TODO: This implementation of "context" supports "tag" (which is basically only 'not script') and "script", would be nice to have other contexts
-        console.log(snippet);
-        if (state.currentWordMatches(snippet.prefix) && snippet && snippet.scope && snippet.context && snippet.scope === "cfml" && ((snippet.context.indexOf("script") !== -1 && state.positionIsScript) || (snippet.context.indexOf("tag") !== -1 && !state.positionIsScript))) {
+        if (snippet && snippet.scope && snippet.context && snippet.prefix && state.currentWordMatches(snippet.prefix) && snippet.scope === "cfml" && ((snippet.context.indexOf("script") !== -1 && state.positionIsScript) || (snippet.context.indexOf("tag") !== -1 && !state.positionIsScript))) {
             let standardSnippet = new vscode_1.CompletionItem(snippet.prefix, vscode_1.CompletionItemKind.Snippet);
             standardSnippet.detail = `(snippet) ${snippet.description}`;
             const snippetString = Array.isArray(snippet.body) ? snippet.body.join("\n") : snippet.body;
             // standardSnippet.documentation = snippetString;
-            standardSnippet.insertText = new vscode_1.SnippetString(snippetString);
-            snippetCompletions.push(standardSnippet);
+            console.log("test:");
+            console.log(snippetString);
+            if (snippetString) {
+                standardSnippet.insertText = new vscode_1.SnippetString(snippetString);
+                snippetCompletions.push(standardSnippet);
+            }
         }
     }
     return snippetCompletions;
@@ -74151,7 +74252,9 @@ class CFMLDefinitionProvider {
         if (!cfmlDefinitionSettings.get("enable", true)) {
             return null;
         }
-        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position);
+        const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", document.uri);
+        const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position, false, replaceComments);
         if (documentPositionStateContext.positionInComment) {
             return null;
         }
@@ -75011,7 +75114,9 @@ class CFMLDocumentSymbolProvider {
         if (!document.fileName) {
             return documentSymbols;
         }
-        const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document);
+        const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", document.uri);
+        const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+        const documentStateContext = (0, documentUtil_1.getDocumentStateContext)(document, false, replaceComments);
         if (documentStateContext.isCfcFile) {
             documentSymbols = documentSymbols.concat(CFMLDocumentSymbolProvider.getComponentSymbols(documentStateContext));
         }
@@ -75172,7 +75277,9 @@ class CFMLHoverProvider {
      */
     async getHover(document, position) {
         let definition;
-        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position);
+        const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", document.uri);
+        const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position, false, replaceComments);
         const userEngine = documentPositionStateContext.userEngine;
         const wordRange = document.getWordRangeAtPosition(position);
         if (wordRange) {
@@ -75671,7 +75778,9 @@ class CFMLSignatureHelpProvider {
         if (!cfmlSignatureSettings.get("enable", true)) {
             return null;
         }
-        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position);
+        const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", document.uri);
+        const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position, false, replaceComments);
         if (documentPositionStateContext.positionInComment) {
             return null;
         }
@@ -75828,7 +75937,9 @@ class CFMLTypeDefinitionProvider {
      */
     async provideTypeDefinition(document, position, _token) {
         const results = [];
-        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position);
+        const cfmlCompletionSettings = vscode_1.workspace.getConfiguration("cfml.suggest", document.uri);
+        const replaceComments = cfmlCompletionSettings.get("replaceComments", true);
+        const documentPositionStateContext = (0, documentUtil_1.getDocumentPositionStateContext)(document, position, false, replaceComments);
         if (documentPositionStateContext.positionInComment) {
             return null;
         }

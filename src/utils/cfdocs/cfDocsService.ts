@@ -329,7 +329,11 @@ export default class CFDocsService {
   public static async openCfDocsForCurrentWord(editor: TextEditor): Promise<void> {
     const document: TextDocument = editor.document;
     const position: Position = editor.selection.start;
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position);
+
+    const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
 
     if (documentPositionStateContext.positionInComment) {
       return;
@@ -367,7 +371,11 @@ export default class CFDocsService {
   public static async openEngineDocsForCurrentWord(editor: TextEditor): Promise<void> {
     const document: TextDocument = editor.document;
     const position: Position = editor.selection.start;
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position);
+
+    const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
 
     if (documentPositionStateContext.positionInComment) {
       return;

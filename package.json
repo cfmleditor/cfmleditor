@@ -2,7 +2,7 @@
   "name": "cfmleditor",
   "displayName": "CFML Editor",
   "description": "CFML Language Editor",
-  "version": "0.6.7",
+  "version": "0.6.10",
   "preview": true,
   "author": "cfmleditor",
   "publisher": "cfmleditor",
@@ -314,6 +314,12 @@
           "description": "Whether CSS properties and values are part of completion help.",
           "default": true,
           "scope": "resource"
+        },
+        "cfml.suggest.replaceComments": {
+            "type": "boolean",
+            "description": "Whether comments are replaced during parsing (**Disabing this is Experimental**)",
+            "default": true,
+            "scope": "resource"
         },
         "cfml.definition.enable": {
           "type": "boolean",
