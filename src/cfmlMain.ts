@@ -153,12 +153,15 @@ export function activate(context: ExtensionContext): void {
 
   context.subscriptions.push(workspace.onDidSaveTextDocument((document: TextDocument) => {
     const documentUri = document.uri;
+
     if (shouldExcludeDocument(documentUri)) {
       return;
     }
 
     if (isCfcFile(document)) {
-      cachedEntity.cacheComponentFromDocument(document, false, false);
+      const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+      const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+      cachedEntity.cacheComponentFromDocument(document, false, replaceComments);
     } else if (path.basename(document.fileName) === "Application.cfm") {
       const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true);
       const thisApplicationVariables: Variable[] = parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
@@ -176,7 +179,9 @@ export function activate(context: ExtensionContext): void {
     }
 
     workspace.openTextDocument(componentUri).then((document: TextDocument) => {
-      cachedEntity.cacheComponentFromDocument(document, false, false);
+        const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+        const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+        cachedEntity.cacheComponentFromDocument(document, false, replaceComments);
     });
   });
   componentWatcher.onDidDelete((componentUri: Uri) => {

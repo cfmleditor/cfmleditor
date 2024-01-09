@@ -1,4 +1,4 @@
-import { TypeDefinitionProvider, TextDocument, Position, CancellationToken, Definition, Range, Location } from "vscode";
+import { TypeDefinitionProvider, TextDocument, Position, CancellationToken, Definition, Range, Location, workspace, WorkspaceConfiguration } from "vscode";
 import { Component } from "../entities/component";
 import { getComponent } from "./cachedEntities";
 import { Scope, getValidScopesPrefixPattern, getVariableScopePrefixPattern, unscopedPrecedence } from "../entities/scope";
@@ -19,7 +19,10 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
   public async provideTypeDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<Definition> {
     const results: Definition = [];
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, false);
+    const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
 
     if (documentPositionStateContext.positionInComment) {
       return null;

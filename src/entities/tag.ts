@@ -1,4 +1,4 @@
-import { Position, Range, Selection, TextDocument, TextEditor, window } from "vscode";
+import { Position, Range, Selection, TextDocument, TextEditor, Uri, WorkspaceConfiguration, window, workspace } from "vscode";
 import { getGlobalTag } from "../features/cachedEntities";
 import { StringContext, isStringDelimiter } from "../utils/contextUtil";
 import { DocumentPositionStateContext, DocumentStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
@@ -857,9 +857,14 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
  * @editor The text editor in which to find the matching tag
  */
 export async function goToMatchingTag(editor: TextEditor): Promise<void> {
-  const position: Position = editor.selection.active;
 
-  const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, false);
+  const position: Position = editor.selection.active;
+  const documentUri: Uri = editor.document.uri;
+
+  const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
+  const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+
+  const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments);
 
   const currentWord: string = documentPositionStateContext.currentWord;
   let globalTag: GlobalTag = getGlobalTag(currentWord);

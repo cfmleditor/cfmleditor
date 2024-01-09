@@ -405,7 +405,9 @@ async function cacheGivenComponents(componentUris: Uri[]): Promise<void> {
 
         try {
           const document: TextDocument = await workspace.openTextDocument(componentUri);
-          cacheComponentFromDocument(document, false, false);
+          const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+          const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+          cacheComponentFromDocument(document, false, replaceComments);
         } catch (ex) {
           console.error(`Cannot parse document at ${componentUri}`);
         } finally {
@@ -513,7 +515,9 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[]): Promise<void> 
   applicationUris.forEach(async (applicationUri: Uri) => {
     try {
       const document: TextDocument = await workspace.openTextDocument(applicationUri);
-      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, false);
+      const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+      const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments);
       const thisApplicationVariables: Variable[] = parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
