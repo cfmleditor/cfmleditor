@@ -76211,7 +76211,7 @@ function insertAutoCloseTag(event) {
     let enableAutoCloseSelfClosingTag = true;
     let isFullMode = true;
     if ((isSublimeText3Mode || isFullMode) && event.contentChanges[0].text === "/") {
-        let text = editor.document.getText(new vscode_1.Range(new vscode_1.Position(0, 0), originalPosition));
+        let text = editor.document.getText(new vscode_1.Range(new vscode_1.Position(Math.max(originalPosition.line - 1000, 0), 0), originalPosition));
         let last2chars = "";
         if (text.length > 2) {
             last2chars = text.substr(text.length - 2);
@@ -76300,43 +76300,25 @@ function getNextChar(editor, position) {
     let text = editor.document.getText(new vscode_1.Range(position, nextPosition));
     return text;
 }
+const TAG_RE = /<(\/?[a-zA-Z][a-zA-Z0-9:_.-]*)(?![\s\S]*<\/?[a-zA-Z])/;
 function getCloseTag(text, excludedTags) {
-    let regex = /<(\/?[_a-zA-Z][a-zA-Z0-9:\-_.]*)(?:\s+[^<>]*?[^\s/<>=]+?)*?\s?>/g;
-    let result = null;
-    let stack = [];
-    while ((result = regex.exec(text)) !== null) {
-        let isStartTag = result[1].substr(0, 1) !== "/";
-        let tag = isStartTag ? result[1] : result[1].substr(1);
-        if (excludedTags.indexOf(tag.toLowerCase()) === -1) {
-            if (isStartTag) {
-                stack.push(tag);
-            }
-            else if (stack.length > 0) {
-                let lastTag = stack[stack.length - 1];
-                if (lastTag === tag) {
-                    stack.pop();
-                }
-            }
-        }
+    const s = text[text.length - 1] === '/' && text[text.length - 2] === '<' ? text.slice(0, -2) : text[text.length - 1] === '<' ? text.slice(0, -1) : text;
+    let m = s.match(TAG_RE);
+    // while we catch a closing tag, we jump directly to the matching opening tag
+    while (m && m[1][0] === '/') {
+        const s2 = s.slice(0, m.index);
+        const m2 = s2.match(RegExp(`<${m[1].slice(1)}.*$`, 'm'));
+        if (!m2)
+            return '';
+        m = s.slice(0, m2.index).match(TAG_RE);
     }
-    if (stack.length > 0) {
-        let closeTag = stack[stack.length - 1];
-        if (text.substr(text.length - 2) === "</") {
-            return closeTag + ">";
-        }
-        if (text.substr(text.length - 1) === "<") {
-            return "/" + closeTag + ">";
-        }
-        return "</" + closeTag + ">";
-    }
-    else {
+    if (!m)
         return null;
-    }
+    return (text[text.length - 1] === '/' && text[text.length - 2] === '<' ? m[1] : text[text.length - 1] === '<' ? '/' + m[1] : '</' + m[1]) + '>';
 }
 function moveSelectionRight(selection, shift) {
-    let newPosition = selection.active.translate(0, shift);
-    let newSelection = new vscode_1.Selection(newPosition, newPosition);
-    return newSelection;
+    const newPosition = selection.active.translate(0, shift);
+    return new vscode_1.Selection(newPosition, newPosition);
 }
 function occurrenceCount(source, find) {
     return source.split(find).length - 1;
