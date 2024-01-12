@@ -2,7 +2,13 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.12] - 2024-01-12
+
+- Further fixes to Auto Tag close
+- Basic custom snippet path support
+
 ## [0.6.4]
+
 - Improved Autoclose. Fixes issues with Undo/Redo ( behaviour options currently limited )
 - Published as `cfmleditor` with new icon
 - Support for `cfmleditor-lint` , recommend using this plugin for using CFLint with `cfmleditor`

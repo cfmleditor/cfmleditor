@@ -2,7 +2,7 @@
   "name": "cfmleditor",
   "displayName": "CFML Editor",
   "description": "CFML Language Editor",
-  "version": "0.6.11",
+  "version": "0.6.12",
   "preview": true,
   "author": "cfmleditor",
   "publisher": "cfmleditor",
@@ -560,8 +560,9 @@
     "rebuild": "npm run clean && npm run build",
     "watch": "tsc -watch -p ./",
     "pack": "vsce package",
+    "publish": "vsce publish",
     "lint": "tslint -p tsconfig.json -t verbose",
-    "vscode:prepublish": "npm run build"
+    "vscode:prepublish": "webpack --mode production --devtool hidden-source-map &&  npm run build"
   },
   "dependencies": {
     "async_hooks": "^1.0.0",
