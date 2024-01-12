@@ -136,18 +136,21 @@ const TAG_RE = /<(\/?[a-zA-Z][a-zA-Z0-9:_.-]*)(?![\s\S]*<\/?[a-zA-Z])/;
 
 function getCloseTag(text: string, excludedTags: string[]): string {
     const s = text[text.length - 1] === '/' && text[text.length - 2] === '<' ? text.slice(0, -2) : text[text.length - 1] === '<' ? text.slice(0, -1) : text;
-
     let m = s.match(TAG_RE);
     // while we catch a closing tag, we jump directly to the matching opening tag
-    while (m && m[1][0] === '/') {
+    while (m && ( m[1][0] === '/' || excludedTags.indexOf(m[1].toLowerCase()) !== -1 )) {
         const s2 = s.slice(0, m.index);
-        const m2 = s2.match(RegExp(`<${m[1].slice(1)}.*$`, 'm'));
-        if (!m2) return '';
-        m = s.slice(0, m2.index).match(TAG_RE);
+        if ( m[1][0] === '/' ) {
+            // Already Closed Tags
+            const m2 = s2.match(RegExp(`<${m[1].slice(1)}.*$`, 'm'));
+            if (!m2) return '';
+            m = s.slice(0, m2.index).match(TAG_RE);
+        } else {
+            // Excluded Tags
+            m = s.slice(0, m.index).match(TAG_RE);
+        }
     }
-
     if (!m) return null;
-
     return (text[text.length - 1] === '/' && text[text.length - 2] === '<' ? m[1] : text[text.length - 1] === '<' ? '/' + m[1] : '</' + m[1]) + '>';
 }
 
