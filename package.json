@@ -2,7 +2,7 @@
   "name": "cfmleditor",
   "displayName": "CFML Editor",
   "description": "CFML Language Editor",
-  "version": "0.6.12",
+  "version": "0.6.14",
   "preview": true,
   "author": "cfmleditor",
   "publisher": "cfmleditor",
@@ -163,27 +163,27 @@
           "scope": "resource"
         },
         "cfml.suggest.snippets.localPath": {
-            "type": [
-                "string",
-                "null"
-              ],
-            "description": "Custom snippets path.",
-            "default": null,
-            "scope": "machine-overridable"
-          },
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Custom snippets path.",
+          "default": null,
+          "scope": "machine-overridable"
+        },
         "cfml.suggest.scopes.case": {
-            "type": "string",
-            "description": "What case should be used for the scopes in completion suggestions.",
-            "enum": [
-              "lower",
-              "upper"
-            ],
-            "enumDescriptions": [
-              "Lowercases the scope",
-              "Uppercases the scope"
-            ],
-            "default": "lower",
-            "scope": "resource"
+          "type": "string",
+          "description": "What case should be used for the scopes in completion suggestions.",
+          "enum": [
+            "lower",
+            "upper"
+          ],
+          "enumDescriptions": [
+            "Lowercases the scope",
+            "Uppercases the scope"
+          ],
+          "default": "lower",
+          "scope": "resource"
         },
         "cfml.suggest.globalFunctions.enable": {
           "type": "boolean",
@@ -316,10 +316,10 @@
           "scope": "resource"
         },
         "cfml.suggest.replaceComments": {
-            "type": "boolean",
-            "description": "Whether comments are replaced during parsing (**Disabing this is Experimental**)",
-            "default": true,
-            "scope": "resource"
+          "type": "boolean",
+          "description": "Whether comments are replaced during parsing (**Disabing this is Experimental**)",
+          "default": true,
+          "scope": "resource"
         },
         "cfml.definition.enable": {
           "type": "boolean",
@@ -573,10 +573,8 @@
     "html-entities": "~2.3.2",
     "isomorphic-fetch": "^3.0.0",
     "micromatch": "~4.0.4",
-    "net-browserify": "^0.2.4",
     "request": "~2.88.2",
     "semver": "~7.3.5",
-    "tls-browserify": "^0.2.2",
     "trie-prefix-tree": "1.5.1",
     "vscode-css-languageservice": "~6.2.4",
     "vscode-html-languageservice": "2.1.11-next.11"
@@ -587,7 +585,7 @@
     "@types/node": "~18.15.10",
     "@types/request": "~2.48.7",
     "@types/semver": "~7.3.9",
-    "@types/trie-prefix-tree": "~1.5.0",
+    "@types/trie-prefix-tree": "~1.5.1",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@vscode/test-electron": "^1.6.2",

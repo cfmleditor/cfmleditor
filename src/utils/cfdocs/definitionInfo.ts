@@ -6,7 +6,7 @@ import { equalsIgnoreCase } from "../textUtil";
 import CFDocsService from "./cfDocsService";
 import { CFMLEngine, CFMLEngineName } from "./cfmlEngine";
 import { multiSigGlobalFunctions } from "./multiSignatures";
-import * as htmlEntities from "html-entities";
+import { decode } from "html-entities";
 
 export interface Param {
   name: string;
@@ -220,7 +220,7 @@ export class CFDocsDefinitionInfo {
           name: param.name,
           dataType: getParamDataType(param.type.toLowerCase()),
           required: param.required,
-          description: htmlEntities.decode(param.description),
+          description: decode(param.description),
           default: param.default,
           enumeratedValues: param.values
         };
@@ -234,7 +234,7 @@ export class CFDocsDefinitionInfo {
     return {
       name: this.name,
       syntax: this.syntax,
-      description: (this.description ? htmlEntities.decode(this.description) : ""),
+      description: (this.description ? decode(this.description) : ""),
       returntype: getReturnDataType(this.returns.toLowerCase()),
       signatures: signatures
     };
@@ -249,7 +249,7 @@ export class CFDocsDefinitionInfo {
         name: param.name,
         dataType: getParamDataType(param.type.toLowerCase()),
         required: param.required,
-        description: htmlEntities.decode(param.description),
+        description: decode(param.description),
         default: param.default,
         enumeratedValues: param.values
       };
@@ -265,7 +265,7 @@ export class CFDocsDefinitionInfo {
       name: this.name,
       syntax: this.syntax,
       scriptSyntax: this.script,
-      description: (this.description ? htmlEntities.decode(this.description) : ""),
+      description: (this.description ? decode(this.description) : ""),
       signatures: signatures,
       hasBody: true
     };

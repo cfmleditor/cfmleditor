@@ -21,8 +21,6 @@ const webExtensionConfig = {
     },
     fallback: {
         path: require.resolve('path-browserify'),
-        tls: require.resolve('tls-browserify'),
-        net: require.resolve('net-browserify'),
         console: require.resolve('console-browserify'),
         constants: require.resolve('constants-browserify'),
         crypto: require.resolve('crypto-browserify'),

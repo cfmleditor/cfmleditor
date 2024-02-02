@@ -13063,6 +13063,9 @@
                   "include": "#source-cfml-script-expressions"
                 }
               ]
+            },
+            {
+                "include": "#source-cfml-script-comments"
             }
           ]
         },
