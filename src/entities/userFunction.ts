@@ -172,7 +172,7 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext)
   const document: TextDocument = documentStateContext.document;
   let userFunctions: UserFunction[] = [];
   // sanitizedDocumentText removes doc blocks
-  const componentBody: string = document.getText();
+  const componentBody: string = documentStateContext.sanitizedDocumentText;
   let scriptFunctionMatch: RegExpExecArray = null;
   while (scriptFunctionMatch = scriptFunctionPattern.exec(componentBody)) {
     const fullMatch: string = scriptFunctionMatch[0];
