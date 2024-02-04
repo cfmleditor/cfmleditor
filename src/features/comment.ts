@@ -19,6 +19,7 @@ export interface CommentContext {
   activeComment: string | CharacterPair;
   commentType: CommentType;
   start: Position;
+  depth: number;
 }
 
 export const cfmlCommentRules: CFMLCommentRules = {

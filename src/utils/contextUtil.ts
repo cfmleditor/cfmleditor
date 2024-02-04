@@ -313,7 +313,8 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
     inComment: false,
     activeComment: undefined,
     commentType: undefined,
-    start: undefined
+    start: undefined,
+    depth: 0,
   };
 
   let lineText = "";
@@ -337,6 +338,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
   const tagOpeningChars: string = "<cf";
   const tagClosingChar: string = ">";
   let stringEmbeddedCFMLRanges: Range[] = [];
+  let commentDepth: number = 0;
 
   let cfScriptRanges: Range[] = [];
   if (!isScript) {
@@ -359,22 +361,27 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
       // Check for end of comment
       if (commentContext.commentType === CommentType.Line && position.line !== previousPosition.line) {
         commentRanges.push(new Range(commentContext.start, previousPosition));
-
         commentContext = {
           inComment: false,
           activeComment: undefined,
           commentType: undefined,
-          start: undefined
+          start: undefined,
+          depth: 0
         };
       } else if (commentContext.commentType === CommentType.Block && lineText.endsWith(commentContext.activeComment[1])) {
-        commentRanges.push(new Range(commentContext.start, document.positionAt(offset + 1)));
-
-        commentContext = {
-          inComment: false,
-          activeComment: undefined,
-          commentType: undefined,
-          start: undefined
-        };
+        if ( commentContext.depth > 1 ) {
+          commentDepth = commentContext.depth - 1;
+          commentContext.depth = commentDepth;
+        } else {
+          commentRanges.push(new Range(commentContext.start, document.positionAt(offset + 1)));
+          commentContext = {
+            inComment: false,
+            activeComment: undefined,
+            commentType: undefined,
+            start: undefined,
+            depth: 0
+          };
+        }
       }
     } else if (stringContext.inString) {
       if (characterAtPosition === stringEmbeddedCFMLDelimiter) {
@@ -437,27 +444,43 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
             embeddedCFML: false
           };
         } else if (lineText.endsWith(cfmlCommentRules.scriptLineComment)) {
-          commentContext = {
-            inComment: true,
-            activeComment: cfmlCommentRules.scriptLineComment,
-            commentType: CommentType.Line,
-            start: previousPosition
-          };
+          // Comments in tag block
+          if ( commentContext.activeComment !== cfmlCommentRules.tagBlockComment ) {
+            commentDepth = commentContext.depth + 1;
+            commentContext = {
+              inComment: true,
+              activeComment: cfmlCommentRules.scriptLineComment,
+              commentType: CommentType.Line,
+              start: previousPosition,
+              depth: commentDepth
+            };
+          }
         } else if (lineText.endsWith(cfmlCommentRules.scriptBlockComment[0])) {
-          commentContext = {
-            inComment: true,
-            activeComment: cfmlCommentRules.scriptBlockComment,
-            commentType: CommentType.Block,
-            start: previousPosition
-          };
+          // Comments in tag block
+          if ( commentContext.activeComment !== cfmlCommentRules.tagBlockComment ) {
+            commentDepth = commentContext.depth + 1;
+            commentContext = {
+              inComment: true,
+              activeComment: cfmlCommentRules.scriptBlockComment,
+              commentType: CommentType.Block,
+              start: previousPosition,
+              depth: commentDepth
+            };
+          }
         }
       } else if (lineText.endsWith(cfmlCommentRules.tagBlockComment[0])) {
-        commentContext = {
-          inComment: true,
-          activeComment: cfmlCommentRules.tagBlockComment,
-          commentType: CommentType.Block,
-          start: position.translate(0, 1 - cfmlCommentRules.tagBlockComment[0].length)
-        };
+        commentDepth = commentContext.depth + 1;
+        if ( commentDepth > 1 ) {
+          commentContext.depth = commentDepth;
+        } else {
+          commentContext = {
+            inComment: true,
+            activeComment: cfmlCommentRules.tagBlockComment,
+            commentType: CommentType.Block,
+            start: position.translate(0, 1 - cfmlCommentRules.tagBlockComment[0].length),
+            depth: commentDepth
+          };
+        }
       } else if (tagContext.inStartTag) {
         if (characterAtPosition === tagClosingChar) {
           tagContext = {
