@@ -222,8 +222,7 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext)
           functionBodyStartPos.translate(0, -1)
         );
       } catch (ex) {
-        console.error(ex);
-        console.error(`Error parsing ${document.uri.fsPath}:${functionName}`);
+        console.warn(`Error parsing ${document.uri.fsPath}:${functionName}`);
         functionAttributeRange = new Range(
           argumentsEndPosition,
           functionBodyStartPos

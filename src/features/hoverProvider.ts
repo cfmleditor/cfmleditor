@@ -262,7 +262,7 @@ export default class CFMLHoverProvider implements HoverProvider {
               const engineDocUri: Uri = Uri.parse(cfEngineInfo.docs);
               hoverItem.engineLinks.set(CFMLEngineName.valueOf(cfmlEngineName), engineDocUri);
             } catch (ex) {
-              console.error(ex);
+              console.warn(ex);
             }
           }
         }
@@ -335,7 +335,7 @@ export default class CFMLHoverProvider implements HoverProvider {
                 const engineDocUri: Uri = Uri.parse(cfEngineInfo.docs);
                 hoverItem.engineLinks.set(CFMLEngineName.valueOf(cfmlEngineName), engineDocUri);
               } catch (ex) {
-                console.error(ex);
+                console.warn(ex);
               }
             }
           }

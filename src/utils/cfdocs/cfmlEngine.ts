@@ -38,7 +38,7 @@ export class CFMLEngine {
 
   constructor(name: CFMLEngineName, version: string | undefined) {
     this.name = name;
-    if (semver.valid(version, true)) {
+    if (version !== undefined && version !== "" && semver.valid(version, true)) {
       this.version = semver.valid(version, true);
     } else {
       this.version = CFMLEngine.toSemVer(version);
@@ -154,7 +154,7 @@ export class CFMLEngine {
    * @param versionStr A version string.
    */
   public static toSemVer(versionStr: string): string | undefined {
-    if (semver.clean(versionStr, true)) {
+    if (versionStr !== '' && semver.clean(versionStr, true)) {
       return semver.clean(versionStr, true);
     } else if (DataType.isNumeric(versionStr)) {
       const splitVer: string[] = versionStr.split(".");

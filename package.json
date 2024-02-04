@@ -574,7 +574,7 @@
     "isomorphic-fetch": "^3.0.0",
     "micromatch": "~4.0.4",
     "request": "~2.88.2",
-    "semver": "~7.3.5",
+    "semver": "^7.5.4",
     "trie-prefix-tree": "1.5.1",
     "vscode-css-languageservice": "~6.2.4",
     "vscode-html-languageservice": "2.1.11-next.11"

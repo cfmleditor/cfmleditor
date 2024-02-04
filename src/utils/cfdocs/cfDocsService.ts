@@ -41,7 +41,7 @@ export default class CFDocsService {
           resolve(CFDocsService.constructDefinitionFromJsonDoc(data));
         });
       } catch (e) {
-        console.error(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
+        console.log(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
         reject(e);
       }
     });
@@ -64,11 +64,11 @@ export default class CFDocsService {
                 resolve(CFDocsService.constructDefinitionFromJsonDoc(readJson));
             });
         } catch (ex) {
-            console.error(`Error with the JSON doc for ${identifier}:`, (<Error>ex).message);
+            console.log(`Error with the JSON doc for ${identifier}:`, (<Error>ex).message);
           reject(ex);
         }
       } catch (e) {
-        console.error(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
+        console.log(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
         reject(e);
       }
     });
@@ -89,11 +89,11 @@ export default class CFDocsService {
                 try {
                     resolve(CFDocsService.constructDefinitionFromJsonDoc(data));
                 } catch (ex) {
-                    console.error(`Error with the JSON doc for ${identifier}:`, (<Error>ex).message);
+                    console.log(`Error with the JSON doc for ${identifier}:`, (<Error>ex).message);
                     reject(ex);
                 }
             }).catch(function(fex){
-                console.error("Error retrieving all tag names:", (<Error>fex).message);
+                console.log("Error retrieving all tag names:", (<Error>fex).message);
                 reject(fex);
             });
     });
@@ -141,7 +141,7 @@ export default class CFDocsService {
             resolve(JSON.parse(data).related);
           });
         } catch (ex) {
-            console.error("Error retrieving all function names:", (<Error>ex).message);
+            console.log("Error retrieving all function names:", (<Error>ex).message);
             reject(ex);
         }
       } else if ( source === CFDocsSource.Extension ) {
@@ -154,7 +154,7 @@ export default class CFDocsService {
                 resolve(readJson.related);
             });
         } catch (ex) {
-          console.error("Error retrieving all function names:", (<Error>ex).message);
+          console.log("Error retrieving all function names:", (<Error>ex).message);
           reject(ex);
         }
       } else {
@@ -165,11 +165,11 @@ export default class CFDocsService {
                 try {
                     resolve(data.related);
                 } catch (ex) {
-                    console.error("Error retrieving all function names:", (<Error>ex).message);
+                    console.log("Error retrieving all function names:", (<Error>ex).message);
                     reject(ex);
                 }
             }).catch(function(fex){
-                console.error("Error retrieving all function names:", (<Error>fex).message);
+                console.log("Error retrieving all function names:", (<Error>fex).message);
                 reject(fex);
         });
       }
@@ -197,7 +197,7 @@ export default class CFDocsService {
                     resolve(JSON.parse(data).related);
                 });
                 } catch (ex) {
-                console.error("Error retrieving all tag names:", (<Error>ex).message);
+                console.log("Error retrieving all tag names:", (<Error>ex).message);
                 reject(ex);
                 }
             } else if ( source === CFDocsSource.Extension ) {
@@ -210,7 +210,7 @@ export default class CFDocsService {
                         resolve(readJson.related);
                     });
                 } catch (ex) {
-                    console.error("Error retrieving all tag names:", (<Error>ex).message);
+                    console.log("Error retrieving all tag names:", (<Error>ex).message);
                     reject(ex);
                 }
             } else {
@@ -222,11 +222,11 @@ export default class CFDocsService {
                         try {
                             resolve(data.related);
                         } catch (ex) {
-                            console.error("Error retrieving all tag names:", (<Error>ex).message);
+                            console.log("Error retrieving all tag names:", (<Error>ex).message);
                             reject(ex);
                         }
                     }).catch(function(fex){
-                        console.error("Error retrieving all tag names:", (<Error>fex).message);
+                        console.log("Error retrieving all tag names:", (<Error>fex).message);
                         reject(fex);
                     });
             }
@@ -437,7 +437,7 @@ export default class CFDocsService {
                 resolve(readJson.related);
             });
         } catch (ex) {
-            console.error("Error retrieving all member function names:", (<Error>ex).message);
+            console.warn("Error retrieving all member function names:", (<Error>ex).message);
             reject(ex);
         }
     });

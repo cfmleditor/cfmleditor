@@ -192,8 +192,8 @@ function setComponent(comp: Component): void {
   try {
     allComponentNames.addWord(componentKey);
   } catch (ex) {
-    console.error(ex);
-    console.error(`Unable to add ${componentKey} to trie`);
+    //console.warn(ex);
+    console.warn(`Unable to add ${componentKey} to trie`);
   }
 }
 
@@ -244,8 +244,7 @@ function setUserFunction(userFunction: UserFunction): void {
   try {
     allFunctionNames.addWord(functionKey);
   } catch (ex) {
-    console.error(ex);
-    console.error(`Unable to add ${functionKey} to trie`);
+    console.warn(`Unable to add ${functionKey} to trie`);
   }
 }
 
@@ -380,7 +379,7 @@ export async function cacheAllComponents(): Promise<void> {
             }
         },
         (reason) => {
-            console.error(reason);
+            console.warn(reason);
         }
     );
 }
@@ -409,7 +408,7 @@ async function cacheGivenComponents(componentUris: Uri[]): Promise<void> {
           const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
           cacheComponentFromDocument(document, false, replaceComments);
         } catch (ex) {
-          console.error(`Cannot parse document at ${componentUri}`);
+          console.warn(`Cannot parse document at ${componentUri}`);
         } finally {
           i++;
           progress.report({
@@ -429,13 +428,15 @@ async function cacheGivenComponents(componentUris: Uri[]): Promise<void> {
  */
 export function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false): boolean {
   const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments);
-  const parsedComponent: Component | undefined = parseComponent(documentStateContext);
-  if (!parsedComponent) {
+  try {
+    const parsedComponent: Component | undefined = parseComponent(documentStateContext);
+    if (!parsedComponent) {
+        return false;
+    }
+    cacheComponent(parsedComponent, documentStateContext);
+  } catch (err) {
     return false;
   }
-
-  cacheComponent(parsedComponent, documentStateContext);
-
   return true;
 }
 
@@ -502,7 +503,7 @@ export async function cacheAllApplicationCfms(): Promise<void> {
   return workspace.findFiles(APPLICATION_CFM_GLOB).then(
     cacheGivenApplicationCfms,
     (reason) => {
-      console.error(reason);
+      console.warn(reason);
     }
   );
 }
@@ -524,7 +525,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[]): Promise<void> 
       });
       setApplicationVariables(applicationUri, thisApplicationFilteredVariables);
     } catch (ex) {
-      console.error(`Cannot parse document at ${applicationUri}`);
+      console.warn(`Cannot parse document at ${applicationUri}`);
     }
   });
 }

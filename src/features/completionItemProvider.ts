@@ -1202,9 +1202,6 @@ function getCustomSnippetCompletions(state: CompletionState): CompletionItem[] {
             standardSnippet.detail = `(snippet) ${snippet.description}`;
             const snippetString: string = Array.isArray(snippet.body) ? snippet.body.join("\n") : snippet.body;
             // standardSnippet.documentation = snippetString;
-            console.log("test:");
-            console.log(snippetString);
-
             if ( snippetString ) {
                 standardSnippet.insertText = new SnippetString(snippetString);
                 snippetCompletions.push(standardSnippet);
