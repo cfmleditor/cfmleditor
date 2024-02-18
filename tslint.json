@@ -37,8 +37,7 @@
     "quotemark": [
       true,
       "double",
-      "avoid-escape",
-      "avoid-template"
+      "avoid-escape"
     ],
     "semicolon": [
       true,
