@@ -22,5 +22,5 @@ If you would like to contribute enhancements or fixes, please read this document
 
 ## Guidelines
 
-- Code should pass **TSLint** and **markdownlint** with the included configuration.
+- Code should pass **ESLint** and **markdownlint** with the included configuration.
 - Please use descriptive variable names and only use well-known abbreviations.

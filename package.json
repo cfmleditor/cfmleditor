@@ -561,7 +561,7 @@
 		"watch": "tsc -watch -p ./",
 		"pack": "vsce package",
 		"publish": "vsce publish",
-		"lint": "tslint -p tsconfig.json -t verbose",
+		"lint": "eslint .",
 		"vscode:prepublish": "webpack --mode production --devtool hidden-source-map &&  npm run build"
 	},
 	"dependencies": {
