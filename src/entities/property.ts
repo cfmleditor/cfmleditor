@@ -45,7 +45,7 @@ export class Properties extends MyMap<string, Property> { }
  * Returns an array of Property objects that define properties within the given component
  * @param document The document to parse which should represent a component
  */
-export function parseProperties(documentStateContext: DocumentStateContext): Properties {
+export async function parseProperties(documentStateContext: DocumentStateContext): Promise<Properties> {
   let properties: Properties = new Properties();
   const document: TextDocument = documentStateContext.document;
   const componentText: string = document.getText();
@@ -77,10 +77,10 @@ export function parseProperties(documentStateContext: DocumentStateContext): Pro
         )
       );
 
-      propertyDocBlockParsed.forEach((docElem: DocBlockKeyValue) => {
+      propertyDocBlockParsed.forEach(async (docElem: DocBlockKeyValue) => {
         const activeKey: string = docElem.key;
         if (activeKey === "type") {
-          const checkDataType: [DataType, Uri] = DataType.getDataTypeAndUri(docElem.value, document.uri);
+          const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(docElem.value, document.uri);
           if (checkDataType) {
             property.dataType = checkDataType[0];
             if (checkDataType[1]) {
@@ -110,12 +110,12 @@ export function parseProperties(documentStateContext: DocumentStateContext): Pro
         continue;
       }
 
-      parsedPropertyAttributes.forEach((attr: Attribute, attrKey: string) => {
+      parsedPropertyAttributes.forEach(async (attr: Attribute, attrKey: string) => {
         if (attrKey === "name") {
           property.name = attr.value;
           property.nameRange = attr.valueRange;
         } else if (attrKey === "type") {
-          const checkDataType: [DataType, Uri] = DataType.getDataTypeAndUri(attr.value, document.uri);
+          const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(attr.value, document.uri);
           if (checkDataType) {
             property.dataType = checkDataType[0];
             if (checkDataType[1]) {
@@ -139,7 +139,7 @@ export function parseProperties(documentStateContext: DocumentStateContext): Pro
       }
 
       const dataTypeString: string = parsedPropertyAttributes[1];
-      const checkDataType: [DataType, Uri] = DataType.getDataTypeAndUri(dataTypeString, document.uri);
+      const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(dataTypeString, document.uri);
       if (checkDataType) {
         property.dataType = checkDataType[0];
         if (checkDataType[1]) {
@@ -203,6 +203,7 @@ export function constructSetter(property: Property, componentUri: Uri): UserFunc
     parameters: [
       {
         name: property.name,
+        type: property.dataType.toString(),
         nameRange: undefined,
         description: property.description,
         required: true,

@@ -1,4 +1,4 @@
-import * as path from "path";
+
 import { DataType } from "./dataType";
 import { Location, Uri, TextDocument, Position, Range } from "vscode";
 import { Function, getScriptFunctionArgRanges } from "./function";
@@ -15,6 +15,7 @@ import { getComponent, hasComponent } from "../features/cachedEntities";
 import { parseTags, Tag } from "./tag";
 import { DocumentStateContext, DocumentPositionStateContext } from "../utils/documentUtil";
 import { getClosingPosition, getNextCharacterPosition, isInRanges, getCfScriptRanges } from "../utils/contextUtil";
+import { Utils } from "vscode-uri";
 
 const scriptFunctionPattern: RegExp = /((\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?)(?:\b([A-Za-z0-9_\.$]+)\s+)?function\s+([_$a-zA-Z][$\w]*)\s*\(/gi;
 const scriptFunctionArgPattern: RegExp = /((?:(required)\s+)?(?:\b([\w.]+)\b\s+)?(\b[_$a-zA-Z][$\w]*\b)(?:\s*=\s*(\{[^\}]*\}|\[[^\]]*\]|\([^\)]*\)|(?:(?!\b\w+\s*=).)+))?)(.*)?/i;
@@ -413,6 +414,7 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
 
       let argument: Argument = {
         name: argName,
+        type: argType,
         required: argRequired ? true : false,
         dataType: convertedArgType,
         description: "",
@@ -601,6 +603,7 @@ function parseTagFunctionArguments(documentStateContext: DocumentStateContext, f
 
     let argument: Argument = {
       name: argumentAttributes.name,
+      type: argType,
       required: argRequired,
       dataType: convertedArgType,
       description: argumentAttributes.hint ? argumentAttributes.hint : "",
@@ -694,12 +697,12 @@ function processArgumentAttributes(attributes: Attributes): ArgumentAttributes {
  * @param documentStateContext The contextual information of the state of a document containing the given function
  * @param isScript Whether this function is defined entirely in CFScript
  */
-export function getLocalVariables(func: UserFunction, documentStateContext: DocumentStateContext, isScript: boolean): Variable[] {
+export async function getLocalVariables(func: UserFunction, documentStateContext: DocumentStateContext, isScript: boolean): Promise<Variable[]> {
   if (!func || !func.bodyRange) {
     return [];
   }
 
-  const allVariables: Variable[] = parseVariableAssignments(documentStateContext, isScript, func.bodyRange);
+  const allVariables: Variable[] = await parseVariableAssignments(documentStateContext, isScript, func.bodyRange);
 
   return allVariables.filter((variable: Variable) => {
     return (variable.scope === Scope.Local);
@@ -766,10 +769,10 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
         foundFunction = getFunctionFromTemplate(documentPositionStateContext, functionKey);
       } else {
         // TODO: Allow passing variable assignments
-        const allDocumentVariableAssignments: Variable[] = collectDocumentVariableAssignments(documentPositionStateContext);
+        const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext);
 
         let variableAssignments: Variable[] = allDocumentVariableAssignments;
-        const fileName: string = path.basename(documentPositionStateContext.document.uri.fsPath);
+        const fileName: string = Utils.basename(documentPositionStateContext.document.uri);
         if (varScope && fileName !== "Application.cfm") {
           const applicationDocVariables: Variable[] = await getApplicationVariables(documentPositionStateContext.document.uri);
           variableAssignments = variableAssignments.concat(applicationDocVariables);
@@ -813,7 +816,7 @@ export function getFunctionFromComponent(component: Component, lowerFunctionName
     }
   }
 
-  if (!validFunctionAccess.has(Access.Package) && path.dirname(callerUri.fsPath) === path.dirname(component.uri.fsPath)) {
+  if (!validFunctionAccess.has(Access.Package) && Utils.dirname(callerUri) === Utils.dirname(component.uri)) {
     validFunctionAccess.add(Access.Package);
   }
 

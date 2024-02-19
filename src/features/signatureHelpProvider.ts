@@ -117,7 +117,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
           if (scopePrefix) {
             prefixScope = Scope.valueOf(scopePrefix);
           }
-          const allDocumentVariableAssignments: Variable[] = collectDocumentVariableAssignments(documentPositionStateContext);
+          const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext);
           const userFunctionVariables: UserFunctionVariable[] = allDocumentVariableAssignments.filter((variable: Variable) => {
             if (variable.dataType !== DataType.Function || !isUserFunctionVariable(variable) || !equalsIgnoreCase(variable.identifier, lowerIdent)) {
               return false;

@@ -1,5 +1,5 @@
 
-import * as path from "path";
+
 import { CharacterPair, Position, Range, TextDocument, Uri } from "vscode";
 import { COMPONENT_EXT, isScriptComponent } from "../entities/component";
 import { getTagPattern, parseTags, Tag, TagContext } from "../entities/tag";
@@ -7,6 +7,7 @@ import { cfmlCommentRules, CommentContext, CommentType } from "../features/comme
 import { DocumentStateContext } from "./documentUtil";
 import { equalsIgnoreCase } from "./textUtil";
 import { stringArrayIncludesIgnoreCase } from "./collections";
+import { Utils } from "vscode-uri";
 
 const CFM_FILE_EXTS: string[] = [".cfm", ".cfml"];
 export const APPLICATION_CFM_GLOB: string = "**/Application.cfm";
@@ -157,7 +158,7 @@ export class BackwardIterator {
  * @param document The document to check
  */
 export function isCfmFile(document: TextDocument): boolean {
-  const extensionName: string = path.extname(document.fileName);
+  const extensionName: string = Utils.extname(Uri.parse(document.fileName));
   for (const currExt of CFM_FILE_EXTS) {
     if (equalsIgnoreCase(extensionName, currExt)) {
       return true;
@@ -179,7 +180,7 @@ export function isCfcFile(document: TextDocument): boolean {
  * @param uri The URI to check
  */
 export function isCfcUri(uri: Uri): boolean {
-  const extensionName = path.extname(uri.fsPath);
+  const extensionName = Utils.extname(uri);
   return equalsIgnoreCase(extensionName, COMPONENT_EXT);
 }
 

@@ -1,8 +1,6 @@
-import * as fs from "fs";
-import * as path from "path";
-import { COMPONENT_EXT } from "../entities/component";
+
 import { equalsIgnoreCase } from "./textUtil";
-import { Uri, workspace, WorkspaceFolder } from "vscode";
+import { FileType, Uri, workspace, WorkspaceFolder } from "vscode";
 
 export interface CFMLMapping {
   logicalPath: string;
@@ -10,10 +8,9 @@ export interface CFMLMapping {
   isPhysicalDirectoryPath?: boolean;
 }
 
-export function getDirectories(srcPath: string): string[] {
-  const files: string[] = fs.readdirSync(srcPath);
-
-  return filterDirectories(files, srcPath);
+export async function getDirectories(srcPath: string): Promise<[string, FileType][]> {
+  const files: [string, FileType][] = await workspace.fs.readDirectory(Uri.parse(srcPath));
+  return filterDirectories(files);
 }
 
 /**
@@ -21,15 +18,18 @@ export function getDirectories(srcPath: string): string[] {
  * @param files A list of files to filter
  * @param srcPath The path of the directory in which the files are contained
  */
-export function filterDirectories(files: string[], srcPath: string): string[] {
-  return files.filter((file: string) => {
-    return fs.statSync(path.join(srcPath, file)).isDirectory();
+export function filterDirectories(files: [string, FileType][]): [string, FileType][] {
+  return files.filter((file: [string, FileType]) => {
+    if ( file[1] === FileType.Directory ) {
+        return true;
+    } else {
+        return false;
+    }
   });
 }
 
-export function getComponents(srcPath: string): string[] {
-  const files: string[] = fs.readdirSync(srcPath);
-
+export async function getComponents(srcPath: string): Promise<[string, FileType][]> {
+  const files: [string, FileType][] = await workspace.fs.readDirectory(Uri.parse(srcPath));
   return filterComponents(files);
 }
 
@@ -37,10 +37,23 @@ export function getComponents(srcPath: string): string[] {
  * Takes an array of files and filters them to only the components
  * @param files A list of files to filter
  */
-export function filterComponents(files: string[]): string[] {
-  return files.filter((file: string) => {
-    return equalsIgnoreCase(path.extname(file), COMPONENT_EXT);
+export function filterComponents(files: [string, FileType][]): [string, FileType][] {
+  return files.filter((file: [string, FileType]) => {
+    if ( file[1] === FileType.File && /\.cfc$/gi.test(file[0]) ) {
+        return true;
+    } else {
+        return false;
+    }
   });
+}
+
+export async function fileExists(path: string): Promise<boolean> {
+    try {
+        await workspace.fs.stat(Uri.file(path));
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -48,16 +61,16 @@ export function filterComponents(files: string[]): string[] {
  * @param dotPath A string for a component in dot-path notation
  * @param baseUri The URI from which the component path will be resolved
  */
-export function resolveDottedPaths(dotPath: string, baseUri: Uri): string[] {
+export async function resolveDottedPaths(dotPath: string, baseUri: Uri): Promise<string[]> {
   let paths: string[] = [];
 
-  const normalizedPath: string = dotPath.replace(/\./g, path.sep);
+  const normalizedPath: string = dotPath.replace(/\./g, '/');
 
   // TODO: Check imports
 
   // relative to local directory
   const localPath: string = resolveRelativePath(baseUri, normalizedPath);
-  if (fs.existsSync(localPath)) {
+  if (await fileExists(localPath)) {
     paths.push(localPath);
 
     if (normalizedPath.length > 0) {
@@ -67,7 +80,7 @@ export function resolveDottedPaths(dotPath: string, baseUri: Uri): string[] {
 
   // relative to web root
   const rootPath: string = resolveRootPath(baseUri, normalizedPath);
-  if (rootPath && fs.existsSync(rootPath)) {
+  if (rootPath && await fileExists(rootPath)) {
     paths.push(rootPath);
 
     if (normalizedPath.length > 0) {
@@ -78,7 +91,7 @@ export function resolveDottedPaths(dotPath: string, baseUri: Uri): string[] {
   // custom mappings
   const customMappingPaths: string[] = resolveCustomMappingPaths(baseUri, normalizedPath);
   for (const mappedPath of customMappingPaths) {
-    if (fs.existsSync(mappedPath)) {
+    if ( await fileExists(mappedPath)) {
       paths.push(mappedPath);
 
       if (normalizedPath.length > 0) {
@@ -96,7 +109,7 @@ export function resolveDottedPaths(dotPath: string, baseUri: Uri): string[] {
  * @param appendingPath A path appended to the given URI
  */
 export function resolveRelativePath(baseUri: Uri, appendingPath: string): string {
-  return path.join(path.dirname(baseUri.fsPath), appendingPath);
+  return Uri.joinPath(baseUri, appendingPath).fsPath;
 }
 
 /**
@@ -112,7 +125,7 @@ export function resolveRootPath(baseUri: Uri, appendingPath: string): string | u
     return undefined;
   }
 
-  return path.join(root.uri.fsPath, appendingPath);
+  return Uri.joinPath(root.uri, appendingPath).fsPath;
 }
 
 /**
@@ -130,7 +143,7 @@ export function resolveCustomMappingPaths(baseUri: Uri, appendingPath: string): 
     const logicalPathStartPattern = new RegExp(`^${slicedLogicalPath}(?:\/|$)`);
     if (logicalPathStartPattern.test(normalizedPath)) {
       const directoryPath: string = cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath ? cfmlMapping.directoryPath : resolveRootPath(baseUri, cfmlMapping.directoryPath);
-      const mappedPath: string = path.join(directoryPath, appendingPath.slice(slicedLogicalPath.length));
+      const mappedPath: string = Uri.joinPath(Uri.parse(directoryPath), appendingPath.slice(slicedLogicalPath.length)).fsPath;
       customMappingPaths.push(mappedPath);
     }
   }

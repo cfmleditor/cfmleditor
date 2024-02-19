@@ -1,6 +1,4 @@
-import * as fs from "fs";
-import * as path from "path";
-import { CancellationToken, Command, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemProvider, Position, Range, SnippetString, TextDocument, Uri, workspace, WorkspaceConfiguration } from "vscode";
+import { CancellationToken, Command, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemProvider, FileType, Position, Range, SnippetString, TextDocument, Uri, workspace, WorkspaceConfiguration } from "vscode";
 import { AttributeQuoteType, Attributes, IncludeAttributesCustom, IncludeAttributesSetType, parseAttributes, VALUE_PATTERN } from "../entities/attribute";
 import { CatchInfo, catchProperties, CatchPropertyDetails, parseCatches } from "../entities/catch";
 import { cgiVariables } from "../entities/cgi";
@@ -164,7 +162,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
               });
             });
 
-            const attributeValueCompletions: CompletionItem[] = getGlobalTagAttributeValueCompletions(completionState, globalTag, attributeName, currentValue);
+            const attributeValueCompletions: CompletionItem[] = await getGlobalTagAttributeValueCompletions(completionState, globalTag, attributeName, currentValue);
             if (attributeValueCompletions.length > 0) {
               return attributeValueCompletions;
             }
@@ -240,7 +238,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
     }
 
     // Assigned document variables
-    let allVariableAssignments: Variable[] = collectDocumentVariableAssignments(documentPositionStateContext);
+    let allVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext);
 
     if (_token && _token.isCancellationRequested) {
         return undefined;
@@ -417,7 +415,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                     validFunctionAccess.add(Access.Package);
                   }
                 }
-                if (!validFunctionAccess.has(Access.Package) && path.dirname(documentUri.fsPath) === path.dirname(initialFoundComp.uri.fsPath)) {
+                if (!validFunctionAccess.has(Access.Package) && Uri.parse(documentUri.fsPath).path === Uri.parse(initialFoundComp.uri.fsPath).path) {
                   validFunctionAccess.add(Access.Package);
                 }
 
@@ -602,7 +600,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       const componentDottedPath: string = componentDottedPathMatch[3];
       const parentDottedPath: string = componentDottedPath.split(".").slice(0, -1).join(".");
 
-      const newInstanceCompletions: CompletionItem[] = getDottedPathCompletions(completionState, parentDottedPath);
+      const newInstanceCompletions: CompletionItem[] = await getDottedPathCompletions(completionState, parentDottedPath);
       result = result.concat(newInstanceCompletions);
     }
 
@@ -621,7 +619,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
  * @param attributeStartOffset The offset within the document that the entity's attributes start
  * @param attributesLength The length of the entity's attributes string
  */
-function getGlobalTagAttributeCompletions(state: CompletionState, globalTag: GlobalTag, attributeStartOffset: number, attributesLength: number): CompletionItem[] {
+async function getGlobalTagAttributeCompletions(state: CompletionState, globalTag: GlobalTag, attributeStartOffset: number, attributesLength: number): Promise<CompletionItem[]> {
   let attributeDocs: MyMap<string, Parameter> = new MyMap<string, Parameter>();
   globalTag.signatures.forEach((sig: Signature) => {
     sig.parameters.forEach((param: Parameter) => {
@@ -632,7 +630,7 @@ function getGlobalTagAttributeCompletions(state: CompletionState, globalTag: Glo
   const tagAttributeRange = new Range(state.document.positionAt(attributeStartOffset), state.document.positionAt(attributeStartOffset + attributesLength));
   const parsedAttributes: Attributes = parseAttributes(state.document, tagAttributeRange, attributeNames);
   const usedAttributeNames: MySet<string> = new MySet(parsedAttributes.keys());
-  const attributeCompletions: CompletionItem[] = getCFTagAttributeCompletions(state, globalTag, Array.from(attributeDocs.values()), usedAttributeNames);
+  const attributeCompletions: CompletionItem[] = await getCFTagAttributeCompletions(state, globalTag, Array.from(attributeDocs.values()), usedAttributeNames);
 
   return attributeCompletions;
 }
@@ -644,13 +642,15 @@ function getGlobalTagAttributeCompletions(state: CompletionState, globalTag: Glo
  * @param params All of the possible parameters that could be presented
  * @param usedAttributeNames The set of attribute names that are already being used
  */
-function getCFTagAttributeCompletions(state: CompletionState, globalTag: GlobalTag, params: Parameter[], usedAttributeNames: MySet<string>): CompletionItem[] {
+async function getCFTagAttributeCompletions(state: CompletionState, globalTag: GlobalTag, params: Parameter[], usedAttributeNames: MySet<string>): Promise<CompletionItem[]> {
   const cfmlGTAttributesQuoteType: AttributeQuoteType = state.cfmlCompletionSettings.get<AttributeQuoteType>("globalTags.attributes.quoteType", AttributeQuoteType.Double);
   const cfmlGTAttributesDefault: boolean = state.cfmlCompletionSettings.get<boolean>("globalTags.attributes.defaultValue", false);
 
-  const attributeCompletions: CompletionItem[] = params.filter((param: Parameter) => {
+  const filteredParams = params.filter((param: Parameter) => {
     return !usedAttributeNames.has(param.name.toLowerCase()) && state.currentWordMatches(param.name);
-  }).map((param: Parameter) => {
+  });
+
+  const attributeCompletions: CompletionItem[] = filteredParams.map((param: Parameter) => {
     let attributeItem = new CompletionItem(param.name, CompletionItemKind.Property);
     attributeItem.detail = `${param.required ? "(required) " : ""}${param.name}: ${param.dataType}`;
     attributeItem.documentation = param.description;
@@ -664,10 +664,11 @@ function getCFTagAttributeCompletions(state: CompletionState, globalTag: GlobalT
     }
     attributeItem.sortText = "!" + param.name + "=";
 
-    const attributeValueCompletions: CompletionItem[] = getGlobalTagAttributeValueCompletions(state, globalTag, param.name.toLowerCase(), "");
-    if (attributeValueCompletions.length > 0) {
-      attributeItem.command = triggerCompletionCommand;
-    }
+    // TODO: Work out how to include this async task
+    // const attributeValueCompletions: CompletionItem[] = await getGlobalTagAttributeValueCompletions(state, globalTag, param.name.toLowerCase(), "");
+    // if (attributeValueCompletions.length > 0) {
+    //   attributeItem.command = triggerCompletionCommand;
+    // }
 
     return attributeItem;
   });
@@ -682,7 +683,7 @@ function getCFTagAttributeCompletions(state: CompletionState, globalTag: GlobalT
  * @param attributeName The name of the attribute that's values will be presented
  * @param currentValue The current value of the given attribute
  */
-function getGlobalTagAttributeValueCompletions(state: CompletionState, globalTag: GlobalTag, attributeName: string, currentValue: string): CompletionItem[] {
+async function getGlobalTagAttributeValueCompletions(state: CompletionState, globalTag: GlobalTag, attributeName: string, currentValue: string): Promise<CompletionItem[]> {
   let attrValCompletions: CompletionItem[] = [];
 
   let attributeDocs: MyMap<string, Parameter> = new MyMap<string, Parameter>();
@@ -714,7 +715,7 @@ function getGlobalTagAttributeValueCompletions(state: CompletionState, globalTag
   const componentPathAttributes: ComponentPathAttributes = getComponentPathAttributes();
   if (componentPathAttributes.hasOwnProperty(globalTag.name) && componentPathAttributes[globalTag.name].includes(attributeName)) {
     const parentDottedPath: string = currentValue.split(".").slice(0, -1).join(".");
-    attrValCompletions = attrValCompletions.concat(getDottedPathCompletions(state, parentDottedPath));
+    attrValCompletions = attrValCompletions.concat(await getDottedPathCompletions(state, parentDottedPath));
   }
 
   return attrValCompletions;
@@ -1111,32 +1112,32 @@ function getCSSAtDirectiveCompletions(state: CompletionState): CompletionItem[] 
  * @param state An object representing the state of completion
  * @param parentDottedPath The dotted path part that is higher in the hierarchy
  */
-function getDottedPathCompletions(state: CompletionState, parentDottedPath: string): CompletionItem[] {
+async function getDottedPathCompletions(state: CompletionState, parentDottedPath: string): Promise<CompletionItem[]> {
   const newInstanceCompletions: CompletionItem[] = [];
-  const paths: string[] = resolveDottedPaths(parentDottedPath, state.document.uri);
-  paths.forEach((thisPath: string) => {
-    const files: string[] = fs.readdirSync(thisPath);
-    const directories: string[] = filterDirectories(files, thisPath);
-    directories.filter((directory: string) => {
-      return state.currentWordMatches(directory);
-    }).forEach((directory: string) => {
+  const paths: string[] = await resolveDottedPaths(parentDottedPath, state.document.uri);
+  paths.forEach(async (thisPath: string) => {
+    const files: [string, FileType][] = await workspace.fs.readDirectory(Uri.parse(thisPath));
+    const directories: [string, FileType][] = filterDirectories(files);
+    directories.filter((directory: [string, FileType]) => {
+      return state.currentWordMatches(directory[0]);
+    }).forEach((directory: [string, FileType]) => {
       newInstanceCompletions.push(createNewProposal(
-        directory,
+        directory[0],
         CompletionItemKind.Folder,
-        { detail: `(folder) ${directory}`, description: escapeMarkdown(path.join(thisPath, directory)) },
+        { detail: `(folder) ${directory}`, description: escapeMarkdown(Uri.joinPath(Uri.parse(thisPath), directory[0]).toString()) },
         "!"
       ));
     });
-    const componentFiles: string[] = filterComponents(files);
-    componentFiles.filter((componentFile: string) => {
-      const componentName: string = path.basename(componentFile, COMPONENT_EXT);
+    const componentFiles: [string, FileType][] = filterComponents(files);
+    componentFiles.filter((componentFile: [string, FileType]) => {
+      const componentName: string = Uri.parse(componentFile[0]).toString();
       return state.currentWordMatches(componentName);
-    }).forEach((componentFile: string) => {
-      const componentName: string = path.basename(componentFile, COMPONENT_EXT);
+    }).forEach((componentFile: [string, FileType]) => {
+      const componentName: string = Uri.parse(componentFile[0]).toString();
       newInstanceCompletions.push(createNewProposal(
         componentName,
         CompletionItemKind.Class,
-        { detail: `(component) ${componentName}`, description: escapeMarkdown(path.join(thisPath, componentFile)) },
+        { detail: `(component) ${componentName}`, description: escapeMarkdown(Uri.joinPath(Uri.parse(thisPath), componentFile[0]).toString()) },
         "!"
       ));
     });

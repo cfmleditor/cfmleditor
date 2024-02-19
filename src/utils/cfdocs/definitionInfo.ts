@@ -188,6 +188,7 @@ export class CFDocsDefinitionInfo {
             if (param.name === multiSigParamParsed) {
               let parameter: Parameter = {
                 name: multiSigParam,
+                type: param.type,
                 dataType: getParamDataType(param.type.toLowerCase()),
                 required: param.required,
                 description: param.description,
@@ -202,6 +203,7 @@ export class CFDocsDefinitionInfo {
           if (!paramFound) {
             let parameter: Parameter = {
               name: multiSigParam,
+              type: "any",
               dataType: DataType.Any,
               required: false,
               description: ""
@@ -218,6 +220,7 @@ export class CFDocsDefinitionInfo {
       let parameters: Parameter[] = this.params.map((param: Param) => {
         return {
           name: param.name,
+          type: param.type,
           dataType: getParamDataType(param.type.toLowerCase()),
           required: param.required,
           description: decode(param.description),
@@ -247,6 +250,7 @@ export class CFDocsDefinitionInfo {
     let parameters: Parameter[] = this.params.map((param: Param) => {
       return {
         name: param.name,
+        type: param.type,
         dataType: getParamDataType(param.type.toLowerCase()),
         required: param.required,
         description: decode(param.description),

@@ -110,7 +110,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
         }
 
         // Component functions (related)
-        thisComponent.functions.forEach((func: UserFunction) => {
+        thisComponent.functions.forEach(async (func: UserFunction) => {
           // Function return types
           if (func.returnTypeUri && func.returnTypeRange && func.returnTypeRange.contains(position)) {
             const returnTypeComp: Component = getComponent(func.returnTypeUri);
@@ -143,7 +143,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
           if (func.bodyRange && func.bodyRange.contains(position)) {
             // Local variable uses
-            const localVariables = getLocalVariables(func, documentPositionStateContext, thisComponent.isScript);
+            const localVariables = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript);
             const localVarPrefixPattern = getValidScopesPrefixPattern([Scope.Local], true);
             if (localVarPrefixPattern.test(docPrefix)) {
               localVariables.filter((localVar: Variable) => {
@@ -207,7 +207,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
         }
       }
     } else if (docIsCfmFile) {
-      const docVariableAssignments: Variable[] = parseVariableAssignments(documentPositionStateContext, false);
+      const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false);
       const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
       const variableScopePrefixMatch: RegExpExecArray = variableScopePrefixPattern.exec(docPrefix);
       if (variableScopePrefixMatch) {

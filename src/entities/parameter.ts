@@ -1,11 +1,11 @@
 import { DataType } from "./dataType";
 import { Argument } from "./userFunction";
-import { COMPONENT_EXT } from "./component";
-import * as path from "path";
+import { Utils } from "vscode-uri";
 
 export interface Parameter {
   name: string;
   description: string;
+  type: string;
   dataType: DataType;
   required: boolean;
   default?: string;
@@ -32,15 +32,21 @@ export function constructParameterLabel(param: Parameter): string {
     paramLabel += "?";
   }
 
-  let paramType: string = param.dataType.toLowerCase();
-  if (param.dataType === DataType.Component) {
-    const arg: Argument = param as Argument;
-    if (arg.dataTypeComponentUri) {
-      paramType = path.basename(arg.dataTypeComponentUri.fsPath, COMPONENT_EXT);
+  if ( param.dataType ) {
+    let paramType: string = param.dataType.toLowerCase();
+    if (param.dataType === DataType.Component) {
+        const arg: Argument = param as Argument;
+        if (arg.dataTypeComponentUri) {
+            paramType = Utils.basename(arg.dataTypeComponentUri);
+        }
     }
-  }
 
-  paramLabel += ": " + paramType;
+    paramLabel += ": " + paramType;
+  } else if ( param.type ) {
+    paramLabel += ": " + param.type;
+  } else {
+    paramLabel += ": unknown";
+  }
 
   return paramLabel;
 }

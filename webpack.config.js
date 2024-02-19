@@ -31,12 +31,10 @@ const webExtensionConfig = {
         stream: require.resolve('stream-browserify'),
         timers: require.resolve('timers-browserify'),
         tty: require.resolve('tty-browserify'),
-        fs: require.resolve('browserify-fs'),
         vm: require.resolve('vm-browserify'),
         zlib: require.resolve('browserify-zlib'),
         "buffer": false,
         "async_hooks": false,
-        "findup-sync": false,
     },
   },
 

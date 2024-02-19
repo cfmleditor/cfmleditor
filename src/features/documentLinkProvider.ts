@@ -1,7 +1,7 @@
-import * as fs from "fs";
-import * as path from "path";
-import { CancellationToken, DocumentLink, DocumentLinkProvider, Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode";
+
+import { CancellationToken, DocumentLink, DocumentLinkProvider, FileStat, FileType, Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode";
 import { isUri } from "../utils/textUtil";
+import { fileExists } from "../utils/fileUtil";
 
 export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
 
@@ -29,7 +29,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
 
     let match: RegExpExecArray | null;
 
-    this.linkPatterns.forEach((element: LinkPattern) => {
+    this.linkPatterns.forEach(async (element: LinkPattern) => {
       const pattern: RegExp = element.pattern;
       while ((match = pattern.exec(documentText))) {
         const link: string = match[element.linkIndex];
@@ -38,7 +38,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
         const linkStart: Position = document.positionAt(offset);
         const linkEnd: Position = document.positionAt(offset + link.length);
         try {
-          const target: Uri = this.resolveLink(document, link);
+          const target: Uri = await this.resolveLink(document, link);
           if (target) {
             results.push(
               new DocumentLink(
@@ -61,7 +61,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
    * @param document The document containing link text
    * @param link The link text to resolve
    */
-  private resolveLink(document: TextDocument, link: string): Uri | undefined {
+  private async resolveLink(document: TextDocument, link: string): Promise<Uri | undefined> {
     if (link.startsWith("#")) {
       return undefined;
     }
@@ -80,23 +80,26 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
 
     // Check for relative local file
     const linkPath: string = link.split(/[?#]/)[0];
-    let resourcePath: string;
+    let resourcePath: Uri;
     if (linkPath && linkPath[0] === "/") {
       // Relative to root
       const root: WorkspaceFolder = workspace.getWorkspaceFolder(document.uri);
       if (root) {
-        resourcePath = path.join(root.uri.fsPath, linkPath);
+        resourcePath = Uri.joinPath(root.uri, linkPath);
       }
     } else {
       // Relative to document location
-      const base: string = path.dirname(document.fileName);
-      resourcePath = path.join(base, linkPath);
+      const base: Uri = Uri.parse(document.fileName);
+      resourcePath = Uri.joinPath(base, linkPath);
     }
 
     // Check custom virtual directories?
 
-    if (resourcePath && fs.existsSync(resourcePath) && fs.statSync(resourcePath).isFile()) {
-      return Uri.file(resourcePath);
+    if (resourcePath && await fileExists(resourcePath.fsPath) ) {
+        const fileStat: FileStat = await workspace.fs.stat(resourcePath);
+        if ( fileStat.type === FileType.File ) {
+            return resourcePath;
+        }
     }
 
     return undefined;

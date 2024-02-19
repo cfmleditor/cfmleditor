@@ -1,4 +1,4 @@
-import * as path from "path";
+
 import { ConfigurationTarget, extensions, ProgressLocation, TextDocument, Uri, window, workspace, WorkspaceConfiguration } from "vscode";
 import { Component, ComponentsByName, ComponentsByUri, COMPONENT_EXT, COMPONENT_FILE_GLOB, parseComponent } from "../entities/component";
 import { GlobalFunction, GlobalFunctions, GlobalMemberFunction, GlobalMemberFunctions, GlobalTag, GlobalTags } from "../entities/globals";
@@ -12,6 +12,7 @@ import { DocumentStateContext, getDocumentStateContext } from "../utils/document
 import { resolveCustomMappingPaths, resolveRelativePath, resolveRootPath } from "../utils/fileUtil";
 import trie from "trie-prefix-tree";
 import { Snippet, Snippets } from "../entities/snippet";
+import { Utils } from "vscode-uri";
 
 let allGlobalEntityDefinitions = new MyMap<string, CFDocsDefinitionInfo>();
 
@@ -183,7 +184,7 @@ export function clearAllGlobalEntityDefinitions(): void {
  */
 function setComponent(comp: Component): void {
   allComponentsByUri[comp.uri.toString()] = comp;
-  const componentKey: string = path.basename(comp.uri.fsPath, COMPONENT_EXT).toLowerCase();
+  const componentKey: string = Utils.basename(comp.uri).toLowerCase();
   if (!allComponentsByName[componentKey]) {
     allComponentsByName[componentKey] = {};
   }
@@ -286,7 +287,7 @@ export function componentPathToUri(dotPath: string, baseUri: Uri): Uri | undefin
     return undefined;
   }
 
-  const normalizedPath: string = dotPath.replace(/\./g, path.sep) + COMPONENT_EXT;
+  const normalizedPath: string = dotPath.replace(/\./g, "/") + COMPONENT_EXT;
 
   // relative to local directory
   const localPath: string = resolveRelativePath(baseUri, normalizedPath);
@@ -321,7 +322,7 @@ export function componentPathToUri(dotPath: string, baseUri: Uri): Uri | undefin
  * @param component The component to cache
  * @param documentStateContext Contextual information for a given document's state
  */
-export function cacheComponent(component: Component, documentStateContext: DocumentStateContext): void {
+export async function cacheComponent(component: Component, documentStateContext: DocumentStateContext): Promise<void> {
   clearCachedComponent(component.uri);
   setComponent(component);
   component.functions.forEach((funcObj: UserFunction) => {
@@ -329,16 +330,16 @@ export function cacheComponent(component: Component, documentStateContext: Docum
   });
 
   const componentUri: Uri = component.uri;
-  const fileName: string = path.basename(componentUri.fsPath);
+  const fileName: string = Utils.basename(componentUri);
   if (fileName === "Application.cfc") {
-    const thisApplicationVariables: Variable[] = parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
+    const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
 
     const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
       return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
     });
     setApplicationVariables(componentUri, thisApplicationFilteredVariables);
   } else if (fileName === "Server.cfc") {
-    const thisServerVariables: Variable[] = parseVariableAssignments(documentStateContext, documentStateContext.docIsScript).filter((variable: Variable) => {
+    const thisServerVariables: Variable[] = (await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript)).filter((variable: Variable) => {
       return variable.scope === Scope.Server;
     });
     allServerVariables.set(componentUri.toString(), thisServerVariables);
@@ -426,10 +427,10 @@ async function cacheGivenComponents(componentUris: Uri[]): Promise<void> {
  * @param document The text document to parse and cache
  * @param fast Whether to use the faster, but less accurate parsing
  */
-export function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false): boolean {
+export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false): Promise<boolean> {
   const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments);
   try {
-    const parsedComponent: Component | undefined = parseComponent(documentStateContext);
+    const parsedComponent: Component | undefined = await parseComponent(documentStateContext);
     if (!parsedComponent) {
         return false;
     }
@@ -450,7 +451,7 @@ export function clearCachedComponent(componentUri: Uri): void {
     delete allComponentsByUri[componentUri.toString()];
   }
 
-  const componentKey: string = path.basename(componentUri.fsPath, COMPONENT_EXT).toLowerCase();
+  const componentKey: string = Utils.basename(componentUri).toLowerCase();
   const componentsByName: ComponentsByUri = allComponentsByName[componentKey];
   if (componentsByName) {
     const componentsByNameLen: number = Object.keys(componentsByName).length;
@@ -519,7 +520,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[]): Promise<void> 
       const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
       const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
       const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments);
-      const thisApplicationVariables: Variable[] = parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
+      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
       });

@@ -1,11 +1,10 @@
 import { DataType } from "./dataType";
 import { Signature, constructSignatureLabelParamsPart, constructSignatureLabelParamsPrefix } from "./signature";
 import { UserFunction } from "./userFunction";
-import { COMPONENT_EXT } from "./component";
-import * as path from "path";
 import { DocumentStateContext } from "../utils/documentUtil";
 import { Range, TextDocument, Position } from "vscode";
 import { getNextCharacterPosition } from "../utils/contextUtil";
+import { Utils } from "vscode-uri";
 
 const functionSuffixPattern: RegExp = /^\s*\(([^)]*)/;
 
@@ -56,7 +55,7 @@ export function getReturnTypeString(func: Function): string {
   if ("returnTypeUri" in func) {
     const userFunction: UserFunction = func as UserFunction;
     if (userFunction.returnTypeUri) {
-      returnType = path.basename(userFunction.returnTypeUri.fsPath, COMPONENT_EXT);
+      returnType = Utils.basename(userFunction.returnTypeUri);
     }
   }
 

@@ -1,8 +1,8 @@
-import * as path from "path";
+
 import { CancellationToken, Hover, HoverProvider, MarkdownString, Position, Range, TextDocument, TextLine, Uri, workspace, WorkspaceConfiguration } from "vscode";
 import { extensionContext, LANGUAGE_ID } from "../cfmlMain";
 import { VALUE_PATTERN } from "../entities/attribute";
-import { Component, COMPONENT_EXT, objectNewInstanceInitPrefix } from "../entities/component";
+import { Component, objectNewInstanceInitPrefix } from "../entities/component";
 import { IPropertyData, IAtDirectiveData } from "../entities/css/cssLanguageTypes";
 import { cssDataManager, getEntryDescription as getCSSEntryDescription, cssWordRegex } from "../entities/css/languageFacts";
 import { cssPropertyPattern } from "../entities/css/property";
@@ -23,6 +23,7 @@ import { DocumentPositionStateContext, getDocumentPositionStateContext } from ".
 import { equalsIgnoreCase, textToMarkdownCompatibleString, textToMarkdownString } from "../utils/textUtil";
 import * as cachedEntity from "./cachedEntities";
 import { getComponent } from "./cachedEntities";
+import { Utils } from "vscode-uri";
 
 const cfDocsLinkPrefix = "https://cfdocs.org/";
 const mdnLinkPrefix = "https://developer.mozilla.org/docs/Web/";
@@ -293,7 +294,7 @@ export default class CFMLHoverProvider implements HoverProvider {
     if ("returnTypeUri" in func) {
       const userFunction: UserFunction = func as UserFunction;
       if (userFunction.returnTypeUri) {
-        returnType = path.basename(userFunction.returnTypeUri.fsPath, COMPONENT_EXT);
+        returnType = Utils.basename(userFunction.returnTypeUri);
       }
     }
 

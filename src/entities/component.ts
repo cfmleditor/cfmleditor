@@ -1,13 +1,11 @@
-//import findup from "findup-sync";
-import * as fs from "fs";
-import * as path from "path";
+
 import { Position, Range, TextDocument, Uri } from "vscode";
 import * as cachedEntities from "../features/cachedEntities";
 import { getComponent, hasComponent } from "../features/cachedEntities";
 import { MySet } from "../utils/collections";
 import { isCfcFile } from "../utils/contextUtil";
 import { DocumentPositionStateContext, DocumentStateContext } from "../utils/documentUtil";
-import { resolveCustomMappingPaths, resolveRelativePath, resolveRootPath } from "../utils/fileUtil";
+import { fileExists, resolveCustomMappingPaths, resolveRelativePath, resolveRootPath } from "../utils/fileUtil";
 import { Attribute, Attributes, parseAttributes } from "./attribute";
 import { DataType } from "./dataType";
 import { DocBlockKeyValue, parseDocBlock } from "./docblock";
@@ -175,7 +173,7 @@ export function isScriptComponent(document: TextDocument): boolean {
  * Parses a component document and returns an object conforming to the Component interface
  * @param documentStateContext The context information for a TextDocument to be parsed
  */
-export function parseComponent(documentStateContext: DocumentStateContext): Component | undefined {
+export async function parseComponent(documentStateContext: DocumentStateContext): Promise<Component | undefined> {
   const document: TextDocument = documentStateContext.document;
   const documentText: string = document.getText();
   const componentIsScript: boolean = documentStateContext.docIsScript;
@@ -227,7 +225,7 @@ export function parseComponent(documentStateContext: DocumentStateContext): Comp
   let componentAttributes: ComponentAttributes = {};
   let component: Component = {
     uri: document.uri,
-    name: path.basename(document.fileName, COMPONENT_EXT),
+    name: document.fileName,
     isScript: componentIsScript,
     isInterface: componentType === "interface",
     declarationRange: new Range(document.positionAt(declarationStartOffset), document.positionAt(declarationStartOffset + componentType.length)),
@@ -237,7 +235,7 @@ export function parseComponent(documentStateContext: DocumentStateContext): Comp
     implements: null,
     accessors: false,
     functions: new ComponentFunctions(),
-    properties: parseProperties(documentStateContext),
+    properties: await parseProperties(documentStateContext),
     variables: [],
     imports: []
   };
@@ -320,14 +318,14 @@ export function parseComponent(documentStateContext: DocumentStateContext): Comp
     }
   }
 
-  Object.getOwnPropertyNames(component).forEach((propName: string) => {
+  Object.getOwnPropertyNames(component).forEach(async (propName: string) => {
     // TODO: Is this just supposed to be checking for existence or also value? Because it is ignoring falsy property values too
     if (componentAttributes[propName]) {
       if (propName === "extends") {
-        component.extends = componentPathToUri(componentAttributes.extends, document.uri);
+        component.extends = await componentPathToUri(componentAttributes.extends, document.uri);
       } else if (propName === "implements") {
-        componentAttributes.implements.split(",").forEach((element: string) => {
-          const implementsUri: Uri = componentPathToUri(element.trim(), document.uri);
+        componentAttributes.implements.split(",").forEach(async (element: string) => {
+          const implementsUri: Uri = await componentPathToUri(element.trim(), document.uri);
           if (implementsUri) {
             if (!component.implements) {
               component.implements = [];
@@ -379,7 +377,7 @@ export function parseComponent(documentStateContext: DocumentStateContext): Comp
 
   // Only check before first function definition
   const componentDefinitionRange = new Range(document.positionAt(componentMatch.index + head.length), earliestFunctionRangeStart);
-  component.variables = parseVariableAssignments(documentStateContext, componentIsScript, componentDefinitionRange);
+  component.variables = await parseVariableAssignments(documentStateContext, componentIsScript, componentDefinitionRange);
 
   // TODO: Get imports
 
@@ -452,7 +450,7 @@ function processAttributes(attributes: Attributes): ComponentAttributes {
  * @param dotPath A string for a component in dot-path notation
  * @param baseUri The URI from which the component path will be resolved
  */
-export function componentPathToUri(dotPath: string, baseUri: Uri): Uri | undefined {
+export async function componentPathToUri(dotPath: string, baseUri: Uri): Promise<Uri | undefined> {
   if (!dotPath) {
     return undefined;
   }
@@ -462,7 +460,7 @@ export function componentPathToUri(dotPath: string, baseUri: Uri): Uri | undefin
     return cachedResult;
   }
 
-  const normalizedPath: string = dotPath.replace(/\./g, path.sep) + COMPONENT_EXT;
+  const normalizedPath: string = Uri.parse(dotPath + COMPONENT_EXT).toString();
 
   /* Note
   If ColdFusion finds a directory that matches the first path element, but does not find a CFC under that directory, ColdFusion returns a not found error and does NOT search for another directory.
@@ -471,20 +469,22 @@ export function componentPathToUri(dotPath: string, baseUri: Uri): Uri | undefin
 
   // relative to local directory
   const localPath: string = resolveRelativePath(baseUri, normalizedPath);
-  if (fs.existsSync(localPath)) {
+
+
+  if ( await fileExists(localPath) ) {
     return Uri.file(localPath);
   }
 
   // relative to web root
   const rootPath: string = resolveRootPath(baseUri, normalizedPath);
-  if (rootPath && fs.existsSync(rootPath)) {
+  if (rootPath && await fileExists(rootPath)) {
     return Uri.file(rootPath);
   }
 
   // custom mappings
   const customMappingPaths: string[] = resolveCustomMappingPaths(baseUri, normalizedPath);
   for (const mappedPath of customMappingPaths) {
-    if (fs.existsSync(mappedPath)) {
+    if ( await fileExists(mappedPath)) {
       return Uri.file(mappedPath);
     }
   }

@@ -28,7 +28,8 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
     if (documentStateContext.isCfcFile) {
       documentSymbols = documentSymbols.concat(CFMLDocumentSymbolProvider.getComponentSymbols(documentStateContext));
     } else if (documentStateContext.isCfmFile) {
-      documentSymbols = documentSymbols.concat(CFMLDocumentSymbolProvider.getTemplateSymbols(documentStateContext));
+        let tmp = await CFMLDocumentSymbolProvider.getTemplateSymbols(documentStateContext);
+      documentSymbols = documentSymbols.concat(tmp);
     }
 
     return documentSymbols;
@@ -87,7 +88,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 
     // Component functions
     let functionSymbols: DocumentSymbol[] = [];
-    component.functions.forEach((userFunction: UserFunction, functionKey: string) => {
+    component.functions.forEach(async (userFunction: UserFunction, functionKey: string) => {
       let currFuncSymbol: DocumentSymbol = new DocumentSymbol(
         userFunction.name,
         "",
@@ -100,7 +101,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
       if (!userFunction.isImplicit) {
         // Component function local variables
         let localVarSymbols: DocumentSymbol[] = [];
-        const localVariables: Variable[] = getLocalVariables(userFunction, documentStateContext, component.isScript);
+        const localVariables: Variable[] = await getLocalVariables(userFunction, documentStateContext, component.isScript);
         localVariables.forEach((variable: Variable) => {
           let detail = "";
           if (variable.scope !== Scope.Unknown) {
@@ -128,10 +129,10 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
    * Provide symbol information for templates
    * @param documentStateContext The document context for which to provide symbols.
    */
-  private static getTemplateSymbols(documentStateContext: DocumentStateContext): DocumentSymbol[] {
+  private static async getTemplateSymbols(documentStateContext: DocumentStateContext): Promise<DocumentSymbol[]> {
     let templateSymbols: DocumentSymbol[] = [];
     // TODO: Cache template variables?
-    const allVariables: Variable[] = parseVariableAssignments(documentStateContext, false);
+    const allVariables: Variable[] = await parseVariableAssignments(documentStateContext, false);
     allVariables.forEach((variable: Variable) => {
       const kind: SymbolKind = usesConstantConvention(variable.identifier) || variable.final ? SymbolKind.Constant : SymbolKind.Variable;
       let detail = "";

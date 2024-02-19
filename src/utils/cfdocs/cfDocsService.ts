@@ -1,8 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
-import fetch from 'isomorphic-fetch';
-import vscode from "vscode";
-import { commands, Position, Range, TextDocument, TextLine, Uri, window, workspace, WorkspaceConfiguration, TextEditor } from "vscode";
+import { fetch } from "isomorphic-fetch";
+import { commands, Position, Range, TextDocument, TextLine, Uri, window, workspace, WorkspaceConfiguration, TextEditor, env } from "vscode";
 import { getFunctionSuffixPattern } from "../../entities/function";
 import { GlobalEntity } from "../../entities/globals";
 import { getTagPrefixPattern } from "../../entities/tag";
@@ -13,9 +10,9 @@ import { extensionContext } from "../../cfmlMain";
 import { CFDocsDefinitionInfo, EngineCompatibilityDetail } from "./definitionInfo";
 
 enum CFDocsSource {
-  Remote = "remote",
-  Local = "local",
-  Extension = "extension"
+  remote = "remote",
+  local = "local",
+  extension = "extension"
 }
 
 export default class CFDocsService {
@@ -28,17 +25,15 @@ export default class CFDocsService {
    */
   private static async getLocalDefinitionInfo(identifier: string): Promise<CFDocsDefinitionInfo> {
     const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
-    const cfdocsPath: string = cfmlCfDocsSettings.get("localPath");
-
+    const jsonFileName = CFDocsService.getJsonFileName(identifier);
     return new Promise<CFDocsDefinitionInfo>((resolve, reject) => {
       try {
-        const docFilePath: string = path.join(cfdocsPath, CFDocsService.getJsonFileName(identifier));
-        fs.readFile(docFilePath, "utf8", (err, data) => {
-          if (err) {
-            reject(err);
-          }
-
-          resolve(CFDocsService.constructDefinitionFromJsonDoc(data));
+        const cfdocsPath: Uri = Uri.file(cfmlCfDocsSettings.get("localPath"));
+        const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
+        workspace.fs.readFile(docFilePath).then((readData) => {
+            const readStr = Buffer.from(readData).toString("utf8");
+            const readJson = JSON.parse(readStr);
+            resolve(CFDocsService.constructDefinitionFromJsonDoc(readJson));
         });
       } catch (e) {
         console.log(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
@@ -55,11 +50,10 @@ export default class CFDocsService {
 
     return new Promise<CFDocsDefinitionInfo>((resolve, reject) => {
       try {
-        const docFilePath: string = path.join("./resources/schemas/en/", CFDocsService.getJsonFileName(identifier));
-        const pathUri: Uri = vscode.Uri.file(extensionContext.asAbsolutePath(docFilePath));
+        const pathUri: Uri = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/en/" + CFDocsService.getJsonFileName(identifier)));
         try {
             workspace.fs.readFile(pathUri).then((readData) => {
-                const readStr = Buffer.from(readData).toString('utf8');
+                const readStr = Buffer.from(readData).toString("utf8");
                 const readJson = JSON.parse(readStr);
                 resolve(CFDocsService.constructDefinitionFromJsonDoc(readJson));
             });
@@ -104,7 +98,7 @@ export default class CFDocsService {
    * @param jsonTextDoc A JSON string conforming to the CFDocs definition structure
    */
   private static constructDefinitionFromJsonDoc(jsonDoc): CFDocsDefinitionInfo {
-    //const jsonDoc = JSON.parse(jsonTextDoc);
+    // const jsonDoc = JSON.parse(jsonTextDoc);
 
     return new CFDocsDefinitionInfo(
       jsonDoc.name, jsonDoc.type, jsonDoc.syntax, jsonDoc.member, jsonDoc.script, jsonDoc.returns,
@@ -124,32 +118,29 @@ export default class CFDocsService {
    * Returns a list of all global CFML functions documented on CFDocs
    * @param source Indicates whether the data will be retrieved locally or remotely
    */
-  public static async getAllFunctionNames(source = CFDocsSource.Remote): Promise<string[]> {
+  public static async getAllFunctionNames(source = CFDocsSource.remote): Promise<string[]> {
     const jsonFileName: string = CFDocsService.getJsonFileName("functions");
 
     return new Promise<string[]>((resolve, reject) => {
-      if (source === CFDocsSource.Local && vscode.env.appHost === "desktop" ) {
+      if (source === CFDocsSource.local && env.appHost === "desktop" ) {
         const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
-        const cfdocsPath: string = cfmlCfDocsSettings.get("localPath");
-        let docFilePath: string = path.join(cfdocsPath, jsonFileName);
-
+        const cfdocsPath: Uri = Uri.file(cfmlCfDocsSettings.get("localPath"));
+        const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
         try {
-          fs.readFile(docFilePath, "utf8", (err, data) => {
-            if (err) {
-              reject(err);
-            }
-            resolve(JSON.parse(data).related);
-          });
+            workspace.fs.readFile(docFilePath).then((readData) => {
+                const readStr = Buffer.from(readData).toString("utf8");
+                const readJson = JSON.parse(readStr);
+                resolve(readJson.related);
+            });
         } catch (ex) {
             console.log("Error retrieving all function names:", (<Error>ex).message);
             reject(ex);
         }
-      } else if ( source === CFDocsSource.Extension ) {
-        const extensionDocFilePath: string = path.join("./resources/schemas/en/", jsonFileName);
-        const extensionPathUri: Uri = vscode.Uri.file(extensionContext.asAbsolutePath(extensionDocFilePath));
+      } else if ( source === CFDocsSource.extension ) {
+        const extensionPathUri: Uri = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/en/" + jsonFileName));
          try {
             workspace.fs.readFile(extensionPathUri).then((readData) => {
-                const readStr = Buffer.from(readData).toString('utf8');
+                const readStr = Buffer.from(readData).toString("utf8");
                 const readJson = JSON.parse(readStr);
                 resolve(readJson.related);
             });
@@ -171,7 +162,7 @@ export default class CFDocsService {
             }).catch(function(fex){
                 console.log("Error retrieving all function names:", (<Error>fex).message);
                 reject(fex);
-        });
+            });
       }
     });
   }
@@ -180,32 +171,30 @@ export default class CFDocsService {
    * Returns a list of all global CFML tags documented on CFDocs
    * @param source Indicates whether the data will be retrieved locally or remotely
    */
-    public static async getAllTagNames(source = CFDocsSource.Remote): Promise<string[]> {
+    public static async getAllTagNames(source = CFDocsSource.remote): Promise<string[]> {
         const jsonFileName: string = CFDocsService.getJsonFileName("tags");
 
         return new Promise<string[]>((resolve, reject) => {
-            if (source === CFDocsSource.Local && vscode.env.appHost === "desktop" ) {
+            if (source === CFDocsSource.local && env.appHost === "desktop" ) {
                 const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
-                const cfdocsPath: string = cfmlCfDocsSettings.get("localPath");
-                let docFilePath: string = path.join(cfdocsPath, jsonFileName);
+                const cfdocsPath: Uri = Uri.file(cfmlCfDocsSettings.get("localPath"));
+                const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
 
                 try {
-                fs.readFile(docFilePath, "utf8", (err, data) => {
-                    if (err) {
-                    reject(err);
-                    }
-                    resolve(JSON.parse(data).related);
-                });
+                    workspace.fs.readFile(docFilePath).then((readData) => {
+                        const readStr = Buffer.from(readData).toString("utf8");
+                        const readJson = JSON.parse(readStr);
+                        resolve(readJson.related);
+                    });
                 } catch (ex) {
                 console.log("Error retrieving all tag names:", (<Error>ex).message);
                 reject(ex);
                 }
-            } else if ( source === CFDocsSource.Extension ) {
-                const extensionDocFilePath: string = path.join("./resources/schemas/en/", jsonFileName);
-                const extensionPathUri: Uri = vscode.Uri.file(extensionContext.asAbsolutePath(extensionDocFilePath));
+            } else if ( source === CFDocsSource.extension ) {
+                const extensionPathUri: Uri = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/en/" + jsonFileName));
                 try {
                     workspace.fs.readFile(extensionPathUri).then((readData) => {
-                        const readStr = Buffer.from(readData).toString('utf8');
+                        const readStr = Buffer.from(readData).toString("utf8");
                         const readJson = JSON.parse(readStr);
                         resolve(readJson.related);
                     });
@@ -289,11 +278,11 @@ export default class CFDocsService {
    */
   public static async cacheAll(): Promise<boolean> {
     const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
-    const cfdocsSource: CFDocsSource = cfmlCfDocsSettings.get<CFDocsSource>("source", CFDocsSource.Remote);
-    const getDefinitionInfo = cfdocsSource === CFDocsSource.Local && vscode.env.appHost === "desktop" ?
-        CFDocsService.getLocalDefinitionInfo : ( cfdocsSource === CFDocsSource.Extension ?
+    const cfdocsSource: CFDocsSource = cfmlCfDocsSettings.get<CFDocsSource>("source", CFDocsSource.remote);
+    const getDefinitionInfo = cfdocsSource === CFDocsSource.local && env.appHost === "desktop" ?
+        CFDocsService.getLocalDefinitionInfo : ( cfdocsSource === CFDocsSource.extension ?
         CFDocsService.getExtensionDefinitionInfo : CFDocsService.getRemoteDefinitionInfo );
-    //const getMemberFunctionDefinition = CFDocsService.getExtensionDefinitionInfo;
+    // const getMemberFunctionDefinition = CFDocsService.getExtensionDefinitionInfo;
 
     CFDocsService.getAllFunctionNames(cfdocsSource).then((allFunctionNames: string[]) => {
       allFunctionNames.forEach((functionName: string) => {
@@ -303,13 +292,13 @@ export default class CFDocsService {
       });
     });
 
-    /*CFDocsService.getAllMemberFunctionNames(cfdocsSource).then((allMemberFunctionNames: string[]) => {
+    /* CFDocsService.getAllMemberFunctionNames(cfdocsSource).then((allMemberFunctionNames: string[]) => {
         allMemberFunctionNames.forEach((memberFunctionName: string) => {
             getMemberFunctionDefinition("member-" + memberFunctionName).then((definitionInfo: CFDocsDefinitionInfo) => {
                 CFDocsService.setGlobalMemberFunction(definitionInfo);
             });
         });
-    });*/
+    }); */
 
     CFDocsService.getAllTagNames(cfdocsSource).then((allTagNames: string[]) => {
       allTagNames.forEach((tagName: string) => {
@@ -424,7 +413,7 @@ export default class CFDocsService {
    * Returns a list of all global CFML functions documented on CFDocs
    * @param source Indicates whether the data will be retrieved locally or remotely
    */
-  /*public static async getAllMemberFunctionNames(source = CFDocsSource.Remote): Promise<string[]> {
+  /* public static async getAllMemberFunctionNames(source = CFDocsSource.Remote): Promise<string[]> {
     const jsonFileName: string = CFDocsService.getJsonFileName("memberfunctions");
 
     return new Promise<string[]>((resolve, reject) => {
@@ -442,5 +431,5 @@ export default class CFDocsService {
         }
     });
 
-  }*/
+  } */
 }

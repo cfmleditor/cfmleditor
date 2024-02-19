@@ -1,9 +1,9 @@
-import * as micromatch from "micromatch";
-import * as path from "path";
+import { some } from "micromatch";
 import {
   commands, ConfigurationChangeEvent, ConfigurationTarget, DocumentSelector, ExtensionContext, extensions,
   FileSystemWatcher, IndentAction, languages, TextDocument, Uri, workspace, WorkspaceConfiguration
 } from "vscode";
+import { Utils } from "vscode-uri";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
 import { decreasingIndentingTags, goToMatchingTag, nonClosingTags, nonIndentingTags } from "./entities/tag";
@@ -83,7 +83,7 @@ function shouldExcludeDocument(documentUri: Uri): boolean {
 
   const relativePath = workspace.asRelativePath(documentUri);
 
-  return micromatch.some(relativePath, fileExcludeGlobs);
+  return some(relativePath, fileExcludeGlobs);
 }
 
 /**
@@ -151,7 +151,7 @@ export function activate(context: ExtensionContext): void {
   context.subscriptions.push(languages.registerTypeDefinitionProvider(DOCUMENT_SELECTOR, new CFMLTypeDefinitionProvider()));
   context.subscriptions.push(languages.registerColorProvider(DOCUMENT_SELECTOR, new CFMLDocumentColorProvider()));
 
-  context.subscriptions.push(workspace.onDidSaveTextDocument((document: TextDocument) => {
+  context.subscriptions.push(workspace.onDidSaveTextDocument(async (document: TextDocument) => {
     const documentUri = document.uri;
 
     if (shouldExcludeDocument(documentUri)) {
@@ -162,9 +162,9 @@ export function activate(context: ExtensionContext): void {
       const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
       const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
       cachedEntity.cacheComponentFromDocument(document, false, replaceComments);
-    } else if (path.basename(document.fileName) === "Application.cfm") {
+    } else if (Utils.basename(Uri.parse(document.fileName)) === "Application.cfm") {
       const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true);
-      const thisApplicationVariables: Variable[] = parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
+      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
       });
@@ -191,7 +191,7 @@ export function activate(context: ExtensionContext): void {
 
     cachedEntity.clearCachedComponent(componentUri);
 
-    const fileName: string = path.basename(componentUri.fsPath);
+    const fileName: string = Utils.basename(componentUri);
     if (fileName === "Application.cfc") {
       cachedEntity.removeApplicationVariables(componentUri);
     }
@@ -205,9 +205,9 @@ export function activate(context: ExtensionContext): void {
       return;
     }
 
-    workspace.openTextDocument(applicationUri).then((document: TextDocument) => {
+    workspace.openTextDocument(applicationUri).then(async (document: TextDocument) => {
       const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true);
-      const thisApplicationVariables: Variable[] = parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
+      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
       });

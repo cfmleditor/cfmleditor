@@ -8,7 +8,7 @@ export default class SnippetService {
 
         SnippetService.getCustomSnippets().then((snippets: Snippets) => {
             for (const key in snippets) {
-                let snippet: Snippet = snippets[key];
+                const snippet: Snippet = snippets[key];
                 setCustomSnippet(key, snippet);
             }
         });
@@ -30,7 +30,7 @@ export default class SnippetService {
 
                 try {
                     workspace.fs.readFile(snippetsPathUri).then((readData) => {
-                        const readStr = Buffer.from(readData).toString('utf8');
+                        const readStr = Buffer.from(readData).toString("utf8");
                         const readJson = JSON.parse(readStr);
                         resolve(readJson);
                     });

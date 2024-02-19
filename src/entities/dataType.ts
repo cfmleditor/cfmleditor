@@ -190,7 +190,7 @@ export namespace DataType {
    * @param dataType The string to check
    * @param documentUri The document's URI that contains this type string
    */
-  export function getDataTypeAndUri(dataType: string, documentUri: Uri): [DataType, Uri] {
+  export async function getDataTypeAndUri(dataType: string, documentUri: Uri): Promise<[DataType, Uri]> {
     if (!dataType) {
       return undefined;
     }
@@ -198,7 +198,7 @@ export namespace DataType {
     if (isDataType(dataType)) {
       return [valueOf(dataType), null];
     } else {
-      const typeUri: Uri = componentPathToUri(dataType, documentUri);
+      const typeUri: Uri = await componentPathToUri(dataType, documentUri);
       if (typeUri) {
         return [DataType.Component, typeUri];
       }
@@ -212,7 +212,7 @@ export namespace DataType {
    * @param value The value to analyze
    * @param documentUri The URI of the document containing the value
    */
-  export function inferDataTypeFromValue(value: string, documentUri: Uri): [DataType, Uri] {
+  export async function inferDataTypeFromValue(value: string, documentUri: Uri): Promise<[DataType, Uri]> {
     if (value.length === 0) {
       return [DataType.String, null];
     }
@@ -251,7 +251,7 @@ export namespace DataType {
 
     const objectMatch1 = /^(?:["']\s*#\s*)?(createObject\((["'])component\2\s*,\s*(["'])([^'"]+)\3)/i.exec(value);
     if (objectMatch1) {
-      const findUri: [DataType, Uri] = getDataTypeAndUri(objectMatch1[4], documentUri);
+      const findUri: [DataType, Uri] = await getDataTypeAndUri(objectMatch1[4], documentUri);
       if (findUri) {
         return findUri;
       }
@@ -260,7 +260,7 @@ export namespace DataType {
 
     const objectMatch2 = /^(?:["']\s*#\s*)?(new\s+(["'])?([^'"(]+)\2\()/i.exec(value);
     if (objectMatch2) {
-      const findUri: [DataType, Uri] = getDataTypeAndUri(objectMatch2[3], documentUri);
+      const findUri: [DataType, Uri] = await getDataTypeAndUri(objectMatch2[3], documentUri);
       if (findUri) {
         return findUri;
       }

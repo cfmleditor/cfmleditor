@@ -1,9 +1,9 @@
-import * as path from "path";
+
 import { DataType } from "./dataType";
 import { Scope, unscopedPrecedence } from "./scope";
 import { Location, TextDocument, Range, Uri, Position, WorkspaceConfiguration, workspace } from "vscode";
 import { getCfScriptRanges, isCfcFile, getClosingPosition } from "../utils/contextUtil";
-import { Component, getApplicationUri, getServerUri, COMPONENT_EXT } from "./component";
+import { Component, getApplicationUri, getServerUri } from "./component";
 import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, UserFunctionVariable, parseScriptFunctionArgs, functionValuePattern, isUserFunctionVariable } from "./userFunction";
 import * as cachedEntities from "../features/cachedEntities";
 import { equalsIgnoreCase } from "../utils/textUtil";
@@ -16,6 +16,7 @@ import { CFMLEngineName, CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 import { DocumentStateContext, DocumentPositionStateContext } from "../utils/documentUtil";
 import { getScriptFunctionArgRanges } from "./function";
 import { constructParameterLabel } from "./parameter";
+import { Utils } from "vscode-uri";
 
 
 // FIXME: Erroneously matches implicit struct key assignments using = since '{' can also open a code block. Also matches within string or comment.
@@ -308,7 +309,7 @@ export function getVariableExpressionPrefixPattern() {
  * @param isScript Whether this document or range is defined entirely in CFScript
  * @param docRange Range within which to check
  */
-export function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange?: Range): Variable[] {
+export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange?: Range): Promise<Variable[]> {
   let variables: Variable[] = [];
   const document: TextDocument = documentStateContext.document;
   const documentUri: Uri = document.uri;
@@ -378,7 +379,7 @@ export function parseVariableAssignments(documentStateContext: DocumentStateCont
     if (parsedAttr.has("type") && !!parsedAttr.get("type").value) {
       paramType = DataType.paramTypeToDataType(parsedAttr.get("type").value);
     } else if (parsedAttr.has("default") && parsedAttr.get("default").value !== undefined) {
-      const inferredType: [DataType, Uri] = DataType.inferDataTypeFromValue(parsedAttr.get("default").value, documentUri);
+      const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(parsedAttr.get("default").value, documentUri);
       paramType = inferredType[0];
       paramTypeComponentUri = inferredType[1];
     }
@@ -472,7 +473,7 @@ export function parseVariableAssignments(documentStateContext: DocumentStateCont
     if (scopeVal === Scope.Unknown) {
       scopeVal = Scope.Variables;
     }
-    const inferredType: [DataType, Uri] = DataType.inferDataTypeFromValue(initValue, documentUri);
+    const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(initValue, documentUri);
 
     let thisVar: Variable = {
       identifier: varName,
@@ -638,8 +639,8 @@ export function parseVariableAssignments(documentStateContext: DocumentStateCont
   if (!isScript) {
     // Check cfscript sections
     const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange);
-    cfScriptRanges.forEach((range: Range) => {
-      const cfscriptVars: Variable[] = parseVariableAssignments(documentStateContext, true, range);
+    cfScriptRanges.forEach(async (range: Range) => {
+      const cfscriptVars: Variable[] = await parseVariableAssignments(documentStateContext, true, range);
 
       cfscriptVars.forEach((scriptVar: Variable) => {
         const matchingVars: Variable[] = getMatchingVariables(variables, scriptVar.identifier, scriptVar.scope);
@@ -845,11 +846,11 @@ export function getServerVariables(baseUri: Uri): Variable[] {
  * Collects all variable assignments accessible based on the given documentPositionStateContext
  * @param documentPositionStateContext The contextual information of the state of a document and the cursor position
  */
-export function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext): Variable[] {
+export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext): Promise<Variable[]> {
   let allVariableAssignments: Variable[] = [];
 
   if (documentPositionStateContext.isCfmFile) {
-    const docVariableAssignments: Variable[] = parseVariableAssignments(documentPositionStateContext, false);
+    const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false);
     allVariableAssignments = allVariableAssignments.concat(docVariableAssignments);
   } else if (documentPositionStateContext.isCfcFile) {
     const thisComponent = documentPositionStateContext.component;
@@ -877,7 +878,7 @@ export function collectDocumentVariableAssignments(documentPositionStateContext:
           const currInitFunc: UserFunction = currComponent.functions.get(initMethod);
 
           if (currInitFunc.bodyRange) {
-            const currInitVariables: Variable[] = parseVariableAssignments(documentPositionStateContext, currComponent.isScript, currInitFunc.bodyRange).filter((variable: Variable) => {
+            const currInitVariables: Variable[] = (await parseVariableAssignments(documentPositionStateContext, currComponent.isScript, currInitFunc.bodyRange)).filter((variable: Variable) => {
               return [Scope.Variables, Scope.This].includes(variable.scope) && !componentVariables.some((existingVariable: Variable) => {
                 return existingVariable.scope === variable.scope && equalsIgnoreCase(existingVariable.identifier, variable.identifier);
               });
@@ -910,8 +911,9 @@ export function collectDocumentVariableAssignments(documentPositionStateContext:
       let localVariables: Variable[] = [];
       thisComponent.functions.filter((func: UserFunction) => {
         return func.bodyRange && func.bodyRange.contains(documentPositionStateContext.position);
-      }).forEach((func: UserFunction) => {
-        localVariables = localVariables.concat(getLocalVariables(func, documentPositionStateContext, thisComponent.isScript));
+      }).forEach(async (func: UserFunction) => {
+        let tmp = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript);
+        localVariables = localVariables.concat(tmp);
       });
       allVariableAssignments = allVariableAssignments.concat(localVariables);
     }
@@ -927,7 +929,7 @@ export function collectDocumentVariableAssignments(documentPositionStateContext:
 export function getVariableTypeString(variable: Variable): string {
   let varType: string = variable.dataType;
   if (variable.dataTypeComponentUri) {
-    varType = path.basename(variable.dataTypeComponentUri.fsPath, COMPONENT_EXT);
+    varType = Utils.basename(variable.dataTypeComponentUri);
   } else if (variable.dataType === DataType.Function) {
     let argString: string = "...";
     if (isUserFunctionVariable(variable)) {
