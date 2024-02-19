@@ -30,7 +30,6 @@ module.exports = {
         ],
         "@typescript-eslint/ban-ts-comment": "error",
         "@typescript-eslint/ban-types": "error",
-        "@typescript-eslint/indent": "error",
         "@typescript-eslint/member-delimiter-style": [
             "error",
             {
