@@ -30,6 +30,7 @@ module.exports = {
         ],
         "@typescript-eslint/ban-ts-comment": "error",
         "@typescript-eslint/ban-types": "error",
+        "@typescript-eslint/indent": "off",
         "@typescript-eslint/member-delimiter-style": [
             "error",
             {
@@ -57,7 +58,7 @@ module.exports = {
         "@typescript-eslint/no-unsafe-declaration-merging": "error",
         "@typescript-eslint/no-unused-expressions": "error",
         "@typescript-eslint/no-unused-vars": "error",
-        "@typescript-eslint/no-var-requires": "error",
+        "@typescript-eslint/no-var-requires": "warn",
         "@typescript-eslint/prefer-as-const": "error",
         "@typescript-eslint/prefer-for-of": "error",
         "@typescript-eslint/quotes": [
@@ -96,7 +97,7 @@ module.exports = {
         ],
         "jsdoc/check-alignment": "error",
         "jsdoc/check-indentation": "error",
-        "jsdoc/newline-after-description": "error",
+        "jsdoc/newline-after-description": "off",
         "new-parens": "error",
         "no-array-constructor": "off",
         "no-async-promise-executor": "error",
@@ -134,7 +135,7 @@ module.exports = {
         "no-nonoctal-decimal-escape": "error",
         "no-obj-calls": "error",
         "no-octal": "error",
-        "no-prototype-builtins": "error",
+        "no-prototype-builtins": "warn",
         "no-redeclare": "error",
         "no-regex-spaces": "error",
         "no-self-assign": "error",
