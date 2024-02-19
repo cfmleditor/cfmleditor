@@ -1,29 +1,24 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "target": "es2021",
-    "outDir": "./out",
-    "lib": [
-      "ES2019",
-      "ES2021"
-    ],
-    "sourceMap": true,
-    "rootDir": "src",
-    "alwaysStrict": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "noUnusedLocals": true,
-    "esModuleInterop": true
-  },
-  "exclude": [
-    "node_modules",
-    ".vscode-test",
-    ".vscode-test-web"
-  ],
-  "plugins": [
-    {
-      "name": "typescript-tslint-plugin"
-    }
-  ]
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2021",
+        "outDir": "./out",
+        "lib": [
+            "ES2019",
+            "ES2021"
+        ],
+        "sourceMap": true,
+        "rootDir": "src",
+        "alwaysStrict": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noUnusedLocals": true,
+        "esModuleInterop": true
+    },
+    "exclude": [
+        "node_modules",
+        ".vscode-test",
+        ".vscode-test-web"
+    ]
 }
