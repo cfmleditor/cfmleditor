@@ -8,7 +8,7 @@ import { nonClosingTags } from "../entities/tag";
  */
 export function insertAutoCloseTag(event: TextDocumentChangeEvent): void {
 
-    if (!event.contentChanges[0] || event.reason == TextDocumentChangeReason.Undo || event.reason == TextDocumentChangeReason.Redo ) {
+    if (!event.contentChanges[0] || event.reason === TextDocumentChangeReason.Undo || event.reason === TextDocumentChangeReason.Redo ) {
         return;
     }
 
@@ -93,13 +93,13 @@ export function insertAutoCloseTag(event: TextDocumentChangeEvent): void {
  * @description Checks if the user has typed a right angle bracket.
  */
 function checkRightAngleBracket(contentChange: TextDocumentContentChangeEvent): boolean {
-    return contentChange.text === ">" || checkRightAngleBracketInVSCode_1_8(contentChange);
+    return contentChange.text === ">" || checkRightAngleBracketInVSCode1Dot8(contentChange);
 }
 
 /**
- * @description
+ * @description Checks if the user has typed a right angle bracket in VSCode 1.8.
  */
-function checkRightAngleBracketInVSCode_1_8(contentChange: TextDocumentContentChangeEvent): boolean {
+function checkRightAngleBracketInVSCode1Dot8(contentChange: TextDocumentContentChangeEvent): boolean {
     return contentChange.text.endsWith(">") && contentChange.range.start.character === 0
         && contentChange.range.start.line === contentChange.range.end.line
         && !contentChange.range.end.isEqual(new Position(0, 0));
