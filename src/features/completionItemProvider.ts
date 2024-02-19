@@ -2,7 +2,7 @@ import { CancellationToken, Command, CompletionContext, CompletionItem, Completi
 import { AttributeQuoteType, Attributes, IncludeAttributesCustom, IncludeAttributesSetType, parseAttributes, VALUE_PATTERN } from "../entities/attribute";
 import { CatchInfo, catchProperties, CatchPropertyDetails, parseCatches } from "../entities/catch";
 import { cgiVariables } from "../entities/cgi";
-import { Component, componentDottedPathPrefix, componentExtendsPathPrefix, COMPONENT_EXT, isInComponentHead, isSubcomponentOrEqual } from "../entities/component";
+import { Component, componentDottedPathPrefix, componentExtendsPathPrefix, isInComponentHead, isSubcomponentOrEqual } from "../entities/component";
 import { IPropertyData, IAtDirectiveData } from "../entities/css/cssLanguageTypes";
 import { cssDataManager, getEntryDescription as getCSSEntryDescription, cssWordRegex } from "../entities/css/languageFacts";
 import { DataType } from "../entities/dataType";

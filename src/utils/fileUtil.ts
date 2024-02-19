@@ -1,5 +1,4 @@
 
-import { equalsIgnoreCase } from "./textUtil";
 import { FileType, Uri, workspace, WorkspaceFolder } from "vscode";
 
 export interface CFMLMapping {
