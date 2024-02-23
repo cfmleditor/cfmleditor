@@ -4,16 +4,10 @@ import { nonClosingTags } from "../entities/tag";
 
 /**
  * @description Inserts closing tag when user types '/' or '>'.
- * @param event
  */
-export function insertAutoCloseTag(event: TextDocumentChangeEvent): void {
+export function handleContentChanges(event: TextDocumentChangeEvent): void {
 
     if (!event.contentChanges[0] || event.reason === TextDocumentChangeReason.Undo || event.reason === TextDocumentChangeReason.Redo ) {
-        return;
-    }
-
-    const isRightAngleBracket = checkRightAngleBracket(event.contentChanges[0]);
-    if (!isRightAngleBracket && event.contentChanges[0].text !== "/") {
         return;
     }
 
@@ -35,18 +29,30 @@ export function insertAutoCloseTag(event: TextDocumentChangeEvent): void {
         return;
     }
 
+    event.contentChanges.forEach((contentChange) => {
+        closeTag(contentChange);
+    });
+}
+
+/**
+ * @description Evaluates a contentChange and inserts a closing tag when user types '/' or '>'
+ */
+function closeTag(contentChange: TextDocumentContentChangeEvent): void {
+    const isRightAngleBracket = checkRightAngleBracket(contentChange);
+    const isForwardSlash = contentChange.text === "/";
+
+    if (!isRightAngleBracket && !isForwardSlash) {
+        return;
+    }
+
+    const editor = window.activeTextEditor;
     const selection = editor.selection;
     const originalPosition = selection.start.translate(0, 1);
-    const excludedTags = nonClosingTags;
 
-    if (event.contentChanges[0].text === "/") {
-        const text = editor.document.getText(new Range(new Position(Math.max(originalPosition.line - 1000,0), 0), originalPosition));
-        let last2chars = "";
-        if (text.length > 2) {
-            last2chars = text.substr(text.length - 2);
-        }
+    if (isForwardSlash) {
+        const [last2chars, linePreceding] = getPrecedingCharacters(originalPosition, editor);
         if (last2chars === "</") {
-            let closeTag = getCloseTag(text, excludedTags);
+            let closeTag = getCloseTag(linePreceding, nonClosingTags);
             if (closeTag) {
                 const nextChar = getNextChar(editor, originalPosition);
                 if (nextChar === ">") {
@@ -63,14 +69,14 @@ export function insertAutoCloseTag(event: TextDocumentChangeEvent): void {
         }
     }
 
-    if (isRightAngleBracket || event.contentChanges[0].text === "/") {
+    if (isRightAngleBracket || isForwardSlash) {
         const textLine = editor.document.lineAt(selection.start);
         const text = textLine.text.substring(0, selection.start.character + 1);
         const result = /<([_a-zA-Z][a-zA-Z0-9:\-_.]*)(?:\s+[^<>]*?[^\s/<>=]+?)*?\s?(\/|>)$/.exec(text);
         if (result !== null && ((occurrenceCount(result[0], "'") % 2 === 0)
             && (occurrenceCount(result[0], "\"") % 2 === 0) && (occurrenceCount(result[0], "`") % 2 === 0))) {
             if (result[2] === ">") {
-                if (excludedTags.indexOf(result[1].toLowerCase()) === -1) {
+                if (nonClosingTags.indexOf(result[1].toLowerCase()) === -1) {
                     editor.edit((editBuilder) => {
                         editBuilder.insert(originalPosition, "</" + result[1] + ">");
                     }).then(() => {
@@ -87,6 +93,19 @@ export function insertAutoCloseTag(event: TextDocumentChangeEvent): void {
             }
         }
     }
+}
+
+/**
+ * @description Gets the preceding two characters of a cursor position.
+ */
+function getPrecedingCharacters(originalPosition: Position, editor: TextEditor){
+    const range = new Range(new Position(Math.max(originalPosition.line - 1000, 0), 0), originalPosition);
+    const text = editor.document.getText(range);
+    let last2chars = "";
+    if (text.length > 2) {
+        last2chars = text.substr(text.length - 2);
+    }
+    return [last2chars, text];
 }
 
 /**

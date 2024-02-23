@@ -24,7 +24,7 @@ import CFMLWorkspaceSymbolProvider from "./features/workspaceSymbolProvider";
 import CFDocsService from "./utils/cfdocs/cfDocsService";
 import { APPLICATION_CFM_GLOB, isCfcFile } from "./utils/contextUtil";
 import { DocumentStateContext, getDocumentStateContext } from "./utils/documentUtil";
-import { insertAutoCloseTag } from "./features/autoclose";
+import { handleContentChanges } from "./features/autoclose";
 
 export const LANGUAGE_ID: string = "cfml";
 const DOCUMENT_SELECTOR: DocumentSelector = [
@@ -270,8 +270,8 @@ export function activate(context: ExtensionContext): void {
       }
     }
   } else if (enableAutoCloseTags) {
-    workspace.onDidChangeTextDocument(event => {
-        insertAutoCloseTag(event);
+    workspace.onDidChangeTextDocument((event) => {
+        handleContentChanges(event);
     });
   }
 
