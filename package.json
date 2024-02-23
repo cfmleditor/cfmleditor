@@ -591,7 +591,6 @@
 		"@vscode/vsce": "^2.23.0",
 		"eslint": "^8.56.0",
 		"eslint-plugin-jsdoc": "^48.1.0",
-		"eslint-plugin-prefer-arrow": "^1.2.3",
 		"rimraf": "^4.4.1",
 		"ts-loader": "^9.2.2",
 		"typescript": "^5.3.3",
