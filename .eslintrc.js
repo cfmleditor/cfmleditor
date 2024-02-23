@@ -23,6 +23,7 @@ module.exports = {
         "jsdoc/require-jsdoc": [
             "error",
             {
+                "publicOnly": true,
                 "require": {
                     "FunctionDeclaration": true,
                     "MethodDefinition": true
