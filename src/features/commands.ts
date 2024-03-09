@@ -35,7 +35,7 @@ export async function refreshWorkspaceDefinitionCache(): Promise<void> {
 
 /**
  * Opens the relevant Application file based on the given editor
- * @editor The text editor which represents the document for which to open the file
+ * @param editor The text editor which represents the document for which to open the file
  */
 export async function showApplicationDocument(editor: TextEditor): Promise<void> {
   const activeDocumentUri: Uri = editor.document.uri;
@@ -58,7 +58,7 @@ export async function showApplicationDocument(editor: TextEditor): Promise<void>
 
 /**
  * Folds all functions in the active editor. Currently only works for components.
- * @editor The text editor which represents the document for which to fold all function
+ * @param editor  The text editor which represents the document for which to fold all function
  */
 export async function foldAllFunctions(editor: TextEditor): Promise<void> {
   const document: TextDocument = editor.document;

@@ -30,32 +30,35 @@ let allUserFunctionsByName: UserFunctionsByName = {};
 let allComponentNames = trie([]);
 let allFunctionNames = trie([]);
 
-let allServerVariables: VariablesByUri = new VariablesByUri();
-let allApplicationVariables: VariablesByUri = new VariablesByUri();
+const allServerVariables: VariablesByUri = new VariablesByUri();
+const allApplicationVariables: VariablesByUri = new VariablesByUri();
 
 let customSnippets: Snippets = {};
 /**
  * Checks whether the given identifier is a cached global function
  * @param name The identifier to check
+ * @returns
  */
 export function isGlobalFunction(name: string): boolean {
-  return allGlobalFunctions.hasOwnProperty(name.toLowerCase());
+  return Object.prototype.hasOwnProperty.call(allGlobalFunctions, name.toLowerCase());
 }
 
 /**
  * Checks whether the given identifier is a cached global tag
  * @param name The identifier to check
+ * @returns
  */
 export function isGlobalTag(name: string): boolean {
-  return allGlobalTags.hasOwnProperty(name.toLowerCase());
+  return Object.prototype.hasOwnProperty.call(allGlobalTags, name.toLowerCase());
 }
 
 /**
  * Checks whether the given identifier is a cached global entity
  * @param name The identifier to check
+ * @returns
  */
 export function isGlobalEntity(name: string): boolean {
-  return allGlobalTags.hasOwnProperty(name.toLowerCase()) || allGlobalFunctions.hasOwnProperty(name.toLowerCase());
+  return Object.prototype.hasOwnProperty.call(allGlobalTags, name.toLowerCase()) || Object.prototype.hasOwnProperty.call(allGlobalFunctions, name.toLowerCase());
 }
 
 /**
@@ -69,6 +72,7 @@ export function setGlobalFunction(functionDefinition: GlobalFunction): void {
 /**
  * Retrieves the cached global function identified by the given function name
  * @param functionName The name of the global function to be retrieved
+ * @returns
  */
 export function getGlobalFunction(functionName: string): GlobalFunction {
   return allGlobalFunctions[functionName.toLowerCase()];
@@ -76,6 +80,7 @@ export function getGlobalFunction(functionName: string): GlobalFunction {
 
 /**
  * Returns all of the cached global functions
+ * @returns
  */
 export function getAllGlobalFunctions(): GlobalFunctions {
   return allGlobalFunctions;
@@ -99,6 +104,7 @@ export function setGlobalMemberFunction(functionDefinition: GlobalMemberFunction
 /**
  * Retrieves the cached global member function identified by the given function name
  * @param functionName The name of the global function to be retrieved
+ * @returns
  */
 export function getGlobalMemberFunction(functionName: string): GlobalMemberFunction {
     return allGlobalMemberFunctions[functionName.toLowerCase()];
@@ -106,6 +112,7 @@ export function getGlobalMemberFunction(functionName: string): GlobalMemberFunct
 
 /**
  * Returns all of the cached global member functions
+ * @returns
  */
 export function getAllGlobalMemberFunctions(): GlobalMemberFunctions {
     return allGlobalMemberFunctions;
@@ -129,6 +136,7 @@ export function setGlobalTag(tagDefinition: GlobalTag): void {
 /**
  * Retrieves the cached global tag identified by the given tag name
  * @param tagName The name of the global tag to be retrieved
+ * @returns
  */
 export function getGlobalTag(tagName: string): GlobalTag {
   return allGlobalTags[tagName.toLowerCase()];
@@ -136,6 +144,7 @@ export function getGlobalTag(tagName: string): GlobalTag {
 
 /**
  * Returns all of the cached global tags
+ * @returns
  */
 export function getAllGlobalTags(): GlobalTags {
   return allGlobalTags;
@@ -159,6 +168,7 @@ export function setGlobalEntityDefinition(definition: CFDocsDefinitionInfo): voi
 /**
  * Retrieves the cached global tag identified by the given tag name
  * @param name The name of the global definition to be retrieved
+ * @returns
  */
 export function getGlobalEntityDefinition(name: string): CFDocsDefinitionInfo {
   return allGlobalEntityDefinitions.get(name.toLowerCase());
@@ -166,6 +176,7 @@ export function getGlobalEntityDefinition(name: string): CFDocsDefinitionInfo {
 
 /**
  * Returns all of the cached global entity definitions
+ * @returns
  */
 export function getAllGlobalEntityDefinitions(): MyMap<string, CFDocsDefinitionInfo> {
   return allGlobalEntityDefinitions;
@@ -201,6 +212,7 @@ function setComponent(comp: Component): void {
 /**
  * Retrieves the cached component identified by the given URI
  * @param uri The URI of the component to be retrieved
+ * @returns
  */
 export function getComponent(uri: Uri): Component {
   if (!hasComponent(uri)) {
@@ -213,14 +225,16 @@ export function getComponent(uri: Uri): Component {
 /**
  * Checks if the cached component with the given URI exists
  * @param uri The URI of the component to be checked
+ * @returns
  */
 export function hasComponent(uri: Uri): boolean {
-  return allComponentsByUri.hasOwnProperty(uri.toString());
+  return Object.prototype.hasOwnProperty.call(allComponentsByUri, uri.toString());
 }
 
 /**
  * Retrieves all cached components matched by the given query
  * @param query Some query text used to search for cached components
+ * @returns
  */
 export function searchAllComponentNames(query: string): Component[] {
   let components: Component[] = [];
@@ -253,6 +267,7 @@ function setUserFunction(userFunction: UserFunction): void {
  * Retrieves all cached user functions matched by the given query
  * @param query Some query text used to search for cached user functions
  * @param searchMode How the query will be searched for
+ * @returns
  */
 export function searchAllFunctionNames(query: string, searchMode: SearchMode = SearchMode.StartsWith): UserFunction[] {
   let functions: UserFunction[] = [];
@@ -269,7 +284,7 @@ export function searchAllFunctionNames(query: string, searchMode: SearchMode = S
       }
     }
   } else if (searchMode === SearchMode.EqualTo) {
-    if (allUserFunctionsByName.hasOwnProperty(lowerQuery)) {
+    if (Object.prototype.hasOwnProperty.call(allUserFunctionsByName, lowerQuery)) {
       functions = Object.values(allUserFunctionsByName[lowerQuery]);
     }
   }
@@ -281,6 +296,7 @@ export function searchAllFunctionNames(query: string, searchMode: SearchMode = S
  * Resolves a component in dot-path notation to a URI
  * @param dotPath A string for a component in dot-path notation
  * @param baseUri The URI from which the component path will be resolved
+ * @returns
  */
 export function componentPathToUri(dotPath: string, baseUri: Uri): Uri | undefined {
   if (!dotPath) {
@@ -348,6 +364,7 @@ export async function cacheComponent(component: Component, documentStateContext:
 
 /**
  * Reads and parses all cfc files in the current workspace and caches their definitions
+ * @returns
  */
 export async function cacheAllComponents(): Promise<void> {
     clearAllCachedComponents();
@@ -361,8 +378,8 @@ export async function cacheAllComponents(): Promise<void> {
             }
             if (cflintExt) {
                 const cflintSettings: WorkspaceConfiguration = workspace.getConfiguration("cflint", null);
-                const runModes: {} = cflintSettings.get<{}>("runModes");
-                if (runModes && runModes.hasOwnProperty("onOpen") && runModes["onOpen"]) {
+                const runModes: object = cflintSettings.get<object>("runModes");
+                if (runModes && Object.prototype.hasOwnProperty.call(runModes, "onOpen") && runModes["onOpen"]) {
                     const cflintEnabledValues = cflintSettings.inspect<boolean>("enabled");
                     const cflintEnabledPrevWSValue: boolean = cflintEnabledValues.workspaceValue;
                     cflintSettings.update("enabled", false, ConfigurationTarget.Workspace).then(async () => {
@@ -426,6 +443,8 @@ async function cacheGivenComponents(componentUris: Uri[]): Promise<void> {
  * Parses given document and caches its definitions
  * @param document The text document to parse and cache
  * @param fast Whether to use the faster, but less accurate parsing
+ * @param replaceComments
+ * @returns
  */
 export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false): Promise<boolean> {
   const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments);
@@ -499,6 +518,7 @@ function clearAllCachedComponents(): void {
 
 /**
  * Reads and parses all Application.cfm files in the current workspace and caches their definitions
+ * @returns
  */
 export async function cacheAllApplicationCfms(): Promise<void> {
   return workspace.findFiles(APPLICATION_CFM_GLOB).then(
@@ -534,6 +554,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[]): Promise<void> 
 /**
  * Retrieves the cached application variables identified by the given URI
  * @param uri The URI of the application file
+ * @returns
  */
 export function getApplicationVariables(uri: Uri): Variable[] {
   return allApplicationVariables.get(uri.toString());
@@ -551,6 +572,7 @@ export function setApplicationVariables(uri: Uri, applicationVariables: Variable
 /**
  * Removes the cached application variables identified by the given URI
  * @param uri The URI of the application file to remove
+ * @returns
  */
 export function removeApplicationVariables(uri: Uri): boolean {
   return allApplicationVariables.delete(uri.toString());
@@ -559,6 +581,7 @@ export function removeApplicationVariables(uri: Uri): boolean {
 /**
  * Retrieves the cached server variables identified by the given URI
  * @param uri The URI of the component to be check
+ * @returns
  */
 export function getServerVariables(uri: Uri): Variable[] {
   return allServerVariables.get(uri.toString());
@@ -566,6 +589,7 @@ export function getServerVariables(uri: Uri): Variable[] {
 
 /**
  * Returns all of the cached custom snippets
+ * @returns
  */
 export function getAllCustomSnippets(): Snippets {
     return customSnippets;

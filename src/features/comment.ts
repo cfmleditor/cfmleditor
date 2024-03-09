@@ -32,6 +32,7 @@ export const cfmlCommentRules: CFMLCommentRules = {
  * Returns whether to use CFML tag comment
  * @param document The TextDocument in which the selection is made
  * @param startPosition The position at which the comment starts
+ * @returns
  */
 function isTagComment(document: TextDocument, startPosition: Position): boolean {
   const docIsScript: boolean = (isCfcFile(document) && hasComponent(document.uri) && getComponent(document.uri).isScript);
@@ -42,6 +43,7 @@ function isTagComment(document: TextDocument, startPosition: Position): boolean 
 /**
  * Returns the command for the comment type specified
  * @param commentType The comment type for which to get the command
+ * @returns
  */
 function getCommentCommand(commentType: CommentType): string {
   let command: string = "";
@@ -57,6 +59,7 @@ function getCommentCommand(commentType: CommentType): string {
 /**
  * Return a function that can be used to execute a line or block comment
  * @param commentType The comment type for which the command will be executed
+ * @returns
  */
 export function toggleComment(commentType: CommentType): (editor: TextEditor) => Promise<void> {
   return async (editor: TextEditor) => {

@@ -33,6 +33,8 @@ export interface DocumentPositionStateContext extends DocumentStateContext {
  * Provides context information for the given document
  * @param document The document for which to provide context
  * @param fast Whether to use the faster, but less accurate parsing
+ * @param replaceComments replace comments in getSanitizedDocumentText
+ * @returns DocumentStateContext
  */
 export function getDocumentStateContext(document: TextDocument, fast: boolean = false, replaceComments: boolean = false): DocumentStateContext {
   const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
@@ -68,6 +70,8 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
  * @param document The document for which to provide context
  * @param position The position within the document for which to provide context
  * @param fast Whether to use the faster, but less accurate parsing
+ * @param replaceComments replace comments in getDocumentStateContext
+ * @returns DocumentPositionStateContext
  */
 export function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false, replaceComments: boolean = false): DocumentPositionStateContext {
   const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments);

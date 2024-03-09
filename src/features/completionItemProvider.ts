@@ -28,6 +28,7 @@ import { equalsIgnoreCase, escapeMarkdown, textToMarkdownString } from "../utils
 import { getAllCustomSnippets, getAllGlobalFunctions, getAllGlobalMemberFunctions, getAllGlobalTags, getComponent, getGlobalTag } from "./cachedEntities";
 import { Snippet, Snippets } from "../entities/snippet";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const snippets: Snippets = require("../../snippets/snippets.json");
 
 const triggerCompletionCommand: Command = {
@@ -44,6 +45,7 @@ export interface CompletionEntry {
  * Tests whether the word being completed matches a given suggestion
  * @param word The word being completed
  * @param suggestion A completion candidate to test
+ * @returns
  */
 function matches(word: string, suggestion: string): boolean {
   return word.length === 0 || (suggestion.length >= word.length && equalsIgnoreCase(suggestion.substr(0, word.length), word));
@@ -55,6 +57,7 @@ function matches(word: string, suggestion: string): boolean {
  * @param kind The proposal kind
  * @param entry Additional proposal info
  * @param sortPrefix A string to prefix for sorting proposals
+ * @returns
  */
 function createNewProposal(name: string, kind: CompletionItemKind, entry?: CompletionEntry, sortPrefix?: string): CompletionItem {
   const proposal: CompletionItem = new CompletionItem(name, kind);
@@ -87,6 +90,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
    * @param position The position at which the command was invoked.
    * @param _token A cancellation token.
    * @param context How the completion was triggered.
+   * @returns
    */
   public async provideCompletionItems(document: TextDocument, position: Position, _token: CancellationToken, context: CompletionContext): Promise<CompletionItem[] | undefined> {
     let result: CompletionItem[] = [];
@@ -155,7 +159,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
             const attributeName: string = attributeValueMatch[1];
             const currentValue: string = attributeValueMatch[3] !== undefined ? attributeValueMatch[3] : attributeValueMatch[4];
 
-            let attributeDocs: MyMap<string, Parameter> = new MyMap<string, Parameter>();
+            const attributeDocs: MyMap<string, Parameter> = new MyMap<string, Parameter>();
             globalTag.signatures.forEach((sig: Signature) => {
               sig.parameters.forEach((param: Parameter) => {
                 attributeDocs.set(param.name.toLowerCase(), param);
@@ -376,8 +380,8 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
       if (varMatchText.split(".").length === dotSeparatedCount) {
         // From super keyword
         if (docIsCfcFile && !varScope && equalsIgnoreCase(varName, "super")) {
-          let addedFunctions: MySet<string> = new MySet();
-          let baseComponent: Component = getComponent(thisComponent.extends);
+          const addedFunctions: MySet<string> = new MySet();
+          const baseComponent: Component = getComponent(thisComponent.extends);
           let currComponent: Component = baseComponent;
           while (currComponent) {
             currComponent.functions.filter((_func: UserFunction, funcKey: string) => {
@@ -406,9 +410,9 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
               const initialFoundComp: Component = getComponent(foundVar.dataTypeComponentUri);
 
               if (initialFoundComp) {
-                let addedFunctions: MySet<string> = new MySet();
-                let addedVariables: MySet<string> = new MySet();
-                let validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
+                const addedFunctions: MySet<string> = new MySet();
+                const addedVariables: MySet<string> = new MySet();
+                const validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
                 if (thisComponent) {
                   if (isSubcomponentOrEqual(thisComponent, initialFoundComp)) {
                     validFunctionAccess.add(Access.Private);
@@ -618,9 +622,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
  * @param globalTag The global entity that's attributes will be checked
  * @param attributeStartOffset The offset within the document that the entity's attributes start
  * @param attributesLength The length of the entity's attributes string
+ * @returns
  */
 async function getGlobalTagAttributeCompletions(state: CompletionState, globalTag: GlobalTag, attributeStartOffset: number, attributesLength: number): Promise<CompletionItem[]> {
-  let attributeDocs: MyMap<string, Parameter> = new MyMap<string, Parameter>();
+  const attributeDocs: MyMap<string, Parameter> = new MyMap<string, Parameter>();
   globalTag.signatures.forEach((sig: Signature) => {
     sig.parameters.forEach((param: Parameter) => {
       attributeDocs.set(param.name.toLowerCase(), param);
@@ -641,6 +646,7 @@ async function getGlobalTagAttributeCompletions(state: CompletionState, globalTa
  * @param globalTag The global entity that's attributes will be checked
  * @param params All of the possible parameters that could be presented
  * @param usedAttributeNames The set of attribute names that are already being used
+ * @returns
  */
 async function getCFTagAttributeCompletions(state: CompletionState, globalTag: GlobalTag, params: Parameter[], usedAttributeNames: MySet<string>): Promise<CompletionItem[]> {
   const cfmlGTAttributesQuoteType: AttributeQuoteType = state.cfmlCompletionSettings.get<AttributeQuoteType>("globalTags.attributes.quoteType", AttributeQuoteType.Double);
@@ -651,7 +657,7 @@ async function getCFTagAttributeCompletions(state: CompletionState, globalTag: G
   });
 
   const attributeCompletions: CompletionItem[] = filteredParams.map((param: Parameter) => {
-    let attributeItem = new CompletionItem(param.name, CompletionItemKind.Property);
+    const attributeItem = new CompletionItem(param.name, CompletionItemKind.Property);
     attributeItem.detail = `${param.required ? "(required) " : ""}${param.name}: ${param.dataType}`;
     attributeItem.documentation = param.description;
     const wordSuffix: string = state.sanitizedDocumentText.slice(state.document.offsetAt(state.wordRange.end));
@@ -682,11 +688,12 @@ async function getCFTagAttributeCompletions(state: CompletionState, globalTag: G
  * @param globalTag The global tag that's attribute values will be checked
  * @param attributeName The name of the attribute that's values will be presented
  * @param currentValue The current value of the given attribute
+ * @returns
  */
 async function getGlobalTagAttributeValueCompletions(state: CompletionState, globalTag: GlobalTag, attributeName: string, currentValue: string): Promise<CompletionItem[]> {
   let attrValCompletions: CompletionItem[] = [];
 
-  let attributeDocs: MyMap<string, Parameter> = new MyMap<string, Parameter>();
+  const attributeDocs: MyMap<string, Parameter> = new MyMap<string, Parameter>();
   globalTag.signatures.forEach((sig: Signature) => {
     sig.parameters.forEach((param: Parameter) => {
       attributeDocs.set(param.name.toLowerCase(), param);
@@ -713,7 +720,7 @@ async function getGlobalTagAttributeValueCompletions(state: CompletionState, glo
   }
 
   const componentPathAttributes: ComponentPathAttributes = getComponentPathAttributes();
-  if (componentPathAttributes.hasOwnProperty(globalTag.name) && componentPathAttributes[globalTag.name].includes(attributeName)) {
+  if (Object.prototype.hasOwnProperty.call(componentPathAttributes, globalTag.name) && componentPathAttributes[globalTag.name].includes(attributeName)) {
     const parentDottedPath: string = currentValue.split(".").slice(0, -1).join(".");
     attrValCompletions = attrValCompletions.concat(await getDottedPathCompletions(state, parentDottedPath));
   }
@@ -724,9 +731,10 @@ async function getGlobalTagAttributeValueCompletions(state: CompletionState, glo
 /**
  * Gets an HTML tag's attribute as completion items
  * @param state An object representing the state of completion
- * @param htmlTag The HTML tag that's attributes will be checked
+ * @param htmlTagName The HTML tag that's attributes will be checked
  * @param attributeStartOffset The offset within the document that the tag's attributes start
  * @param attributesLength The length of the tag's attributes string
+ * @returns
  */
 function getHTMLTagAttributeCompletions(state: CompletionState, htmlTagName: string, attributeStartOffset: number, attributesLength: number): CompletionItem[] {
   const attributeNames: string[] = htmlDataProvider.provideAttributes(htmlTagName.toLowerCase()).map((a) => a.name);
@@ -742,7 +750,7 @@ function getHTMLTagAttributeCompletions(state: CompletionState, htmlTagName: str
 
     const attribute: HTMLAttributeData = getAttribute(htmlTagName, attr);
 
-    let attributeItem =  new CompletionItem(attr, CompletionItemKind.Property);
+    const attributeItem =  new CompletionItem(attr, CompletionItemKind.Property);
 
     const wordSuffix: string = state.sanitizedDocumentText.slice(state.document.offsetAt(state.wordRange.end));
     if (!wordSuffix.trim().startsWith("=")) {
@@ -767,9 +775,10 @@ function getHTMLTagAttributeCompletions(state: CompletionState, htmlTagName: str
  * @param htmlTagName The name of the HTML tag that's attribute values will be checked
  * @param attributeName The name of the attribute that's values will be presented
  * @param currentValue The current value of the given attribute
+ * @returns
  */
 function getHTMLTagAttributeValueCompletions(htmlTagName: string, attributeName: string, currentValue: string): CompletionItem[] {
-  let attrValCompletions: CompletionItem[] = [];
+  const attrValCompletions: CompletionItem[] = [];
 
   htmlDataProvider.provideValues(htmlTagName.toLowerCase(), attributeName.toLowerCase()).filter((val: HTMLValueData) => {
     return matches(currentValue, val.name);
@@ -784,15 +793,16 @@ function getHTMLTagAttributeValueCompletions(htmlTagName: string, attributeName:
  * Gets the standard included snippets as completion items
  * @param state An object representing the state of completion
  * @param excludedSnippetItems The snippets that should be excluded
+ * @returns
  */
 function getStandardSnippetCompletions(state: CompletionState, excludedSnippetItems: string[] = []): CompletionItem[] {
-  let snippetCompletions: CompletionItem[] = [];
+  const snippetCompletions: CompletionItem[] = [];
   for (const key in snippets) {
     if (!excludedSnippetItems.includes(key)) {
-      let snippet: Snippet = snippets[key];
+      const snippet: Snippet = snippets[key];
       // TODO: This implementation of "context" supports "tag" (which is basically only 'not script') and "script", would be nice to have other contexts
       if (state.currentWordMatches(snippet.prefix) && snippet.scope === "cfml" && ( ( snippet.context.indexOf("script") !== -1 && state.positionIsScript ) || ( snippet.context.indexOf("tag") !== -1 && !state.positionIsScript ) ) ) {
-        let standardSnippet = new CompletionItem(snippet.prefix, CompletionItemKind.Snippet);
+        const standardSnippet = new CompletionItem(snippet.prefix, CompletionItemKind.Snippet);
         standardSnippet.detail = `(snippet) ${snippet.description}`;
         const snippetString: string = Array.isArray(snippet.body) ? snippet.body.join("\n") : snippet.body;
         // standardSnippet.documentation = snippetString;
@@ -809,6 +819,7 @@ function getStandardSnippetCompletions(state: CompletionState, excludedSnippetIt
  * Gets the variable completions for the given state
  * @param state An object representing the state of completion
  * @param variables All variable declarations
+ * @returns
  */
 function getVariableCompletions(state: CompletionState, variables: Variable[]): CompletionItem[] {
   let variableCompletions: CompletionItem[] = [];
@@ -847,11 +858,12 @@ function getVariableCompletions(state: CompletionState, variables: Variable[]): 
  * Gets the function completions for the given component and state
  * @param state An object representing the state of completion
  * @param component The component in which to suggest functions
+ * @returns
  */
 function getComponentFunctionCompletions(state: CompletionState, component: Component): CompletionItem[] {
-  let componentFunctionCompletions: CompletionItem[] = [];
+  const componentFunctionCompletions: CompletionItem[] = [];
   if (component) {
-    let addedFunctions: MySet<string> = new MySet();
+    const addedFunctions: MySet<string> = new MySet();
     const privateAccessPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.Variables], true).test(state.docPrefix);
     const otherAccessPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.Variables, Scope.This], true).test(state.docPrefix);
     const getterSetterPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.This], true).test(state.docPrefix);
@@ -888,11 +900,12 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 /**
  * Gets the global function completions for the given state
  * @param state An object representing the state of completion
+ * @returns
  */
 function getGlobalFunctionCompletions(state: CompletionState): CompletionItem[] {
   const cfmlGFFirstLetterCase: string = state.cfmlCompletionSettings.get<string>("globalFunctions.firstLetterCase", "unchanged");
 
-  let globalFunctionCompletions: CompletionItem[] = [];
+  const globalFunctionCompletions: CompletionItem[] = [];
   if (!state.isContinuingExpression) {
     const globalFunctions: GlobalFunctions = getAllGlobalFunctions();
     for (const name in globalFunctions) {
@@ -926,7 +939,7 @@ function getGlobalFunctionCompletions(state: CompletionState): CompletionItem[] 
 
 function getGlobalMemberFunctionCompletions(state: CompletionState): CompletionItem[] {
     const cfmlGFFirstLetterCase: string = state.cfmlCompletionSettings.get<string>("globalFunctions.firstLetterCase", "unchanged");
-    let globalMemberFunctionCompletions: CompletionItem[] = [];
+    const globalMemberFunctionCompletions: CompletionItem[] = [];
     if (state.isMemberExpression) {
         const memberFunctions: GlobalMemberFunctions = getAllGlobalMemberFunctions();
         for (const name in memberFunctions) {
@@ -962,9 +975,10 @@ function getGlobalMemberFunctionCompletions(state: CompletionState): CompletionI
 /**
  * Gets the global tag completions for the given state
  * @param state An object representing the state of completion
+ * @returns
  */
 function getGlobalTagCompletions(state: CompletionState): CompletionItem[] {
-  let globalTagCompletions: CompletionItem[] = [];
+  const globalTagCompletions: CompletionItem[] = [];
 
   const tagPrefixPattern: RegExp = getTagPrefixPattern();
   const tagPrefixMatch: RegExpExecArray = tagPrefixPattern.exec(state.docPrefix);
@@ -978,12 +992,12 @@ function getGlobalTagCompletions(state: CompletionState): CompletionItem[] {
     for (const tagName in globalTags) {
       if (state.currentWordMatches(tagName)) {
         const globalTag: GlobalTag = globalTags[tagName];
-        let thisGlobalTagCompletion: CompletionItem = createNewProposal(
+        const thisGlobalTagCompletion: CompletionItem = createNewProposal(
           globalTag.name,
           CompletionItemKind.TypeParameter,
           { detail: globalTag.syntax, description: globalTag.description }
         );
-        if (!closingSlash && (cfmlGTAttributesSetType !== IncludeAttributesSetType.None || cfmlGTAttributesCustom.hasOwnProperty(tagName))) {
+        if (!closingSlash && (cfmlGTAttributesSetType !== IncludeAttributesSetType.None || Object.prototype.hasOwnProperty.call(cfmlGTAttributesCustom, tagName))) {
           thisGlobalTagCompletion.insertText = constructTagSnippet(globalTag, cfmlGTAttributesSetType, cfmlGTAttributesQuoteType, cfmlGTAttributesCustom[tagName], cfmlGTAttributesDefault, false);
         }
 
@@ -998,9 +1012,10 @@ function getGlobalTagCompletions(state: CompletionState): CompletionItem[] {
 /**
  * Gets the global tag script completions for the given state
  * @param state An object representing the state of completion
+ * @returns
  */
 function getGlobalTagScriptCompletions(state: CompletionState): CompletionItem[] {
-  let globalTagScriptCompletions: CompletionItem[] = [];
+  const globalTagScriptCompletions: CompletionItem[] = [];
 
   if (state.userEngine.supportsScriptTags() && !state.isContinuingExpression) {
     const cfmlGTAttributesQuoteType: AttributeQuoteType = state.cfmlCompletionSettings.get<AttributeQuoteType>("globalTags.attributes.quoteType", AttributeQuoteType.Double);
@@ -1011,12 +1026,12 @@ function getGlobalTagScriptCompletions(state: CompletionState): CompletionItem[]
     for (const tagName in globalTags) {
       const globalTag: GlobalTag = globalTags[tagName];
       if (globalTag.scriptSyntax && globalTag.scriptSyntax.startsWith(tagName) && state.currentWordMatches(tagName)) {
-        let thisGlobalTagScriptCompletion: CompletionItem = createNewProposal(
+        const thisGlobalTagScriptCompletion: CompletionItem = createNewProposal(
           globalTag.name,
           CompletionItemKind.Function,
           { detail: globalTagSyntaxToScript(globalTag), description: globalTag.description }
         );
-        if (cfmlGTAttributesSetType !== IncludeAttributesSetType.None || cfmlGTAttributesCustom.hasOwnProperty(tagName)) {
+        if (cfmlGTAttributesSetType !== IncludeAttributesSetType.None || Object.prototype.hasOwnProperty.call(cfmlGTAttributesCustom, tagName)) {
           thisGlobalTagScriptCompletion.insertText = constructTagSnippet(globalTag, cfmlGTAttributesSetType, cfmlGTAttributesQuoteType, cfmlGTAttributesCustom[tagName], cfmlGTAttributesDefault, true);
         }
 
@@ -1031,16 +1046,17 @@ function getGlobalTagScriptCompletions(state: CompletionState): CompletionItem[]
 /**
  * Gets the HTML tag completions for the given state
  * @param state An object representing the state of completion
+ * @returns
  */
 function getHTMLTagCompletions(state: CompletionState): CompletionItem[] {
-  let htmlTagCompletions: CompletionItem[] = [];
+  const htmlTagCompletions: CompletionItem[] = [];
 
   const tagPrefixPattern: RegExp = getTagPrefixPattern();
   const tagPrefixMatch: RegExpExecArray = tagPrefixPattern.exec(state.docPrefix);
   if (tagPrefixMatch) {
     for (const htmlTag of htmlDataProvider.provideTags()) {
       if (state.currentWordMatches(htmlTag.name)) {
-        let thisHTMLTagCompletion: CompletionItem = createNewProposal(
+        const thisHTMLTagCompletion: CompletionItem = createNewProposal(
           htmlTag.name,
           CompletionItemKind.TypeParameter,
           { description: htmlTag.description }
@@ -1057,19 +1073,20 @@ function getHTMLTagCompletions(state: CompletionState): CompletionItem[] {
 /**
  * Gets the CSS property completions for the given state
  * @param state An object representing the state of completion
+ * @returns
  */
 function getCSSPropertyCompletions(state: CompletionState): CompletionItem[] {
-  let cssPropertyCompletions: CompletionItem[] = [];
+  const cssPropertyCompletions: CompletionItem[] = [];
   const cssProperties: IPropertyData[] = cssDataManager.getProperties();
 
   cssProperties.filter((prop: IPropertyData) => {
     return state.currentWordMatches(prop.name);
   }).forEach((prop: IPropertyData) => {
-    let entry: CompletionEntry = { detail: prop.name, description: getCSSEntryDescription(prop) };
+    const entry: CompletionEntry = { detail: prop.name, description: getCSSEntryDescription(prop) };
     if (prop.syntax) {
       entry.detail = `${prop.name}: ${prop.syntax}`;
     }
-    let thisCssPropertyCompletion: CompletionItem = createNewProposal(
+    const thisCssPropertyCompletion: CompletionItem = createNewProposal(
       prop.name,
       CompletionItemKind.Property,
       entry
@@ -1085,16 +1102,17 @@ function getCSSPropertyCompletions(state: CompletionState): CompletionItem[] {
 /**
  * Gets the CSS at directive completions for the given state
  * @param state An object representing the state of completion
+ * @returns
  */
 function getCSSAtDirectiveCompletions(state: CompletionState): CompletionItem[] {
-  let cssPropertyCompletions: CompletionItem[] = [];
+  const cssPropertyCompletions: CompletionItem[] = [];
   const cssAtDirectives: IAtDirectiveData[] = cssDataManager.getAtDirectives();
 
   cssAtDirectives.filter((atDir: IAtDirectiveData) => {
     return state.currentWordMatches(atDir.name);
   }).forEach((atDir: IAtDirectiveData) => {
-    let entry: CompletionEntry = { detail: atDir.name, description: getCSSEntryDescription(atDir) };
-    let thisCssPropertyCompletion: CompletionItem = createNewProposal(
+    const entry: CompletionEntry = { detail: atDir.name, description: getCSSEntryDescription(atDir) };
+    const thisCssPropertyCompletion: CompletionItem = createNewProposal(
       atDir.name,
       CompletionItemKind.Keyword,
       entry
@@ -1111,6 +1129,7 @@ function getCSSAtDirectiveCompletions(state: CompletionState): CompletionItem[] 
  * Gets dotted path completions for the given state
  * @param state An object representing the state of completion
  * @param parentDottedPath The dotted path part that is higher in the hierarchy
+ * @returns
  */
 async function getDottedPathCompletions(state: CompletionState, parentDottedPath: string): Promise<CompletionItem[]> {
   const newInstanceCompletions: CompletionItem[] = [];
@@ -1165,7 +1184,7 @@ async function getDottedPathCompletions(state: CompletionState, parentDottedPath
     const completionName: string = splitLogicalPath[splitParentPath.length];
 
     let completionEntry: CompletionEntry;
-    let dottedLogicalPath: string = splitLogicalPath.slice(0, splitParentPath.length + 1).join(".");
+    const dottedLogicalPath: string = splitLogicalPath.slice(0, splitParentPath.length + 1).join(".");
     if (splitLogicalPath.length - splitParentPath.length === 1) {
       const directoryPath: string = cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath ? cfmlMapping.directoryPath : resolveRootPath(state.document.uri, cfmlMapping.directoryPath);
       completionEntry = { detail: `(mapping) ${dottedLogicalPath}` };
@@ -1190,16 +1209,16 @@ async function getDottedPathCompletions(state: CompletionState, parentDottedPath
 /**
  * Gets the standard included snippets as completion items
  * @param state An object representing the state of completion
- * @param excludedSnippetItems The snippets that should be excluded
+ * @returns
  */
 function getCustomSnippetCompletions(state: CompletionState): CompletionItem[] {
-    let snippetCompletions: CompletionItem[] = [];
-    let customSnippets: Snippets = getAllCustomSnippets();
+    const snippetCompletions: CompletionItem[] = [];
+    const customSnippets: Snippets = getAllCustomSnippets();
     for (const key in customSnippets) {
-        let snippet: Snippet = customSnippets[key];
+        const snippet: Snippet = customSnippets[key];
         // TODO: This implementation of "context" supports "tag" (which is basically only 'not script') and "script", would be nice to have other contexts
         if (snippet && snippet.scope && snippet.context && snippet.prefix && state.currentWordMatches(snippet.prefix) && snippet.scope === "cfml" && ( ( snippet.context.indexOf("script") !== -1 && state.positionIsScript ) || ( snippet.context.indexOf("tag") !== -1 && !state.positionIsScript ) ) ) {
-            let standardSnippet = new CompletionItem(snippet.prefix, CompletionItemKind.Snippet);
+            const standardSnippet = new CompletionItem(snippet.prefix, CompletionItemKind.Snippet);
             standardSnippet.detail = `(snippet) ${snippet.description}`;
             const snippetString: string = Array.isArray(snippet.body) ? snippet.body.join("\n") : snippet.body;
             // standardSnippet.documentation = snippetString;

@@ -19,19 +19,20 @@ export default class DocBlockCompletions implements CompletionItemProvider {
   /**
    * Implemented function to find and return completions either from
    * the tag list or initiate a complex completion
-   *
    * @param document
    * @param position
-   * @param token
+   * @param _token
+   * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideCompletionItems(document: TextDocument, position: Position, _token: CancellationToken): Promise<CompletionItem[]> {
-    let result: CompletionItem[] = [];
+    const result: CompletionItem[] = [];
     let wordMatchRange: Range;
 
     if ((wordMatchRange = document.getWordRangeAtPosition(position, /\/\*\*/)) !== undefined) {
-      let documenter: Documenter = new Documenter(wordMatchRange.end, document);
+      const documenter: Documenter = new Documenter(wordMatchRange.end, document);
 
-      let block = new CompletionItem("/** */", CompletionItemKind.Snippet);
+      const block = new CompletionItem("/** */", CompletionItemKind.Snippet);
       block.range = wordMatchRange;
       block.insertText = documenter.autoDocument();
       block.documentation = "Docblock completion";
@@ -45,15 +46,15 @@ export default class DocBlockCompletions implements CompletionItemProvider {
       return result;
     }
 
-    if ((wordMatchRange = document.getWordRangeAtPosition(position, /\@[\w$]*(\.[a-z]*)?/)) === undefined) {
+    if ((wordMatchRange = document.getWordRangeAtPosition(position, /@[\w$]*(\.[a-z]*)?/)) === undefined) {
       return result;
     }
 
     // const tagKeyPattern = / \* @$/;
     // const tagSubKeyPattern = / \* @[\w$]+\.$/;
 
-    let tagSuggestions: MyMap<string, string> = new MyMap<string, string>();
-    let subKeySuggestions: MyMap<string, string> = new MyMap<string, string>();
+    const tagSuggestions: MyMap<string, string> = new MyMap<string, string>();
+    const subKeySuggestions: MyMap<string, string> = new MyMap<string, string>();
 
     let wordRange: Range = document.getWordRangeAtPosition(position);
     if (!wordRange) {
@@ -69,7 +70,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
     }
 
     // TODO: Prevent redundant suggestions.
-    let argumentNames: MySet<string> = new MySet<string>();
+    const argumentNames: MySet<string> = new MySet<string>();
     const foundProperty: Properties = comp.properties.filter((prop: Property) => {
       return prop.propertyRange.contains(position);
     });
@@ -154,7 +155,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
       suggestions.filter((_suggestDesc: string, suggestionName: string) => {
         return suggestionName.match(search) !== null;
       }).forEach((suggestDesc: string, suggestionName: string) => {
-        let item = new CompletionItem(suggestionName, CompletionItemKind.Property);
+        const item = new CompletionItem(suggestionName, CompletionItemKind.Property);
         item.documentation = suggestDesc;
         result.push(item);
       });

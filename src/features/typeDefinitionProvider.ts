@@ -15,7 +15,9 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
    * @param document The document for which the command was invoked.
    * @param position The position for which the command was invoked.
    * @param _token A cancellation token.
+   * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideTypeDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<Definition> {
     const results: Definition = [];
 
@@ -103,7 +105,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
         thisComponent.properties.filter((prop: Property) => {
           return prop.dataTypeComponentUri !== undefined && prop.nameRange.contains(position);
         }).forEach((prop: Property) => {
-          let propTypeComp: Component = getComponent(prop.dataTypeComponentUri);
+          const propTypeComp: Component = getComponent(prop.dataTypeComponentUri);
           if (propTypeComp) {
             results.push(new Location(
               propTypeComp.uri,

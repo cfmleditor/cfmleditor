@@ -21,9 +21,8 @@ export default class Documenter {
 
   /**
    * Creates an instance of Documenter.
-   *
    * @param position
-   * @param editor
+   * @param document
    */
   public constructor(position: Position, document: TextDocument) {
     this.targetPosition = position;
@@ -33,19 +32,20 @@ export default class Documenter {
   /**
    * Load and test each type of signature to see if they can trigger and
    * if not load an empty block
+   * @returns
    */
   public autoDocument(): SnippetString {
-    let func = new FunctionBlock(this.targetPosition, this.document);
+    const func = new FunctionBlock(this.targetPosition, this.document);
     if (func.test()) {
       return func.constructDoc().build();
     }
 
-    let prop = new Property(this.targetPosition, this.document);
+    const prop = new Property(this.targetPosition, this.document);
     if (prop.test()) {
       return prop.constructDoc().build();
     }
 
-    let comp = new Component(this.targetPosition, this.document);
+    const comp = new Component(this.targetPosition, this.document);
     if (comp.test()) {
       return comp.constructDoc().build();
     }

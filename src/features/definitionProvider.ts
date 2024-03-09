@@ -17,7 +17,9 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
    * @param document The document for which the command was invoked.
    * @param position The position for which the command was invoked.
    * @param _token A cancellation token.
+   * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<DefinitionLink[]> {
     const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
     if (!cfmlDefinitionSettings.get<boolean>("enable", true)) {

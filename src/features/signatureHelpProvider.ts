@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { CancellationToken, ParameterInformation, Position, Range, SignatureHelp, SignatureHelpProvider, SignatureInformation, TextDocument, Uri, workspace, WorkspaceConfiguration, SignatureHelpContext } from "vscode";
 import { Component, objectNewInstanceInitPrefix } from "../entities/component";
 import { DataType } from "../entities/dataType";
@@ -20,6 +21,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
    * @param position The position at which the command was invoked.
    * @param _token A cancellation token.
    * @param _context Information about how signature help was triggered.
+   * @returns
    */
   public async provideSignatureHelp(document: TextDocument, position: Position, _token: CancellationToken, _context: SignatureHelpContext): Promise<SignatureHelp | null> {
     const cfmlSignatureSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.signature", document.uri);
@@ -38,7 +40,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
     const sanitizedDocumentText: string = documentPositionStateContext.sanitizedDocumentText;
 
-    let backwardIterator: BackwardIterator = new BackwardIterator(documentPositionStateContext, position);
+    const backwardIterator: BackwardIterator = new BackwardIterator(documentPositionStateContext, position);
 
     backwardIterator.next();
     const iteratedSigPosition: Position = findStartSigPosition(backwardIterator);
@@ -61,6 +63,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
     const startSigPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(startSigPosition));
 
+    // eslint-disable-next-line @typescript-eslint/ban-types
     let entry: Function;
 
     // Check if initializing via "new" operator
@@ -80,7 +83,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
     }
 
     if (!entry) {
-      let identWordRange: Range = getPrecedingIdentifierRange(documentPositionStateContext, backwardIterator.getPosition());
+      const identWordRange: Range = getPrecedingIdentifierRange(documentPositionStateContext, backwardIterator.getPosition());
       if (!identWordRange) {
         return null;
       }
@@ -143,12 +146,12 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
       return null;
     }
 
-    let sigHelp = new SignatureHelp();
+    const sigHelp = new SignatureHelp();
 
     entry.signatures.forEach((signature: Signature, sigIndex: number) => {
       const sigDesc: string = signature.description ? signature.description : entry.description;
       const sigLabel: string = constructSyntaxString(entry, sigIndex);
-      let signatureInfo = new SignatureInformation(sigLabel, textToMarkdownString(sigDesc));
+      const signatureInfo = new SignatureInformation(sigLabel, textToMarkdownString(sigDesc));
 
       const sigParamsPrefixLength: number = constructSignatureLabelParamsPrefix(entry).length + 1;
       const sigParamsLabelOffsetTuples: [number, number][] = getSignatureParamsLabelOffsetTuples(signature.parameters).map((val: [number, number]) => {
@@ -156,7 +159,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
       });
 
       signatureInfo.parameters = signature.parameters.map((param: Parameter, paramIdx: number) => {
-        let paramInfo: ParameterInformation = new ParameterInformation(sigParamsLabelOffsetTuples[paramIdx], textToMarkdownString(param.description));
+        const paramInfo: ParameterInformation = new ParameterInformation(sigParamsLabelOffsetTuples[paramIdx], textToMarkdownString(param.description));
         return paramInfo;
       });
       sigHelp.signatures.push(signatureInfo);
@@ -173,6 +176,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
     // Consider named parameters
     let namedParamMatch: RegExpExecArray = null;
+    // eslint-disable-next-line no-cond-assign
     if (namedParamMatch = namedParameterPattern.exec(paramText)) {
       // TODO: Consider argumentCollection
       const paramName: string = namedParamMatch[1];

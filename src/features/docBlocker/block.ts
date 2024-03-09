@@ -39,7 +39,6 @@ export abstract class Block {
 
   /**
    * Creates an instance of Block.
-   *
    * @param position The current position from which the DocBlock will be inserted
    * @param document The document object in which the DocBlock is being created
    */
@@ -53,6 +52,7 @@ export abstract class Block {
   /**
    * Set the suffix text.
    * @param suffix The document text that occurs after this.position
+   * @returns this
    */
   public setSuffix(suffix: string): Block {
     this.suffix = suffix;
@@ -63,6 +63,7 @@ export abstract class Block {
    * This should be a simple test to determine whether this matches
    * our intended block declaration and we can proceed to properly
    * document
+   * @returns regex / pattern test result
    */
   public test(): boolean {
     return this.pattern.test(this.suffix);

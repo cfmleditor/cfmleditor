@@ -20,13 +20,19 @@ module.exports = {
     ],
     "root": true,
     "rules": {
+        "jsdoc/require-returns": ["error", {"enableFixer":true}],
+        "jsdoc/require-param-description": ["off", {"contexts":["any"]}],
+        "jsdoc/require-returns-description": ["off", {"contexts":["any"]}],
         "jsdoc/require-jsdoc": [
             "error",
             {
                 "publicOnly": true,
                 "require": {
                     "FunctionDeclaration": true,
-                    "MethodDefinition": true
+                    "MethodDefinition": false,
+                    "ClassDeclaration": false,
+                    "ArrowFunctionExpression": false,
+                    "FunctionExpression": false
                 }
             }
         ]

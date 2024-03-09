@@ -22,7 +22,9 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
    * Provide links for the given document.
    * @param document The document in which the links are located.
    * @param _token A cancellation token.
+   * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideDocumentLinks(document: TextDocument, _token: CancellationToken): Promise<DocumentLink[]> {
     const results: DocumentLink[] = [];
     const documentText: string = document.getText();
@@ -60,6 +62,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
    * Resolves given link text within a given document to a URI
    * @param document The document containing link text
    * @param link The link text to resolve
+   * @returns
    */
   private async resolveLink(document: TextDocument, link: string): Promise<Uri | undefined> {
     if (link.startsWith("#")) {

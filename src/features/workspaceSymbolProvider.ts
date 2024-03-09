@@ -13,7 +13,9 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
    * Workspace-wide search for a symbol matching the given query string.
    * @param query A non-empty query string.
    * @param _token A cancellation token.
+   * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideWorkspaceSymbols(query: string, _token: CancellationToken): Promise<SymbolInformation[]> {
     let workspaceSymbols: SymbolInformation[] = [];
     if (query === "") {

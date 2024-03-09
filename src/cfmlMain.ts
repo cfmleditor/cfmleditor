@@ -43,6 +43,7 @@ export let extensionContext: ExtensionContext;
 /**
  * Gets a ConfigurationTarget enumerable based on a string representation
  * @param target A string representing a configuration target
+ * @returns ConfigurationTarget
  */
 export function getConfigurationTarget(target: string): ConfigurationTarget {
   let configTarget: ConfigurationTarget;
@@ -66,12 +67,13 @@ export function getConfigurationTarget(target: string): ConfigurationTarget {
 /**
  * Checks whether the given document should be excluded from being used.
  * @param documentUri The URI of the document to check against
+ * @returns boolean
  */
 function shouldExcludeDocument(documentUri: Uri): boolean {
   const fileSettings: WorkspaceConfiguration = workspace.getConfiguration("files", documentUri);
 
-  const fileExcludes: {} = fileSettings.get<{}>("exclude", []);
-  let fileExcludeGlobs: string[] = [];
+  const fileExcludes: object = fileSettings.get<object>("exclude", []);
+  const fileExcludeGlobs: string[] = [];
   for (let fileExcludeGlob in fileExcludes) {
     if (fileExcludes[fileExcludeGlob]) {
       if (fileExcludeGlob.endsWith("/")) {
@@ -96,29 +98,29 @@ export function activate(context: ExtensionContext): void {
 
   languages.setLanguageConfiguration(LANGUAGE_ID, {
     indentationRules: {
-      increaseIndentPattern: new RegExp(`<(?!\\?|(?:${nonIndentingTags.join("|")})\\b|[^>]*\\/>)([-_.A-Za-z0-9]+)(?=\\s|>)\\b[^>]*>(?!.*<\\/\\1>)|<!--(?!.*-->)|\\{[^}\"']*$`, "i"),
+      increaseIndentPattern: new RegExp(`<(?!\\?|(?:${nonIndentingTags.join("|")})\\b|[^>]*\\/>)([-_.A-Za-z0-9]+)(?=\\s|>)\\b[^>]*>(?!.*<\\/\\1>)|<!--(?!.*-->)|\\{[^}"']*$`, "i"),
       decreaseIndentPattern: new RegExp(`^\\s*(<\\/[-_.A-Za-z0-9]+\\b[^>]*>|-?-->|\\}|<(${decreasingIndentingTags.join("|")})\\b[^>]*>)`, "i")
     },
     onEnterRules: [
       {
         // e.g. /** | */
-        beforeText: /^\s*\/\*\*(?!\/)([^\*]|\*(?!\/))*$/,
+        beforeText: /^\s*\/\*\*(?!\/)([^*]|\*(?!\/))*$/,
         afterText: /^\s*\*\/$/,
         action: { indentAction: IndentAction.IndentOutdent, appendText: " * " }
       },
       {
         // e.g. /** ...|
-        beforeText: /^\s*\/\*\*(?!\/)([^\*]|\*(?!\/))*$/,
+        beforeText: /^\s*\/\*\*(?!\/)([^*]|\*(?!\/))*$/,
         action: { indentAction: IndentAction.None, appendText: " * " }
       },
       {
         // e.g.  * ...|
-        beforeText: /^(\t|(\ \ ))*\ \*(\ ([^\*]|\*(?!\/))*)?$/,
+        beforeText: /^(\t|( {2}))* \*( ([^*]|\*(?!\/))*)?$/,
         action: { indentAction: IndentAction.None, appendText: "* " }
       },
       {
         // e.g.  */|
-        beforeText: /^(\t|(\ \ ))*\ \*\/\s*$/,
+        beforeText: /^(\t|( {2}))* \*\/\s*$/,
         action: { indentAction: IndentAction.None, removeText: 1 }
       },
       {
@@ -270,7 +272,7 @@ export function activate(context: ExtensionContext): void {
       }
     }
   } else if (enableAutoCloseTags) {
-    workspace.onDidChangeTextDocument(event => {
+    workspace.onDidChangeTextDocument((event) => {
         insertAutoCloseTag(event);
     });
   }
