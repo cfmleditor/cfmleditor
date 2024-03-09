@@ -29,6 +29,7 @@ function getEntryStatus(status: EntryStatus): string {
 /**
  * Constructs a description for the given CSS entry
  * @param entry A CSS entry object
+ * @returns
  */
 export function getEntryDescription(entry: IEntry): string | null {
   if (!entry.description || entry.description === "") {
@@ -78,6 +79,11 @@ export const browserNames = {
 	O: 'Opera'
 };
 
+/**
+ *
+ * @param browsers
+ * @returns
+ */
 export function getBrowserLabel(browsers: string[] = []): string | null {
 	if (browsers.length === 0) {
 		return null;

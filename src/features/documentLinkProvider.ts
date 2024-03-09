@@ -31,7 +31,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
 
     let match: RegExpExecArray | null;
 
-    this.linkPatterns.forEach(async (element: LinkPattern) => {
+    for (const element of this.linkPatterns) {
       const pattern: RegExp = element.pattern;
       while ((match = pattern.exec(documentText))) {
         const link: string = match[element.linkIndex];
@@ -53,7 +53,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
           // noop
         }
       }
-    });
+    }
 
     return results;
   }

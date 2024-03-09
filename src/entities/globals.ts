@@ -14,16 +14,19 @@ export interface GlobalEntity {
   description: string;
   signatures: Signature[];
 }
+// eslint-disable-next-line @typescript-eslint/ban-types
 export interface GlobalFunction extends GlobalEntity, Function { }
 export interface GlobalFunctions {
   [name: string]: GlobalFunction;
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 export interface GlobalMemberFunction extends GlobalEntity, Function { }
 export interface GlobalMemberFunctions {
   [name: string]: GlobalMemberFunction;
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 export interface MemberFunction extends Function {
   name: string;
   syntax: string;
@@ -52,13 +55,15 @@ export interface GlobalTags {
 /**
  * Transforms the global tag syntax into script syntax
  * @param globalTag The global tag for which the syntax will be transformed
+ * @returns
  */
 export function globalTagSyntaxToScript(globalTag: GlobalTag): string {
-  let attributes: string[] = [];
+  const attributes: string[] = [];
   const cfStartTagPattern = getCfStartTagPattern();
   const attributeStr: string = cfStartTagPattern.exec(globalTag.syntax)[3];
   if (attributeStr) {
     let attributeMatch: RegExpExecArray = null;
+    // eslint-disable-next-line no-cond-assign
     while (attributeMatch = ATTRIBUTES_PATTERN.exec(attributeStr)) {
       attributes.push(attributeMatch[0]);
     }
@@ -76,6 +81,7 @@ export function globalTagSyntaxToScript(globalTag: GlobalTag): string {
  * @param includeAttributesCustom Provides an optional set of attributes which overrides the set type
  * @param includeDefaultValue Whether to fill the attribute value with the default if it exists
  * @param isScript Whether this snippet for a script tag
+ * @returns
  */
 export function constructTagSnippet(
   globalTag: GlobalTag,
@@ -136,6 +142,7 @@ export function constructTagSnippet(
  * @param attributeQuoteType The type of quote to use for attributes
  * @param includeDefaultValue Whether to fill the attribute value with the default if it exists
  * @param includeAttributesCustom Provides an optional set of attributes which overrides the set type
+ * @returns
  */
 export function constructAttributeSnippet(
   param: Parameter,

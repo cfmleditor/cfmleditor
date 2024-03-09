@@ -35,6 +35,7 @@ export {
 	TextDocumentEdit, VersionedTextDocumentIdentifier, DocumentHighlightKind
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type LintSettings = { [key: string]: any };
 
 export interface CompletionSettings {
@@ -137,6 +138,7 @@ export interface ClientCapabilities {
 	};
 }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace ClientCapabilities {
 	export const LATEST: ClientCapabilities = {
 		textDocument: {

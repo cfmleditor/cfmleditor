@@ -86,7 +86,7 @@ export const catchProperties: CatchProperties = {
 };
 
 // Type is optional in Lucee
-export const scriptCatchPattern: RegExp = /\}\s*catch\s*\(\s*([A-Za-z0-9_\.$]+)\s+([_$a-zA-Z][$\w]*)\s*\)\s*\{/gi;
+export const scriptCatchPattern: RegExp = /\}\s*catch\s*\(\s*([A-Za-z0-9_.$]+)\s+([_$a-zA-Z][$\w]*)\s*\)\s*\{/gi;
 
 export interface CatchInfo {
   type: string;
@@ -99,6 +99,7 @@ export interface CatchInfo {
  * @param documentStateContext The context information for a TextDocument in which to parse the CFScript functions
  * @param isScript Whether this document or range is defined entirely in CFScript
  * @param docRange Range within which to check
+ * @returns
  */
 export function parseCatches(documentStateContext: DocumentStateContext, isScript: boolean, docRange?: Range): CatchInfo[] {
   let catchInfoArr: CatchInfo[] = [];
@@ -113,6 +114,7 @@ export function parseCatches(documentStateContext: DocumentStateContext, isScrip
 
   if (isScript) {
     let scriptCatchMatch: RegExpExecArray = null;
+    // eslint-disable-next-line no-cond-assign
     while (scriptCatchMatch = scriptCatchPattern.exec(documentText)) {
       const catchType = scriptCatchMatch[1] ? scriptCatchMatch[1] : "any";
       const catchVariable = scriptCatchMatch[2];
@@ -125,7 +127,7 @@ export function parseCatches(documentStateContext: DocumentStateContext, isScrip
         catchBodyEndPosition.translate(0, -1)
       );
 
-      let catchInfo: CatchInfo = {
+      const catchInfo: CatchInfo = {
         type: catchType,
         variableName: catchVariable,
         bodyRange: catchBodyRange
@@ -153,7 +155,7 @@ export function parseCatches(documentStateContext: DocumentStateContext, isScrip
         catchVariable = tag.attributes.get("name").value;
       }
 
-      let catchInfo: CatchInfo = {
+      const catchInfo: CatchInfo = {
         type: catchType,
         variableName: catchVariable,
         bodyRange: tag.bodyRange

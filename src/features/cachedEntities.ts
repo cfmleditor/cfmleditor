@@ -534,7 +534,7 @@ export async function cacheAllApplicationCfms(): Promise<void> {
  * @param applicationUris List of URIs to parse and cache
  */
 async function cacheGivenApplicationCfms(applicationUris: Uri[]): Promise<void> {
-  applicationUris.forEach(async (applicationUri: Uri) => {
+  for (const applicationUri of applicationUris) {
     try {
       const document: TextDocument = await workspace.openTextDocument(applicationUri);
       const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
@@ -548,7 +548,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[]): Promise<void> 
     } catch (ex) {
       console.warn(`Cannot parse document at ${applicationUri}`);
     }
-  });
+  }
 }
 
 /**

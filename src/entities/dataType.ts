@@ -23,10 +23,12 @@ export enum DataType {
   XML = "xml"
 }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace DataType {
   /**
    * Resolves a string value of data type to an enumeration member
    * @param dataType The data type string to resolve
+   * @returns
    */
   export function valueOf(dataType: string): DataType {
     switch (dataType.toLowerCase()) {
@@ -70,6 +72,7 @@ export namespace DataType {
   /**
    * Resolves a string value of param type to an enumeration member
    * @param paramType The param type string to resolve
+   * @returns
    */
   export function paramTypeToDataType(paramType: string): DataType {
     switch (paramType.toLowerCase()) {
@@ -114,6 +117,7 @@ export namespace DataType {
   /**
    * Validates whether a string is numeric
    * @param numStr A string to check
+   * @returns
    */
   export function isNumeric(numStr: string): boolean {
     let numStrTest: string = numStr;
@@ -126,6 +130,7 @@ export namespace DataType {
   /**
    * Validates whether a string is a string literal
    * @param str A string to check
+   * @returns
    */
   export function isStringLiteral(str: string): boolean {
     const trimmedStr: string = str.trim();
@@ -136,6 +141,7 @@ export namespace DataType {
   /**
    * Gets the string literal value from the given CFML string literal
    * @param str A string literal from which to get the string value
+   * @returns
    */
   export function getStringLiteralValue(str: string): string {
     let trimmedStr: string = str.trim();
@@ -165,7 +171,9 @@ export namespace DataType {
   /**
    * Checks whether a string is a valid data type
    * @param dataType A string to check
+   * @returns
    */
+  // eslint-disable-next-line no-inner-declarations
   function isDataType(dataType: string): boolean {
     return (dataType && (equalsIgnoreCase(dataType, "any") || valueOf(dataType) !== DataType.Any));
   }
@@ -173,6 +181,7 @@ export namespace DataType {
   /**
    * Returns the truthy value of a string
    * @param boolStr A string to evaluate
+   * @returns
    */
   export function isTruthy(boolStr: string): boolean {
     if (equalsIgnoreCase(boolStr, "true") || equalsIgnoreCase(boolStr, "yes")) {
@@ -189,6 +198,7 @@ export namespace DataType {
    * Gets the data type and if applicable component URI from given string.
    * @param dataType The string to check
    * @param documentUri The document's URI that contains this type string
+   * @returns
    */
   export async function getDataTypeAndUri(dataType: string, documentUri: Uri): Promise<[DataType, Uri]> {
     if (!dataType) {
@@ -211,6 +221,7 @@ export namespace DataType {
    * Analyzes the given value to try to infer its type
    * @param value The value to analyze
    * @param documentUri The URI of the document containing the value
+   * @returns
    */
   export async function inferDataTypeFromValue(value: string, documentUri: Uri): Promise<[DataType, Uri]> {
     if (value.length === 0) {

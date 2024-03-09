@@ -45,7 +45,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
       const thisComponent: Component = documentPositionStateContext.component;
       if (thisComponent) {
         // Component functions (related)
-        thisComponent.functions.forEach(async (func: UserFunction) => {
+        for (const [, func] of thisComponent.functions) {
           // Argument declarations
           func.signatures.forEach((signature: UserFunctionSignature) => {
             signature.parameters.filter((arg: Argument) => {
@@ -99,7 +99,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
               }
             }
           }
-        });
+        }
 
         // Component properties (declarations)
         thisComponent.properties.filter((prop: Property) => {

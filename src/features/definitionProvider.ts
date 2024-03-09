@@ -112,7 +112,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
         }
 
         // Component functions (related)
-        thisComponent.functions.forEach(async (func: UserFunction) => {
+        for (const [, func] of thisComponent.functions) {
           // Function return types
           if (func.returnTypeUri && func.returnTypeRange && func.returnTypeRange.contains(position)) {
             const returnTypeComp: Component = getComponent(func.returnTypeUri);
@@ -177,7 +177,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
               }
             }
           }
-        });
+        }
 
         // Component properties (declarations)
         thisComponent.properties.filter((prop: Property) => {

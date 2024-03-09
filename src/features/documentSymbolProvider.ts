@@ -1,7 +1,7 @@
 import { CancellationToken, DocumentSymbolProvider, Position, Range, DocumentSymbol, SymbolKind, TextDocument, WorkspaceConfiguration, workspace } from "vscode";
 import { Component } from "../entities/component";
 import { Property } from "../entities/property";
-import { getLocalVariables, UserFunction } from "../entities/userFunction";
+import { getLocalVariables } from "../entities/userFunction";
 import { parseVariableAssignments, usesConstantConvention, Variable } from "../entities/variable";
 import { DocumentStateContext, getDocumentStateContext } from "../utils/documentUtil";
 import { getComponent } from "./cachedEntities";
@@ -28,10 +28,11 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
     const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments);
 
     if (documentStateContext.isCfcFile) {
-      documentSymbols = documentSymbols.concat(CFMLDocumentSymbolProvider.getComponentSymbols(documentStateContext));
+        const componentSymbols = await CFMLDocumentSymbolProvider.getComponentSymbols(documentStateContext)
+        documentSymbols = documentSymbols.concat(componentSymbols);
     } else if (documentStateContext.isCfmFile) {
-        const tmp = await CFMLDocumentSymbolProvider.getTemplateSymbols(documentStateContext);
-      documentSymbols = documentSymbols.concat(tmp);
+        const templateSymbols = await CFMLDocumentSymbolProvider.getTemplateSymbols(documentStateContext);
+        documentSymbols = documentSymbols.concat(templateSymbols);
     }
 
     return documentSymbols;
@@ -42,7 +43,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
    * @param documentStateContext The document context for which to provide symbols.
    * @returns
    */
-  private static getComponentSymbols(documentStateContext: DocumentStateContext): DocumentSymbol[] {
+  private static async getComponentSymbols(documentStateContext: DocumentStateContext): Promise<DocumentSymbol[]> {
     const document: TextDocument = documentStateContext.document;
     const component: Component = getComponent(document.uri);
 
@@ -92,7 +93,9 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 
     // Component functions
     const functionSymbols: DocumentSymbol[] = [];
-    component.functions.forEach(async (userFunction: UserFunction, functionKey: string) => {
+
+    for (const [functionKey, userFunction] of component.functions) {
+
       const currFuncSymbol: DocumentSymbol = new DocumentSymbol(
         userFunction.name,
         "",
@@ -123,7 +126,8 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
       }
 
       functionSymbols.push(currFuncSymbol);
-    });
+    }
+
     componentSymbol.children = componentSymbol.children.concat(functionSymbols);
 
     return [componentSymbol];

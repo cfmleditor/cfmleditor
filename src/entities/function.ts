@@ -31,7 +31,9 @@ export enum MemberType {
  * Constructs a string showing a function invocation sample
  * @param func The function for which the syntax string will be constructed
  * @param signatureIndex The index of the signature to use
+ * @returns
  */
+// eslint-disable-next-line @typescript-eslint/ban-types
 export function constructSyntaxString(func: Function, signatureIndex: number = 0): string {
   const funcSignatureParamsLabel = func.signatures.length !== 0 ? constructSignatureLabelParamsPart(func.signatures[signatureIndex].parameters) : "";
   const returnType: string = getReturnTypeString(func);
@@ -41,6 +43,7 @@ export function constructSyntaxString(func: Function, signatureIndex: number = 0
 
 /**
  * Gets a regular expression that matches after the function identifier and captures the parameter contents
+ * @returns
  */
 export function getFunctionSuffixPattern(): RegExp {
   return functionSuffixPattern;
@@ -49,7 +52,9 @@ export function getFunctionSuffixPattern(): RegExp {
 /**
  * Gets a display string for the given function's return type
  * @param func The function for which to get the display return type
+ * @returns
  */
+// eslint-disable-next-line @typescript-eslint/ban-types
 export function getReturnTypeString(func: Function): string {
   let returnType: string;
   if ("returnTypeUri" in func) {
@@ -71,9 +76,10 @@ export function getReturnTypeString(func: Function): string {
  * @param documentStateContext The context information for the TextDocument containing function arguments
  * @param argsRange The full range for a set of arguments
  * @param separatorChar The character that separates function arguments
+ * @returns
  */
 export function getScriptFunctionArgRanges(documentStateContext: DocumentStateContext, argsRange: Range, separatorChar: string = ","): Range[] {
-  let argRanges: Range[] = [];
+  const argRanges: Range[] = [];
   const document: TextDocument = documentStateContext.document;
   const argsEndOffset: number = document.offsetAt(argsRange.end);
 

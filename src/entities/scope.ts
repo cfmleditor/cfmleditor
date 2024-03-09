@@ -23,10 +23,12 @@ export enum Scope {
   Variables = "variables"
 }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Scope {
   /**
    * Resolves a string value of scope to an enumeration member
    * @param scope The scope string to resolve
+   * @returns
    */
   export function valueOf(scope: string): Scope {
     switch (scope.toLowerCase()) {
@@ -232,6 +234,7 @@ export const scopes: Scopes = {
  * Returns a regular expression that optionally captures a valid scope
  * @param scopes An array of scopes to include
  * @param optionalScope Whether the scope is optional
+ * @returns
  */
 export function getValidScopesPrefixPattern(scopes: Scope[], optionalScope: boolean = true) {
   const validScopes: string = scopes.join("|");
@@ -245,6 +248,7 @@ export function getValidScopesPrefixPattern(scopes: Scope[], optionalScope: bool
 
 /**
  * Returns a regular expression that matches a scoped variable
+ * @returns
  */
 export function getVariableScopePrefixPattern() {
    return getValidScopesPrefixPattern(allScopes, true);

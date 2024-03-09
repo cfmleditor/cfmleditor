@@ -159,6 +159,7 @@ export interface ComponentsByName {
 /**
  * Determines whether the given document is a script-based component
  * @param document The document to check
+ * @returns
  */
 export function isScriptComponent(document: TextDocument): boolean {
   const componentTagMatch: RegExpExecArray = COMPONENT_TAG_PATTERN.exec(document.getText());
@@ -172,6 +173,7 @@ export function isScriptComponent(document: TextDocument): boolean {
 /**
  * Parses a component document and returns an object conforming to the Component interface
  * @param documentStateContext The context information for a TextDocument to be parsed
+ * @returns
  */
 export async function parseComponent(documentStateContext: DocumentStateContext): Promise<Component | undefined> {
   const document: TextDocument = documentStateContext.document;
@@ -222,8 +224,8 @@ export async function parseComponent(documentStateContext: DocumentStateContext)
     declarationStartOffset += checkTag.length;
   }
 
-  let componentAttributes: ComponentAttributes = {};
-  let component: Component = {
+  const componentAttributes: ComponentAttributes = {};
+  const component: Component = {
     uri: document.uri,
     name: document.fileName,
     isScript: componentIsScript,
@@ -318,13 +320,16 @@ export async function parseComponent(documentStateContext: DocumentStateContext)
     }
   }
 
-  Object.getOwnPropertyNames(component).forEach(async (propName: string) => {
+  const componentPropertyNames = Object.getOwnPropertyNames(component);
+
+  for (const propName of componentPropertyNames) {
     // TODO: Is this just supposed to be checking for existence or also value? Because it is ignoring falsy property values too
     if (componentAttributes[propName]) {
       if (propName === "extends") {
         component.extends = await componentPathToUri(componentAttributes.extends, document.uri);
       } else if (propName === "implements") {
-        componentAttributes.implements.split(",").forEach(async (element: string) => {
+        const componentimplements = componentAttributes.implements.split(",");
+        for (const element of componentimplements) {
           const implementsUri: Uri = await componentPathToUri(element.trim(), document.uri);
           if (implementsUri) {
             if (!component.implements) {
@@ -332,17 +337,17 @@ export async function parseComponent(documentStateContext: DocumentStateContext)
             }
             component.implements.push(implementsUri);
           }
-        });
+        }
       } else if (propName === "persistent" && componentAttributes.persistent) {
         component.accessors = true;
       } else {
         component[propName] = componentAttributes[propName];
       }
     }
-  });
+  }
 
   documentStateContext.component = component;
-  let componentFunctions = new ComponentFunctions();
+  const componentFunctions = new ComponentFunctions();
   let userFunctions: UserFunction[] = parseScriptFunctions(documentStateContext);
   userFunctions = userFunctions.concat(parseTagFunctions(documentStateContext));
   let earliestFunctionRangeStart: Position = document.positionAt(documentText.length);
@@ -387,6 +392,7 @@ export async function parseComponent(documentStateContext: DocumentStateContext)
 /**
  * Parses a component document and returns an object conforming to the Component interface
  * @param documentPositionStateContext The context information for the TextDocument and position to be check
+ * @returns
  */
 export function isInComponentHead(documentPositionStateContext: DocumentPositionStateContext): boolean {
   const document: TextDocument = documentPositionStateContext.document;
@@ -412,9 +418,10 @@ export function isInComponentHead(documentPositionStateContext: DocumentPosition
 /**
  * Parses a documentation block for a component and returns an object conforming to the ComponentAttributes interface
  * @param docBlock The documentation block to be processed
+ * @returns
  */
 function processDocBlock(docBlock: DocBlockKeyValue[]): ComponentAttributes {
-  let docBlockObj: ComponentAttributes = {};
+  const docBlockObj: ComponentAttributes = {};
   docBlock.forEach((docElem: DocBlockKeyValue) => {
     const activeKey = docElem.key;
     if (booleanAttributes.has(activeKey)) {
@@ -430,9 +437,10 @@ function processDocBlock(docBlock: DocBlockKeyValue[]): ComponentAttributes {
 /**
  * Processes a set of attributes for a component and returns an object conforming to the ComponentAttributes interface
  * @param attributes A set of attributes
+ * @returns
  */
 function processAttributes(attributes: Attributes): ComponentAttributes {
-  let attributeObj: ComponentAttributes = {};
+  const attributeObj: ComponentAttributes = {};
 
   attributes.forEach((attr: Attribute, attrKey: string) => {
     if (booleanAttributes.has(attrKey)) {
@@ -449,6 +457,7 @@ function processAttributes(attributes: Attributes): ComponentAttributes {
  * Resolves a component in dot-path notation to a URI
  * @param dotPath A string for a component in dot-path notation
  * @param baseUri The URI from which the component path will be resolved
+ * @returns
  */
 export async function componentPathToUri(dotPath: string, baseUri: Uri): Promise<Uri | undefined> {
   if (!dotPath) {
@@ -495,6 +504,7 @@ export async function componentPathToUri(dotPath: string, baseUri: Uri): Promise
 /**
  * Returns just the name part for a component dot path
  * @param path Dot path to a component
+ * @returns
  */
 export function getComponentNameFromDotPath(path: string): string {
   return path.split(".").pop();
@@ -503,6 +513,7 @@ export function getComponentNameFromDotPath(path: string): string {
 /**
  * Finds the applicable Application file for the given file URI
  * @param baseUri The URI from which the Application file will be searched
+ * @returns
  */
 export function getApplicationUri(baseUri: Uri): Uri | undefined {
   if (baseUri.scheme !== "file") {
@@ -526,6 +537,7 @@ export function getApplicationUri(baseUri: Uri): Uri | undefined {
 /**
  * Finds the applicable Server file for the given file URI
  * @param baseUri The URI from which the Server file will be searched
+ * @returns
  */
 export function getServerUri(baseUri: Uri): Uri | undefined {
   let componentUri: Uri;
@@ -550,6 +562,7 @@ export function getServerUri(baseUri: Uri): Uri | undefined {
  * Checks whether `checkComponent` is a subcomponent or equal to `baseComponent`
  * @param checkComponent The candidate subcomponent
  * @param baseComponent The candidate base component
+ * @returns
  */
 export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component): boolean {
   while (checkComponent) {
@@ -571,6 +584,7 @@ export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: 
  * Checks whether `checkComponent` is a subcomponent of `baseComponent`
  * @param checkComponent The candidate subcomponent
  * @param baseComponent The candidate base component
+ * @returns
  */
 export function isSubcomponent(checkComponent: Component, baseComponent: Component): boolean {
   if (checkComponent.extends) {

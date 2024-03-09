@@ -17,6 +17,7 @@ export const namedParameterPattern: RegExp = /^\s*([\w$]+)\s*=(?!=)/;
 /**
  * Gets the parameter's name
  * @param param The Parameter object from which to get the name
+ * @returns
  */
 export function getParameterName(param: Parameter): string {
   return param.name.split("=")[0];
@@ -25,6 +26,7 @@ export function getParameterName(param: Parameter): string {
 /**
  * Constructs a string label representation of a parameter
  * @param param The Parameter object on which to base the label
+ * @returns
  */
 export function constructParameterLabel(param: Parameter): string {
   let paramLabel = getParameterName(param);

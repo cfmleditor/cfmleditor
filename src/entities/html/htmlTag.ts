@@ -5,6 +5,13 @@ import { getAttribute } from "./languageFacts";
 
 export const HTML_EMPTY_ELEMENTS: string[] = ["area", "base", "br", "col", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"];
 
+/**
+ *
+ * @param tagName
+ * @param attributeName
+ * @param attributeQuoteType
+ * @returns
+ */
 export function constructHTMLAttributeSnippet(tagName: string, attributeName: string, attributeQuoteType: AttributeQuoteType = AttributeQuoteType.Double): string {
   const attribute: HTMLAttributeData = getAttribute(tagName, attributeName);
 

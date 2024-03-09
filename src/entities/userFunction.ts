@@ -17,8 +17,8 @@ import { DocumentStateContext, DocumentPositionStateContext } from "../utils/doc
 import { getClosingPosition, getNextCharacterPosition, isInRanges, getCfScriptRanges } from "../utils/contextUtil";
 import { Utils } from "vscode-uri";
 
-const scriptFunctionPattern: RegExp = /((\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?)(?:\b([A-Za-z0-9_\.$]+)\s+)?function\s+([_$a-zA-Z][$\w]*)\s*\(/gi;
-const scriptFunctionArgPattern: RegExp = /((?:(required)\s+)?(?:\b([\w.]+)\b\s+)?(\b[_$a-zA-Z][$\w]*\b)(?:\s*=\s*(\{[^\}]*\}|\[[^\]]*\]|\([^\)]*\)|(?:(?!\b\w+\s*=).)+))?)(.*)?/i;
+const scriptFunctionPattern: RegExp = /((\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?)(?:\b([A-Za-z0-9_.$]+)\s+)?function\s+([_$a-zA-Z][$\w]*)\s*\(/gi;
+const scriptFunctionArgPattern: RegExp = /((?:(required)\s+)?(?:\b([\w.]+)\b\s+)?(\b[_$a-zA-Z][$\w]*\b)(?:\s*=\s*(\{[^}]*\}|\[[^\]]*\]|\([^)]*\)|(?:(?!\b\w+\s*=).)+))?)(.*)?/i;
 export const functionValuePattern: RegExp = /^function\s*\(/i;
 
 /*
@@ -57,10 +57,12 @@ export enum Access {
   Package = "package",
   Remote = "remote"
 }
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Access {
   /**
    * Resolves a string value of access type to an enumeration member
    * @param access The access type string to resolve
+   * @returns
    */
   export function valueOf(access: string): Access {
     switch (access.toLowerCase()) {
@@ -121,6 +123,7 @@ export interface UserFunctionSignature extends Signature {
   parameters: Argument[];
 }
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 export interface UserFunction extends Function {
   access: Access;
   static: boolean;
@@ -143,6 +146,7 @@ export interface UserFunctionVariable extends Variable {
 /**
  * Checks whether a Variable is a UserFunction
  * @param variable The variable object to check
+ * @returns
  */
 export function isUserFunctionVariable(variable: Variable): variable is UserFunctionVariable {
   return "signature" in variable;
@@ -168,13 +172,15 @@ export interface UserFunctionsByName {
 /**
  * Parses the CFScript function definitions and returns an array of UserFunction objects
  * @param documentStateContext The context information for a TextDocument in which to parse the CFScript functions
+ * @returns
  */
 export function parseScriptFunctions(documentStateContext: DocumentStateContext): UserFunction[] {
   const document: TextDocument = documentStateContext.document;
-  let userFunctions: UserFunction[] = [];
+  const userFunctions: UserFunction[] = [];
   // sanitizedDocumentText removes doc blocks
   const componentBody: string = documentStateContext.sanitizedDocumentText;
   let scriptFunctionMatch: RegExpExecArray = null;
+  // eslint-disable-next-line no-cond-assign
   while (scriptFunctionMatch = scriptFunctionPattern.exec(componentBody)) {
     const fullMatch: string = scriptFunctionMatch[0];
     const returnTypePrefix: string = scriptFunctionMatch[1];
@@ -346,9 +352,10 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext)
  * @param documentStateContext The context information for a TextDocument possibly containing function arguments
  * @param argsRange A range within the given document that contains the CFScript arguments
  * @param docBlock The parsed documentation block for the function to which these arguments belong
+ * @returns
  */
 export function parseScriptFunctionArgs(documentStateContext: DocumentStateContext, argsRange: Range, docBlock: DocBlockKeyValue[]): Argument[] {
-  let args: Argument[] = [];
+  const args: Argument[] = [];
   const document: TextDocument = documentStateContext.document;
   const documentUri: Uri = document.uri;
 
@@ -412,7 +419,7 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
         }
       }
 
-      let argument: Argument = {
+      const argument: Argument = {
         name: argName,
         type: argType,
         required: argRequired ? true : false,
@@ -454,7 +461,7 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
           } else if (argAttrName === "default") {
             argument.default = argAttrVal;
           } else if (argAttrName === "type") {
-            let checkDataType = DataType.getDataTypeAndUri(argAttrVal, documentUri);
+            const checkDataType = DataType.getDataTypeAndUri(argAttrVal, documentUri);
             if (checkDataType) {
               argument.dataType = checkDataType[0];
               if (checkDataType[1]) {
@@ -480,7 +487,7 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
         } else if (docElem.subkey === "default") {
           argument.default = docElem.value;
         } else if (docElem.subkey === "type") {
-          let checkDataType = DataType.getDataTypeAndUri(docElem.value, documentUri);
+          const checkDataType = DataType.getDataTypeAndUri(docElem.value, documentUri);
           if (checkDataType) {
             argument.dataType = checkDataType[0];
             if (checkDataType[1]) {
@@ -505,9 +512,10 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
 /**
  * Parses the tag function definitions and returns an array of UserFunction objects
  * @param documentStateContext The context information for a TextDocument in which to parse the tag functions
+ * @returns
  */
 export function parseTagFunctions(documentStateContext: DocumentStateContext): UserFunction[] {
-  let userFunctions: UserFunction[] = [];
+  const userFunctions: UserFunction[] = [];
   const documentUri: Uri = documentStateContext.document.uri;
 
   const parsedFunctionTags: Tag[] = parseTags(documentStateContext, "cffunction");
@@ -521,7 +529,7 @@ export function parseTagFunctions(documentStateContext: DocumentStateContext): U
       return;
     }
 
-    let userFunction: UserFunction = {
+    const userFunction: UserFunction = {
       access: Access.Public,
       static: false,
       abstract: false,
@@ -553,9 +561,10 @@ export function parseTagFunctions(documentStateContext: DocumentStateContext): U
  * Parses the given function body to extract the arguments into an array of Argument objects that is returned
  * @param documentStateContext The context information for a TextDocument containing these function arguments
  * @param functionBodyRange A range in the given document for the function body
+ * @returns
  */
 function parseTagFunctionArguments(documentStateContext: DocumentStateContext, functionBodyRange: Range | undefined): Argument[] {
-  let args: Argument[] = [];
+  const args: Argument[] = [];
   const documentUri: Uri = documentStateContext.document.uri;
 
   if (functionBodyRange === undefined) {
@@ -601,7 +610,7 @@ function parseTagFunctionArguments(documentStateContext: DocumentStateContext, f
       }
     }
 
-    let argument: Argument = {
+    const argument: Argument = {
       name: argumentAttributes.name,
       type: argType,
       required: argRequired,
@@ -640,6 +649,7 @@ function parseTagFunctionArguments(documentStateContext: DocumentStateContext, f
  * Assigns the given function attributes to the given user function
  * @param userFunction The user function to which the attributes will be assigned
  * @param functionAttributes The attributes that will be assigned to the user function
+ * @returns
  */
 function assignFunctionAttributes(userFunction: UserFunction, functionAttributes: Attributes): UserFunction {
   functionAttributes.forEach((attribute: Attribute) => {
@@ -677,9 +687,10 @@ function assignFunctionAttributes(userFunction: UserFunction, functionAttributes
 /**
  * Parses a set of attribute/value pairs for a function argument and returns an object conforming to the ArgumentAttributes interface
  * @param attributes A set of attribute/value pairs for a function argument
+ * @returns
  */
 function processArgumentAttributes(attributes: Attributes): ArgumentAttributes {
-  let attributeObj = {};
+  const attributeObj = {};
   attributes.forEach((attr: Attribute, attrKey: string) => {
     attributeObj[attrKey] = attr.value;
   });
@@ -696,6 +707,7 @@ function processArgumentAttributes(attributes: Attributes): ArgumentAttributes {
  * @param func The UserFunction within which to parse local variables
  * @param documentStateContext The contextual information of the state of a document containing the given function
  * @param isScript Whether this function is defined entirely in CFScript
+ * @returns
  */
 export async function getLocalVariables(func: UserFunction, documentStateContext: DocumentStateContext, isScript: boolean): Promise<Variable[]> {
   if (!func || !func.bodyRange) {
@@ -712,6 +724,7 @@ export async function getLocalVariables(func: UserFunction, documentStateContext
 /**
  * Identifies if the modifier is of an Access type or other
  * @param modifier A string representing the function modifier
+ * @returns
  */
 function parseModifier(modifier: string): string {
   if (accessArr.includes(modifier.toLowerCase())) {
@@ -726,6 +739,7 @@ function parseModifier(modifier: string): string {
  * @param documentPositionStateContext The contextual information of the state of a document and the cursor position
  * @param functionKey The function key for which to get
  * @param docPrefix The document prefix of the function if not the same as docPrefix within documentPositionStateContext
+ * @returns
  */
 export async function getFunctionFromPrefix(documentPositionStateContext: DocumentPositionStateContext, functionKey: string, docPrefix?: string): Promise<UserFunction | undefined> {
   let foundFunction: UserFunction;
@@ -805,11 +819,12 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
  * @param callerUri The URI of the document from which the function is being called
  * @param disallowedAccess An access specifier to disallow
  * @param disallowImplicit Whether to disallow implicit functions from being checked
+ * @returns
  */
 export function getFunctionFromComponent(component: Component, lowerFunctionName: string, callerUri: Uri, disallowedAccess?: Access, disallowImplicit: boolean = false): UserFunction | undefined {
-  let validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
+  const validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
   if (hasComponent(callerUri)) {
-    let callerComponent: Component = getComponent(callerUri);
+    const callerComponent: Component = getComponent(callerUri);
     if (isSubcomponentOrEqual(callerComponent, component)) {
       validFunctionAccess.add(Access.Private);
       validFunctionAccess.add(Access.Package);
@@ -847,6 +862,7 @@ export function getFunctionFromComponent(component: Component, lowerFunctionName
  * Gets the function based on the document to which it belongs and its name
  * @param documentStateContext The contextual information of the state of a document
  * @param lowerFunctionName The function name all lowercased
+ * @returns
  */
 export function getFunctionFromTemplate(documentStateContext: DocumentStateContext, lowerFunctionName: string): UserFunction | undefined {
   const tagFunctions: UserFunction[] = parseTagFunctions(documentStateContext);
@@ -865,6 +881,7 @@ export function getFunctionFromTemplate(documentStateContext: DocumentStateConte
 /**
  * Returns UserFunction array representation of function variables with some properties undefined
  * @param variables The variables to convert
+ * @returns
  */
 export function variablesToUserFunctions(variables: UserFunctionVariable[]): UserFunction[] {
   return variables.map((variable: UserFunctionVariable) => {

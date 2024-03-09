@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-export let colors: { [name: string]: string } = {
+export const colors: { [name: string]: string } = {
 	aliceblue: '#f0f8ff',
 	antiquewhite: '#faebd7',
 	aqua: '#00ffff',

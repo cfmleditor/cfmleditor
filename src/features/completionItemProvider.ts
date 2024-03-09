@@ -1134,7 +1134,7 @@ function getCSSAtDirectiveCompletions(state: CompletionState): CompletionItem[] 
 async function getDottedPathCompletions(state: CompletionState, parentDottedPath: string): Promise<CompletionItem[]> {
   const newInstanceCompletions: CompletionItem[] = [];
   const paths: string[] = await resolveDottedPaths(parentDottedPath, state.document.uri);
-  paths.forEach(async (thisPath: string) => {
+  for (const thisPath of paths) {
     const files: [string, FileType][] = await workspace.fs.readDirectory(Uri.parse(thisPath));
     const directories: [string, FileType][] = filterDirectories(files);
     directories.filter((directory: [string, FileType]) => {
@@ -1160,7 +1160,7 @@ async function getDottedPathCompletions(state: CompletionState, parentDottedPath
         "!"
       ));
     });
-  });
+  }
 
   // custom mappings
   const cfmlMappings: CFMLMapping[] = workspace.getConfiguration("cfml", state.document.uri).get<CFMLMapping[]>("mappings", []);

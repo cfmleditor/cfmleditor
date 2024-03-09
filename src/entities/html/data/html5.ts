@@ -8,6 +8,10 @@ import { HTMLDataProvider } from '../dataProvider';
 import { ITagData, IAttributeData } from '../htmlLanguageTypes';
 
 
+/**
+ *
+ * @returns
+ */
 export function getHTML5DataProvider() {
 	return new HTMLDataProvider('html5', {
 		version: 1,

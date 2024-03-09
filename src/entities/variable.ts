@@ -277,6 +277,7 @@ const outputVariableTags: OutputVariableTags = {
 /**
  * Checks whether the given identifier uses the constant naming convention
  * @param ident The identifier to test
+ * @returns
  */
 export function usesConstantConvention(ident: string): boolean {
   return ident === ident.toUpperCase();
@@ -285,9 +286,10 @@ export function usesConstantConvention(ident: string): boolean {
 /**
  * Returns a regular expression that matches when prefixed by a specified unscoped variable accessing a property
  * @param variableName The name of a variable
+ * @returns
  */
 export function getVariablePrefixPattern(variableName: string) {
-  let pattern: string = `(?:^|[^.\\s])\\s*(?:\\b${variableName}\\s*(?:\\.\\s*|\\[\\s*['"]))$`;
+  const pattern: string = `(?:^|[^.\\s])\\s*(?:\\b${variableName}\\s*(?:\\.\\s*|\\[\\s*['"]))$`;
 
   return new RegExp(pattern, "i");
 }
@@ -298,6 +300,7 @@ export function getVariablePrefixPattern(variableName: string) {
  * 2. variable scope
  * 3. quote
  * 4. variable name
+ * @returns
  */
 export function getVariableExpressionPrefixPattern() {
   return variableExpressionPrefixPattern;
@@ -308,6 +311,7 @@ export function getVariableExpressionPrefixPattern() {
  * @param documentStateContext Contextual information for a given document's state
  * @param isScript Whether this document or range is defined entirely in CFScript
  * @param docRange Range within which to check
+ * @returns
  */
 export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange?: Range): Promise<Variable[]> {
   let variables: Variable[] = [];
@@ -360,6 +364,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
   // params
   let paramMatch: RegExpExecArray = null;
   const paramPattern: RegExp = isScript ? scriptParamPattern : tagParamPattern;
+  // eslint-disable-next-line no-cond-assign
   while (paramMatch = paramPattern.exec(documentText)) {
     const paramPrefix: string = paramMatch[1];
     const paramAttr: string = paramMatch[2];
@@ -436,6 +441,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
   // variable assignments
   let variableMatch: RegExpExecArray = null;
   const variableAssignmentPattern: RegExp = isScript ? cfscriptVariableAssignmentPattern : tagVariableAssignmentPattern;
+  // eslint-disable-next-line no-cond-assign
   while (variableMatch = variableAssignmentPattern.exec(documentText)) {
     const initValuePrefix: string = variableMatch[1];
     const varPrefix: string = variableMatch[2];
@@ -489,6 +495,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
     if (inferredType[0] === DataType.Query) {
       let valueMatch: RegExpExecArray = null;
+      // eslint-disable-next-line no-cond-assign
       if (valueMatch = queryValuePattern.exec(initValue)) {
         const fullValueMatch: string = valueMatch[0];
         const functionName: string = valueMatch[1];
@@ -511,7 +518,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
               columns = getSelectColumnsFromQueryText(firstParamVal);
             }
             if (columns.size > 0) {
-              let query: Query = thisVar as Query;
+              const query: Query = thisVar as Query;
               query.selectColumnNames = columns;
               thisVar = query;
             }
@@ -519,9 +526,10 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
         }
       }
     } else if (inferredType[0] === DataType.Function) {
-      let userFunction: UserFunctionVariable = thisVar as UserFunctionVariable;
+      const userFunction: UserFunctionVariable = thisVar as UserFunctionVariable;
 
       let valueMatch: RegExpExecArray = null;
+      // eslint-disable-next-line no-cond-assign
       if (valueMatch = functionValuePattern.exec(initValue)) {
         const fullValueMatch: string = valueMatch[0];
 
@@ -547,12 +555,13 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
   if (!isScript || userEngine.supportsScriptTags()) {
     // Tags with output attributes
-    let foundOutputVarTags: MySet<string> = new MySet();
+    const foundOutputVarTags: MySet<string> = new MySet();
     let cfTagMatch: RegExpExecArray = null;
     const cfTagPattern: RegExp = isScript ? getCfScriptTagPatternIgnoreBody() : getCfStartTagPattern();
+    // eslint-disable-next-line no-cond-assign
     while (cfTagMatch = cfTagPattern.exec(documentText)) {
       const tagName = cfTagMatch[2].toLowerCase();
-      if (!foundOutputVarTags.has(tagName) && outputVariableTags.hasOwnProperty(tagName)) {
+      if (!foundOutputVarTags.has(tagName) && Object.prototype.hasOwnProperty.call(outputVariableTags, tagName)) {
         foundOutputVarTags.add(tagName);
       }
     }
@@ -624,7 +633,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
             const columns: QueryColumns = getSelectColumnsFromQueryText(bodyText);
 
             if (columns.size > 0) {
-              let query: Query = outputVar as Query;
+              const query: Query = outputVar as Query;
               query.selectColumnNames = columns;
               outputVar = query;
             }
@@ -639,7 +648,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
   if (!isScript) {
     // Check cfscript sections
     const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange);
-    cfScriptRanges.forEach(async (range: Range) => {
+    for (const range of cfScriptRanges) {
       const cfscriptVars: Variable[] = await parseVariableAssignments(documentStateContext, true, range);
 
       cfscriptVars.forEach((scriptVar: Variable) => {
@@ -656,10 +665,11 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
           }
         }
       });
-    });
+    }
   } else {
     // Check for-in loops
     let forInVariableMatch: RegExpExecArray = null;
+    // eslint-disable-next-line no-cond-assign
     while (forInVariableMatch = forInVariableAssignmentPattern.exec(documentText)) {
       const varPrefix: string = forInVariableMatch[1];
       const varScope: string = forInVariableMatch[2];
@@ -715,9 +725,10 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
  * Returns Variable array representation of Properties
  * @param properties The properties of a component to convert
  * @param documentUri The URI of the document in which these properties are declared
+ * @returns
  */
 export function propertiesToVariables(properties: Properties, documentUri: Uri): Variable[] {
-  let propertyVars: Variable[] = [];
+  const propertyVars: Variable[] = [];
   properties.forEach((prop: Property) => {
     propertyVars.push({
       identifier: prop.name,
@@ -737,6 +748,7 @@ export function propertiesToVariables(properties: Properties, documentUri: Uri):
  * Returns Variable array representation of Arguments
  * @param args The arguments of a function to convert
  * @param documentUri The URI of the document in which these arguments are declared
+ * @returns
  */
 export function argumentsToVariables(args: Argument[], documentUri: Uri): Variable[] {
   return args.map((arg: Argument) => {
@@ -758,7 +770,8 @@ export function argumentsToVariables(args: Argument[], documentUri: Uri): Variab
  * Returns the variable that best matches the given name and scope
  * @param variables The variables to check
  * @param varName The variable name for which to check
- * @param scope The variable's scope
+ * @param varScope The variable's scope
+ * @returns
  */
 export function getBestMatchingVariable(variables: Variable[], varName: string, varScope?: Scope): Variable | undefined {
   let foundVar: Variable;
@@ -796,6 +809,7 @@ export function getBestMatchingVariable(variables: Variable[], varName: string, 
  * @param variables The variables to check
  * @param varName The variable name for which to check
  * @param scope The variable's scope
+ * @returns
  */
 export function getMatchingVariables(variables: Variable[], varName: string, scope = Scope.Unknown): Variable[] {
   let checkScopes: Scope[];
@@ -813,6 +827,7 @@ export function getMatchingVariables(variables: Variable[], varName: string, sco
 /**
  * Gets the application variables for the given document
  * @param baseUri The URI of the document for which the Application file will be found
+ * @returns
  */
 export function getApplicationVariables(baseUri: Uri): Variable[] {
   let applicationVariables: Variable[] = [];
@@ -830,6 +845,7 @@ export function getApplicationVariables(baseUri: Uri): Variable[] {
 /**
  * Gets the server variables
  * @param baseUri The URI of the document for which the Server file will be found
+ * @returns
  */
 export function getServerVariables(baseUri: Uri): Variable[] {
   let serverVariables: Variable[] = [];
@@ -845,6 +861,7 @@ export function getServerVariables(baseUri: Uri): Variable[] {
 /**
  * Collects all variable assignments accessible based on the given documentPositionStateContext
  * @param documentPositionStateContext The contextual information of the state of a document and the cursor position
+ * @returns
  */
 export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext): Promise<Variable[]> {
   let allVariableAssignments: Variable[] = [];
@@ -909,12 +926,14 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 
       // function local variables
       let localVariables: Variable[] = [];
-      thisComponent.functions.filter((func: UserFunction) => {
+      const filteredFunctions = thisComponent.functions.filter((func: UserFunction) => {
         return func.bodyRange && func.bodyRange.contains(documentPositionStateContext.position);
-      }).forEach(async (func: UserFunction) => {
-        let tmp = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript);
-        localVariables = localVariables.concat(tmp);
       });
+
+      for (const [, func] of filteredFunctions) {
+        const tmp = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript);
+        localVariables = localVariables.concat(tmp);
+      }
       allVariableAssignments = allVariableAssignments.concat(localVariables);
     }
   }
@@ -925,6 +944,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 /**
  * Creates a type string for the given variable
  * @param variable A variable for which to get the type
+ * @returns
  */
 export function getVariableTypeString(variable: Variable): string {
   let varType: string = variable.dataType;
