@@ -62,7 +62,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
         );
 
         if (pathRange.contains(position)) {
-          const componentUri: Uri = componentPathToUri(path, document.uri);
+          const componentUri: Uri = componentPathToUri(path, document.uri, _token);
           if (componentUri) {
             const comp: Component = getComponent(componentUri, _token);
             if (comp) {

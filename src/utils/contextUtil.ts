@@ -1056,8 +1056,11 @@ export function getStartSigPosition(iterator: BackwardIterator, _token: Cancella
           }
         }
         break;
-      case RIGHT_PAREN: parenNesting++; break;
-      case DOUBLE_QUOTE: case SINGLE_QUOTE:
+      case RIGHT_PAREN:
+        parenNesting++;
+        break;
+      case DOUBLE_QUOTE:
+      case SINGLE_QUOTE:
         // FIXME: If position is within string, this does not work
         while (iterator.hasNext()) {
           const nch: number = iterator.next(_token);

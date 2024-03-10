@@ -239,7 +239,7 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
     implements: null,
     accessors: false,
     functions: new ComponentFunctions(),
-    properties: await parseProperties(documentStateContext),
+    properties: await parseProperties(documentStateContext, _token),
     variables: [],
     imports: []
   };
@@ -328,11 +328,11 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
     // TODO: Is this just supposed to be checking for existence or also value? Because it is ignoring falsy property values too
     if (componentAttributes[propName]) {
       if (propName === "extends") {
-        component.extends = await componentPathToUri(componentAttributes.extends, document.uri);
+        component.extends = await componentPathToUri(componentAttributes.extends, document.uri, _token);
       } else if (propName === "implements") {
         const componentimplements = componentAttributes.implements.split(",");
         for (const element of componentimplements) {
-          const implementsUri: Uri = await componentPathToUri(element.trim(), document.uri);
+          const implementsUri: Uri = await componentPathToUri(element.trim(), document.uri, _token);
           if (implementsUri) {
             if (!component.implements) {
               component.implements = [];
@@ -459,14 +459,15 @@ function processAttributes(attributes: Attributes): ComponentAttributes {
  * Resolves a component in dot-path notation to a URI
  * @param dotPath A string for a component in dot-path notation
  * @param baseUri The URI from which the component path will be resolved
+ * @param _token
  * @returns
  */
-export async function componentPathToUri(dotPath: string, baseUri: Uri): Promise<Uri | undefined> {
+export async function componentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken): Promise<Uri | undefined> {
   if (!dotPath) {
     return undefined;
   }
 
-  const cachedResult: Uri = cachedEntities.componentPathToUri(dotPath, baseUri);
+  const cachedResult: Uri = cachedEntities.componentPathToUri(dotPath, baseUri, _token);
   if (cachedResult) {
     return cachedResult;
   }

@@ -120,7 +120,7 @@ export default class CFMLHoverProvider implements HoverProvider {
       const startSigPositionPrefix = `${componentPathWordPrefix}${componentPathWord}(`;
       const objectNewInstanceInitPrefixMatch: RegExpExecArray = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
       if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
-        const componentUri: Uri = cachedEntity.componentPathToUri(componentPathWord, document.uri);
+        const componentUri: Uri = cachedEntity.componentPathToUri(componentPathWord, document.uri, _token);
         if (componentUri) {
           const initComponent: Component = getComponent(componentUri, _token);
           if (initComponent) {

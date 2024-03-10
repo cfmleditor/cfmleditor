@@ -301,9 +301,11 @@ export function searchAllFunctionNames(query: string, searchMode: SearchMode = S
  * Resolves a component in dot-path notation to a URI
  * @param dotPath A string for a component in dot-path notation
  * @param baseUri The URI from which the component path will be resolved
+ * @param _token
  * @returns
  */
-export function componentPathToUri(dotPath: string, baseUri: Uri): Uri | undefined {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function componentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken): Uri | undefined {
   if (!dotPath) {
     return undefined;
   }

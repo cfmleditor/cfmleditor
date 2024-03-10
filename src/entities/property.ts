@@ -1,4 +1,4 @@
-import { Location, Range, TextDocument, Uri } from "vscode";
+import { CancellationToken, Location, Range, TextDocument, Uri } from "vscode";
 import { MyMap, MySet } from "../utils/collections";
 import { Attributes, parseAttributes } from "./attribute";
 import { DataType } from "./dataType";
@@ -44,9 +44,10 @@ export class Properties extends MyMap<string, Property> { }
 /**
  * Returns an array of Property objects that define properties within the given component
  * @param documentStateContext The document to parse which should represent a component
+ * @param _token
  * @returns
  */
-export async function parseProperties(documentStateContext: DocumentStateContext): Promise<Properties> {
+export async function parseProperties(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<Properties> {
   const properties: Properties = new Properties();
   const document: TextDocument = documentStateContext.document;
   const componentText: string = document.getText();
@@ -82,7 +83,7 @@ export async function parseProperties(documentStateContext: DocumentStateContext
       for (const docElem of propertyDocBlockParsed) {
         const activeKey: string = docElem.key;
         if (activeKey === "type") {
-          const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(docElem.value, document.uri);
+          const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
           if (checkDataType) {
             property.dataType = checkDataType[0];
             if (checkDataType[1]) {
@@ -117,7 +118,7 @@ export async function parseProperties(documentStateContext: DocumentStateContext
           property.name = attr.value;
           property.nameRange = attr.valueRange;
         } else if (attrKey === "type") {
-          const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(attr.value, document.uri);
+          const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(attr.value, document.uri, _token);
           if (checkDataType) {
             property.dataType = checkDataType[0];
             if (checkDataType[1]) {
@@ -141,7 +142,7 @@ export async function parseProperties(documentStateContext: DocumentStateContext
       }
 
       const dataTypeString: string = parsedPropertyAttributes[1];
-      const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(dataTypeString, document.uri);
+      const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(dataTypeString, document.uri, _token);
       if (checkDataType) {
         property.dataType = checkDataType[0];
         if (checkDataType[1]) {

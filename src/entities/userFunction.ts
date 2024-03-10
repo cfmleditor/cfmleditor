@@ -264,7 +264,7 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext,
     };
 
     if (returnType) {
-      const checkDataType = DataType.getDataTypeAndUri(returnType, document.uri);
+      const checkDataType = DataType.getDataTypeAndUri(returnType, document.uri, _token);
       if (checkDataType) {
         userFunction.returntype = checkDataType[0];
         if (checkDataType[1]) {
@@ -297,7 +297,7 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext,
     }
 
     const parsedAttributes: Attributes = parseAttributes(document, functionAttributeRange);
-    userFunction = assignFunctionAttributes(userFunction, parsedAttributes);
+    userFunction = assignFunctionAttributes(userFunction, parsedAttributes, _token);
 
     let scriptDocBlockParsed: DocBlockKeyValue[] = [];
     if (fullDocBlock) {
@@ -311,7 +311,7 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext,
         if (docElem.key === "access") {
           userFunction.access = Access.valueOf(docElem.value);
         } else if (docElem.key === "returntype") {
-          const checkDataType = DataType.getDataTypeAndUri(docElem.value, document.uri);
+          const checkDataType = DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
           if (checkDataType) {
             userFunction.returntype = checkDataType[0];
 
@@ -406,7 +406,7 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
       let typeUri: Uri;
       let argTypeRange: Range;
       if (argType) {
-        const checkDataType = DataType.getDataTypeAndUri(argType, documentUri);
+        const checkDataType = DataType.getDataTypeAndUri(argType, documentUri, _token);
         if (checkDataType) {
           convertedArgType = checkDataType[0];
           if (checkDataType[1]) {
@@ -463,7 +463,7 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
           } else if (argAttrName === "default") {
             argument.default = argAttrVal;
           } else if (argAttrName === "type") {
-            const checkDataType = DataType.getDataTypeAndUri(argAttrVal, documentUri);
+            const checkDataType = DataType.getDataTypeAndUri(argAttrVal, documentUri, _token);
             if (checkDataType) {
               argument.dataType = checkDataType[0];
               if (checkDataType[1]) {
@@ -489,7 +489,7 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
         } else if (docElem.subkey === "default") {
           argument.default = docElem.value;
         } else if (docElem.subkey === "type") {
-          const checkDataType = DataType.getDataTypeAndUri(docElem.value, documentUri);
+          const checkDataType = DataType.getDataTypeAndUri(docElem.value, documentUri, _token);
           if (checkDataType) {
             argument.dataType = checkDataType[0];
             if (checkDataType[1]) {
@@ -547,7 +547,7 @@ export function parseTagFunctions(documentStateContext: DocumentStateContext, _t
       isImplicit: false
     };
 
-    assignFunctionAttributes(userFunction, parsedAttributes);
+    assignFunctionAttributes(userFunction, parsedAttributes, _token);
 
     const signature: UserFunctionSignature = {
       parameters: parseTagFunctionArguments(documentStateContext, functionBodyRange, _token)
@@ -600,7 +600,7 @@ function parseTagFunctionArguments(documentStateContext: DocumentStateContext, f
     let typeUri: Uri;
     let argTypeRange: Range;
     if (argType) {
-      const checkDataType = DataType.getDataTypeAndUri(argType, documentUri);
+      const checkDataType = DataType.getDataTypeAndUri(argType, documentUri, _token);
       if (checkDataType) {
         convertedArgType = checkDataType[0];
         if (checkDataType[1]) {
@@ -653,9 +653,10 @@ function parseTagFunctionArguments(documentStateContext: DocumentStateContext, f
  * Assigns the given function attributes to the given user function
  * @param userFunction The user function to which the attributes will be assigned
  * @param functionAttributes The attributes that will be assigned to the user function
+ * @param _token
  * @returns
  */
-function assignFunctionAttributes(userFunction: UserFunction, functionAttributes: Attributes): UserFunction {
+function assignFunctionAttributes(userFunction: UserFunction, functionAttributes: Attributes, _token: CancellationToken): UserFunction {
   functionAttributes.forEach((attribute: Attribute) => {
     const attrName: string = attribute.name;
     if (attribute.value) {
@@ -663,7 +664,7 @@ function assignFunctionAttributes(userFunction: UserFunction, functionAttributes
       if (attrName === "access") {
         userFunction.access = Access.valueOf(attrVal);
       } else if (attrName === "returntype") {
-        const checkDataType = DataType.getDataTypeAndUri(attrVal, userFunction.location.uri);
+        const checkDataType = DataType.getDataTypeAndUri(attrVal, userFunction.location.uri, _token);
         if (checkDataType) {
           userFunction.returntype = checkDataType[0];
           if (checkDataType[1]) {

@@ -385,7 +385,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
     if (parsedAttr.has("type") && !!parsedAttr.get("type").value) {
       paramType = DataType.paramTypeToDataType(parsedAttr.get("type").value);
     } else if (parsedAttr.has("default") && parsedAttr.get("default").value !== undefined) {
-      const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(parsedAttr.get("default").value, documentUri);
+      const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(parsedAttr.get("default").value, documentUri, _token);
       paramType = inferredType[0];
       paramTypeComponentUri = inferredType[1];
     }
@@ -480,7 +480,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
     if (scopeVal === Scope.Unknown) {
       scopeVal = Scope.Variables;
     }
-    const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(initValue, documentUri);
+    const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(initValue, documentUri, _token);
 
     let thisVar: Variable = {
       identifier: varName,
