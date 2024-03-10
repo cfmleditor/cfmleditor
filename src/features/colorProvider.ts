@@ -26,8 +26,8 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments);
-    const cssRanges: Range[] = getCssRanges(documentStateContext);
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token);
+    const cssRanges: Range[] = getCssRanges(documentStateContext, null, _token);
 
     for (const cssRange of cssRanges) {
       const rangeTextOffset: number = document.offsetAt(cssRange.start);
@@ -140,7 +140,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
    * @returns
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async provideColorPresentations(color: Color, context: { document: TextDocument, range: Range }, _token: CancellationToken | boolean): Promise<ColorPresentation[]> {
+  public async provideColorPresentations(color: Color, context: { document: TextDocument, range: Range }, _token: CancellationToken): Promise<ColorPresentation[]> {
     const result: ColorPresentation[] = [];
     const red256 = Math.round(color.red * 255), green256 = Math.round(color.green * 255), blue256 = Math.round(color.blue * 255);
 
@@ -154,8 +154,8 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", context.document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(context.document, false, replaceComments);
-    const hexPrefix = isInCfOutput(documentStateContext, context.range.start) ? "##" : "#";
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(context.document, false, replaceComments, _token);
+    const hexPrefix = isInCfOutput(documentStateContext, context.range.start, _token) ? "##" : "#";
     if (color.alpha === 1) {
       label = `${hexPrefix}${toTwoDigitHex(red256)}${toTwoDigitHex(green256)}${toTwoDigitHex(blue256)}`;
     } else {

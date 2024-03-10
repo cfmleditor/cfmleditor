@@ -1,6 +1,6 @@
 
 
-import { CharacterPair, Position, Range, TextDocument, Uri } from "vscode";
+import { CancellationToken, CharacterPair, Position, Range, TextDocument, Uri } from "vscode";
 import { COMPONENT_EXT, isScriptComponent } from "../entities/component";
 import { getTagPattern, parseTags, Tag, TagContext } from "../entities/tag";
 import { cfmlCommentRules, CommentContext, CommentType } from "../features/comment";
@@ -62,12 +62,13 @@ export class BackwardIterator {
    *
    * @param documentStateContext document state context
    * @param position position
+   * @param _token
    */
-  constructor(documentStateContext: DocumentStateContext, position: Position) {
+  constructor(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken) {
     this.documentStateContext = documentStateContext;
     this.lineNumber = position.line;
     this.lineCharacterOffset = position.character;
-    this.lineText = this.getLineText();
+    this.lineText = this.getLineText(_token);
   }
 
   /**
@@ -80,13 +81,14 @@ export class BackwardIterator {
 
   /**
    * Gets the next character code
+   * @param _token
    * @returns
    */
-  public next(): number {
+  public next(_token: CancellationToken): number {
     if (this.lineCharacterOffset < 0) {
       this.lineNumber--;
       if (this.lineNumber >= 0) {
-        this.lineText = this.getLineText();
+        this.lineText = this.getLineText(_token);
         this.lineCharacterOffset = this.lineText.length - 1;
         return NEW_LINE;
       }
@@ -128,11 +130,12 @@ export class BackwardIterator {
   /**
    * Sets a position in iterator
    * @param newPosition Sets a new position for the iterator
+   * @param _token
    */
-  public setPosition(newPosition: Position): void {
+  public setPosition(newPosition: Position, _token: CancellationToken): void {
     if (this.lineNumber !== newPosition.line) {
       this.lineNumber = newPosition.line;
-      this.lineText = this.getLineText();
+      this.lineText = this.getLineText(_token);
     }
     this.lineCharacterOffset = newPosition.character;
   }
@@ -155,9 +158,11 @@ export class BackwardIterator {
 
   /**
    * Gets the current line text
+   * @param _token
    * @returns
    */
-  private getLineText(): string {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private getLineText(_token: CancellationToken): string {
     const document: TextDocument = this.getDocument();
     const lineRange: Range = document.lineAt(this.lineNumber).range;
     return this.documentStateContext.sanitizedDocumentText.slice(document.offsetAt(lineRange.start), document.offsetAt(lineRange.end));
@@ -167,9 +172,11 @@ export class BackwardIterator {
 /**
  * Checks whether the given document is a CFM file
  * @param document The document to check
+ * @param _token
  * @returns
  */
-export function isCfmFile(document: TextDocument): boolean {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function isCfmFile(document: TextDocument, _token: CancellationToken): boolean {
   const extensionName: string = Utils.extname(Uri.parse(document.fileName));
   for (const currExt of CFM_FILE_EXTS) {
     if (equalsIgnoreCase(extensionName, currExt)) {
@@ -182,18 +189,21 @@ export function isCfmFile(document: TextDocument): boolean {
 /**
  * Checks whether the given document is a CFC file
  * @param document The document to check
+ * @param _token
  * @returns
  */
-export function isCfcFile(document: TextDocument): boolean {
-  return isCfcUri(document.uri);
+export function isCfcFile(document: TextDocument, _token: CancellationToken): boolean {
+  return isCfcUri(document.uri, _token);
 }
 
 /**
  * Checks whether the given URI represents a CFC file
  * @param uri The URI to check
+ * @param _token
  * @returns
  */
-export function isCfcUri(uri: Uri): boolean {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function isCfcUri(uri: Uri, _token: CancellationToken): boolean {
   const extensionName = Utils.extname(uri);
   return equalsIgnoreCase(extensionName, COMPONENT_EXT);
 }
@@ -202,9 +212,11 @@ export function isCfcUri(uri: Uri): boolean {
  * Returns all of the ranges in which tagged cfscript is active
  * @param document The document to check
  * @param range Optional range within which to check
+ * @param _token
  * @returns
  */
-export function getCfScriptRanges(document: TextDocument, range?: Range): Range[] {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function getCfScriptRanges(document: TextDocument, range: Range, _token: CancellationToken): Range[] {
   const ranges: Range[] = [];
   let documentText: string;
   let textOffset: number;
@@ -240,14 +252,15 @@ export function getCfScriptRanges(document: TextDocument, range?: Range): Range[
  * @param isScript Whether the document or given range is CFScript
  * @param docRange Range within which to check
  * @param fast Whether to choose the faster but less accurate method
+ * @param _token
  * @returns
  */
-export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange?: Range, fast: boolean = false): DocumentContextRanges {
+export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range, fast: boolean = false, _token: CancellationToken): DocumentContextRanges {
   if (fast) {
-    return { commentRanges: getCommentRangesByRegex(document, isScript, docRange) };
+    return { commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token) };
   }
 
-  return getCommentAndStringRangesIterated(document, isScript, docRange);
+  return getCommentAndStringRangesIterated(document, isScript, docRange, _token);
 }
 
 /**
@@ -255,9 +268,10 @@ export function getDocumentContextRanges(document: TextDocument, isScript: boole
  * @param document The document to check
  * @param isScript Whether the document or given range is CFScript
  * @param docRange Range within which to check
+ * @param _token
  * @returns
  */
-function getCommentRangesByRegex(document: TextDocument, isScript: boolean = false, docRange?: Range): Range[] {
+function getCommentRangesByRegex(document: TextDocument, isScript: boolean = false, docRange: Range, _token: CancellationToken): Range[] {
   let commentRanges: Range[] = [];
   let documentText: string;
   let textOffset: number;
@@ -303,9 +317,9 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
       ));
     }
 
-    const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange);
+    const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token);
     cfScriptRanges.forEach((range: Range) => {
-      const cfscriptCommentRanges: Range[] = getCommentRangesByRegex(document, true, range);
+      const cfscriptCommentRanges: Range[] = getCommentRangesByRegex(document, true, range, _token);
       commentRanges = commentRanges.concat(cfscriptCommentRanges);
     });
   }
@@ -318,9 +332,10 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
  * @param document The document to check
  * @param isScript Whether the document or given range is CFScript
  * @param docRange Range within which to check
+ * @param _token
  * @returns
  */
-function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange?: Range): DocumentContextRanges {
+function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange: Range, _token: CancellationToken): DocumentContextRanges {
   let commentRanges: Range[] = [];
   let stringRanges: Range[] = [];
   const documentText: string = document.getText();
@@ -365,7 +380,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 
   let cfScriptRanges: Range[] = [];
   if (!isScript) {
-    cfScriptRanges = getCfScriptRanges(document, docRange);
+    cfScriptRanges = getCfScriptRanges(document, docRange, _token);
   }
 
   // TODO: Account for code delimited by hashes within cfoutput, cfmail, cfquery, etc. blocks
@@ -537,12 +552,12 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
   if (cfScriptRanges.length > 0) {
     // Remove tag comments found within CFScripts
     commentRanges = commentRanges.filter((range: Range) => {
-      return !isInRanges(cfScriptRanges, range);
+      return !isInRanges(cfScriptRanges, range, false, _token);
     });
 
     cfScriptRanges.forEach((range: Range) => {
-      if (!isInRanges(commentRanges, range)) {
-        const cfscriptContextRanges: DocumentContextRanges = getCommentAndStringRangesIterated(document, true, range);
+      if (!isInRanges(commentRanges, range, false, _token)) {
+        const cfscriptContextRanges: DocumentContextRanges = getCommentAndStringRangesIterated(document, true, range, _token);
         commentRanges = commentRanges.concat(cfscriptContextRanges.commentRanges);
         if (cfscriptContextRanges.stringRanges) {
           stringRanges = stringRanges.concat(cfscriptContextRanges.stringRanges);
@@ -558,10 +573,11 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
  * Returns all of the ranges in which there is JavaScript
  * @param documentStateContext The context information for the TextDocument to check
  * @param range Optional range within which to check
+ * @param _token
  * @returns
  */
-export function getJavaScriptRanges(documentStateContext: DocumentStateContext, range?: Range): Range[] {
-  const scriptTags: Tag[] = parseTags(documentStateContext, "script", range);
+export function getJavaScriptRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken): Range[] {
+  const scriptTags: Tag[] = parseTags(documentStateContext, "script", range, _token);
 
   return scriptTags.map((tag: Tag) => {
     return tag.bodyRange;
@@ -572,10 +588,11 @@ export function getJavaScriptRanges(documentStateContext: DocumentStateContext, 
  * Returns all of the ranges in which there is CSS in style tags. Does not consider style attributes.
  * @param documentStateContext The context information for the TextDocument to check
  * @param range Optional range within which to check
+ * @param _token
  * @returns
  */
-export function getCssRanges(documentStateContext: DocumentStateContext, range?: Range): Range[] {
-  const styleTags: Tag[] = parseTags(documentStateContext, "style", range);
+export function getCssRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken): Range[] {
+  const styleTags: Tag[] = parseTags(documentStateContext, "style", range, _token);
 
   return styleTags.map((tag: Tag) => {
     return tag.bodyRange;
@@ -586,10 +603,11 @@ export function getCssRanges(documentStateContext: DocumentStateContext, range?:
  * Returns all of the ranges in which tagged cfoutput is active.
  * @param documentStateContext The context information for the TextDocument to check
  * @param range Optional range within which to check
+ * @param _token
  * @returns
  */
-export function getCfOutputRanges(documentStateContext: DocumentStateContext, range?: Range): Range[] {
-  const cfoutputTags: Tag[] = parseTags(documentStateContext, "cfoutput", range);
+export function getCfOutputRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken): Range[] {
+  const cfoutputTags: Tag[] = parseTags(documentStateContext, "cfoutput", range, _token);
 
   return cfoutputTags.map((tag: Tag) => {
     return tag.bodyRange;
@@ -600,50 +618,55 @@ export function getCfOutputRanges(documentStateContext: DocumentStateContext, ra
  * Returns whether the given position is within a cfoutput block
  * @param documentStateContext The context information for the TextDocument to check
  * @param position Position at which to check
+ * @param _token
  * @returns
  */
-export function isInCfOutput(documentStateContext: DocumentStateContext, position: Position): boolean {
-  return isInRanges(getCfOutputRanges(documentStateContext), position);
+export function isInCfOutput(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): boolean {
+  return isInRanges(getCfOutputRanges(documentStateContext, null, _token), position, false, _token);
 }
 
 /**
  * Returns whether the given position is within a CFScript block
  * @param document The document to check
  * @param position Position at which to check
+ * @param _token
  * @returns
  */
-export function isInCfScript(document: TextDocument, position: Position): boolean {
-  return isInRanges(getCfScriptRanges(document), position);
+export function isInCfScript(document: TextDocument, position: Position, _token: CancellationToken): boolean {
+  return isInRanges(getCfScriptRanges(document, null, _token), position, false, _token);
 }
 
 /**
  * Returns whether the given position is in a CFScript context
  * @param document The document to check
  * @param position Position at which to check
+ * @param _token
  * @returns
  */
-export function isPositionScript(document: TextDocument, position: Position): boolean {
-  return (isScriptComponent(document) || isInCfScript(document, position));
+export function isPositionScript(document: TextDocument, position: Position, _token: CancellationToken): boolean {
+  return (isScriptComponent(document, _token) || isInCfScript(document, position, _token));
 }
 
 /**
  * Returns whether the given position is within a JavaScript block
  * @param documentStateContext The context information for the TextDocument to check
  * @param position Position at which to check
+ * @param _token
  * @returns
  */
-export function isInJavaScript(documentStateContext: DocumentStateContext, position: Position): boolean {
-  return isInRanges(getJavaScriptRanges(documentStateContext), position);
+export function isInJavaScript(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): boolean {
+  return isInRanges(getJavaScriptRanges(documentStateContext, null, _token), position, false, _token);
 }
 
 /**
  * Returns whether the given position is within a JavaScript block
  * @param documentStateContext The context information for the TextDocument to check
  * @param position Position at which to check
+ * @param _token
  * @returns
  */
-export function isInCss(documentStateContext: DocumentStateContext, position: Position): boolean {
-  return isInRanges(getCssRanges(documentStateContext), position);
+export function isInCss(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): boolean {
+  return isInRanges(getCssRanges(documentStateContext, null, _token), position, false, _token);
 }
 
 /**
@@ -651,10 +674,11 @@ export function isInCss(documentStateContext: DocumentStateContext, position: Po
  * @param document The document to check
  * @param position Position at which to check
  * @param isScript Whether the document is CFScript
+ * @param _token
  * @returns
  */
-export function isInComment(document: TextDocument, position: Position, isScript: boolean = false): boolean {
-  return isInRanges(getDocumentContextRanges(document, isScript).commentRanges, position);
+export function isInComment(document: TextDocument, position: Position, isScript: boolean = false, _token: CancellationToken): boolean {
+  return isInRanges(getDocumentContextRanges(document, isScript, null, false, _token).commentRanges, position, false, _token);
 }
 
 /**
@@ -662,9 +686,11 @@ export function isInComment(document: TextDocument, position: Position, isScript
  * @param ranges The set of ranges within which to check
  * @param positionOrRange Position or range to check
  * @param ignoreEnds Whether to ignore `start` and `end` in `ranges` when `positionOrRange` is `Position`
+ * @param _token
  * @returns
  */
-export function isInRanges(ranges: Range[], positionOrRange: Position | Range, ignoreEnds: boolean = false): boolean {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function isInRanges(ranges: Range[], positionOrRange: Position | Range, ignoreEnds: boolean = false, _token: CancellationToken): boolean {
   return ranges.some((range: Range) => {
     let isContained: boolean = range.contains(positionOrRange);
     if (ignoreEnds) {
@@ -711,9 +737,11 @@ export function invertRanges(document: TextDocument, ranges: Range[]): Range[] {
 /**
  * Returns if the given prefix is part of a continuing expression
  * @param prefix Prefix to the current position
+ * @param _token
  * @returns
  */
-export function isContinuingExpression(prefix: string): boolean {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function isContinuingExpression(prefix: string, _token: CancellationToken): boolean {
   return continuingExpressionPattern.test(prefix);
 }
 
@@ -776,9 +804,11 @@ export function isStringDelimiter(char: string): boolean {
  * @param endOffset A numeric offset representing the last position in the document that should be checked
  * @param char The character(s) for which to check
  * @param includeChar Whether the returned position should include the character found
+ * @param _token
  * @returns
  */
-export function getNextCharacterPosition(documentStateContext: DocumentStateContext, startOffset: number, endOffset: number, char: string | string[], includeChar: boolean = true): Position {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function getNextCharacterPosition(documentStateContext: DocumentStateContext, startOffset: number, endOffset: number, char: string | string[], includeChar: boolean = true, _token: CancellationToken): Position {
   const document: TextDocument = documentStateContext.document;
   const documentText: string = documentStateContext.sanitizedDocumentText;
   let stringContext: StringContext = {
@@ -872,9 +902,11 @@ export function getNextCharacterPosition(documentStateContext: DocumentStateCont
  * @param documentStateContext The context information for the TextDocument to check
  * @param initialOffset A numeric offset representing the position in the document from which to start
  * @param closingChar The character that denotes the closing
+ * @param _token
  * @returns
  */
-export function getClosingPosition(documentStateContext: DocumentStateContext, initialOffset: number, closingChar: string): Position {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function getClosingPosition(documentStateContext: DocumentStateContext, initialOffset: number, closingChar: string, _token: CancellationToken): Position {
   const openingChar = getOpeningChar(closingChar);
   const document: TextDocument = documentStateContext.document;
   const documentText: string = documentStateContext.sanitizedDocumentText;
@@ -944,14 +976,15 @@ export function isValidIdentifier(word: string): boolean {
  * Returns the range of the word preceding the given position if it is a valid identifier or undefined if invalid
  * @param documentStateContext The document in which to check for the identifier
  * @param position A position at which to start
+ * @param _token
  * @returns
  */
-export function getPrecedingIdentifierRange(documentStateContext: DocumentStateContext, position: Position): Range | undefined {
+export function getPrecedingIdentifierRange(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): Range | undefined {
   let identRange: Range;
   let charStr = "";
-  const iterator: BackwardIterator = new BackwardIterator(documentStateContext, position);
+  const iterator: BackwardIterator = new BackwardIterator(documentStateContext, position, _token);
   while (iterator.hasNext()) {
-    const ch: number = iterator.next();
+    const ch: number = iterator.next(_token);
     charStr = String.fromCharCode(ch);
     if (/\S/.test(charStr)) {
       break;
@@ -972,16 +1005,17 @@ export function getPrecedingIdentifierRange(documentStateContext: DocumentStateC
 /**
  * Gets an array of arguments including and preceding the currently selected argument
  * @param iterator A BackwardIterator to use to read arguments
+ * @param _token
  * @returns
  */
-export function getStartSigPosition(iterator: BackwardIterator): Position | undefined {
+export function getStartSigPosition(iterator: BackwardIterator, _token: CancellationToken): Position | undefined {
   let parenNesting = 0;
 
   const document: TextDocument = iterator.getDocumentStateContext().document;
   const stringRanges: Range[] = iterator.getDocumentStateContext().stringRanges;
   const stringEmbeddedCfmlRanges: Range[] = iterator.getDocumentStateContext().stringEmbeddedCfmlRanges;
   while (iterator.hasNext()) {
-    const ch: number = iterator.next();
+    const ch: number = iterator.next(_token);
 
     if (stringRanges) {
       const position: Position = iterator.getPosition();
@@ -992,8 +1026,8 @@ export function getStartSigPosition(iterator: BackwardIterator): Position | unde
       const stringRange: Range = stringRanges.find((range: Range) => {
         return range.contains(position_translated) && !range.end.isEqual(position_translated);
       });
-      if (stringRange && !(stringEmbeddedCfmlRanges && isInRanges(stringEmbeddedCfmlRanges, position_translated, true))) {
-        iterator.setPosition(stringRange.start.translate(0, -1));
+      if (stringRange && !(stringEmbeddedCfmlRanges && isInRanges(stringEmbeddedCfmlRanges, position_translated, true, _token))) {
+        iterator.setPosition(stringRange.start.translate(0, -1), _token);
         continue;
       }
     }
@@ -1004,7 +1038,7 @@ export function getStartSigPosition(iterator: BackwardIterator): Position | unde
         if (parenNesting < 0) {
           const candidatePosition: Position = iterator.getPosition();
           while (iterator.hasNext()) {
-            const nch: number = iterator.next();
+            const nch: number = iterator.next(_token);
             const charStr = String.fromCharCode(nch);
             if (/\S/.test(charStr)) {
               const iterPos: Position = iterator.getPosition();
@@ -1015,7 +1049,7 @@ export function getStartSigPosition(iterator: BackwardIterator): Position | unde
                   return candidatePosition;
                 }
               }
-              iterator.setPosition(iterPos.translate(0, 1));
+              iterator.setPosition(iterPos.translate(0, 1), _token);
               parenNesting++;
               break;
             }
@@ -1026,7 +1060,7 @@ export function getStartSigPosition(iterator: BackwardIterator): Position | unde
       case DOUBLE_QUOTE: case SINGLE_QUOTE:
         // FIXME: If position is within string, this does not work
         while (iterator.hasNext()) {
-          const nch: number = iterator.next();
+          const nch: number = iterator.next(_token);
           // find the closing quote or double quote
 
           // TODO: Ignore if escaped

@@ -1,4 +1,4 @@
-import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor } from "vscode";
+import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit } from "vscode";
 import { Component, getApplicationUri } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
@@ -25,11 +25,12 @@ export async function refreshGlobalDefinitionCache(): Promise<void> {
 
 /**
  * Refreshes (clears and retrieves) all CFML workspace definitions
+ * @param _token
  */
-export async function refreshWorkspaceDefinitionCache(): Promise<void> {
+export async function refreshWorkspaceDefinitionCache(_token: CancellationToken): Promise<void> {
   const cfmlIndexComponentsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.indexComponents");
   if (cfmlIndexComponentsSettings.get<boolean>("enable")) {
-    cachedEntity.cacheAllComponents();
+    cachedEntity.cacheAllComponents(_token);
   }
 }
 
@@ -59,12 +60,14 @@ export async function showApplicationDocument(editor: TextEditor): Promise<void>
 /**
  * Folds all functions in the active editor. Currently only works for components.
  * @param editor  The text editor which represents the document for which to fold all function
+ * @param edit
+ * @param _token
  */
-export async function foldAllFunctions(editor: TextEditor): Promise<void> {
+export async function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): Promise<void> {
   const document: TextDocument = editor.document;
 
-  if (isCfcFile(document)) {
-    const thisComponent: Component = cachedEntity.getComponent(document.uri);
+  if (isCfcFile(document, _token)) {
+    const thisComponent: Component = cachedEntity.getComponent(document.uri, _token);
     if (thisComponent) {
       const functionStartLines: number[] = [];
       thisComponent.functions.filter((func: UserFunction) => {

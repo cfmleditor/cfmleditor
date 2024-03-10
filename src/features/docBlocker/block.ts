@@ -1,4 +1,4 @@
-import { Range, Position, TextDocument } from "vscode";
+import { Range, Position, TextDocument, CancellationToken } from "vscode";
 import { Doc } from "./doc";
 import { Component } from "../../entities/component";
 import { getComponent } from "../cachedEntities";
@@ -41,12 +41,13 @@ export abstract class Block {
    * Creates an instance of Block.
    * @param position The current position from which the DocBlock will be inserted
    * @param document The document object in which the DocBlock is being created
+   * @param _token
    */
-  public constructor(position: Position, document: TextDocument) {
+  public constructor(position: Position, document: TextDocument, _token: CancellationToken) {
     this.position = position;
     this.document = document;
     this.setSuffix(document.getText(new Range(position, document.positionAt(document.getText().length))));
-    this.component = getComponent(document.uri);
+    this.component = getComponent(document.uri, _token);
   }
 
   /**

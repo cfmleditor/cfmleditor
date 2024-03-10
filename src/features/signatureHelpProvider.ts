@@ -32,25 +32,24 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
-
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
     if (documentPositionStateContext.positionInComment) {
       return null;
     }
 
     const sanitizedDocumentText: string = documentPositionStateContext.sanitizedDocumentText;
 
-    const backwardIterator: BackwardIterator = new BackwardIterator(documentPositionStateContext, position);
+    const backwardIterator: BackwardIterator = new BackwardIterator(documentPositionStateContext, position, _token);
 
-    backwardIterator.next();
-    const iteratedSigPosition: Position = findStartSigPosition(backwardIterator);
+    backwardIterator.next(_token);
+    const iteratedSigPosition: Position = findStartSigPosition(backwardIterator, _token);
     if (!iteratedSigPosition) {
       return null;
     }
 
     const startSigPosition: Position = document.positionAt(document.offsetAt(iteratedSigPosition) + 2);
-    const endSigPosition: Position = getClosingPosition(documentPositionStateContext, document.offsetAt(startSigPosition), ")").translate(0, -1);
-    const functionArgRanges: Range[] = getScriptFunctionArgRanges(documentPositionStateContext, new Range(startSigPosition, endSigPosition));
+    const endSigPosition: Position = getClosingPosition(documentPositionStateContext, document.offsetAt(startSigPosition), ")", _token).translate(0, -1);
+    const functionArgRanges: Range[] = getScriptFunctionArgRanges(documentPositionStateContext, new Range(startSigPosition, endSigPosition), ",", _token);
 
     let paramIndex: number = 0;
     paramIndex = functionArgRanges.findIndex((range: Range) => {
@@ -72,7 +71,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
       const componentDotPath: string = objectNewInstanceInitPrefixMatch[2];
       const componentUri: Uri = componentPathToUri(componentDotPath, document.uri);
       if (componentUri) {
-        const initComponent: Component = getComponent(componentUri);
+        const initComponent: Component = getComponent(componentUri, _token);
         if (initComponent) {
           const initMethod: string = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
           if (initComponent.functions.has(initMethod)) {
@@ -83,7 +82,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
     }
 
     if (!entry) {
-      const identWordRange: Range = getPrecedingIdentifierRange(documentPositionStateContext, backwardIterator.getPosition());
+      const identWordRange: Range = getPrecedingIdentifierRange(documentPositionStateContext, backwardIterator.getPosition(), _token);
       if (!identWordRange) {
         return null;
       }
@@ -94,13 +93,13 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
       const startIdentPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(identWordRange.start));
 
       // Global function
-      if (!isContinuingExpression(startIdentPositionPrefix)) {
+      if (!isContinuingExpression(startIdentPositionPrefix, _token)) {
         entry = cachedEntity.getGlobalFunction(lowerIdent);
       }
 
       // Check user functions
       if (!entry) {
-        const userFun: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerIdent, startIdentPositionPrefix);
+        const userFun: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerIdent, startIdentPositionPrefix, _token);
 
         // Ensure this does not trigger on script function definition
         if (userFun && userFun.location.uri === document.uri && userFun.location.range.contains(position) && (!userFun.bodyRange || !userFun.bodyRange.contains(position))) {
@@ -120,7 +119,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
           if (scopePrefix) {
             prefixScope = Scope.valueOf(scopePrefix);
           }
-          const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext);
+          const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext, _token);
           const userFunctionVariables: UserFunctionVariable[] = allDocumentVariableAssignments.filter((variable: Variable) => {
             if (variable.dataType !== DataType.Function || !isUserFunctionVariable(variable) || !equalsIgnoreCase(variable.identifier, lowerIdent)) {
               return false;

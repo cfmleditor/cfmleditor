@@ -57,7 +57,7 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
       })
     );
 
-    const components: Component[] = cachedEntity.searchAllComponentNames(query);
+    const components: Component[] = cachedEntity.searchAllComponentNames(query, _token);
     workspaceSymbols = workspaceSymbols.concat(
       components.map((component: Component) => {
         return new SymbolInformation(

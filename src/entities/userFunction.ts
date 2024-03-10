@@ -1,6 +1,6 @@
 
 import { DataType } from "./dataType";
-import { Location, Uri, TextDocument, Position, Range } from "vscode";
+import { Location, Uri, TextDocument, Position, Range, CancellationToken } from "vscode";
 import { Function, getScriptFunctionArgRanges } from "./function";
 import { Parameter } from "./parameter";
 import { Signature } from "./signature";
@@ -172,9 +172,10 @@ export interface UserFunctionsByName {
 /**
  * Parses the CFScript function definitions and returns an array of UserFunction objects
  * @param documentStateContext The context information for a TextDocument in which to parse the CFScript functions
+ * @param _token
  * @returns
  */
-export function parseScriptFunctions(documentStateContext: DocumentStateContext): UserFunction[] {
+export function parseScriptFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken): UserFunction[] {
   const document: TextDocument = documentStateContext.document;
   const userFunctions: UserFunction[] = [];
   // sanitizedDocumentText removes doc blocks
@@ -198,7 +199,7 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext)
     );
 
     const argumentsStartOffset: number = scriptFunctionMatch.index + fullMatch.length;
-    const argumentsEndPosition: Position = getClosingPosition(documentStateContext, argumentsStartOffset, ")");
+    const argumentsEndPosition: Position = getClosingPosition(documentStateContext, argumentsStartOffset, ")", _token);
     const functionArgsRange: Range = new Range(
       document.positionAt(argumentsStartOffset),
       argumentsEndPosition.translate(0, -1)
@@ -213,15 +214,15 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext)
       || equalsIgnoreCase(modifier1, "abstract") || equalsIgnoreCase(modifier2, "abstract")
     )
     {
-      functionBodyStartPos = getNextCharacterPosition(documentStateContext, document.offsetAt(argumentsEndPosition), componentBody.length - 1, ";", false);
+      functionBodyStartPos = getNextCharacterPosition(documentStateContext, document.offsetAt(argumentsEndPosition), componentBody.length - 1, ";", false, _token);
       functionEndPosition = functionBodyStartPos;
       functionAttributeRange = new Range(
         argumentsEndPosition,
         functionEndPosition
       );
     } else {
-      functionBodyStartPos = getNextCharacterPosition(documentStateContext, document.offsetAt(argumentsEndPosition), componentBody.length - 1, "{");
-      functionEndPosition = getClosingPosition(documentStateContext, document.offsetAt(functionBodyStartPos), "}");
+      functionBodyStartPos = getNextCharacterPosition(documentStateContext, document.offsetAt(argumentsEndPosition), componentBody.length - 1, "{", true, _token);
+      functionEndPosition = getClosingPosition(documentStateContext, document.offsetAt(functionBodyStartPos), "}", _token);
 
       try {
         functionAttributeRange = new Range(
@@ -337,7 +338,7 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext)
       });
     }
     const signature: UserFunctionSignature = {
-      parameters: parseScriptFunctionArgs(documentStateContext, functionArgsRange, scriptDocBlockParsed)
+      parameters: parseScriptFunctionArgs(documentStateContext, functionArgsRange, scriptDocBlockParsed, _token)
     };
     userFunction.signatures = [signature];
 
@@ -352,14 +353,15 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext)
  * @param documentStateContext The context information for a TextDocument possibly containing function arguments
  * @param argsRange A range within the given document that contains the CFScript arguments
  * @param docBlock The parsed documentation block for the function to which these arguments belong
+ * @param _token
  * @returns
  */
-export function parseScriptFunctionArgs(documentStateContext: DocumentStateContext, argsRange: Range, docBlock: DocBlockKeyValue[]): Argument[] {
+export function parseScriptFunctionArgs(documentStateContext: DocumentStateContext, argsRange: Range, docBlock: DocBlockKeyValue[], _token: CancellationToken): Argument[] {
   const args: Argument[] = [];
   const document: TextDocument = documentStateContext.document;
   const documentUri: Uri = document.uri;
 
-  const scriptArgRanges: Range[] = getScriptFunctionArgRanges(documentStateContext, argsRange);
+  const scriptArgRanges: Range[] = getScriptFunctionArgRanges(documentStateContext, argsRange, null, _token);
   scriptArgRanges.forEach((argRange: Range) => {
     const argText: string = documentStateContext.sanitizedDocumentText.slice(document.offsetAt(argRange.start), document.offsetAt(argRange.end));
     const argStartOffset = document.offsetAt(argRange.start);
@@ -512,13 +514,14 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
 /**
  * Parses the tag function definitions and returns an array of UserFunction objects
  * @param documentStateContext The context information for a TextDocument in which to parse the tag functions
+ * @param _token
  * @returns
  */
-export function parseTagFunctions(documentStateContext: DocumentStateContext): UserFunction[] {
+export function parseTagFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken): UserFunction[] {
   const userFunctions: UserFunction[] = [];
   const documentUri: Uri = documentStateContext.document.uri;
 
-  const parsedFunctionTags: Tag[] = parseTags(documentStateContext, "cffunction");
+  const parsedFunctionTags: Tag[] = parseTags(documentStateContext, "cffunction", null, _token);
 
   parsedFunctionTags.forEach((tag: Tag) => {
     const functionRange: Range = tag.tagRange;
@@ -547,7 +550,7 @@ export function parseTagFunctions(documentStateContext: DocumentStateContext): U
     assignFunctionAttributes(userFunction, parsedAttributes);
 
     const signature: UserFunctionSignature = {
-      parameters: parseTagFunctionArguments(documentStateContext, functionBodyRange)
+      parameters: parseTagFunctionArguments(documentStateContext, functionBodyRange, _token)
     };
     userFunction.signatures = [signature];
 
@@ -561,9 +564,10 @@ export function parseTagFunctions(documentStateContext: DocumentStateContext): U
  * Parses the given function body to extract the arguments into an array of Argument objects that is returned
  * @param documentStateContext The context information for a TextDocument containing these function arguments
  * @param functionBodyRange A range in the given document for the function body
+ * @param _token
  * @returns
  */
-function parseTagFunctionArguments(documentStateContext: DocumentStateContext, functionBodyRange: Range | undefined): Argument[] {
+function parseTagFunctionArguments(documentStateContext: DocumentStateContext, functionBodyRange: Range | undefined, _token: CancellationToken): Argument[] {
   const args: Argument[] = [];
   const documentUri: Uri = documentStateContext.document.uri;
 
@@ -571,7 +575,7 @@ function parseTagFunctionArguments(documentStateContext: DocumentStateContext, f
     return args;
   }
 
-  const parsedArgumentTags: Tag[] = parseTags(documentStateContext, "cfargument", functionBodyRange);
+  const parsedArgumentTags: Tag[] = parseTags(documentStateContext, "cfargument", functionBodyRange, _token);
 
   parsedArgumentTags.forEach((tag: Tag) => {
     const parsedAttributes: Attributes = tag.attributes;
@@ -707,14 +711,15 @@ function processArgumentAttributes(attributes: Attributes): ArgumentAttributes {
  * @param func The UserFunction within which to parse local variables
  * @param documentStateContext The contextual information of the state of a document containing the given function
  * @param isScript Whether this function is defined entirely in CFScript
+ * @param _token
  * @returns
  */
-export async function getLocalVariables(func: UserFunction, documentStateContext: DocumentStateContext, isScript: boolean): Promise<Variable[]> {
+export async function getLocalVariables(func: UserFunction, documentStateContext: DocumentStateContext, isScript: boolean, _token: CancellationToken): Promise<Variable[]> {
   if (!func || !func.bodyRange) {
     return [];
   }
 
-  const allVariables: Variable[] = await parseVariableAssignments(documentStateContext, isScript, func.bodyRange);
+  const allVariables: Variable[] = await parseVariableAssignments(documentStateContext, isScript, func.bodyRange, _token);
 
   return allVariables.filter((variable: Variable) => {
     return (variable.scope === Scope.Local);
@@ -739,9 +744,10 @@ function parseModifier(modifier: string): string {
  * @param documentPositionStateContext The contextual information of the state of a document and the cursor position
  * @param functionKey The function key for which to get
  * @param docPrefix The document prefix of the function if not the same as docPrefix within documentPositionStateContext
+ * @param _token
  * @returns
  */
-export async function getFunctionFromPrefix(documentPositionStateContext: DocumentPositionStateContext, functionKey: string, docPrefix?: string): Promise<UserFunction | undefined> {
+export async function getFunctionFromPrefix(documentPositionStateContext: DocumentPositionStateContext, functionKey: string, docPrefix: string, _token: CancellationToken): Promise<UserFunction | undefined> {
   let foundFunction: UserFunction;
 
   if (docPrefix === undefined) {
@@ -764,10 +770,10 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
 
     if (varMatchText.split(".").length === dotSeparatedCount) {
       if (documentPositionStateContext.isCfcFile && !varScope && equalsIgnoreCase(varName, "super")) {
-        if (documentPositionStateContext.component && documentPositionStateContext.component.extends) {
-          const baseComponent: Component = getComponent(documentPositionStateContext.component.extends);
+        if (documentPositionStateContext.component && documentPositionStateContext.component.extends, _token) {
+          const baseComponent: Component = getComponent(documentPositionStateContext.component.extends, _token);
           if (baseComponent) {
-            foundFunction = getFunctionFromComponent(baseComponent, functionKey, documentPositionStateContext.document.uri);
+            foundFunction = getFunctionFromComponent(baseComponent, functionKey, documentPositionStateContext.document.uri, null, false, _token);
           }
         }
       } else if (documentPositionStateContext.isCfcFile && !varScope && (equalsIgnoreCase(varName, Scope.Variables) || equalsIgnoreCase(varName, Scope.This))) {
@@ -778,12 +784,12 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
         }
         const disallowImplicit: boolean = equalsIgnoreCase(varName, Scope.Variables);
 
-        foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, disallowedAccess, disallowImplicit);
+        foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, disallowedAccess, disallowImplicit, _token);
       } else if (documentPositionStateContext.isCfmFile && !varScope && equalsIgnoreCase(varName, Scope.Variables)) {
-        foundFunction = getFunctionFromTemplate(documentPositionStateContext, functionKey);
+        foundFunction = getFunctionFromTemplate(documentPositionStateContext, functionKey, _token);
       } else {
         // TODO: Allow passing variable assignments
-        const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext);
+        const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext, _token);
 
         let variableAssignments: Variable[] = allDocumentVariableAssignments;
         const fileName: string = Utils.basename(documentPositionStateContext.document.uri);
@@ -796,17 +802,17 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
         const foundVar: Variable = getBestMatchingVariable(variableAssignments, varName, scopeVal);
 
         if (foundVar && foundVar.dataTypeComponentUri) {
-          const foundVarComponent: Component = getComponent(foundVar.dataTypeComponentUri);
+          const foundVarComponent: Component = getComponent(foundVar.dataTypeComponentUri, _token);
           if (foundVarComponent) {
-            foundFunction = getFunctionFromComponent(foundVarComponent, functionKey, documentPositionStateContext.document.uri);
+            foundFunction = getFunctionFromComponent(foundVarComponent, functionKey, documentPositionStateContext.document.uri, null, false, _token);
           }
         }
       }
     }
   } else if (documentPositionStateContext.isCfmFile) {
-    foundFunction = getFunctionFromTemplate(documentPositionStateContext, functionKey);
+    foundFunction = getFunctionFromTemplate(documentPositionStateContext, functionKey, _token);
   } else if (documentPositionStateContext.component) {
-    foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri);
+    foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, null, false, _token);
   }
 
   return foundFunction;
@@ -819,13 +825,14 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
  * @param callerUri The URI of the document from which the function is being called
  * @param disallowedAccess An access specifier to disallow
  * @param disallowImplicit Whether to disallow implicit functions from being checked
+ * @param _token
  * @returns
  */
-export function getFunctionFromComponent(component: Component, lowerFunctionName: string, callerUri: Uri, disallowedAccess?: Access, disallowImplicit: boolean = false): UserFunction | undefined {
+export function getFunctionFromComponent(component: Component, lowerFunctionName: string, callerUri: Uri, disallowedAccess: Access, disallowImplicit: boolean = false, _token: CancellationToken): UserFunction | undefined {
   const validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
-  if (hasComponent(callerUri)) {
-    const callerComponent: Component = getComponent(callerUri);
-    if (isSubcomponentOrEqual(callerComponent, component)) {
+  if (hasComponent(callerUri, _token)) {
+    const callerComponent: Component = getComponent(callerUri, _token);
+    if (isSubcomponentOrEqual(callerComponent, component, _token)) {
       validFunctionAccess.add(Access.Private);
       validFunctionAccess.add(Access.Package);
     }
@@ -849,7 +856,7 @@ export function getFunctionFromComponent(component: Component, lowerFunctionName
     }
 
     if (currComponent.extends) {
-      currComponent = getComponent(currComponent.extends);
+      currComponent = getComponent(currComponent.extends, _token);
     } else {
       currComponent = undefined;
     }
@@ -862,13 +869,14 @@ export function getFunctionFromComponent(component: Component, lowerFunctionName
  * Gets the function based on the document to which it belongs and its name
  * @param documentStateContext The contextual information of the state of a document
  * @param lowerFunctionName The function name all lowercased
+ * @param _token
  * @returns
  */
-export function getFunctionFromTemplate(documentStateContext: DocumentStateContext, lowerFunctionName: string): UserFunction | undefined {
-  const tagFunctions: UserFunction[] = parseTagFunctions(documentStateContext);
-  const cfscriptRanges: Range[] = getCfScriptRanges(documentStateContext.document);
-  const scriptFunctions: UserFunction[] = parseScriptFunctions(documentStateContext).filter((func: UserFunction) => {
-    return isInRanges(cfscriptRanges, func.location.range.start);
+export function getFunctionFromTemplate(documentStateContext: DocumentStateContext, lowerFunctionName: string, _token: CancellationToken): UserFunction | undefined {
+  const tagFunctions: UserFunction[] = parseTagFunctions(documentStateContext, _token);
+  const cfscriptRanges: Range[] = getCfScriptRanges(documentStateContext.document, null, _token);
+  const scriptFunctions: UserFunction[] = parseScriptFunctions(documentStateContext, _token).filter((func: UserFunction) => {
+    return isInRanges(cfscriptRanges, func.location.range.start, false, _token);
   });
 
   const allTemplateFunctions: UserFunction[] = tagFunctions.concat(scriptFunctions);

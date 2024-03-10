@@ -1,7 +1,7 @@
 /* eslint-disable jsdoc/require-param */
 /* eslint-disable jsdoc/check-tag-names */
 import { fetch } from "isomorphic-fetch";
-import { commands, Position, Range, TextDocument, TextLine, Uri, window, workspace, WorkspaceConfiguration, TextEditor, env } from "vscode";
+import { commands, Position, Range, TextDocument, TextLine, Uri, window, workspace, WorkspaceConfiguration, TextEditor, env, CancellationToken, TextEditorEdit } from "vscode";
 import { getFunctionSuffixPattern } from "../../entities/function";
 import { GlobalEntity } from "../../entities/globals";
 import { getTagPrefixPattern } from "../../entities/tag";
@@ -328,14 +328,14 @@ export default class CFDocsService {
    * @param editor
    * @editor The text editor which represents the document for which to check the word
    */
-  public static async openCfDocsForCurrentWord(editor: TextEditor): Promise<void> {
+  public static async openCfDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): Promise<void> {
     const document: TextDocument = editor.document;
     const position: Position = editor.selection.start;
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
 
     if (documentPositionStateContext.positionInComment) {
       return;
@@ -370,14 +370,14 @@ export default class CFDocsService {
    * Opens the documentation web page of the currently set CF engine for the word at the current cursor position
    * @editor The text editor which represents the document for which to check the word
    */
-  public static async openEngineDocsForCurrentWord(editor: TextEditor): Promise<void> {
+  public static async openEngineDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): Promise<void> {
     const document: TextDocument = editor.document;
     const position: Position = editor.selection.start;
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
 
     if (documentPositionStateContext.positionInComment) {
       return;

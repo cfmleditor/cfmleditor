@@ -1,5 +1,5 @@
 
-import { Position, Range, TextDocument, Uri } from "vscode";
+import { CancellationToken, Position, Range, TextDocument, Uri } from "vscode";
 import * as cachedEntities from "../features/cachedEntities";
 import { getComponent, hasComponent } from "../features/cachedEntities";
 import { MySet } from "../utils/collections";
@@ -159,23 +159,25 @@ export interface ComponentsByName {
 /**
  * Determines whether the given document is a script-based component
  * @param document The document to check
+ * @param _token
  * @returns
  */
-export function isScriptComponent(document: TextDocument): boolean {
+export function isScriptComponent(document: TextDocument, _token: CancellationToken): boolean {
   const componentTagMatch: RegExpExecArray = COMPONENT_TAG_PATTERN.exec(document.getText());
   if (componentTagMatch) {
     return false;
   }
 
-  return isCfcFile(document);
+  return isCfcFile(document, _token);
 }
 
 /**
  * Parses a component document and returns an object conforming to the Component interface
  * @param documentStateContext The context information for a TextDocument to be parsed
+ * @param _token
  * @returns
  */
-export async function parseComponent(documentStateContext: DocumentStateContext): Promise<Component | undefined> {
+export async function parseComponent(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<Component | undefined> {
   const document: TextDocument = documentStateContext.document;
   const documentText: string = document.getText();
   const componentIsScript: boolean = documentStateContext.docIsScript;
@@ -348,8 +350,8 @@ export async function parseComponent(documentStateContext: DocumentStateContext)
 
   documentStateContext.component = component;
   const componentFunctions = new ComponentFunctions();
-  let userFunctions: UserFunction[] = parseScriptFunctions(documentStateContext);
-  userFunctions = userFunctions.concat(parseTagFunctions(documentStateContext));
+  let userFunctions: UserFunction[] = parseScriptFunctions(documentStateContext, _token);
+  userFunctions = userFunctions.concat(parseTagFunctions(documentStateContext, _token));
   let earliestFunctionRangeStart: Position = document.positionAt(documentText.length);
   userFunctions.forEach((compFun: UserFunction) => {
     if (compFun.location.range.start.isBefore(earliestFunctionRangeStart)) {
@@ -382,7 +384,7 @@ export async function parseComponent(documentStateContext: DocumentStateContext)
 
   // Only check before first function definition
   const componentDefinitionRange = new Range(document.positionAt(componentMatch.index + head.length), earliestFunctionRangeStart);
-  component.variables = await parseVariableAssignments(documentStateContext, componentIsScript, componentDefinitionRange);
+  component.variables = await parseVariableAssignments(documentStateContext, componentIsScript, componentDefinitionRange, _token);
 
   // TODO: Get imports
 
@@ -537,9 +539,10 @@ export function getApplicationUri(baseUri: Uri): Uri | undefined {
 /**
  * Finds the applicable Server file for the given file URI
  * @param baseUri The URI from which the Server file will be searched
+ * @param _token
  * @returns
  */
-export function getServerUri(baseUri: Uri): Uri | undefined {
+export function getServerUri(baseUri: Uri, _token: CancellationToken): Uri | undefined {
   let componentUri: Uri;
 
   const fileName = "Server.cfc";
@@ -548,7 +551,7 @@ export function getServerUri(baseUri: Uri): Uri | undefined {
   if (rootPath) {
     const rootUri: Uri = Uri.file(rootPath);
 
-    if (hasComponent(rootUri)) {
+    if (hasComponent(rootUri, _token)) {
       componentUri = rootUri;
     }
   }
@@ -562,16 +565,17 @@ export function getServerUri(baseUri: Uri): Uri | undefined {
  * Checks whether `checkComponent` is a subcomponent or equal to `baseComponent`
  * @param checkComponent The candidate subcomponent
  * @param baseComponent The candidate base component
+ * @param _token
  * @returns
  */
-export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component): boolean {
+export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component, _token: CancellationToken): boolean {
   while (checkComponent) {
     if (checkComponent.uri.toString() === baseComponent.uri.toString()) {
       return true;
     }
 
     if (checkComponent.extends) {
-      checkComponent = getComponent(checkComponent.extends);
+      checkComponent = getComponent(checkComponent.extends, _token);
     } else {
       checkComponent = undefined;
     }
@@ -584,11 +588,12 @@ export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: 
  * Checks whether `checkComponent` is a subcomponent of `baseComponent`
  * @param checkComponent The candidate subcomponent
  * @param baseComponent The candidate base component
+ * @param _token
  * @returns
  */
-export function isSubcomponent(checkComponent: Component, baseComponent: Component): boolean {
+export function isSubcomponent(checkComponent: Component, baseComponent: Component, _token: CancellationToken): boolean {
   if (checkComponent.extends) {
-    checkComponent = getComponent(checkComponent.extends);
+    checkComponent = getComponent(checkComponent.extends, _token);
   } else {
     return false;
   }
@@ -599,7 +604,7 @@ export function isSubcomponent(checkComponent: Component, baseComponent: Compone
     }
 
     if (checkComponent.extends) {
-      checkComponent = getComponent(checkComponent.extends);
+      checkComponent = getComponent(checkComponent.extends, _token);
     } else {
       checkComponent = undefined;
     }

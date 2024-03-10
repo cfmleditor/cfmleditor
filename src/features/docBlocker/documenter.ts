@@ -35,17 +35,17 @@ export default class Documenter {
    * @returns
    */
   public autoDocument(): SnippetString {
-    const func = new FunctionBlock(this.targetPosition, this.document);
+    const func = new FunctionBlock(this.targetPosition, this.document, null);
     if (func.test()) {
       return func.constructDoc().build();
     }
 
-    const prop = new Property(this.targetPosition, this.document);
+    const prop = new Property(this.targetPosition, this.document, null);
     if (prop.test()) {
       return prop.constructDoc().build();
     }
 
-    const comp = new Component(this.targetPosition, this.document);
+    const comp = new Component(this.targetPosition, this.document, null);
     if (comp.test()) {
       return comp.constructDoc().build();
     }

@@ -41,7 +41,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
       return result;
     }
 
-    const comp: Component = getComponent(document.uri);
+    const comp: Component = getComponent(document.uri, _token);
     if (!comp) {
       return result;
     }

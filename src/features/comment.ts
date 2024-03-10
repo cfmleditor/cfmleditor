@@ -1,4 +1,4 @@
-import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair } from "vscode";
+import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken } from "vscode";
 import { LANGUAGE_ID } from "../cfmlMain";
 import { isInCfScript, isCfcFile } from "../utils/contextUtil";
 import { getComponent, hasComponent } from "./cachedEntities";
@@ -32,12 +32,13 @@ export const cfmlCommentRules: CFMLCommentRules = {
  * Returns whether to use CFML tag comment
  * @param document The TextDocument in which the selection is made
  * @param startPosition The position at which the comment starts
+ * @param _token
  * @returns
  */
-function isTagComment(document: TextDocument, startPosition: Position): boolean {
-  const docIsScript: boolean = (isCfcFile(document) && hasComponent(document.uri) && getComponent(document.uri).isScript);
+function isTagComment(document: TextDocument, startPosition: Position, _token: CancellationToken): boolean {
+  const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && getComponent(document.uri, _token).isScript);
 
-  return !docIsScript && !isInCfScript(document, startPosition);
+  return !docIsScript && !isInCfScript(document, startPosition, _token);
 }
 
 /**
@@ -59,9 +60,10 @@ function getCommentCommand(commentType: CommentType): string {
 /**
  * Return a function that can be used to execute a line or block comment
  * @param commentType The comment type for which the command will be executed
+ * @param _token
  * @returns
  */
-export function toggleComment(commentType: CommentType): (editor: TextEditor) => Promise<void> {
+export function toggleComment(commentType: CommentType, _token: CancellationToken): (editor: TextEditor) => Promise<void> {
   return async (editor: TextEditor) => {
     if (editor) {
       // default comment config
@@ -73,7 +75,7 @@ export function toggleComment(commentType: CommentType): (editor: TextEditor) =>
       };
 
       // Changes the comment in language configuration based on the context
-      if (isTagComment(editor.document, editor.selection.start)) {
+      if (isTagComment(editor.document, editor.selection.start, _token)) {
         languageConfig = {
           comments: {
             blockComment: cfmlCommentRules.tagBlockComment

@@ -1,4 +1,4 @@
-import { Position, Range, Selection, TextDocument, TextEditor, Uri, WorkspaceConfiguration, window, workspace } from "vscode";
+import { CancellationToken, Position, Range, Selection, TextDocument, TextEditor, TextEditorEdit, Uri, WorkspaceConfiguration, window, workspace } from "vscode";
 import { getGlobalTag } from "../features/cachedEntities";
 import { StringContext, isStringDelimiter } from "../utils/contextUtil";
 import { DocumentPositionStateContext, DocumentStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
@@ -596,9 +596,10 @@ export function getNonClosingCfmlTags(): string[] {
  * @param documentStateContext The context information for the TextDocument to check
  * @param tagName The name of the tag to capture
  * @param range Range within which to check
+ * @param _token
  * @returns
  */
-export function parseTags(documentStateContext: DocumentStateContext, tagName: string, range?: Range): Tag[] {
+export function parseTags(documentStateContext: DocumentStateContext, tagName: string, range: Range, _token: CancellationToken): Tag[] {
   const tags: Tag[] = [];
   const document: TextDocument = documentStateContext.document;
   let textOffset: number = 0;
@@ -653,9 +654,10 @@ export function parseTags(documentStateContext: DocumentStateContext, tagName: s
  * @param tagName The name of the tag to capture
  * @param isScript Whether this document or range is defined entirely in CFScript
  * @param range Range within which to check
+ * @param _token
  * @returns
  */
-export function parseStartTags(documentStateContext: DocumentStateContext, tagName: string, isScript: boolean, range?: Range): StartTag[] {
+export function parseStartTags(documentStateContext: DocumentStateContext, tagName: string, isScript: boolean, range: Range, _token: CancellationToken): StartTag[] {
   const startTags: StartTag[] = [];
   const document: TextDocument = documentStateContext.document;
   let textOffset: number = 0;
@@ -873,8 +875,10 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 /**
  * Relocates cursor to the start of the tag matching the current selection
  * @param editor The text editor in which to find the matching tag
+ * @param edit
+ * @param _token
  */
-export async function goToMatchingTag(editor: TextEditor): Promise<void> {
+export async function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken = null): Promise<void> {
 
   const position: Position = editor.selection.active;
   const documentUri: Uri = editor.document.uri;
@@ -882,7 +886,7 @@ export async function goToMatchingTag(editor: TextEditor): Promise<void> {
   const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
   const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-  const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments);
+  const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments, _token);
 
   const currentWord: string = documentPositionStateContext.currentWord;
   let globalTag: GlobalTag = getGlobalTag(currentWord);

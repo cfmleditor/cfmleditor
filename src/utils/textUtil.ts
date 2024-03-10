@@ -1,4 +1,4 @@
-import { MarkdownString, Range, TextDocument, Position } from "vscode";
+import { MarkdownString, Range, TextDocument, Position, CancellationToken } from "vscode";
 import { getDocumentContextRanges, isCfcFile } from "./contextUtil";
 import { getComponent, hasComponent } from "../features/cachedEntities";
 import { AttributeQuoteType } from "../entities/attribute";
@@ -96,9 +96,10 @@ export function replaceRangeWithSpaces(document: TextDocument, ranges: Range[]):
  * @param document The text document from which to get text
  * @param commentRanges Optional ranges in which there are CFML comments
  * @param replaceComments Replace comments before parsing
+ * @param _token
  * @returns string
  */
-export function getSanitizedDocumentText(document: TextDocument, commentRanges?: Range[], replaceComments: boolean = false): string {
+export function getSanitizedDocumentText(document: TextDocument, commentRanges: Range[], replaceComments: boolean = false, _token: CancellationToken): string {
   if ( replaceComments !== true ) {
     return document.getText();
   }
@@ -106,8 +107,8 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges?:
   if (commentRanges) {
     documentCommentRanges = commentRanges;
   } else {
-    const docIsScript: boolean = (isCfcFile(document) && hasComponent(document.uri) && getComponent(document.uri).isScript);
-    documentCommentRanges = getDocumentContextRanges(document, docIsScript).commentRanges;
+    const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && getComponent(document.uri, _token).isScript);
+    documentCommentRanges = getDocumentContextRanges(document, docIsScript, null, false, _token).commentRanges;
   }
 
   return replaceRangeWithSpaces(document, documentCommentRanges);
@@ -118,12 +119,13 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges?:
  * @param document The text document in which to replace
  * @param position The position that marks the end of the document's text to return
  * @param replaceComments Whether the text should have comments replaced
+ * @param _token
  * @returns string
  */
-export function getPrefixText(document: TextDocument, position: Position, replaceComments: boolean = false): string {
+export function getPrefixText(document: TextDocument, position: Position, replaceComments: boolean = false, _token: CancellationToken): string {
   let documentText: string = document.getText();
   if (replaceComments) {
-    documentText = getSanitizedDocumentText(document);
+    documentText = getSanitizedDocumentText(document, null, false, _token);
   }
 
   return documentText.slice(0, document.offsetAt(position));

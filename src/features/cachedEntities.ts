@@ -1,5 +1,5 @@
 
-import { ConfigurationTarget, extensions, ProgressLocation, TextDocument, Uri, window, workspace, WorkspaceConfiguration } from "vscode";
+import { CancellationToken, ConfigurationTarget, extensions, ProgressLocation, TextDocument, Uri, window, workspace, WorkspaceConfiguration } from "vscode";
 import { Component, ComponentsByName, ComponentsByUri, COMPONENT_EXT, COMPONENT_FILE_GLOB, parseComponent } from "../entities/component";
 import { GlobalFunction, GlobalFunctions, GlobalMemberFunction, GlobalMemberFunctions, GlobalTag, GlobalTags } from "../entities/globals";
 import { Scope } from "../entities/scope";
@@ -212,10 +212,11 @@ function setComponent(comp: Component): void {
 /**
  * Retrieves the cached component identified by the given URI
  * @param uri The URI of the component to be retrieved
+ * @param _token
  * @returns
  */
-export function getComponent(uri: Uri): Component {
-  if (!hasComponent(uri)) {
+export function getComponent(uri: Uri, _token: CancellationToken): Component {
+  if (!hasComponent(uri, _token)) {
     /* TODO: If not already cached, attempt to read, parse and cache. Tricky since read is async */
   }
 
@@ -225,18 +226,22 @@ export function getComponent(uri: Uri): Component {
 /**
  * Checks if the cached component with the given URI exists
  * @param uri The URI of the component to be checked
+ * @param _token
  * @returns
  */
-export function hasComponent(uri: Uri): boolean {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
   return Object.prototype.hasOwnProperty.call(allComponentsByUri, uri.toString());
 }
 
 /**
  * Retrieves all cached components matched by the given query
  * @param query Some query text used to search for cached components
+ * @param _token
  * @returns
  */
-export function searchAllComponentNames(query: string): Component[] {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function searchAllComponentNames(query: string, _token: CancellationToken): Component[] {
   let components: Component[] = [];
   allComponentNames.getPrefix(query.toLowerCase()).forEach((compKey: string) => {
     components = components.concat(Object.values(allComponentsByName[compKey]));
@@ -337,8 +342,9 @@ export function componentPathToUri(dotPath: string, baseUri: Uri): Uri | undefin
  * Caches given component and its contents
  * @param component The component to cache
  * @param documentStateContext Contextual information for a given document's state
+ * @param _token
  */
-export async function cacheComponent(component: Component, documentStateContext: DocumentStateContext): Promise<void> {
+export async function cacheComponent(component: Component, documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<void> {
   clearCachedComponent(component.uri);
   setComponent(component);
   component.functions.forEach((funcObj: UserFunction) => {
@@ -348,14 +354,14 @@ export async function cacheComponent(component: Component, documentStateContext:
   const componentUri: Uri = component.uri;
   const fileName: string = Utils.basename(componentUri);
   if (fileName === "Application.cfc") {
-    const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
+    const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, null, _token);
 
     const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
       return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
     });
     setApplicationVariables(componentUri, thisApplicationFilteredVariables);
   } else if (fileName === "Server.cfc") {
-    const thisServerVariables: Variable[] = (await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript)).filter((variable: Variable) => {
+    const thisServerVariables: Variable[] = (await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, null, _token)).filter((variable: Variable) => {
       return variable.scope === Scope.Server;
     });
     allServerVariables.set(componentUri.toString(), thisServerVariables);
@@ -364,9 +370,10 @@ export async function cacheComponent(component: Component, documentStateContext:
 
 /**
  * Reads and parses all cfc files in the current workspace and caches their definitions
+ * @param _token
  * @returns
  */
-export async function cacheAllComponents(): Promise<void> {
+export async function cacheAllComponents(_token: CancellationToken): Promise<void> {
     clearAllCachedComponents();
 
     return workspace.findFiles(COMPONENT_FILE_GLOB).then(
@@ -383,16 +390,16 @@ export async function cacheAllComponents(): Promise<void> {
                     const cflintEnabledValues = cflintSettings.inspect<boolean>("enabled");
                     const cflintEnabledPrevWSValue: boolean = cflintEnabledValues.workspaceValue;
                     cflintSettings.update("enabled", false, ConfigurationTarget.Workspace).then(async () => {
-                        await cacheGivenComponents(componentUris);
+                        await cacheGivenComponents(componentUris, _token);
                         await cacheAllApplicationCfms();
                         cflintSettings.update("enabled", cflintEnabledPrevWSValue, ConfigurationTarget.Workspace);
                     });
                 } else {
-                    cacheGivenComponents(componentUris);
+                    cacheGivenComponents(componentUris, _token);
                     cacheAllApplicationCfms();
                 }
             } else {
-                cacheGivenComponents(componentUris);
+                cacheGivenComponents(componentUris, _token);
                 cacheAllApplicationCfms();
             }
         },
@@ -405,8 +412,9 @@ export async function cacheAllComponents(): Promise<void> {
 /**
  * Reads and parses given cfc files and caches their definitions
  * @param componentUris List of URIs to read, parse, and cache
+ * @param _token
  */
-async function cacheGivenComponents(componentUris: Uri[]): Promise<void> {
+async function cacheGivenComponents(componentUris: Uri[], _token: CancellationToken): Promise<void> {
   await window.withProgress(
     {
       location: ProgressLocation.Notification,
@@ -424,7 +432,7 @@ async function cacheGivenComponents(componentUris: Uri[]): Promise<void> {
           const document: TextDocument = await workspace.openTextDocument(componentUri);
           const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
           const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-          cacheComponentFromDocument(document, false, replaceComments);
+          cacheComponentFromDocument(document, false, replaceComments, _token);
         } catch (ex) {
           console.warn(`Cannot parse document at ${componentUri}`);
         } finally {
@@ -444,16 +452,17 @@ async function cacheGivenComponents(componentUris: Uri[]): Promise<void> {
  * @param document The text document to parse and cache
  * @param fast Whether to use the faster, but less accurate parsing
  * @param replaceComments
+ * @param _token
  * @returns
  */
-export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false): Promise<boolean> {
-  const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments);
+export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken): Promise<boolean> {
+  const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token);
   try {
-    const parsedComponent: Component | undefined = await parseComponent(documentStateContext);
+    const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
     if (!parsedComponent) {
         return false;
     }
-    cacheComponent(parsedComponent, documentStateContext);
+    cacheComponent(parsedComponent, documentStateContext, _token);
   } catch (err) {
     return false;
   }
@@ -532,15 +541,16 @@ export async function cacheAllApplicationCfms(): Promise<void> {
 /**
  * Reads and parses given Application.cfm files and caches their definitions
  * @param applicationUris List of URIs to parse and cache
+ * @param _token
  */
-async function cacheGivenApplicationCfms(applicationUris: Uri[]): Promise<void> {
+async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: CancellationToken): Promise<void> {
   for (const applicationUri of applicationUris) {
     try {
       const document: TextDocument = await workspace.openTextDocument(applicationUri);
       const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
       const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments);
-      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
+      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token);
+      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, null, _token);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
       });

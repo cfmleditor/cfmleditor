@@ -61,22 +61,23 @@ export default class CFMLHoverProvider implements HoverProvider {
       return undefined;
     }
 
-    return this.getHover(document, position);
+    return this.getHover(document, position, _token);
   }
 
   /**
    * Generates hover
    * @param document The document in which the hover was invoked.
    * @param position The position at which the hover was invoked.
+   * @param _token
    * @returns
    */
-  public async getHover(document: TextDocument, position: Position): Promise<Hover | undefined> {
+  public async getHover(document: TextDocument, position: Position, _token: CancellationToken): Promise<Hover | undefined> {
     let definition: HoverProviderItem;
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
 
     const userEngine: CFMLEngine = documentPositionStateContext.userEngine;
 
@@ -121,7 +122,7 @@ export default class CFMLHoverProvider implements HoverProvider {
       if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
         const componentUri: Uri = cachedEntity.componentPathToUri(componentPathWord, document.uri);
         if (componentUri) {
-          const initComponent: Component = getComponent(componentUri);
+          const initComponent: Component = getComponent(componentUri, _token);
           if (initComponent) {
             const initMethod = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
             if (initComponent.functions.has(initMethod)) {
@@ -142,7 +143,7 @@ export default class CFMLHoverProvider implements HoverProvider {
         }
 
         // User function
-        userFunc = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord);
+        userFunc = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, null, _token);
         if (userFunc) {
           definition = this.functionToHoverProviderItem(userFunc);
           return this.createHover(definition);
@@ -170,7 +171,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 
       // HTML tags
       const htmlHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover.html", document.uri);
-      if (isCfmFile(document) && htmlHoverSettings.get<boolean>("enable", true) && tagPrefixPattern.test(docPrefix) && isKnownHTMLTag(lowerCurrentWord)) {
+      if (isCfmFile(document, _token) && htmlHoverSettings.get<boolean>("enable", true) && tagPrefixPattern.test(docPrefix) && isKnownHTMLTag(lowerCurrentWord)) {
         definition = this.htmlTagToHoverProviderItem(getHTMLTag(lowerCurrentWord));
         return this.createHover(definition);
       }
@@ -178,7 +179,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 
     // CSS
     const cssHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover.css", document.uri);
-    const cssRanges: Range[] = getCssRanges(documentPositionStateContext);
+    const cssRanges: Range[] = getCssRanges(documentPositionStateContext, null, _token);
     if (cssHoverSettings.get<boolean>("enable", true)) {
       for (const cssRange of cssRanges) {
         if (!cssRange.contains(position)) {

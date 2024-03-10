@@ -109,9 +109,9 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         return undefined;
     }
 
-    const cfscriptRanges: Range[] = getCfScriptRanges(document);
+    const cfscriptRanges: Range[] = getCfScriptRanges(document, null, _token);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
 
     const currentWordMatches = (name: string): boolean => {
       return matches(documentPositionStateContext.currentWord, name);
@@ -242,7 +242,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
     }
 
     // Assigned document variables
-    let allVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext);
+    let allVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext, _token);
 
     if (_token && _token.isCancellationRequested) {
         return undefined;
@@ -260,7 +260,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
     }
 
     // Server variables
-    const serverDocVariables: Variable[] = getServerVariables(documentUri);
+    const serverDocVariables: Variable[] = getServerVariables(documentUri, _token);
     allVariableAssignments = allVariableAssignments.concat(serverDocVariables.filter((variable: Variable) => {
       return getMatchingVariables(allVariableAssignments, variable.identifier, variable.scope).length === 0;
     }));
@@ -277,7 +277,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
     }
 
     // Catch variable
-    const catchInfoArr: CatchInfo[] = parseCatches(documentPositionStateContext, documentPositionStateContext.docIsScript);
+    const catchInfoArr: CatchInfo[] = parseCatches(documentPositionStateContext, documentPositionStateContext.docIsScript, null, _token);
     const applicableCatches: CatchInfo[] = catchInfoArr.filter((catchInfo: CatchInfo) => {
       return catchInfo.bodyRange.contains(position);
     });
@@ -340,9 +340,9 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
     // Document user functions
     if (docIsCfmFile) {
       if (getValidScopesPrefixPattern([Scope.Variables], true).test(docPrefix)) {
-        const tagFunctions: UserFunction[] = parseTagFunctions(documentPositionStateContext);
-        const scriptFunctions: UserFunction[] = parseScriptFunctions(documentPositionStateContext).filter((func: UserFunction) => {
-          return isInRanges(cfscriptRanges, func.location.range.start);
+        const tagFunctions: UserFunction[] = parseTagFunctions(documentPositionStateContext, _token);
+        const scriptFunctions: UserFunction[] = parseScriptFunctions(documentPositionStateContext, _token).filter((func: UserFunction) => {
+          return isInRanges(cfscriptRanges, func.location.range.start, false, _token);
         });
 
         const allTemplateFunctions: UserFunction[] = tagFunctions.concat(scriptFunctions);
@@ -356,7 +356,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         });
       }
     } else if (docIsCfcFile) {
-      const componentFunctionCompletions: CompletionItem[] = getComponentFunctionCompletions(completionState, thisComponent);
+      const componentFunctionCompletions: CompletionItem[] = getComponentFunctionCompletions(completionState, thisComponent, _token);
       result = result.concat(componentFunctionCompletions);
     }
 
@@ -381,7 +381,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         // From super keyword
         if (docIsCfcFile && !varScope && equalsIgnoreCase(varName, "super")) {
           const addedFunctions: MySet<string> = new MySet();
-          const baseComponent: Component = getComponent(thisComponent.extends);
+          const baseComponent: Component = getComponent(thisComponent.extends, _token);
           let currComponent: Component = baseComponent;
           while (currComponent) {
             currComponent.functions.filter((_func: UserFunction, funcKey: string) => {
@@ -394,7 +394,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
             });
 
             if (currComponent.extends) {
-              currComponent = getComponent(currComponent.extends);
+              currComponent = getComponent(currComponent.extends, _token);
             } else {
               currComponent = undefined;
             }
@@ -407,14 +407,14 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
           if (foundVar) {
             // From component variable
             if (foundVar.dataTypeComponentUri) {
-              const initialFoundComp: Component = getComponent(foundVar.dataTypeComponentUri);
+              const initialFoundComp: Component = getComponent(foundVar.dataTypeComponentUri, _token);
 
               if (initialFoundComp) {
                 const addedFunctions: MySet<string> = new MySet();
                 const addedVariables: MySet<string> = new MySet();
                 const validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
                 if (thisComponent) {
-                  if (isSubcomponentOrEqual(thisComponent, initialFoundComp)) {
+                  if (isSubcomponentOrEqual(thisComponent, initialFoundComp, _token)) {
                     validFunctionAccess.add(Access.Private);
                     validFunctionAccess.add(Access.Package);
                   }
@@ -455,7 +455,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                   });
 
                   if (foundComponent.extends) {
-                    foundComponent = getComponent(foundComponent.extends);
+                    foundComponent = getComponent(foundComponent.extends, _token);
                   } else {
                     foundComponent = undefined;
                   }
@@ -538,7 +538,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
     // CSS
     const shouldProvideCss: boolean = cfmlCompletionSettings.get<boolean>("css.enable", true);
-    if (shouldProvideCss && docIsCfmFile && isInCss(documentPositionStateContext, position)) {
+    if (shouldProvideCss && docIsCfmFile && isInCss(documentPositionStateContext, position, _token)) {
       const cssWordRange: Range = document.getWordRangeAtPosition(position, cssWordRegex);
       const currentCssWord: string = cssWordRange ? document.getText(cssWordRange) : "";
 
@@ -858,9 +858,10 @@ function getVariableCompletions(state: CompletionState, variables: Variable[]): 
  * Gets the function completions for the given component and state
  * @param state An object representing the state of completion
  * @param component The component in which to suggest functions
+ * @param _token
  * @returns
  */
-function getComponentFunctionCompletions(state: CompletionState, component: Component): CompletionItem[] {
+function getComponentFunctionCompletions(state: CompletionState, component: Component, _token: CancellationToken): CompletionItem[] {
   const componentFunctionCompletions: CompletionItem[] = [];
   if (component) {
     const addedFunctions: MySet<string> = new MySet();
@@ -887,7 +888,7 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
       });
 
       if (currComponent.extends) {
-        currComponent = getComponent(currComponent.extends);
+        currComponent = getComponent(currComponent.extends, _token);
       } else {
         currComponent = undefined;
       }

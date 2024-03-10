@@ -1,7 +1,7 @@
 
 import { DataType } from "./dataType";
 import { Scope, unscopedPrecedence } from "./scope";
-import { Location, TextDocument, Range, Uri, Position, WorkspaceConfiguration, workspace } from "vscode";
+import { Location, TextDocument, Range, Uri, Position, WorkspaceConfiguration, workspace, CancellationToken } from "vscode";
 import { getCfScriptRanges, isCfcFile, getClosingPosition } from "../utils/contextUtil";
 import { Component, getApplicationUri, getServerUri } from "./component";
 import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, UserFunctionVariable, parseScriptFunctionArgs, functionValuePattern, isUserFunctionVariable } from "./userFunction";
@@ -311,9 +311,10 @@ export function getVariableExpressionPrefixPattern() {
  * @param documentStateContext Contextual information for a given document's state
  * @param isScript Whether this document or range is defined entirely in CFScript
  * @param docRange Range within which to check
+ * @param _token
  * @returns
  */
-export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange?: Range): Promise<Variable[]> {
+export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range, _token: CancellationToken): Promise<Variable[]> {
   let variables: Variable[] = [];
   const document: TextDocument = documentStateContext.document;
   const documentUri: Uri = document.uri;
@@ -330,8 +331,8 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
   const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version"));
 
   // Add function arguments
-  if (isCfcFile(document)) {
-    const comp: Component = cachedEntities.getComponent(document.uri);
+  if (isCfcFile(document, _token)) {
+    const comp: Component = cachedEntities.getComponent(document.uri, _token);
     if (comp) {
       comp.functions.forEach((func: UserFunction) => {
         if (!func.isImplicit && (!docRange || (func.bodyRange && func.bodyRange.contains(docRange)))) {
@@ -504,7 +505,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
         const paramsStartOffset: number = initValueOffset + valueMatch.index + fullValueMatch.length;
         const paramsEndOffset: number = initValueOffset + initValue.length - 1;
         const paramsRange = new Range(document.positionAt(paramsStartOffset), document.positionAt(paramsEndOffset));
-        const paramRanges: Range[] = getScriptFunctionArgRanges(documentStateContext, paramsRange);
+        const paramRanges: Range[] = getScriptFunctionArgRanges(documentStateContext, paramsRange, ";", _token);
         if (paramRanges.length > 0) {
           const firstParamText: string = document.getText(paramRanges[0]);
 
@@ -535,14 +536,14 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
         const initValueOffset = textOffset + variableMatch.index + initValuePrefix.length;
         const paramsStartOffset: number = initValueOffset + valueMatch.index + fullValueMatch.length;
-        const paramsEndPosition: Position = getClosingPosition(documentStateContext, paramsStartOffset, ")");
+        const paramsEndPosition: Position = getClosingPosition(documentStateContext, paramsStartOffset, ")", _token);
         const paramsRange = new Range(
           document.positionAt(paramsStartOffset),
           paramsEndPosition.translate(0, -1)
         );
 
         userFunction.signature = {
-          parameters: parseScriptFunctionArgs(documentStateContext, paramsRange, [])
+          parameters: parseScriptFunctionArgs(documentStateContext, paramsRange, [], _token)
         };
         thisVar = userFunction;
       }
@@ -569,7 +570,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
     foundOutputVarTags.forEach((tagName: string) => {
       const tagOutputAttributes: VariableAttribute[] = outputVariableTags[tagName];
 
-      const parsedOutputVariableTags: StartTag[] = (tagName === "cfquery" ? parseTags(documentStateContext, tagName, docRange) : parseStartTags(documentStateContext, tagName, isScript, docRange));
+      const parsedOutputVariableTags: StartTag[] = (tagName === "cfquery" ? parseTags(documentStateContext, tagName, docRange, _token) : parseStartTags(documentStateContext, tagName, isScript, docRange, _token));
       parsedOutputVariableTags.forEach((tag: StartTag) => {
         const tagAttributes: Attributes = tag.attributes;
         tagOutputAttributes.filter((tagOutputAttribute: VariableAttribute) => {
@@ -647,9 +648,9 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
   if (!isScript) {
     // Check cfscript sections
-    const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange);
+    const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token);
     for (const range of cfScriptRanges) {
-      const cfscriptVars: Variable[] = await parseVariableAssignments(documentStateContext, true, range);
+      const cfscriptVars: Variable[] = await parseVariableAssignments(documentStateContext, true, range, _token);
 
       cfscriptVars.forEach((scriptVar: Variable) => {
         const matchingVars: Variable[] = getMatchingVariables(variables, scriptVar.identifier, scriptVar.scope);
@@ -845,12 +846,13 @@ export function getApplicationVariables(baseUri: Uri): Variable[] {
 /**
  * Gets the server variables
  * @param baseUri The URI of the document for which the Server file will be found
+ * @param _token
  * @returns
  */
-export function getServerVariables(baseUri: Uri): Variable[] {
+export function getServerVariables(baseUri: Uri, _token: CancellationToken): Variable[] {
   let serverVariables: Variable[] = [];
 
-  const serverUri: Uri = getServerUri(baseUri);
+  const serverUri: Uri = getServerUri(baseUri, _token);
   if (serverUri) {
     serverVariables = cachedEntities.getServerVariables(serverUri);
   }
@@ -861,13 +863,14 @@ export function getServerVariables(baseUri: Uri): Variable[] {
 /**
  * Collects all variable assignments accessible based on the given documentPositionStateContext
  * @param documentPositionStateContext The contextual information of the state of a document and the cursor position
+ * @param _token
  * @returns
  */
-export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext): Promise<Variable[]> {
+export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext, _token: CancellationToken): Promise<Variable[]> {
   let allVariableAssignments: Variable[] = [];
 
   if (documentPositionStateContext.isCfmFile) {
-    const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false);
+    const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, null, _token);
     allVariableAssignments = allVariableAssignments.concat(docVariableAssignments);
   } else if (documentPositionStateContext.isCfcFile) {
     const thisComponent = documentPositionStateContext.component;
@@ -895,7 +898,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
           const currInitFunc: UserFunction = currComponent.functions.get(initMethod);
 
           if (currInitFunc.bodyRange) {
-            const currInitVariables: Variable[] = (await parseVariableAssignments(documentPositionStateContext, currComponent.isScript, currInitFunc.bodyRange)).filter((variable: Variable) => {
+            const currInitVariables: Variable[] = (await parseVariableAssignments(documentPositionStateContext, currComponent.isScript, currInitFunc.bodyRange, _token)).filter((variable: Variable) => {
               return [Scope.Variables, Scope.This].includes(variable.scope) && !componentVariables.some((existingVariable: Variable) => {
                 return existingVariable.scope === variable.scope && equalsIgnoreCase(existingVariable.identifier, variable.identifier);
               });
@@ -907,7 +910,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
         allVariableAssignments = allVariableAssignments.concat(componentVariables);
 
         if (currComponent.extends) {
-          currComponent = cachedEntities.getComponent(currComponent.extends);
+          currComponent = cachedEntities.getComponent(currComponent.extends, _token);
         } else {
           currComponent = undefined;
         }
@@ -931,7 +934,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
       });
 
       for (const [, func] of filteredFunctions) {
-        const tmp = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript);
+        const tmp = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript, _token);
         localVariables = localVariables.concat(tmp);
       }
       allVariableAssignments = allVariableAssignments.concat(localVariables);

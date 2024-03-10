@@ -25,13 +25,13 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments);
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token);
 
     if (documentStateContext.isCfcFile) {
-        const componentSymbols = await CFMLDocumentSymbolProvider.getComponentSymbols(documentStateContext)
+        const componentSymbols = await CFMLDocumentSymbolProvider.getComponentSymbols(documentStateContext, _token)
         documentSymbols = documentSymbols.concat(componentSymbols);
     } else if (documentStateContext.isCfmFile) {
-        const templateSymbols = await CFMLDocumentSymbolProvider.getTemplateSymbols(documentStateContext);
+        const templateSymbols = await CFMLDocumentSymbolProvider.getTemplateSymbols(documentStateContext, _token);
         documentSymbols = documentSymbols.concat(templateSymbols);
     }
 
@@ -41,11 +41,12 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
   /**
    * Provide symbol information for component and its contents
    * @param documentStateContext The document context for which to provide symbols.
+   * @param _token
    * @returns
    */
-  private static async getComponentSymbols(documentStateContext: DocumentStateContext): Promise<DocumentSymbol[]> {
+  private static async getComponentSymbols(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<DocumentSymbol[]> {
     const document: TextDocument = documentStateContext.document;
-    const component: Component = getComponent(document.uri);
+    const component: Component = getComponent(document.uri, _token);
 
     if (!component) {
       return [];
@@ -108,7 +109,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
       if (!userFunction.isImplicit) {
         // Component function local variables
         const localVarSymbols: DocumentSymbol[] = [];
-        const localVariables: Variable[] = await getLocalVariables(userFunction, documentStateContext, component.isScript);
+        const localVariables: Variable[] = await getLocalVariables(userFunction, documentStateContext, component.isScript, _token);
         localVariables.forEach((variable: Variable) => {
           let detail = "";
           if (variable.scope !== Scope.Unknown) {
@@ -136,12 +137,13 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
   /**
    * Provide symbol information for templates
    * @param documentStateContext The document context for which to provide symbols.
+   * @param _token
    * @returns
    */
-  private static async getTemplateSymbols(documentStateContext: DocumentStateContext): Promise<DocumentSymbol[]> {
+  private static async getTemplateSymbols(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<DocumentSymbol[]> {
     const templateSymbols: DocumentSymbol[] = [];
     // TODO: Cache template variables?
-    const allVariables: Variable[] = await parseVariableAssignments(documentStateContext, false);
+    const allVariables: Variable[] = await parseVariableAssignments(documentStateContext, false, null, _token);
     allVariables.forEach((variable: Variable) => {
       const kind: SymbolKind = usesConstantConvention(variable.identifier) || variable.final ? SymbolKind.Constant : SymbolKind.Variable;
       let detail = "";

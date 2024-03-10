@@ -134,8 +134,8 @@ export function activate(context: ExtensionContext): void {
 
   context.subscriptions.push(commands.registerCommand("cfml.refreshGlobalDefinitionCache", refreshGlobalDefinitionCache));
   context.subscriptions.push(commands.registerCommand("cfml.refreshWorkspaceDefinitionCache", refreshWorkspaceDefinitionCache));
-  context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleComment(CommentType.Line)));
-  context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleComment(CommentType.Block)));
+  context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleComment(CommentType.Line, null)));
+  context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleComment(CommentType.Block, null)));
   context.subscriptions.push(commands.registerTextEditorCommand("cfml.openActiveApplicationFile", showApplicationDocument));
   context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToMatchingTag", goToMatchingTag));
   context.subscriptions.push(commands.registerTextEditorCommand("cfml.openCfDocs", CFDocsService.openCfDocsForCurrentWord));
@@ -160,13 +160,13 @@ export function activate(context: ExtensionContext): void {
       return;
     }
 
-    if (isCfcFile(document)) {
+    if (isCfcFile(document, null)) {
       const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
       const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-      cachedEntity.cacheComponentFromDocument(document, false, replaceComments);
+      cachedEntity.cacheComponentFromDocument(document, false, replaceComments, null);
     } else if (Utils.basename(Uri.parse(document.fileName)) === "Application.cfm") {
-      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true);
-      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
+      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true, null);
+      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, null, null);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
       });
@@ -183,7 +183,7 @@ export function activate(context: ExtensionContext): void {
     workspace.openTextDocument(componentUri).then((document: TextDocument) => {
         const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
         const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-        cachedEntity.cacheComponentFromDocument(document, false, replaceComments);
+        cachedEntity.cacheComponentFromDocument(document, false, replaceComments, null);
     });
   });
   componentWatcher.onDidDelete((componentUri: Uri) => {
@@ -208,8 +208,8 @@ export function activate(context: ExtensionContext): void {
     }
 
     workspace.openTextDocument(applicationUri).then(async (document: TextDocument) => {
-      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true);
-      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
+      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true, null);
+      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, null, null);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
       });

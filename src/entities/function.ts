@@ -2,7 +2,7 @@ import { DataType } from "./dataType";
 import { Signature, constructSignatureLabelParamsPart, constructSignatureLabelParamsPrefix } from "./signature";
 import { UserFunction } from "./userFunction";
 import { DocumentStateContext } from "../utils/documentUtil";
-import { Range, TextDocument, Position } from "vscode";
+import { Range, TextDocument, Position, CancellationToken } from "vscode";
 import { getNextCharacterPosition } from "../utils/contextUtil";
 import { Utils } from "vscode-uri";
 
@@ -76,16 +76,17 @@ export function getReturnTypeString(func: Function): string {
  * @param documentStateContext The context information for the TextDocument containing function arguments
  * @param argsRange The full range for a set of arguments
  * @param separatorChar The character that separates function arguments
+ * @param _token
  * @returns
  */
-export function getScriptFunctionArgRanges(documentStateContext: DocumentStateContext, argsRange: Range, separatorChar: string = ","): Range[] {
+export function getScriptFunctionArgRanges(documentStateContext: DocumentStateContext, argsRange: Range, separatorChar: string = ",", _token: CancellationToken): Range[] {
   const argRanges: Range[] = [];
   const document: TextDocument = documentStateContext.document;
   const argsEndOffset: number = document.offsetAt(argsRange.end);
 
   let argStartPosition = argsRange.start;
   while (argStartPosition.isBeforeOrEqual(argsRange.end)) {
-    const argSeparatorPos: Position = getNextCharacterPosition(documentStateContext, document.offsetAt(argStartPosition), argsEndOffset, separatorChar, false);
+    const argSeparatorPos: Position = getNextCharacterPosition(documentStateContext, document.offsetAt(argStartPosition), argsEndOffset, separatorChar, false, _token);
     const argRange: Range = new Range(argStartPosition, argSeparatorPos);
     argRanges.push(argRange);
     argStartPosition = argSeparatorPos.translate(0, 1);
