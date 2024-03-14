@@ -839,7 +839,7 @@ export function getFunctionFromComponent(component: Component, lowerFunctionName
     }
   }
 
-  if (!validFunctionAccess.has(Access.Package) && Utils.dirname(callerUri) === Utils.dirname(component.uri)) {
+  if (!validFunctionAccess.has(Access.Package) && Utils.dirname(callerUri).fsPath === Utils.dirname(component.uri).fsPath) {
     validFunctionAccess.add(Access.Package);
   }
 

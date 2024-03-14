@@ -1,5 +1,6 @@
 
 import { FileType, Uri, workspace, WorkspaceFolder } from "vscode";
+import { Utils } from "vscode-uri";
 
 export interface CFMLMapping {
   logicalPath: string;
@@ -126,7 +127,7 @@ export async function resolveDottedPaths(dotPath: string, baseUri: Uri): Promise
  * @returns string
  */
 export function resolveRelativePath(baseUri: Uri, appendingPath: string): string {
-  return Uri.joinPath(baseUri, appendingPath).fsPath;
+  return Uri.joinPath(Utils.dirname(baseUri), appendingPath).fsPath;
 }
 
 /**

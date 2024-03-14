@@ -27,6 +27,7 @@ import { CFMLMapping, filterComponents, filterDirectories, resolveDottedPaths, r
 import { equalsIgnoreCase, escapeMarkdown, textToMarkdownString } from "../utils/textUtil";
 import { getAllCustomSnippets, getAllGlobalFunctions, getAllGlobalMemberFunctions, getAllGlobalTags, getComponent, getGlobalTag } from "./cachedEntities";
 import { Snippet, Snippets } from "../entities/snippet";
+import { Utils } from "vscode-uri";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const snippets: Snippets = require("../../snippets/snippets.json");
@@ -419,7 +420,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                     validFunctionAccess.add(Access.Package);
                   }
                 }
-                if (!validFunctionAccess.has(Access.Package) && Uri.parse(documentUri.fsPath).path === Uri.parse(initialFoundComp.uri.fsPath).path) {
+                if (!validFunctionAccess.has(Access.Package) && Utils.dirname(documentUri).fsPath === Utils.dirname(initialFoundComp.uri).fsPath ) {
                   validFunctionAccess.add(Access.Package);
                 }
 

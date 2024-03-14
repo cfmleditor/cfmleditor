@@ -2,6 +2,7 @@
 import { CancellationToken, DocumentLink, DocumentLinkProvider, FileStat, FileType, Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode";
 import { isUri } from "../utils/textUtil";
 import { fileExists } from "../utils/fileUtil";
+import { Utils } from "vscode-uri";
 
 export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
 
@@ -51,6 +52,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
           }
         } catch (e) {
           // noop
+          console.error(e);
         }
       }
     }
@@ -92,7 +94,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
       }
     } else {
       // Relative to document location
-      const base: Uri = Uri.parse(document.fileName);
+      const base: Uri = Utils.dirname(Uri.parse(document.fileName));
       resourcePath = Uri.joinPath(base, linkPath);
     }
 
