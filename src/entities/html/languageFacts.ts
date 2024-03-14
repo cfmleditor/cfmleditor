@@ -20,6 +20,7 @@ HTML5_TAGS.forEach((t) => {
 /**
  * Whether the given name is a known HTML tag
  * @param name Tag name to check
+ * @returns
  */
 export function isKnownTag(name: string): boolean {
   return name.toLowerCase() in htmlTagMap;
@@ -30,6 +31,7 @@ export function isKnownTag(name: string): boolean {
 /**
  * Gets HTML tag data
  * @param name The tag name
+ * @returns
  */
 export function getTag(name: string): ITagData | undefined {
   return htmlTagMap[name.toLowerCase()];
@@ -39,6 +41,7 @@ export function getTag(name: string): ITagData | undefined {
  * Whether the tag with the given name has an attribute with the given name
  * @param tagName The tag name
  * @param attributeName The attribute name
+ * @returns
  */
 export function hasAttribute(tagName: string, attributeName: string): boolean {
   return htmlDataProvider.provideAttributes(tagName.toLowerCase()).some((attr: IAttributeData) => {
@@ -50,6 +53,7 @@ export function hasAttribute(tagName: string, attributeName: string): boolean {
  * Gets HTML tag attribute data
  * @param tagName The tag name
  * @param attributeName The attribute name
+ * @returns
  */
 export function getAttribute(tagName: string, attributeName: string): IAttributeData | undefined {
   return htmlDataProvider.provideAttributes(tagName.toLowerCase()).find((attr: IAttributeData) => {

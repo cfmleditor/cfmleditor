@@ -9,7 +9,9 @@ export interface Signature {
 /**
  * Constructs the beginning part of the signature label
  * @param func The function from which to construct the parameter prefix
+ * @returns
  */
+// eslint-disable-next-line @typescript-eslint/ban-types
 export function constructSignatureLabelParamsPrefix(func: Function): string {
   // TODO: If UserFunction, use ComponentName.functionName based on location
   return func.name;
@@ -18,6 +20,7 @@ export function constructSignatureLabelParamsPrefix(func: Function): string {
 /**
  * Constructs a string label representation of the parameters in a signature
  * @param parameters The parameters on which to base the label
+ * @returns
  */
 export function constructSignatureLabelParamsPart(parameters: Parameter[]): string {
   return parameters.map(constructParameterLabel).join(", ");
@@ -26,6 +29,7 @@ export function constructSignatureLabelParamsPart(parameters: Parameter[]): stri
 /**
  * Gets offset tuple ranges for the signature param label
  * @param parameters The parameters in a signature
+ * @returns
  */
 export function getSignatureParamsLabelOffsetTuples(parameters: Parameter[]): [number, number][] {
   let endIdx: number = -2;

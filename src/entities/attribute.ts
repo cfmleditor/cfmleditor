@@ -34,6 +34,7 @@ export class Attributes extends MyMap<string, Attribute> { }
 /**
  * Gets a regular expression that matches an attribute with the given name
  * @param attributeName The attribute name to use for the pattern
+ * @returns
  */
 export function getAttributePattern(attributeName: string): RegExp {
   return new RegExp(`\\b${attributeName}\\s*=\\s*(?:['"])?`, "i");
@@ -44,11 +45,13 @@ export function getAttributePattern(attributeName: string): RegExp {
  * @param document A text document containing attributes
  * @param attributeRange A range in which the attributes are found
  * @param validAttributeNames A set of valid names
+ * @returns
  */
 export function parseAttributes(document: TextDocument, attributeRange: Range, validAttributeNames?: MySet<string>): Attributes {
-  let attributeStr: string = document.getText(attributeRange);
-  let attributes: Attributes = new Attributes();
+  const attributeStr: string = document.getText(attributeRange);
+  const attributes: Attributes = new Attributes();
   let attributeMatch: RegExpExecArray = null;
+  // eslint-disable-next-line no-cond-assign
   while (attributeMatch = ATTRIBUTES_PATTERN.exec(attributeStr)) {
     const attributeName = attributeMatch[1];
     if (validAttributeNames && !validAttributeNames.has(attributeName.toLowerCase())) {

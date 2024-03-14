@@ -14,10 +14,11 @@ export interface DocBlockKeyValue {
  * Parses a CFScript documentation block and returns an array of DocBlockKeyValue objects
  * @param document The document in which to parse
  * @param docRange The range within the document containing the docblock
+ * @returns
  */
 export function parseDocBlock(document: TextDocument, docRange: Range): DocBlockKeyValue[] {
   const docBlockStr: string = document.getText(docRange);
-  let docBlock: DocBlockKeyValue[] = [];
+  const docBlock: DocBlockKeyValue[] = [];
   let prevKey = "hint";
   let activeKey = "hint";
   let prevSubkey = undefined;
@@ -27,6 +28,7 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
   let activeValueEndOffset = 0;
   let docBlockMatches: RegExpExecArray = null;
   const docBlockOffset: number = document.offsetAt(docRange.start);
+  // eslint-disable-next-line no-cond-assign
   while (docBlockMatches = DOC_PATTERN.exec(docBlockStr)) {
     const valuePrefix: string = docBlockMatches[1];
     const metadataKey: string = docBlockMatches[2];
@@ -81,6 +83,7 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 /**
  * Gets a regular expression that matches a docblock key with the given name and captures its next word
  * @param keyName The tag key to match
+ * @returns
  */
 export function getKeyPattern(keyName: string): RegExp {
   return new RegExp(`@${keyName}\\s+(\\S+)`, "i");

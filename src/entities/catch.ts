@@ -1,6 +1,6 @@
 import { CompletionEntry } from "../features/completionItemProvider";
 import { DocumentStateContext } from "../utils/documentUtil";
-import { TextDocument, Range } from "vscode";
+import { TextDocument, Range, CancellationToken } from "vscode";
 import { getClosingPosition, getCfScriptRanges } from "../utils/contextUtil";
 import { parseTags, Tag } from "./tag";
 
@@ -86,7 +86,7 @@ export const catchProperties: CatchProperties = {
 };
 
 // Type is optional in Lucee
-export const scriptCatchPattern: RegExp = /\}\s*catch\s*\(\s*([A-Za-z0-9_\.$]+)\s+([_$a-zA-Z][$\w]*)\s*\)\s*\{/gi;
+export const scriptCatchPattern: RegExp = /\}\s*catch\s*\(\s*([A-Za-z0-9_.$]+)\s+([_$a-zA-Z][$\w]*)\s*\)\s*\{/gi;
 
 export interface CatchInfo {
   type: string;
@@ -99,8 +99,10 @@ export interface CatchInfo {
  * @param documentStateContext The context information for a TextDocument in which to parse the CFScript functions
  * @param isScript Whether this document or range is defined entirely in CFScript
  * @param docRange Range within which to check
+ * @param _token
+ * @returns
  */
-export function parseCatches(documentStateContext: DocumentStateContext, isScript: boolean, docRange?: Range): CatchInfo[] {
+export function parseCatches(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range, _token: CancellationToken): CatchInfo[] {
   let catchInfoArr: CatchInfo[] = [];
   const document: TextDocument = documentStateContext.document;
   let textOffset: number = 0;
@@ -113,19 +115,20 @@ export function parseCatches(documentStateContext: DocumentStateContext, isScrip
 
   if (isScript) {
     let scriptCatchMatch: RegExpExecArray = null;
+    // eslint-disable-next-line no-cond-assign
     while (scriptCatchMatch = scriptCatchPattern.exec(documentText)) {
       const catchType = scriptCatchMatch[1] ? scriptCatchMatch[1] : "any";
       const catchVariable = scriptCatchMatch[2];
 
       const catchBodyStartOffset = textOffset + scriptCatchMatch.index + scriptCatchMatch[0].length;
-      const catchBodyEndPosition = getClosingPosition(documentStateContext, catchBodyStartOffset, "}");
+      const catchBodyEndPosition = getClosingPosition(documentStateContext, catchBodyStartOffset, "}", _token);
 
       const catchBodyRange: Range = new Range(
         document.positionAt(catchBodyStartOffset),
         catchBodyEndPosition.translate(0, -1)
       );
 
-      let catchInfo: CatchInfo = {
+      const catchInfo: CatchInfo = {
         type: catchType,
         variableName: catchVariable,
         bodyRange: catchBodyRange
@@ -135,7 +138,7 @@ export function parseCatches(documentStateContext: DocumentStateContext, isScrip
     }
   } else {
     const tagName: string = "cfcatch";
-    const tags: Tag[] = parseTags(documentStateContext, tagName, docRange);
+    const tags: Tag[] = parseTags(documentStateContext, tagName, docRange, _token);
 
     tags.forEach((tag: Tag) => {
       if (tag.bodyRange === undefined) {
@@ -153,7 +156,7 @@ export function parseCatches(documentStateContext: DocumentStateContext, isScrip
         catchVariable = tag.attributes.get("name").value;
       }
 
-      let catchInfo: CatchInfo = {
+      const catchInfo: CatchInfo = {
         type: catchType,
         variableName: catchVariable,
         bodyRange: tag.bodyRange
@@ -163,9 +166,9 @@ export function parseCatches(documentStateContext: DocumentStateContext, isScrip
     });
 
     // Check cfscript sections
-    const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange);
+    const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token);
     cfScriptRanges.forEach((range: Range) => {
-      const cfscriptCatches: CatchInfo[] = parseCatches(documentStateContext, true, range);
+      const cfscriptCatches: CatchInfo[] = parseCatches(documentStateContext, true, range, _token);
 
       catchInfoArr = catchInfoArr.concat(cfscriptCatches);
     });

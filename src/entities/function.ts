@@ -2,9 +2,10 @@ import { DataType } from "./dataType";
 import { Signature, constructSignatureLabelParamsPart, constructSignatureLabelParamsPrefix } from "./signature";
 import { UserFunction } from "./userFunction";
 import { DocumentStateContext } from "../utils/documentUtil";
-import { Range, TextDocument, Position } from "vscode";
+import { Range, TextDocument, Position, CancellationToken } from "vscode";
 import { getNextCharacterPosition } from "../utils/contextUtil";
-import { Utils } from "vscode-uri";
+import { COMPONENT_EXT } from "./component";
+import { uriBaseName } from "../utils/fileUtil";
 
 const functionSuffixPattern: RegExp = /^\s*\(([^)]*)/;
 
@@ -31,7 +32,9 @@ export enum MemberType {
  * Constructs a string showing a function invocation sample
  * @param func The function for which the syntax string will be constructed
  * @param signatureIndex The index of the signature to use
+ * @returns
  */
+// eslint-disable-next-line @typescript-eslint/ban-types
 export function constructSyntaxString(func: Function, signatureIndex: number = 0): string {
   const funcSignatureParamsLabel = func.signatures.length !== 0 ? constructSignatureLabelParamsPart(func.signatures[signatureIndex].parameters) : "";
   const returnType: string = getReturnTypeString(func);
@@ -41,6 +44,7 @@ export function constructSyntaxString(func: Function, signatureIndex: number = 0
 
 /**
  * Gets a regular expression that matches after the function identifier and captures the parameter contents
+ * @returns
  */
 export function getFunctionSuffixPattern(): RegExp {
   return functionSuffixPattern;
@@ -49,13 +53,15 @@ export function getFunctionSuffixPattern(): RegExp {
 /**
  * Gets a display string for the given function's return type
  * @param func The function for which to get the display return type
+ * @returns
  */
+// eslint-disable-next-line @typescript-eslint/ban-types
 export function getReturnTypeString(func: Function): string {
   let returnType: string;
   if ("returnTypeUri" in func) {
     const userFunction: UserFunction = func as UserFunction;
     if (userFunction.returnTypeUri) {
-      returnType = Utils.basename(userFunction.returnTypeUri);
+      returnType = uriBaseName(userFunction.returnTypeUri, COMPONENT_EXT);
     }
   }
 
@@ -71,15 +77,17 @@ export function getReturnTypeString(func: Function): string {
  * @param documentStateContext The context information for the TextDocument containing function arguments
  * @param argsRange The full range for a set of arguments
  * @param separatorChar The character that separates function arguments
+ * @param _token
+ * @returns
  */
-export function getScriptFunctionArgRanges(documentStateContext: DocumentStateContext, argsRange: Range, separatorChar: string = ","): Range[] {
-  let argRanges: Range[] = [];
+export function getScriptFunctionArgRanges(documentStateContext: DocumentStateContext, argsRange: Range, separatorChar: string = ",", _token: CancellationToken): Range[] {
+  const argRanges: Range[] = [];
   const document: TextDocument = documentStateContext.document;
   const argsEndOffset: number = document.offsetAt(argsRange.end);
 
   let argStartPosition = argsRange.start;
   while (argStartPosition.isBeforeOrEqual(argsRange.end)) {
-    const argSeparatorPos: Position = getNextCharacterPosition(documentStateContext, document.offsetAt(argStartPosition), argsEndOffset, separatorChar, false);
+    const argSeparatorPos: Position = getNextCharacterPosition(documentStateContext, document.offsetAt(argStartPosition), argsEndOffset, separatorChar, false, _token);
     const argRange: Range = new Range(argStartPosition, argSeparatorPos);
     argRanges.push(argRange);
     argStartPosition = argSeparatorPos.translate(0, 1);

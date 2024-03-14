@@ -2,7 +2,7 @@
 import { CancellationToken, Hover, HoverProvider, MarkdownString, Position, Range, TextDocument, TextLine, Uri, workspace, WorkspaceConfiguration } from "vscode";
 import { extensionContext, LANGUAGE_ID } from "../cfmlMain";
 import { VALUE_PATTERN } from "../entities/attribute";
-import { Component, objectNewInstanceInitPrefix } from "../entities/component";
+import { Component, COMPONENT_EXT, objectNewInstanceInitPrefix } from "../entities/component";
 import { IPropertyData, IAtDirectiveData } from "../entities/css/cssLanguageTypes";
 import { cssDataManager, getEntryDescription as getCSSEntryDescription, cssWordRegex } from "../entities/css/languageFacts";
 import { cssPropertyPattern } from "../entities/css/property";
@@ -23,7 +23,7 @@ import { DocumentPositionStateContext, getDocumentPositionStateContext } from ".
 import { equalsIgnoreCase, textToMarkdownCompatibleString, textToMarkdownString } from "../utils/textUtil";
 import * as cachedEntity from "./cachedEntities";
 import { getComponent } from "./cachedEntities";
-import { Utils } from "vscode-uri";
+import { uriBaseName } from "../utils/fileUtil";
 
 const cfDocsLinkPrefix = "https://cfdocs.org/";
 const mdnLinkPrefix = "https://developer.mozilla.org/docs/Web/";
@@ -47,7 +47,9 @@ export default class CFMLHoverProvider implements HoverProvider {
    * @param document The document in which the hover was invoked.
    * @param position The position at which the hover was invoked.
    * @param _token A cancellation token.
+   * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideHover(document: TextDocument, position: Position, _token: CancellationToken): Promise<Hover | undefined> {
     const cfmlHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover", document.uri);
     if (!cfmlHoverSettings.get<boolean>("enable", true)) {
@@ -59,21 +61,23 @@ export default class CFMLHoverProvider implements HoverProvider {
       return undefined;
     }
 
-    return this.getHover(document, position);
+    return this.getHover(document, position, _token);
   }
 
   /**
    * Generates hover
    * @param document The document in which the hover was invoked.
    * @param position The position at which the hover was invoked.
+   * @param _token
+   * @returns
    */
-  public async getHover(document: TextDocument, position: Position): Promise<Hover | undefined> {
+  public async getHover(document: TextDocument, position: Position, _token: CancellationToken): Promise<Hover | undefined> {
     let definition: HoverProviderItem;
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
 
     const userEngine: CFMLEngine = documentPositionStateContext.userEngine;
 
@@ -116,9 +120,9 @@ export default class CFMLHoverProvider implements HoverProvider {
       const startSigPositionPrefix = `${componentPathWordPrefix}${componentPathWord}(`;
       const objectNewInstanceInitPrefixMatch: RegExpExecArray = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
       if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
-        const componentUri: Uri = cachedEntity.componentPathToUri(componentPathWord, document.uri);
+        const componentUri: Uri = cachedEntity.componentPathToUri(componentPathWord, document.uri, _token);
         if (componentUri) {
-          const initComponent: Component = getComponent(componentUri);
+          const initComponent: Component = getComponent(componentUri, _token);
           if (initComponent) {
             const initMethod = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
             if (initComponent.functions.has(initMethod)) {
@@ -139,7 +143,7 @@ export default class CFMLHoverProvider implements HoverProvider {
         }
 
         // User function
-        userFunc = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord);
+        userFunc = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
         if (userFunc) {
           definition = this.functionToHoverProviderItem(userFunc);
           return this.createHover(definition);
@@ -167,7 +171,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 
       // HTML tags
       const htmlHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover.html", document.uri);
-      if (isCfmFile(document) && htmlHoverSettings.get<boolean>("enable", true) && tagPrefixPattern.test(docPrefix) && isKnownHTMLTag(lowerCurrentWord)) {
+      if (isCfmFile(document, _token) && htmlHoverSettings.get<boolean>("enable", true) && tagPrefixPattern.test(docPrefix) && isKnownHTMLTag(lowerCurrentWord)) {
         definition = this.htmlTagToHoverProviderItem(getHTMLTag(lowerCurrentWord));
         return this.createHover(definition);
       }
@@ -175,7 +179,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 
     // CSS
     const cssHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover.css", document.uri);
-    const cssRanges: Range[] = getCssRanges(documentPositionStateContext);
+    const cssRanges: Range[] = getCssRanges(documentPositionStateContext, undefined, _token);
     if (cssHoverSettings.get<boolean>("enable", true)) {
       for (const cssRange of cssRanges) {
         if (!cssRange.contains(position)) {
@@ -185,6 +189,7 @@ export default class CFMLHoverProvider implements HoverProvider {
         const rangeTextOffset: number = document.offsetAt(cssRange.start);
         const rangeText: string = documentPositionStateContext.sanitizedDocumentText.slice(rangeTextOffset, document.offsetAt(cssRange.end));
         let propertyMatch: RegExpExecArray;
+        // eslint-disable-next-line no-cond-assign
         while (propertyMatch = cssPropertyPattern.exec(rangeText)) {
           const propertyName: string = propertyMatch[2];
 
@@ -220,10 +225,11 @@ export default class CFMLHoverProvider implements HoverProvider {
    * Creates HoverProviderItem from given global tag
    * @param tag Global tag to convert
    * @param isScript Whether this is a script tag
+   * @returns
    */
   public globalTagToHoverProviderItem(tag: GlobalTag, isScript: boolean = false): HoverProviderItem {
-    let paramArr: Parameter[] = [];
-    let paramNames = new MySet<string>();
+    const paramArr: Parameter[] = [];
+    const paramNames = new MySet<string>();
 
     tag.signatures.forEach((sig: Signature) => {
       sig.parameters.forEach((param: Parameter) => {
@@ -235,7 +241,7 @@ export default class CFMLHoverProvider implements HoverProvider {
       });
     });
 
-    let hoverItem: HoverProviderItem = {
+    const hoverItem: HoverProviderItem = {
       name: tag.name,
       syntax: (isScript ? globalTagSyntaxToScript(tag) : tag.syntax),
       symbolType: "tag",
@@ -246,7 +252,7 @@ export default class CFMLHoverProvider implements HoverProvider {
       language: LANGUAGE_ID
     };
 
-    let globalEntity: CFDocsDefinitionInfo = cachedEntity.getGlobalEntityDefinition(tag.name);
+    const globalEntity: CFDocsDefinitionInfo = cachedEntity.getGlobalEntityDefinition(tag.name);
     if (globalEntity && globalEntity.engines) {
       hoverItem.engineLinks = new MyMap();
       const cfmlEngineNames: CFMLEngineName[] = [
@@ -256,7 +262,7 @@ export default class CFMLHoverProvider implements HoverProvider {
       ];
 
       for (const cfmlEngineName of cfmlEngineNames) {
-        if (globalEntity.engines.hasOwnProperty(cfmlEngineName)) {
+        if (Object.prototype.hasOwnProperty.call(globalEntity.engines, cfmlEngineName)) {
           const cfEngineInfo: EngineCompatibilityDetail = globalEntity.engines[cfmlEngineName];
           if (cfEngineInfo.docs) {
             try {
@@ -276,10 +282,12 @@ export default class CFMLHoverProvider implements HoverProvider {
   /**
    * Creates HoverProviderItem from given function
    * @param func Function to convert
+   * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/ban-types
   public functionToHoverProviderItem(func: Function): HoverProviderItem {
-    let paramArr: Parameter[] = [];
-    let paramNames = new MySet<string>();
+    const paramArr: Parameter[] = [];
+    const paramNames = new MySet<string>();
     func.signatures.forEach((sig: Signature) => {
       sig.parameters.forEach((param: Parameter) => {
         const paramName = getParameterName(param);
@@ -294,7 +302,7 @@ export default class CFMLHoverProvider implements HoverProvider {
     if ("returnTypeUri" in func) {
       const userFunction: UserFunction = func as UserFunction;
       if (userFunction.returnTypeUri) {
-        returnType = Utils.basename(userFunction.returnTypeUri);
+        returnType = uriBaseName(userFunction.returnTypeUri, COMPONENT_EXT);
       }
     }
 
@@ -304,7 +312,7 @@ export default class CFMLHoverProvider implements HoverProvider {
       returnType = DataType.Any;
     }
 
-    let hoverItem: HoverProviderItem = {
+    const hoverItem: HoverProviderItem = {
       name: func.name,
       syntax: constructSyntaxString(func),
       symbolType: "function",
@@ -319,7 +327,7 @@ export default class CFMLHoverProvider implements HoverProvider {
       hoverItem.syntax = globalFunc.syntax + ": " + returnType;
       hoverItem.genericDocLink = cfDocsLinkPrefix + globalFunc.name;
 
-      let globalEntity: CFDocsDefinitionInfo = cachedEntity.getGlobalEntityDefinition(globalFunc.name);
+      const globalEntity: CFDocsDefinitionInfo = cachedEntity.getGlobalEntityDefinition(globalFunc.name);
       if (globalEntity && globalEntity.engines) {
         hoverItem.engineLinks = new MyMap();
         const cfmlEngineNames: CFMLEngineName[] = [
@@ -329,7 +337,7 @@ export default class CFMLHoverProvider implements HoverProvider {
         ];
 
         for (const cfmlEngineName of cfmlEngineNames) {
-          if (globalEntity.engines.hasOwnProperty(cfmlEngineName)) {
+          if (Object.prototype.hasOwnProperty.call(globalEntity.engines, cfmlEngineName)) {
             const cfEngineInfo: EngineCompatibilityDetail = globalEntity.engines[cfmlEngineName];
             if (cfEngineInfo.docs) {
               try {
@@ -351,6 +359,7 @@ export default class CFMLHoverProvider implements HoverProvider {
    * Creates HoverProviderItem from given global tag attribute
    * @param tag Global tag to which the attribute belongs
    * @param attributeName Global tag attribute name to convert
+   * @returns
    */
   public attributeToHoverProviderItem(tag: GlobalTag, attributeName: string): HoverProviderItem {
     let attribute: Parameter;
@@ -378,9 +387,10 @@ export default class CFMLHoverProvider implements HoverProvider {
   /**
    * Creates HoverProviderItem from given HTML tag
    * @param htmlTag HTML tag to convert
+   * @returns
    */
   public htmlTagToHoverProviderItem(htmlTag: HTMLTagData): HoverProviderItem {
-    let hoverItem: HoverProviderItem = {
+    const hoverItem: HoverProviderItem = {
       name: htmlTag.name,
       syntax: `<${htmlTag.name}>`,
       symbolType: "tag",
@@ -397,9 +407,10 @@ export default class CFMLHoverProvider implements HoverProvider {
   /**
    * Creates HoverProviderItem from given CSS property
    * @param cssProperty CSS property to convert
+   * @returns
    */
   public cssPropertyToHoverProviderItem(cssProperty: IPropertyData): HoverProviderItem {
-    let hoverItem: HoverProviderItem = {
+    const hoverItem: HoverProviderItem = {
       name: cssProperty.name,
       syntax: `${cssProperty.name}: value`,
       symbolType: "property",
@@ -419,9 +430,10 @@ export default class CFMLHoverProvider implements HoverProvider {
   /**
    * Creates HoverProviderItem from given CSS at directive
    * @param cssAtDir CSS at directive to convert
+   * @returns
    */
   public cssAtDirectiveToHoverProviderItem(cssAtDir: IAtDirectiveData): HoverProviderItem {
-    let hoverItem: HoverProviderItem = {
+    const hoverItem: HoverProviderItem = {
       name: cssAtDir.name,
       syntax: cssAtDir.name,
       symbolType: "property",
@@ -439,6 +451,7 @@ export default class CFMLHoverProvider implements HoverProvider {
    * Creates a list of MarkdownString that becomes the hover based on the symbol definition
    * @param definition The symbol definition information
    * @param range An optional range to which this hover applies
+   * @returns
    */
   public async createHover(definition: HoverProviderItem, range?: Range): Promise<Hover> {
     if (!definition) {
@@ -455,12 +468,13 @@ export default class CFMLHoverProvider implements HoverProvider {
   /**
    * Creates a list of MarkdownString that becomes the hover text based on the symbol definition
    * @param definition The symbol definition information
+   * @returns
    */
   public createHoverText(definition: HoverProviderItem): MarkdownString[] {
     const cfdocsIconUri: Uri = Uri.file(extensionContext.asAbsolutePath("images/cfdocs.png"));
     const mdnIconUri: Uri = Uri.file(extensionContext.asAbsolutePath("images/mdn.png"));
 
-    let hoverTexts: MarkdownString[] = [];
+    const hoverTexts: MarkdownString[] = [];
     let syntax: string = definition.syntax;
 
     const symbolType: string = definition.symbolType;
@@ -561,7 +575,7 @@ export default class CFMLHoverProvider implements HoverProvider {
       }
     }
 
-    let hoverText = new MarkdownString(`\`${paramString}\``).appendMarkdown("  \n&nbsp;");
+    const hoverText = new MarkdownString(`\`${paramString}\``).appendMarkdown("  \n&nbsp;");
 
     if (param.description) {
       hoverText.appendMarkdown(textToMarkdownCompatibleString(param.description));

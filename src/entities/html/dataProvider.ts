@@ -21,6 +21,8 @@ export class HTMLDataProvider implements IHTMLDataProvider {
 	 * Currently, unversioned data uses the V1 implementation
 	 * In the future when the provider handles multiple versions of HTML custom data,
 	 * use the latest implementation for unversioned data
+	 * @param id
+	 * @param customData
 	 */
 	constructor(private readonly id: string, customData: HTMLDataV1) {
 		this._tags = customData.tags || [];

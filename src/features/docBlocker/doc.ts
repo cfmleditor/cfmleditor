@@ -53,8 +53,8 @@ export class Doc {
 
   /**
    * Creates an instance of Doc.
-   *
-   * @param hint
+   * @param docType DocType
+   * @param uri Uri
    */
   public constructor(docType: DocType, uri: Uri) {
     this.docType = docType;
@@ -64,6 +64,7 @@ export class Doc {
 
   /**
    * Get the config from either vs code or the manually set one
+   * @returns Config
    */
   public getConfig(): Config {
     if (!this.config) {
@@ -74,8 +75,7 @@ export class Doc {
 
   /**
    * Set the config object
-   *
-   * @param config
+   * @param config Config
    */
   public setConfig(config: Config): void {
     this.config = config;
@@ -83,6 +83,7 @@ export class Doc {
 
   /**
    * Get the URI
+   * @returns Uri
    */
   public getUri(): Uri {
     return this.uri;
@@ -90,8 +91,7 @@ export class Doc {
 
   /**
    * Set the URI
-   *
-   * @param uri
+   * @param uri Uri
    */
   public setUri(uri: Uri): void {
     this.uri = uri;
@@ -99,11 +99,11 @@ export class Doc {
 
   /**
    * Build all the set values into a SnippetString ready for use
-   *
-   * @param isEmpty
+   * @param isEmpty boolean
+   * @returns SnippetString
    */
   public build(isEmpty: boolean = false): SnippetString {
-    let snippet = new SnippetString();
+    const snippet = new SnippetString();
     let extra: ConfigExtra[] = this.getConfig().extra;
     let gap: boolean = !this.getConfig().gap;
 

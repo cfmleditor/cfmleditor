@@ -60,15 +60,20 @@ export interface Query extends Variable {
 
 export class QueryColumns extends MySet<string> { }
 
+/**
+ *
+ * @param sql
+ * @returns
+ */
 export function getSelectColumnsFromQueryText(sql: string): QueryColumns {
-  let selectColumnNames: QueryColumns = new MySet();
+  const selectColumnNames: QueryColumns = new MySet();
 
   if (sql) {
     const selectQueryMatch: RegExpMatchArray = sql.match(selectQueryPattern);
 
     if (selectQueryMatch) {
       const columns: string = selectQueryMatch[1];
-      columns.replace(/[\[\]"`]/g, "").split(",").forEach((column: string) => {
+      columns.replace(/[[\]"`]/g, "").split(",").forEach((column: string) => {
         const splitColumn: string[] = column.trim().split(/[\s.]+/);
         if (splitColumn.length > 0) {
           const columnName = splitColumn.pop();
@@ -86,6 +91,7 @@ export function getSelectColumnsFromQueryText(sql: string): QueryColumns {
 /**
  * Checks whether a Variable is a Query
  * @param variable The variable object to check
+ * @returns
  */
 export function isQuery(variable: Variable): variable is Query {
   return "selectColumnNames" in variable;

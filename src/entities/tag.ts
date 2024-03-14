@@ -1,4 +1,4 @@
-import { Position, Range, Selection, TextDocument, TextEditor, Uri, WorkspaceConfiguration, window, workspace } from "vscode";
+import { CancellationToken, Position, Range, Selection, TextDocument, TextEditor, TextEditorEdit, Uri, WorkspaceConfiguration, window, workspace } from "vscode";
 import { getGlobalTag } from "../features/cachedEntities";
 import { StringContext, isStringDelimiter } from "../utils/contextUtil";
 import { DocumentPositionStateContext, DocumentStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
@@ -451,6 +451,7 @@ const componentPathAttributes: ComponentPathAttributes = {
 
 /**
  * Returns which attributes of which tags potentially contain component paths
+ * @returns
  */
 export function getComponentPathAttributes(): ComponentPathAttributes {
   return componentPathAttributes;
@@ -458,6 +459,7 @@ export function getComponentPathAttributes(): ComponentPathAttributes {
 
 /**
  * Returns a pattern that matches the most recent unclosed tag, capturing the name and attributes
+ * @returns
  */
 export function getTagAttributePattern(): RegExp {
   return tagAttributePattern;
@@ -465,6 +467,7 @@ export function getTagAttributePattern(): RegExp {
 
 /**
  * Returns a pattern that matches the most recent unclosed cf-tag, capturing the name and attributes
+ * @returns
  */
 export function getCfTagAttributePattern(): RegExp {
   return cfTagAttributePattern;
@@ -472,6 +475,7 @@ export function getCfTagAttributePattern(): RegExp {
 
 /**
  * Returns a pattern that matches the most recent unclosed script cf-tag, capturing the name and attributes
+ * @returns
  */
 export function getCfScriptTagAttributePattern(): RegExp {
   return cfScriptTagAttributePattern;
@@ -481,6 +485,7 @@ export function getCfScriptTagAttributePattern(): RegExp {
  * Gets a pattern that matches a tag prefix
  * Capture groups:
  * 1. Closing slash
+ * @returns
  */
 export function getTagPrefixPattern(): RegExp {
   return tagPrefixPattern;
@@ -493,6 +498,7 @@ export function getTagPrefixPattern(): RegExp {
  * 2. Attributes
  * 3. Body
  * @param tagName The name of the tag to capture
+ * @returns
  */
 export function getTagPattern(tagName: string): RegExp {
   // Attributes capture fails if an attribute value contains >
@@ -506,6 +512,7 @@ export function getTagPattern(tagName: string): RegExp {
  * 2. Attributes
  * 3. Closing slash
  * @param tagName The name of the tag to capture
+ * @returns
  */
 export function getStartTagPattern(tagName: string): RegExp {
   return new RegExp(`(<${tagName}\\b\\s*)([^>]*?)(\\/)?>`, "gi");
@@ -518,6 +525,7 @@ export function getStartTagPattern(tagName: string): RegExp {
  * 2. Attributes
  * 3. Closing semicolon
  * @param tagName The name of the tag to capture
+ * @returns
  */
 export function getStartScriptTagPattern(tagName: string): RegExp {
   return new RegExp(`\\b(${tagName}\\s*\\(\\s*)([^)]*)\\)(;)?`, "gi");
@@ -530,6 +538,7 @@ export function getStartScriptTagPattern(tagName: string): RegExp {
  * 2. Name
  * 3. Attributes
  * 4. Body
+ * @returns
  */
 export function getCfTagPattern(): RegExp {
   return /(<(cf[a-z_]+)\s*)([^>]*?)(?:>([\s\S]*?)<\/\2>|\/?>)/gi;
@@ -541,6 +550,7 @@ export function getCfTagPattern(): RegExp {
  * 1. Prefix
  * 2. Name
  * 3. Attributes
+ * @returns
  */
 export function getCfStartTagPattern(): RegExp {
   return /(<(cf[a-z_]+)\s*)([^>]*?)>/gi;
@@ -553,6 +563,7 @@ export function getCfStartTagPattern(): RegExp {
  * 2. Name
  * 3. Attributes
  * 4. Body
+ * @returns
  */
 export function getCfScriptTagPattern(): RegExp {
   return /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)(?:\s*{([^}]*?)})?/gi;
@@ -564,6 +575,7 @@ export function getCfScriptTagPattern(): RegExp {
  * 1. Prefix
  * 2. Name
  * 3. Attributes
+ * @returns
  */
 export function getCfScriptTagPatternIgnoreBody(): RegExp {
   return /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)/gi;
@@ -572,6 +584,7 @@ export function getCfScriptTagPatternIgnoreBody(): RegExp {
 
 /**
  * Gets the names of all nonclosing CFML tags
+ * @returns
  */
 export function getNonClosingCfmlTags(): string[] {
   return nonClosingCfmlTags;
@@ -583,9 +596,12 @@ export function getNonClosingCfmlTags(): string[] {
  * @param documentStateContext The context information for the TextDocument to check
  * @param tagName The name of the tag to capture
  * @param range Range within which to check
+ * @param _token
+ * @returns
  */
-export function parseTags(documentStateContext: DocumentStateContext, tagName: string, range?: Range): Tag[] {
-  let tags: Tag[] = [];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function parseTags(documentStateContext: DocumentStateContext, tagName: string, range: Range, _token: CancellationToken): Tag[] {
+  const tags: Tag[] = [];
   const document: TextDocument = documentStateContext.document;
   let textOffset: number = 0;
   let documentText: string = documentStateContext.sanitizedDocumentText;
@@ -596,6 +612,7 @@ export function parseTags(documentStateContext: DocumentStateContext, tagName: s
 
   const thisTagPattern: RegExp = getTagPattern(tagName);
   let thisTagMatch: RegExpExecArray = null;
+  // eslint-disable-next-line no-cond-assign
   while (thisTagMatch = thisTagPattern.exec(documentText)) {
     const tagStart: string = thisTagMatch[1];
     const tagAttributes: string = thisTagMatch[2];
@@ -638,9 +655,12 @@ export function parseTags(documentStateContext: DocumentStateContext, tagName: s
  * @param tagName The name of the tag to capture
  * @param isScript Whether this document or range is defined entirely in CFScript
  * @param range Range within which to check
+ * @param _token
+ * @returns
  */
-export function parseStartTags(documentStateContext: DocumentStateContext, tagName: string, isScript: boolean, range?: Range): StartTag[] {
-  let startTags: StartTag[] = [];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function parseStartTags(documentStateContext: DocumentStateContext, tagName: string, isScript: boolean, range: Range, _token: CancellationToken): StartTag[] {
+  const startTags: StartTag[] = [];
   const document: TextDocument = documentStateContext.document;
   let textOffset: number = 0;
   let documentText: string = documentStateContext.sanitizedDocumentText;
@@ -651,6 +671,7 @@ export function parseStartTags(documentStateContext: DocumentStateContext, tagNa
 
   const thisTagPattern: RegExp = isScript ? getStartScriptTagPattern(tagName) : getStartTagPattern(tagName);
   let thisTagMatch: RegExpExecArray = null;
+  // eslint-disable-next-line no-cond-assign
   while (thisTagMatch = thisTagPattern.exec(documentText)) {
     const fullMatch: string = thisTagMatch[0];
     const tagStart: string = thisTagMatch[1];
@@ -683,10 +704,11 @@ export function parseStartTags(documentStateContext: DocumentStateContext, tagNa
  * @param documentStateContext The context information for the TextDocument to check
  * @param isScript Whether the document or given range is CFScript
  * @param docRange Range within which to check
+ * @returns
  */
 export function getCfTags(documentStateContext: DocumentStateContext, isScript: boolean = false, docRange?: Range): Tag[] {
-  let tags: Tag[] = [];
-  let unclosedTags: StartTag[] = [];
+  const tags: Tag[] = [];
+  const unclosedTags: StartTag[] = [];
   const document: TextDocument = documentStateContext.document;
   const documentText: string = documentStateContext.sanitizedDocumentText;
   let textOffsetStart: number = 0;
@@ -854,9 +876,11 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 
 /**
  * Relocates cursor to the start of the tag matching the current selection
- * @editor The text editor in which to find the matching tag
+ * @param editor The text editor in which to find the matching tag
+ * @param edit
+ * @param _token
  */
-export async function goToMatchingTag(editor: TextEditor): Promise<void> {
+export async function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken = null): Promise<void> {
 
   const position: Position = editor.selection.active;
   const documentUri: Uri = editor.document.uri;
@@ -864,7 +888,7 @@ export async function goToMatchingTag(editor: TextEditor): Promise<void> {
   const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
   const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-  const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments);
+  const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments, _token);
 
   const currentWord: string = documentPositionStateContext.currentWord;
   let globalTag: GlobalTag = getGlobalTag(currentWord);

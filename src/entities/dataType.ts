@@ -1,4 +1,4 @@
-import { Uri } from "vscode";
+import { CancellationToken, Uri } from "vscode";
 import { equalsIgnoreCase } from "../utils/textUtil";
 import { componentPathToUri } from "./component";
 import { queryValuePattern } from "./query";
@@ -23,10 +23,12 @@ export enum DataType {
   XML = "xml"
 }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace DataType {
   /**
    * Resolves a string value of data type to an enumeration member
    * @param dataType The data type string to resolve
+   * @returns
    */
   export function valueOf(dataType: string): DataType {
     switch (dataType.toLowerCase()) {
@@ -70,6 +72,7 @@ export namespace DataType {
   /**
    * Resolves a string value of param type to an enumeration member
    * @param paramType The param type string to resolve
+   * @returns
    */
   export function paramTypeToDataType(paramType: string): DataType {
     switch (paramType.toLowerCase()) {
@@ -114,6 +117,7 @@ export namespace DataType {
   /**
    * Validates whether a string is numeric
    * @param numStr A string to check
+   * @returns
    */
   export function isNumeric(numStr: string): boolean {
     let numStrTest: string = numStr;
@@ -126,6 +130,7 @@ export namespace DataType {
   /**
    * Validates whether a string is a string literal
    * @param str A string to check
+   * @returns
    */
   export function isStringLiteral(str: string): boolean {
     const trimmedStr: string = str.trim();
@@ -136,6 +141,7 @@ export namespace DataType {
   /**
    * Gets the string literal value from the given CFML string literal
    * @param str A string literal from which to get the string value
+   * @returns
    */
   export function getStringLiteralValue(str: string): string {
     let trimmedStr: string = str.trim();
@@ -165,7 +171,9 @@ export namespace DataType {
   /**
    * Checks whether a string is a valid data type
    * @param dataType A string to check
+   * @returns
    */
+  // eslint-disable-next-line no-inner-declarations
   function isDataType(dataType: string): boolean {
     return (dataType && (equalsIgnoreCase(dataType, "any") || valueOf(dataType) !== DataType.Any));
   }
@@ -173,6 +181,7 @@ export namespace DataType {
   /**
    * Returns the truthy value of a string
    * @param boolStr A string to evaluate
+   * @returns
    */
   export function isTruthy(boolStr: string): boolean {
     if (equalsIgnoreCase(boolStr, "true") || equalsIgnoreCase(boolStr, "yes")) {
@@ -189,8 +198,10 @@ export namespace DataType {
    * Gets the data type and if applicable component URI from given string.
    * @param dataType The string to check
    * @param documentUri The document's URI that contains this type string
+   * @param _token
+   * @returns
    */
-  export async function getDataTypeAndUri(dataType: string, documentUri: Uri): Promise<[DataType, Uri]> {
+  export async function getDataTypeAndUri(dataType: string, documentUri: Uri, _token: CancellationToken): Promise<[DataType, Uri]> {
     if (!dataType) {
       return undefined;
     }
@@ -198,7 +209,7 @@ export namespace DataType {
     if (isDataType(dataType)) {
       return [valueOf(dataType), null];
     } else {
-      const typeUri: Uri = await componentPathToUri(dataType, documentUri);
+      const typeUri: Uri = await componentPathToUri(dataType, documentUri, _token);
       if (typeUri) {
         return [DataType.Component, typeUri];
       }
@@ -211,8 +222,10 @@ export namespace DataType {
    * Analyzes the given value to try to infer its type
    * @param value The value to analyze
    * @param documentUri The URI of the document containing the value
+   * @param _token
+   * @returns
    */
-  export async function inferDataTypeFromValue(value: string, documentUri: Uri): Promise<[DataType, Uri]> {
+  export async function inferDataTypeFromValue(value: string, documentUri: Uri, _token: CancellationToken): Promise<[DataType, Uri]> {
     if (value.length === 0) {
       return [DataType.String, null];
     }
@@ -251,7 +264,7 @@ export namespace DataType {
 
     const objectMatch1 = /^(?:["']\s*#\s*)?(createObject\((["'])component\2\s*,\s*(["'])([^'"]+)\3)/i.exec(value);
     if (objectMatch1) {
-      const findUri: [DataType, Uri] = await getDataTypeAndUri(objectMatch1[4], documentUri);
+      const findUri: [DataType, Uri] = await getDataTypeAndUri(objectMatch1[4], documentUri, _token);
       if (findUri) {
         return findUri;
       }
@@ -260,7 +273,7 @@ export namespace DataType {
 
     const objectMatch2 = /^(?:["']\s*#\s*)?(new\s+(["'])?([^'"(]+)\2\()/i.exec(value);
     if (objectMatch2) {
-      const findUri: [DataType, Uri] = await getDataTypeAndUri(objectMatch2[3], documentUri);
+      const findUri: [DataType, Uri] = await getDataTypeAndUri(objectMatch2[3], documentUri, _token);
       if (findUri) {
         return findUri;
       }

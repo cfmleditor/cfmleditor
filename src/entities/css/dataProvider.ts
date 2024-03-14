@@ -16,6 +16,7 @@ export class CSSDataProvider implements ICSSDataProvider {
 	 * Currently, unversioned data uses the V1 implementation
 	 * In the future when the provider handles multiple versions of HTML custom data,
 	 * use the latest implementation for unversioned data
+	 * @param data
 	 */
 	constructor(data: CSSDataV1) {
 		this.addData(data);
@@ -66,18 +67,22 @@ export class CSSDataProvider implements ICSSDataProvider {
 	}
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isPropertyData(d: any) : d is IPropertyData {
 	return typeof d.name === 'string';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isAtDirective(d: any) : d is IAtDirectiveData {
 	return typeof d.name === 'string';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isPseudoClassData(d: any) : d is IPseudoClassData {
 	return typeof d.name === 'string';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isPseudoElementData(d: any) : d is IPseudoElementData {
 	return typeof d.name === 'string';
 }

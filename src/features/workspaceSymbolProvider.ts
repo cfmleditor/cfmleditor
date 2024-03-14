@@ -1,11 +1,11 @@
 
 import { CancellationToken, Location, Position, SymbolInformation, SymbolKind, TextDocument, TextEditor, Uri, window, workspace, WorkspaceSymbolProvider } from "vscode";
 import { LANGUAGE_ID } from "../cfmlMain";
-import { Component } from "../entities/component";
+import { Component, COMPONENT_EXT } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import { equalsIgnoreCase } from "../utils/textUtil";
 import * as cachedEntity from "./cachedEntities";
-import { Utils } from "vscode-uri";
+import { uriBaseName } from "../utils/fileUtil";
 
 export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvider {
 
@@ -13,7 +13,9 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
    * Workspace-wide search for a symbol matching the given query string.
    * @param query A non-empty query string.
    * @param _token A cancellation token.
+   * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideWorkspaceSymbols(query: string, _token: CancellationToken): Promise<SymbolInformation[]> {
     let workspaceSymbols: SymbolInformation[] = [];
     if (query === "") {
@@ -49,17 +51,17 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
         return new SymbolInformation(
           userFunction.name + "()",
           equalsIgnoreCase(userFunction.name, "init") ? SymbolKind.Constructor : SymbolKind.Function,
-          Utils.basename(userFunction.location.uri),
+          uriBaseName(userFunction.location.uri, COMPONENT_EXT),
           userFunction.location
         );
       })
     );
 
-    const components: Component[] = cachedEntity.searchAllComponentNames(query);
+    const components: Component[] = cachedEntity.searchAllComponentNames(query, _token);
     workspaceSymbols = workspaceSymbols.concat(
       components.map((component: Component) => {
         return new SymbolInformation(
-          Utils.basename(component.uri),
+          uriBaseName(component.uri, COMPONENT_EXT),
           component.isInterface ? SymbolKind.Interface : SymbolKind.Class,
           "",
           new Location(component.uri, new Position(0, 0))

@@ -1,9 +1,9 @@
 
 import { DataType } from "./dataType";
 import { Scope, unscopedPrecedence } from "./scope";
-import { Location, TextDocument, Range, Uri, Position, WorkspaceConfiguration, workspace } from "vscode";
+import { Location, TextDocument, Range, Uri, Position, WorkspaceConfiguration, workspace, CancellationToken } from "vscode";
 import { getCfScriptRanges, isCfcFile, getClosingPosition } from "../utils/contextUtil";
-import { Component, getApplicationUri, getServerUri } from "./component";
+import { COMPONENT_EXT, Component, getApplicationUri, getServerUri } from "./component";
 import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, UserFunctionVariable, parseScriptFunctionArgs, functionValuePattern, isUserFunctionVariable } from "./userFunction";
 import * as cachedEntities from "../features/cachedEntities";
 import { equalsIgnoreCase } from "../utils/textUtil";
@@ -16,7 +16,7 @@ import { CFMLEngineName, CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 import { DocumentStateContext, DocumentPositionStateContext } from "../utils/documentUtil";
 import { getScriptFunctionArgRanges } from "./function";
 import { constructParameterLabel } from "./parameter";
-import { Utils } from "vscode-uri";
+import { uriBaseName } from "../utils/fileUtil";
 
 
 // FIXME: Erroneously matches implicit struct key assignments using = since '{' can also open a code block. Also matches within string or comment.
@@ -277,6 +277,7 @@ const outputVariableTags: OutputVariableTags = {
 /**
  * Checks whether the given identifier uses the constant naming convention
  * @param ident The identifier to test
+ * @returns
  */
 export function usesConstantConvention(ident: string): boolean {
   return ident === ident.toUpperCase();
@@ -285,9 +286,10 @@ export function usesConstantConvention(ident: string): boolean {
 /**
  * Returns a regular expression that matches when prefixed by a specified unscoped variable accessing a property
  * @param variableName The name of a variable
+ * @returns
  */
 export function getVariablePrefixPattern(variableName: string) {
-  let pattern: string = `(?:^|[^.\\s])\\s*(?:\\b${variableName}\\s*(?:\\.\\s*|\\[\\s*['"]))$`;
+  const pattern: string = `(?:^|[^.\\s])\\s*(?:\\b${variableName}\\s*(?:\\.\\s*|\\[\\s*['"]))$`;
 
   return new RegExp(pattern, "i");
 }
@@ -298,6 +300,7 @@ export function getVariablePrefixPattern(variableName: string) {
  * 2. variable scope
  * 3. quote
  * 4. variable name
+ * @returns
  */
 export function getVariableExpressionPrefixPattern() {
   return variableExpressionPrefixPattern;
@@ -308,8 +311,10 @@ export function getVariableExpressionPrefixPattern() {
  * @param documentStateContext Contextual information for a given document's state
  * @param isScript Whether this document or range is defined entirely in CFScript
  * @param docRange Range within which to check
+ * @param _token
+ * @returns
  */
-export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange?: Range): Promise<Variable[]> {
+export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range, _token: CancellationToken): Promise<Variable[]> {
   let variables: Variable[] = [];
   const document: TextDocument = documentStateContext.document;
   const documentUri: Uri = document.uri;
@@ -326,8 +331,8 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
   const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version"));
 
   // Add function arguments
-  if (isCfcFile(document)) {
-    const comp: Component = cachedEntities.getComponent(document.uri);
+  if (isCfcFile(document, _token)) {
+    const comp: Component = cachedEntities.getComponent(document.uri, _token);
     if (comp) {
       comp.functions.forEach((func: UserFunction) => {
         if (!func.isImplicit && (!docRange || (func.bodyRange && func.bodyRange.contains(docRange)))) {
@@ -360,6 +365,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
   // params
   let paramMatch: RegExpExecArray = null;
   const paramPattern: RegExp = isScript ? scriptParamPattern : tagParamPattern;
+  // eslint-disable-next-line no-cond-assign
   while (paramMatch = paramPattern.exec(documentText)) {
     const paramPrefix: string = paramMatch[1];
     const paramAttr: string = paramMatch[2];
@@ -379,7 +385,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
     if (parsedAttr.has("type") && !!parsedAttr.get("type").value) {
       paramType = DataType.paramTypeToDataType(parsedAttr.get("type").value);
     } else if (parsedAttr.has("default") && parsedAttr.get("default").value !== undefined) {
-      const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(parsedAttr.get("default").value, documentUri);
+      const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(parsedAttr.get("default").value, documentUri, _token);
       paramType = inferredType[0];
       paramTypeComponentUri = inferredType[1];
     }
@@ -436,6 +442,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
   // variable assignments
   let variableMatch: RegExpExecArray = null;
   const variableAssignmentPattern: RegExp = isScript ? cfscriptVariableAssignmentPattern : tagVariableAssignmentPattern;
+  // eslint-disable-next-line no-cond-assign
   while (variableMatch = variableAssignmentPattern.exec(documentText)) {
     const initValuePrefix: string = variableMatch[1];
     const varPrefix: string = variableMatch[2];
@@ -473,7 +480,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
     if (scopeVal === Scope.Unknown) {
       scopeVal = Scope.Variables;
     }
-    const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(initValue, documentUri);
+    const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(initValue, documentUri, _token);
 
     let thisVar: Variable = {
       identifier: varName,
@@ -489,6 +496,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
     if (inferredType[0] === DataType.Query) {
       let valueMatch: RegExpExecArray = null;
+      // eslint-disable-next-line no-cond-assign
       if (valueMatch = queryValuePattern.exec(initValue)) {
         const fullValueMatch: string = valueMatch[0];
         const functionName: string = valueMatch[1];
@@ -497,7 +505,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
         const paramsStartOffset: number = initValueOffset + valueMatch.index + fullValueMatch.length;
         const paramsEndOffset: number = initValueOffset + initValue.length - 1;
         const paramsRange = new Range(document.positionAt(paramsStartOffset), document.positionAt(paramsEndOffset));
-        const paramRanges: Range[] = getScriptFunctionArgRanges(documentStateContext, paramsRange);
+        const paramRanges: Range[] = getScriptFunctionArgRanges(documentStateContext, paramsRange, ";", _token);
         if (paramRanges.length > 0) {
           const firstParamText: string = document.getText(paramRanges[0]);
 
@@ -511,7 +519,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
               columns = getSelectColumnsFromQueryText(firstParamVal);
             }
             if (columns.size > 0) {
-              let query: Query = thisVar as Query;
+              const query: Query = thisVar as Query;
               query.selectColumnNames = columns;
               thisVar = query;
             }
@@ -519,22 +527,23 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
         }
       }
     } else if (inferredType[0] === DataType.Function) {
-      let userFunction: UserFunctionVariable = thisVar as UserFunctionVariable;
+      const userFunction: UserFunctionVariable = thisVar as UserFunctionVariable;
 
       let valueMatch: RegExpExecArray = null;
+      // eslint-disable-next-line no-cond-assign
       if (valueMatch = functionValuePattern.exec(initValue)) {
         const fullValueMatch: string = valueMatch[0];
 
         const initValueOffset = textOffset + variableMatch.index + initValuePrefix.length;
         const paramsStartOffset: number = initValueOffset + valueMatch.index + fullValueMatch.length;
-        const paramsEndPosition: Position = getClosingPosition(documentStateContext, paramsStartOffset, ")");
+        const paramsEndPosition: Position = getClosingPosition(documentStateContext, paramsStartOffset, ")", _token);
         const paramsRange = new Range(
           document.positionAt(paramsStartOffset),
           paramsEndPosition.translate(0, -1)
         );
 
         userFunction.signature = {
-          parameters: parseScriptFunctionArgs(documentStateContext, paramsRange, [])
+          parameters: parseScriptFunctionArgs(documentStateContext, paramsRange, [], _token)
         };
         thisVar = userFunction;
       }
@@ -547,12 +556,13 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
   if (!isScript || userEngine.supportsScriptTags()) {
     // Tags with output attributes
-    let foundOutputVarTags: MySet<string> = new MySet();
+    const foundOutputVarTags: MySet<string> = new MySet();
     let cfTagMatch: RegExpExecArray = null;
     const cfTagPattern: RegExp = isScript ? getCfScriptTagPatternIgnoreBody() : getCfStartTagPattern();
+    // eslint-disable-next-line no-cond-assign
     while (cfTagMatch = cfTagPattern.exec(documentText)) {
       const tagName = cfTagMatch[2].toLowerCase();
-      if (!foundOutputVarTags.has(tagName) && outputVariableTags.hasOwnProperty(tagName)) {
+      if (!foundOutputVarTags.has(tagName) && Object.prototype.hasOwnProperty.call(outputVariableTags, tagName)) {
         foundOutputVarTags.add(tagName);
       }
     }
@@ -560,7 +570,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
     foundOutputVarTags.forEach((tagName: string) => {
       const tagOutputAttributes: VariableAttribute[] = outputVariableTags[tagName];
 
-      const parsedOutputVariableTags: StartTag[] = (tagName === "cfquery" ? parseTags(documentStateContext, tagName, docRange) : parseStartTags(documentStateContext, tagName, isScript, docRange));
+      const parsedOutputVariableTags: StartTag[] = (tagName === "cfquery" ? parseTags(documentStateContext, tagName, docRange, _token) : parseStartTags(documentStateContext, tagName, isScript, docRange, _token));
       parsedOutputVariableTags.forEach((tag: StartTag) => {
         const tagAttributes: Attributes = tag.attributes;
         tagOutputAttributes.filter((tagOutputAttribute: VariableAttribute) => {
@@ -624,7 +634,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
             const columns: QueryColumns = getSelectColumnsFromQueryText(bodyText);
 
             if (columns.size > 0) {
-              let query: Query = outputVar as Query;
+              const query: Query = outputVar as Query;
               query.selectColumnNames = columns;
               outputVar = query;
             }
@@ -638,9 +648,9 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
   if (!isScript) {
     // Check cfscript sections
-    const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange);
-    cfScriptRanges.forEach(async (range: Range) => {
-      const cfscriptVars: Variable[] = await parseVariableAssignments(documentStateContext, true, range);
+    const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token);
+    for (const range of cfScriptRanges) {
+      const cfscriptVars: Variable[] = await parseVariableAssignments(documentStateContext, true, range, _token);
 
       cfscriptVars.forEach((scriptVar: Variable) => {
         const matchingVars: Variable[] = getMatchingVariables(variables, scriptVar.identifier, scriptVar.scope);
@@ -656,10 +666,11 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
           }
         }
       });
-    });
+    }
   } else {
     // Check for-in loops
     let forInVariableMatch: RegExpExecArray = null;
+    // eslint-disable-next-line no-cond-assign
     while (forInVariableMatch = forInVariableAssignmentPattern.exec(documentText)) {
       const varPrefix: string = forInVariableMatch[1];
       const varScope: string = forInVariableMatch[2];
@@ -715,9 +726,10 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
  * Returns Variable array representation of Properties
  * @param properties The properties of a component to convert
  * @param documentUri The URI of the document in which these properties are declared
+ * @returns
  */
 export function propertiesToVariables(properties: Properties, documentUri: Uri): Variable[] {
-  let propertyVars: Variable[] = [];
+  const propertyVars: Variable[] = [];
   properties.forEach((prop: Property) => {
     propertyVars.push({
       identifier: prop.name,
@@ -737,6 +749,7 @@ export function propertiesToVariables(properties: Properties, documentUri: Uri):
  * Returns Variable array representation of Arguments
  * @param args The arguments of a function to convert
  * @param documentUri The URI of the document in which these arguments are declared
+ * @returns
  */
 export function argumentsToVariables(args: Argument[], documentUri: Uri): Variable[] {
   return args.map((arg: Argument) => {
@@ -758,7 +771,8 @@ export function argumentsToVariables(args: Argument[], documentUri: Uri): Variab
  * Returns the variable that best matches the given name and scope
  * @param variables The variables to check
  * @param varName The variable name for which to check
- * @param scope The variable's scope
+ * @param varScope The variable's scope
+ * @returns
  */
 export function getBestMatchingVariable(variables: Variable[], varName: string, varScope?: Scope): Variable | undefined {
   let foundVar: Variable;
@@ -796,6 +810,7 @@ export function getBestMatchingVariable(variables: Variable[], varName: string, 
  * @param variables The variables to check
  * @param varName The variable name for which to check
  * @param scope The variable's scope
+ * @returns
  */
 export function getMatchingVariables(variables: Variable[], varName: string, scope = Scope.Unknown): Variable[] {
   let checkScopes: Scope[];
@@ -813,6 +828,7 @@ export function getMatchingVariables(variables: Variable[], varName: string, sco
 /**
  * Gets the application variables for the given document
  * @param baseUri The URI of the document for which the Application file will be found
+ * @returns
  */
 export function getApplicationVariables(baseUri: Uri): Variable[] {
   let applicationVariables: Variable[] = [];
@@ -830,11 +846,13 @@ export function getApplicationVariables(baseUri: Uri): Variable[] {
 /**
  * Gets the server variables
  * @param baseUri The URI of the document for which the Server file will be found
+ * @param _token
+ * @returns
  */
-export function getServerVariables(baseUri: Uri): Variable[] {
+export function getServerVariables(baseUri: Uri, _token: CancellationToken): Variable[] {
   let serverVariables: Variable[] = [];
 
-  const serverUri: Uri = getServerUri(baseUri);
+  const serverUri: Uri = getServerUri(baseUri, _token);
   if (serverUri) {
     serverVariables = cachedEntities.getServerVariables(serverUri);
   }
@@ -845,12 +863,14 @@ export function getServerVariables(baseUri: Uri): Variable[] {
 /**
  * Collects all variable assignments accessible based on the given documentPositionStateContext
  * @param documentPositionStateContext The contextual information of the state of a document and the cursor position
+ * @param _token
+ * @returns
  */
-export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext): Promise<Variable[]> {
+export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext, _token: CancellationToken): Promise<Variable[]> {
   let allVariableAssignments: Variable[] = [];
 
   if (documentPositionStateContext.isCfmFile) {
-    const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false);
+    const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, undefined, _token);
     allVariableAssignments = allVariableAssignments.concat(docVariableAssignments);
   } else if (documentPositionStateContext.isCfcFile) {
     const thisComponent = documentPositionStateContext.component;
@@ -878,7 +898,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
           const currInitFunc: UserFunction = currComponent.functions.get(initMethod);
 
           if (currInitFunc.bodyRange) {
-            const currInitVariables: Variable[] = (await parseVariableAssignments(documentPositionStateContext, currComponent.isScript, currInitFunc.bodyRange)).filter((variable: Variable) => {
+            const currInitVariables: Variable[] = (await parseVariableAssignments(documentPositionStateContext, currComponent.isScript, currInitFunc.bodyRange, _token)).filter((variable: Variable) => {
               return [Scope.Variables, Scope.This].includes(variable.scope) && !componentVariables.some((existingVariable: Variable) => {
                 return existingVariable.scope === variable.scope && equalsIgnoreCase(existingVariable.identifier, variable.identifier);
               });
@@ -890,7 +910,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
         allVariableAssignments = allVariableAssignments.concat(componentVariables);
 
         if (currComponent.extends) {
-          currComponent = cachedEntities.getComponent(currComponent.extends);
+          currComponent = cachedEntities.getComponent(currComponent.extends, _token);
         } else {
           currComponent = undefined;
         }
@@ -909,12 +929,14 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 
       // function local variables
       let localVariables: Variable[] = [];
-      thisComponent.functions.filter((func: UserFunction) => {
+      const filteredFunctions = thisComponent.functions.filter((func: UserFunction) => {
         return func.bodyRange && func.bodyRange.contains(documentPositionStateContext.position);
-      }).forEach(async (func: UserFunction) => {
-        let tmp = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript);
-        localVariables = localVariables.concat(tmp);
       });
+
+      for (const [, func] of filteredFunctions) {
+        const tmp = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript, _token);
+        localVariables = localVariables.concat(tmp);
+      }
       allVariableAssignments = allVariableAssignments.concat(localVariables);
     }
   }
@@ -925,11 +947,12 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 /**
  * Creates a type string for the given variable
  * @param variable A variable for which to get the type
+ * @returns
  */
 export function getVariableTypeString(variable: Variable): string {
   let varType: string = variable.dataType;
   if (variable.dataTypeComponentUri) {
-    varType = Utils.basename(variable.dataTypeComponentUri);
+    varType = uriBaseName(variable.dataTypeComponentUri, COMPONENT_EXT);
   } else if (variable.dataType === DataType.Function) {
     let argString: string = "...";
     if (isUserFunctionVariable(variable)) {

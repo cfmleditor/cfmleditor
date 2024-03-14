@@ -1,5 +1,7 @@
+/* eslint-disable jsdoc/require-param */
+/* eslint-disable jsdoc/check-tag-names */
 import { fetch } from "isomorphic-fetch";
-import { commands, Position, Range, TextDocument, TextLine, Uri, window, workspace, WorkspaceConfiguration, TextEditor, env } from "vscode";
+import { commands, Position, Range, TextDocument, TextLine, Uri, window, workspace, WorkspaceConfiguration, TextEditor, env, CancellationToken, TextEditorEdit } from "vscode";
 import { getFunctionSuffixPattern } from "../../entities/function";
 import { GlobalEntity } from "../../entities/globals";
 import { getTagPrefixPattern } from "../../entities/tag";
@@ -22,6 +24,7 @@ export default class CFDocsService {
   /**
    * Gets definition information for global identifiers based on a local CFDocs directory
    * @param identifier The global identifier for which to get definition info
+   * @returns
    */
   private static async getLocalDefinitionInfo(identifier: string): Promise<CFDocsDefinitionInfo> {
     const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
@@ -45,6 +48,7 @@ export default class CFDocsService {
   /**
    * Gets definition information for global identifiers based on a extension resources directory
    * @param identifier The global identifier for which to get definition info
+   * @returns
    */
   private static async getExtensionDefinitionInfo(identifier: string): Promise<CFDocsDefinitionInfo> {
 
@@ -95,7 +99,8 @@ export default class CFDocsService {
 
   /**
    * Constructs a CFDocsDefinitionInfo object from the respective JSON string
-   * @param jsonTextDoc A JSON string conforming to the CFDocs definition structure
+   * @param jsonDoc A JSON string conforming to the CFDocs definition structure
+   * @returns
    */
   private static constructDefinitionFromJsonDoc(jsonDoc): CFDocsDefinitionInfo {
     // const jsonDoc = JSON.parse(jsonTextDoc);
@@ -109,6 +114,7 @@ export default class CFDocsService {
   /**
    * Generates the respective JSON file name from the global identifier
    * @param identifier The global identifier for which to the file name will be generated
+   * @returns
    */
   private static getJsonFileName(identifier: string): string {
     return `${identifier.toLowerCase()}.json`;
@@ -117,6 +123,7 @@ export default class CFDocsService {
   /**
    * Returns a list of all global CFML functions documented on CFDocs
    * @param source Indicates whether the data will be retrieved locally or remotely
+   * @returns
    */
   public static async getAllFunctionNames(source = CFDocsSource.remote): Promise<string[]> {
     const jsonFileName: string = CFDocsService.getJsonFileName("functions");
@@ -170,6 +177,7 @@ export default class CFDocsService {
   /**
    * Returns a list of all global CFML tags documented on CFDocs
    * @param source Indicates whether the data will be retrieved locally or remotely
+   * @returns
    */
     public static async getAllTagNames(source = CFDocsSource.remote): Promise<string[]> {
         const jsonFileName: string = CFDocsService.getJsonFileName("tags");
@@ -226,6 +234,7 @@ export default class CFDocsService {
   /**
    * Sets the given definition as a global function in the cached entities
    * @param definition The definition object to cache
+   * @returns
    */
   public static setGlobalFunction(definition: CFDocsDefinitionInfo): boolean {
     const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
@@ -243,6 +252,7 @@ export default class CFDocsService {
   /**
    * Sets the given definition as a global function in the cached entities
    * @param definition The definition object to cache
+   * @returns
    */
   public static setGlobalMemberFunction(definition: CFDocsDefinitionInfo): boolean {
     const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
@@ -260,6 +270,7 @@ export default class CFDocsService {
   /**
    * Sets the given definition as a global tag in the cached entities
    * @param definition The definition object to cache
+   * @returns
    */
   public static setGlobalTag(definition: CFDocsDefinitionInfo): boolean {
     const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
@@ -275,6 +286,7 @@ export default class CFDocsService {
 
   /**
    * Caches all documented tags and functions from CFDocs
+   * @returns
    */
   public static async cacheAll(): Promise<boolean> {
     const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
@@ -313,16 +325,17 @@ export default class CFDocsService {
 
   /**
    * Opens the documentation web page on CFDocs for the word at the current cursor position
+   * @param editor
    * @editor The text editor which represents the document for which to check the word
    */
-  public static async openCfDocsForCurrentWord(editor: TextEditor): Promise<void> {
+  public static async openCfDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): Promise<void> {
     const document: TextDocument = editor.document;
     const position: Position = editor.selection.start;
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
 
     if (documentPositionStateContext.positionInComment) {
       return;
@@ -357,14 +370,14 @@ export default class CFDocsService {
    * Opens the documentation web page of the currently set CF engine for the word at the current cursor position
    * @editor The text editor which represents the document for which to check the word
    */
-  public static async openEngineDocsForCurrentWord(editor: TextEditor): Promise<void> {
+  public static async openEngineDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): Promise<void> {
     const document: TextDocument = editor.document;
     const position: Position = editor.selection.start;
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
 
     if (documentPositionStateContext.positionInComment) {
       return;
@@ -395,7 +408,7 @@ export default class CFDocsService {
       globalEntity = cachedEntity.getGlobalEntityDefinition(currentWord);
     }
 
-    if (globalEntity && globalEntity.engines && globalEntity.engines.hasOwnProperty(userEngine.getName())) {
+    if (globalEntity && globalEntity.engines && Object.prototype.hasOwnProperty.call(globalEntity.engines, userEngine.getName())) {
       const engineInfo: EngineCompatibilityDetail = globalEntity.engines[userEngine.getName()];
       if (engineInfo.docs) {
         commands.executeCommand("vscode.open", Uri.parse(engineInfo.docs));

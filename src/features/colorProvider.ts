@@ -17,20 +17,23 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
    * Provide colors for the given document.
    * @param document The document for which to provide the colors
    * @param _token A cancellation token
+   * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideDocumentColors(document: TextDocument, _token: CancellationToken): Promise<ColorInformation[]> {
-    let result: ColorInformation[] = [];
+    const result: ColorInformation[] = [];
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments);
-    const cssRanges: Range[] = getCssRanges(documentStateContext);
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token);
+    const cssRanges: Range[] = getCssRanges(documentStateContext, undefined, _token);
 
     for (const cssRange of cssRanges) {
       const rangeTextOffset: number = document.offsetAt(cssRange.start);
       const rangeText: string = documentStateContext.sanitizedDocumentText.slice(rangeTextOffset, document.offsetAt(cssRange.end));
       let propertyMatch: RegExpExecArray;
+      // eslint-disable-next-line no-cond-assign
       while (propertyMatch = cssPropertyPattern.exec(rangeText)) {
         const propertyValuePrefix: string = propertyMatch[1];
         const propertyName: string = propertyMatch[2];
@@ -45,6 +48,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
           let colorMatch: RegExpExecArray;
 
           // RGB hex
+          // eslint-disable-next-line no-cond-assign
           while (colorMatch = rgbHexPattern.exec(propertyValue)) {
             const rgbHexValue: string = colorMatch[1];
             const colorRange: Range = new Range(
@@ -56,6 +60,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
           }
 
           // RGB function
+          // eslint-disable-next-line no-cond-assign
           while (colorMatch = rgbFuncPattern.exec(propertyValue)) {
             const r: string = colorMatch[1];
             const g: string = colorMatch[2];
@@ -66,9 +71,9 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
               document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + colorMatch[0].length)
             );
 
-            let red: number = r.includes("%") ? Number.parseFloat(r) / 100 : Number.parseInt(r) / 255;
-            let green: number = g.includes("%") ? Number.parseInt(g) / 100 : Number.parseFloat(g) / 255;
-            let blue: number = b.includes("%") ? Number.parseInt(b) / 100 : Number.parseFloat(b) / 255;
+            const red: number = r.includes("%") ? Number.parseFloat(r) / 100 : Number.parseInt(r) / 255;
+            const green: number = g.includes("%") ? Number.parseInt(g) / 100 : Number.parseFloat(g) / 255;
+            const blue: number = b.includes("%") ? Number.parseInt(b) / 100 : Number.parseFloat(b) / 255;
             let alpha: number;
             if (a) {
               alpha = a.includes("%") ? Number.parseFloat(a) / 100 : Number.parseFloat(a);
@@ -80,6 +85,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
           }
 
           // HSL function
+          // eslint-disable-next-line no-cond-assign
           while (colorMatch = hslFuncPattern.exec(propertyValue)) {
             const h: string = colorMatch[1];
             const hUnit: string = colorMatch[2];
@@ -91,9 +97,9 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
               document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + colorMatch[0].length)
             );
 
-            let hue: number = Number.parseFloat(h);
-            let sat: number = Number.parseFloat(s);
-            let light: number = Number.parseFloat(l);
+            const hue: number = Number.parseFloat(h);
+            const sat: number = Number.parseFloat(s);
+            const light: number = Number.parseFloat(l);
             let alpha: number;
             if (a) {
               alpha = a.includes("%") ? Number.parseFloat(a) / 100 : Number.parseFloat(a);
@@ -106,6 +112,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
           }
 
           // Color keywords
+          // eslint-disable-next-line no-cond-assign
           while (colorMatch = colorKeywordPattern.exec(propertyValue)) {
             const keywordPrefix: string = colorMatch[1];
             const colorKeyword: string = colorMatch[2].toLowerCase();
@@ -127,11 +134,15 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
    * Provide representations for a color.
    * @param color The color to show and insert
    * @param context A context object with additional information
+   * @param context.document
+   * @param context.range
    * @param _token A cancellation token
+   * @returns
    */
-  public async provideColorPresentations(color: Color, context: { document: TextDocument, range: Range }, _token: CancellationToken | boolean): Promise<ColorPresentation[]> {
-    let result: ColorPresentation[] = [];
-    let red256 = Math.round(color.red * 255), green256 = Math.round(color.green * 255), blue256 = Math.round(color.blue * 255);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public async provideColorPresentations(color: Color, context: { document: TextDocument, range: Range }, _token: CancellationToken): Promise<ColorPresentation[]> {
+    const result: ColorPresentation[] = [];
+    const red256 = Math.round(color.red * 255), green256 = Math.round(color.green * 255), blue256 = Math.round(color.blue * 255);
 
     let label: string;
     if (color.alpha === 1) {
@@ -143,8 +154,8 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", context.document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(context.document, false, replaceComments);
-    const hexPrefix = isInCfOutput(documentStateContext, context.range.start) ? "##" : "#";
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(context.document, false, replaceComments, _token);
+    const hexPrefix = isInCfOutput(documentStateContext, context.range.start, _token) ? "##" : "#";
     if (color.alpha === 1) {
       label = `${hexPrefix}${toTwoDigitHex(red256)}${toTwoDigitHex(green256)}${toTwoDigitHex(blue256)}`;
     } else {
@@ -232,6 +243,7 @@ function hslFromColor(rgba: Color): HSLA {
  * Converts HSLA values into `Color`
  * @param hsla The hue, saturation, lightness, and alpha values. Hue is in units based on `hueUnit`. Saturation and lightness are percentages.
  * @param hueUnit One of deg, rad, grad, turn
+ * @returns
  */
 function colorFromHSL(hsla: HSLA, hueUnit: "deg" | "rad" | "grad" | "turn" = "deg"): Color {
   let hue: number;

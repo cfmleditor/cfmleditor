@@ -11,10 +11,12 @@ export enum CFMLEngineName {
   Unknown = "unknown"
 }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace CFMLEngineName {
   /**
    * Resolves a string value of name to an enumeration member
    * @param name The name string to resolve
+   * @returns
    */
   export function valueOf(name: string): CFMLEngineName {
     switch (name.toLowerCase()) {
@@ -36,6 +38,11 @@ export class CFMLEngine {
   private name: CFMLEngineName;
   private version: string;
 
+  /**
+   *
+   * @param name
+   * @param version
+   */
   constructor(name: CFMLEngineName, version: string | undefined) {
     this.name = name;
     if (version !== undefined && version !== "" && semver.valid(version, true)) {
@@ -47,6 +54,7 @@ export class CFMLEngine {
 
   /**
    * Getter for CFML engine name
+   * @returns
    */
   public getName(): CFMLEngineName {
     return this.name;
@@ -54,6 +62,7 @@ export class CFMLEngine {
 
   /**
    * Getter for CFML engine version
+   * @returns
    */
   public getVersion(): string {
     return this.version;
@@ -62,6 +71,7 @@ export class CFMLEngine {
   /**
    * Check if this engine is equal to `other`.
    * @param other A CFML engine.
+   * @returns
    */
   public equals(other: CFMLEngine): boolean {
     if (this.name === CFMLEngineName.Unknown || other.name === CFMLEngineName.Unknown) {
@@ -84,6 +94,7 @@ export class CFMLEngine {
   /**
    * Check if this engine is older than `other`. Returns undefined if they have different name.
    * @param other A CFML engine.
+   * @returns
    */
   public isOlder(other: CFMLEngine): boolean | undefined {
     if (this.name === CFMLEngineName.Unknown || other.name === CFMLEngineName.Unknown || this.name !== other.name || !this.version || !other.version) {
@@ -95,6 +106,7 @@ export class CFMLEngine {
   /**
    * Check if this engine is older than or equals `other`. Returns undefined if they have different name.
    * @param other A CFML engine.
+   * @returns
    */
   public isOlderOrEquals(other: CFMLEngine): boolean | undefined {
     if (this.name === CFMLEngineName.Unknown || other.name === CFMLEngineName.Unknown || this.name !== other.name || !this.version || !other.version) {
@@ -106,6 +118,7 @@ export class CFMLEngine {
   /**
    * Check if this engine is newer than `other`. Returns undefined if they have different name.
    * @param other A CFML engine.
+   * @returns
    */
   public isNewer(other: CFMLEngine): boolean | undefined {
     if (this.name === CFMLEngineName.Unknown || other.name === CFMLEngineName.Unknown || this.name !== other.name || !this.version || !other.version) {
@@ -117,6 +130,7 @@ export class CFMLEngine {
   /**
    * Check if this engine is newer than or equals `other`. Returns undefined if they have different name.
    * @param other A CFML engine.
+   * @returns
    */
   public isNewerOrEquals(other: CFMLEngine): boolean | undefined {
     if (this.name === CFMLEngineName.Unknown || other.name === CFMLEngineName.Unknown || this.name !== other.name || !this.version || !other.version) {
@@ -127,6 +141,7 @@ export class CFMLEngine {
 
   /**
    * Returns whether this engine supports tags in script format
+   * @returns
    */
   public supportsScriptTags(): boolean {
     return (
@@ -139,6 +154,7 @@ export class CFMLEngine {
 
   /**
    * Returns whether this engine supports named parameters for global functions
+   * @returns
    */
   public supportsGlobalFunctionNamedParams(): boolean {
     return (
@@ -152,6 +168,7 @@ export class CFMLEngine {
   /**
    * Attempts to transform versionStr into a valid semver version
    * @param versionStr A version string.
+   * @returns
    */
   public static toSemVer(versionStr: string): string | undefined {
     if (versionStr !== '' && semver.clean(versionStr, true)) {
@@ -172,6 +189,8 @@ export class CFMLEngine {
 
   /**
    * Gets the CFML engine icon URI
+   * @param name CFMLEngineName
+   * @returns
    */
   public static getIconUri(name: CFMLEngineName): Uri {
     return Uri.joinPath(extensionContext.extensionUri, `images/${name}.png`);

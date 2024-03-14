@@ -17,7 +17,9 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
    * @param document The document for which the command was invoked.
    * @param position The position for which the command was invoked.
    * @param _token A cancellation token.
+   * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<DefinitionLink[]> {
     const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
     if (!cfmlDefinitionSettings.get<boolean>("enable", true)) {
@@ -27,7 +29,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
 
     if (documentPositionStateContext.positionInComment) {
       return null;
@@ -60,9 +62,9 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
         );
 
         if (pathRange.contains(position)) {
-          const componentUri: Uri = componentPathToUri(path, document.uri);
+          const componentUri: Uri = componentPathToUri(path, document.uri, _token);
           if (componentUri) {
-            const comp: Component = getComponent(componentUri);
+            const comp: Component = getComponent(componentUri, _token);
             if (comp) {
               results.push({
                 originSelectionRange: pathRange,
@@ -81,7 +83,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
       if (thisComponent) {
         // Extends
         if (thisComponent.extendsRange && thisComponent.extendsRange.contains(position)) {
-          const extendsComp: Component = getComponent(thisComponent.extends);
+          const extendsComp: Component = getComponent(thisComponent.extends, _token);
           if (extendsComp) {
             results.push({
               originSelectionRange: thisComponent.extendsRange,
@@ -96,7 +98,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
         if (thisComponent.implementsRanges) {
           thisComponent.implementsRanges.forEach((range: Range, idx: number) => {
             if (range && range.contains(position)) {
-              const implComp: Component = getComponent(thisComponent.implements[idx]);
+              const implComp: Component = getComponent(thisComponent.implements[idx], _token);
               if (implComp) {
                 results.push({
                   originSelectionRange: range,
@@ -110,10 +112,10 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
         }
 
         // Component functions (related)
-        thisComponent.functions.forEach(async (func: UserFunction) => {
+        for (const [, func] of thisComponent.functions) {
           // Function return types
           if (func.returnTypeUri && func.returnTypeRange && func.returnTypeRange.contains(position)) {
-            const returnTypeComp: Component = getComponent(func.returnTypeUri);
+            const returnTypeComp: Component = getComponent(func.returnTypeUri, _token);
             if (returnTypeComp) {
               results.push({
                 originSelectionRange: func.returnTypeRange,
@@ -129,7 +131,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
             signature.parameters.filter((arg: Argument) => {
               return arg.dataTypeComponentUri && arg.dataTypeRange && arg.dataTypeRange.contains(position);
             }).forEach((arg: Argument) => {
-              const argTypeComp: Component = getComponent(arg.dataTypeComponentUri);
+              const argTypeComp: Component = getComponent(arg.dataTypeComponentUri, _token);
               if (argTypeComp) {
                 results.push({
                   originSelectionRange: arg.dataTypeRange,
@@ -143,7 +145,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
           if (func.bodyRange && func.bodyRange.contains(position)) {
             // Local variable uses
-            const localVariables = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript);
+            const localVariables = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript, _token);
             const localVarPrefixPattern = getValidScopesPrefixPattern([Scope.Local], true);
             if (localVarPrefixPattern.test(docPrefix)) {
               localVariables.filter((localVar: Variable) => {
@@ -175,13 +177,13 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
               }
             }
           }
-        });
+        }
 
         // Component properties (declarations)
         thisComponent.properties.filter((prop: Property) => {
           return prop.dataTypeComponentUri !== undefined && prop.dataTypeRange.contains(position);
         }).forEach((prop: Property) => {
-          const dataTypeComp: Component = getComponent(prop.dataTypeComponentUri);
+          const dataTypeComp: Component = getComponent(prop.dataTypeComponentUri, _token);
           if (dataTypeComp) {
             results.push({
               originSelectionRange: prop.dataTypeRange,
@@ -207,7 +209,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
         }
       }
     } else if (docIsCfmFile) {
-      const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false);
+      const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, undefined, _token);
       const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
       const variableScopePrefixMatch: RegExpExecArray = variableScopePrefixPattern.exec(docPrefix);
       if (variableScopePrefixMatch) {
@@ -238,7 +240,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
     }
 
     // User function
-    const userFunc: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord);
+    const userFunc: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
     if (userFunc) {
       results.push({
         targetUri: userFunc.location.uri,
@@ -268,7 +270,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
     // Server variables
     const serverVariablesPrefixPattern = getValidScopesPrefixPattern([Scope.Server], false);
     if (serverVariablesPrefixPattern.test(docPrefix)) {
-      const serverDocVariables: Variable[] = getServerVariables(document.uri);
+      const serverDocVariables: Variable[] = getServerVariables(document.uri, _token);
       serverDocVariables.filter((variable: Variable) => {
         return variable.scope === Scope.Server && equalsIgnoreCase(variable.identifier, currentWord);
       }).forEach((variable: Variable) => {

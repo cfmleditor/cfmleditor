@@ -4,6 +4,9 @@ import { setCustomSnippet } from "../features/cachedEntities";
 
 export default class SnippetService {
 
+    /**
+     * @returns boolean
+     */
     public static async cacheAllCustomSnippets(): Promise<boolean> {
 
         SnippetService.getCustomSnippets().then((snippets: Snippets) => {
@@ -16,6 +19,9 @@ export default class SnippetService {
         return true;
     }
 
+    /**
+     * @returns Snippets
+     */
     public static async getCustomSnippets(): Promise<Snippets> {
 
         return new Promise<Snippets>((resolve, reject) => {

@@ -3,7 +3,6 @@ import {
   commands, ConfigurationChangeEvent, ConfigurationTarget, DocumentSelector, ExtensionContext, extensions,
   FileSystemWatcher, IndentAction, languages, TextDocument, Uri, workspace, WorkspaceConfiguration
 } from "vscode";
-import { Utils } from "vscode-uri";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
 import { decreasingIndentingTags, goToMatchingTag, nonClosingTags, nonIndentingTags } from "./entities/tag";
@@ -25,6 +24,7 @@ import CFDocsService from "./utils/cfdocs/cfDocsService";
 import { APPLICATION_CFM_GLOB, isCfcFile } from "./utils/contextUtil";
 import { DocumentStateContext, getDocumentStateContext } from "./utils/documentUtil";
 import { handleContentChanges } from "./features/autoclose";
+import { resolveBaseName, uriBaseName } from "./utils/fileUtil";
 
 export const LANGUAGE_ID: string = "cfml";
 const DOCUMENT_SELECTOR: DocumentSelector = [
@@ -43,6 +43,7 @@ export let extensionContext: ExtensionContext;
 /**
  * Gets a ConfigurationTarget enumerable based on a string representation
  * @param target A string representing a configuration target
+ * @returns ConfigurationTarget
  */
 export function getConfigurationTarget(target: string): ConfigurationTarget {
   let configTarget: ConfigurationTarget;
@@ -66,12 +67,13 @@ export function getConfigurationTarget(target: string): ConfigurationTarget {
 /**
  * Checks whether the given document should be excluded from being used.
  * @param documentUri The URI of the document to check against
+ * @returns boolean
  */
 function shouldExcludeDocument(documentUri: Uri): boolean {
   const fileSettings: WorkspaceConfiguration = workspace.getConfiguration("files", documentUri);
 
-  const fileExcludes: {} = fileSettings.get<{}>("exclude", []);
-  let fileExcludeGlobs: string[] = [];
+  const fileExcludes: object = fileSettings.get<object>("exclude", []);
+  const fileExcludeGlobs: string[] = [];
   for (let fileExcludeGlob in fileExcludes) {
     if (fileExcludes[fileExcludeGlob]) {
       if (fileExcludeGlob.endsWith("/")) {
@@ -96,29 +98,29 @@ export function activate(context: ExtensionContext): void {
 
   languages.setLanguageConfiguration(LANGUAGE_ID, {
     indentationRules: {
-      increaseIndentPattern: new RegExp(`<(?!\\?|(?:${nonIndentingTags.join("|")})\\b|[^>]*\\/>)([-_.A-Za-z0-9]+)(?=\\s|>)\\b[^>]*>(?!.*<\\/\\1>)|<!--(?!.*-->)|\\{[^}\"']*$`, "i"),
+      increaseIndentPattern: new RegExp(`<(?!\\?|(?:${nonIndentingTags.join("|")})\\b|[^>]*\\/>)([-_.A-Za-z0-9]+)(?=\\s|>)\\b[^>]*>(?!.*<\\/\\1>)|<!--(?!.*-->)|\\{[^}"']*$`, "i"),
       decreaseIndentPattern: new RegExp(`^\\s*(<\\/[-_.A-Za-z0-9]+\\b[^>]*>|-?-->|\\}|<(${decreasingIndentingTags.join("|")})\\b[^>]*>)`, "i")
     },
     onEnterRules: [
       {
         // e.g. /** | */
-        beforeText: /^\s*\/\*\*(?!\/)([^\*]|\*(?!\/))*$/,
+        beforeText: /^\s*\/\*\*(?!\/)([^*]|\*(?!\/))*$/,
         afterText: /^\s*\*\/$/,
         action: { indentAction: IndentAction.IndentOutdent, appendText: " * " }
       },
       {
         // e.g. /** ...|
-        beforeText: /^\s*\/\*\*(?!\/)([^\*]|\*(?!\/))*$/,
+        beforeText: /^\s*\/\*\*(?!\/)([^*]|\*(?!\/))*$/,
         action: { indentAction: IndentAction.None, appendText: " * " }
       },
       {
         // e.g.  * ...|
-        beforeText: /^(\t|(\ \ ))*\ \*(\ ([^\*]|\*(?!\/))*)?$/,
+        beforeText: /^(\t|( {2}))* \*( ([^*]|\*(?!\/))*)?$/,
         action: { indentAction: IndentAction.None, appendText: "* " }
       },
       {
         // e.g.  */|
-        beforeText: /^(\t|(\ \ ))*\ \*\/\s*$/,
+        beforeText: /^(\t|( {2}))* \*\/\s*$/,
         action: { indentAction: IndentAction.None, removeText: 1 }
       },
       {
@@ -132,8 +134,8 @@ export function activate(context: ExtensionContext): void {
 
   context.subscriptions.push(commands.registerCommand("cfml.refreshGlobalDefinitionCache", refreshGlobalDefinitionCache));
   context.subscriptions.push(commands.registerCommand("cfml.refreshWorkspaceDefinitionCache", refreshWorkspaceDefinitionCache));
-  context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleComment(CommentType.Line)));
-  context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleComment(CommentType.Block)));
+  context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleComment(CommentType.Line, undefined)));
+  context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleComment(CommentType.Block, undefined)));
   context.subscriptions.push(commands.registerTextEditorCommand("cfml.openActiveApplicationFile", showApplicationDocument));
   context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToMatchingTag", goToMatchingTag));
   context.subscriptions.push(commands.registerTextEditorCommand("cfml.openCfDocs", CFDocsService.openCfDocsForCurrentWord));
@@ -158,13 +160,13 @@ export function activate(context: ExtensionContext): void {
       return;
     }
 
-    if (isCfcFile(document)) {
+    if (isCfcFile(document, undefined)) {
       const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
       const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-      cachedEntity.cacheComponentFromDocument(document, false, replaceComments);
-    } else if (Utils.basename(Uri.parse(document.fileName)) === "Application.cfm") {
-      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true);
-      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
+      cachedEntity.cacheComponentFromDocument(document, false, replaceComments, undefined);
+    } else if ( resolveBaseName(document.fileName) === "Application.cfm") {
+      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true, undefined);
+      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, undefined);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
       });
@@ -181,7 +183,7 @@ export function activate(context: ExtensionContext): void {
     workspace.openTextDocument(componentUri).then((document: TextDocument) => {
         const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
         const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-        cachedEntity.cacheComponentFromDocument(document, false, replaceComments);
+        cachedEntity.cacheComponentFromDocument(document, false, replaceComments, undefined);
     });
   });
   componentWatcher.onDidDelete((componentUri: Uri) => {
@@ -191,7 +193,7 @@ export function activate(context: ExtensionContext): void {
 
     cachedEntity.clearCachedComponent(componentUri);
 
-    const fileName: string = Utils.basename(componentUri);
+    const fileName: string = uriBaseName(componentUri);
     if (fileName === "Application.cfc") {
       cachedEntity.removeApplicationVariables(componentUri);
     }
@@ -206,8 +208,8 @@ export function activate(context: ExtensionContext): void {
     }
 
     workspace.openTextDocument(applicationUri).then(async (document: TextDocument) => {
-      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true);
-      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript);
+      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true, undefined);
+      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, undefined);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
       });

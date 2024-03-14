@@ -41,6 +41,7 @@ export interface Example {
 /**
  * Resolves a string value of data type to an enumeration member
  * @param type The data type string to resolve
+ * @returns
  */
 function getParamDataType(type: string): DataType {
   switch (type) {
@@ -83,6 +84,7 @@ function getParamDataType(type: string): DataType {
 /**
  * Resolves a string value of data type to an enumeration member
  * @param type The data type string to resolve
+ * @returns
  */
 function getReturnDataType(type: string): DataType {
   switch (type) {
@@ -139,6 +141,22 @@ export class CFDocsDefinitionInfo {
   public links?: string[];
   public examples?: Example[];
 
+  /**
+   *
+   * @param name
+   * @param type
+   * @param syntax
+   * @param member
+   * @param script
+   * @param returns
+   * @param related
+   * @param description
+   * @param discouraged
+   * @param params
+   * @param engines
+   * @param links
+   * @param examples
+   */
   constructor(
     name: string, type: string, syntax: string, member: string, script: string, returns: string, related: string[],
     description: string, discouraged: string, params: Param[], engines: EngineInfo, links: string[], examples: Example[]
@@ -160,6 +178,7 @@ export class CFDocsDefinitionInfo {
 
   /**
    * Returns whether this object is a function
+   * @returns
    */
   public isFunction(): boolean {
     return (equalsIgnoreCase(this.type, "function"));
@@ -167,6 +186,7 @@ export class CFDocsDefinitionInfo {
 
   /**
    * Returns whether this object is a tag
+   * @returns
    */
   public isTag(): boolean {
     return (equalsIgnoreCase(this.type, "tag"));
@@ -174,19 +194,20 @@ export class CFDocsDefinitionInfo {
 
   /**
    * Returns a GlobalFunction object based on this object
+   * @returns
    */
   public toGlobalFunction(): GlobalFunction {
-    let signatures: Signature[] = [];
+    const signatures: Signature[] = [];
     if (multiSigGlobalFunctions.has(this.name)) {
-      let thisMultiSigs: string[][] = multiSigGlobalFunctions.get(this.name);
+      const thisMultiSigs: string[][] = multiSigGlobalFunctions.get(this.name);
       thisMultiSigs.forEach((thisMultiSig: string[]) => {
-        let parameters: Parameter[] = [];
+        const parameters: Parameter[] = [];
         thisMultiSig.forEach((multiSigParam: string) => {
           let paramFound = false;
           for (const param of this.params) {
-            let multiSigParamParsed: string = multiSigParam.split("=")[0];
+            const multiSigParamParsed: string = multiSigParam.split("=")[0];
             if (param.name === multiSigParamParsed) {
-              let parameter: Parameter = {
+              const parameter: Parameter = {
                 name: multiSigParam,
                 type: param.type,
                 dataType: getParamDataType(param.type.toLowerCase()),
@@ -201,7 +222,7 @@ export class CFDocsDefinitionInfo {
             }
           }
           if (!paramFound) {
-            let parameter: Parameter = {
+            const parameter: Parameter = {
               name: multiSigParam,
               type: "any",
               dataType: DataType.Any,
@@ -211,13 +232,13 @@ export class CFDocsDefinitionInfo {
             parameters.push(parameter);
           }
         });
-        let signatureInfo: Signature = {
+        const signatureInfo: Signature = {
           parameters: parameters
         };
         signatures.push(signatureInfo);
       });
     } else {
-      let parameters: Parameter[] = this.params.map((param: Param) => {
+      const parameters: Parameter[] = this.params.map((param: Param) => {
         return {
           name: param.name,
           type: param.type,
@@ -228,7 +249,7 @@ export class CFDocsDefinitionInfo {
           enumeratedValues: param.values
         };
       });
-      let signatureInfo: Signature = {
+      const signatureInfo: Signature = {
         parameters: parameters
       };
       signatures.push(signatureInfo);
@@ -245,9 +266,10 @@ export class CFDocsDefinitionInfo {
 
   /**
    * Returns a GlobalTag object based on this object
+   * @returns
    */
   public toGlobalTag(): GlobalTag {
-    let parameters: Parameter[] = this.params.map((param: Param) => {
+    const parameters: Parameter[] = this.params.map((param: Param) => {
       return {
         name: param.name,
         type: param.type,
@@ -259,10 +281,10 @@ export class CFDocsDefinitionInfo {
       };
     });
 
-    let signatureInfo: Signature = {
+    const signatureInfo: Signature = {
       parameters: parameters
     };
-    let signatures: Signature[] = [];
+    const signatures: Signature[] = [];
     signatures.push(signatureInfo);
 
     return {
@@ -278,6 +300,7 @@ export class CFDocsDefinitionInfo {
   /**
    * Checks if this definition is compatible with given engine
    * @param engine The CFML engine with which to check compatibility
+   * @returns
    */
   public isCompatible(engine: CFMLEngine): boolean {
     const engineVendor: CFMLEngineName = engine.getName();
@@ -314,6 +337,7 @@ export class CFDocsDefinitionInfo {
 
   /**
    * Gets all function names documented by CFDocs. Once retrieved, they are statically stored.
+   * @returns
    */
   public static async getAllFunctionNames(): Promise<string[]> {
     if (!CFDocsDefinitionInfo.allFunctionNames) {
@@ -325,6 +349,7 @@ export class CFDocsDefinitionInfo {
 
   /**
    * Gets all tag names documented by CFDocs. Once retrieved, they are statically stored.
+   * @returns
    */
   public static async getAllTagNames(): Promise<string[]> {
     if (!CFDocsDefinitionInfo.allTagNames) {
@@ -337,24 +362,27 @@ export class CFDocsDefinitionInfo {
   /**
    * Returns whether the given identifier is the name of a function documented in CFDocs
    * @param name The identifier to check for
+   * @returns
    */
   public static async isFunctionName(name: string): Promise<boolean> {
-    let allFunctionNames: string[] = await CFDocsDefinitionInfo.getAllFunctionNames();
+    const allFunctionNames: string[] = await CFDocsDefinitionInfo.getAllFunctionNames();
     return allFunctionNames.includes(name.toLowerCase());
   }
 
   /**
    * Returns whether the given identifier is the name of a tag documented in CFDocs
    * @param name The identifier to check for
+   * @returns
    */
   public static async isTagName(name: string): Promise<boolean> {
-    let allTagNames: string[] = await CFDocsDefinitionInfo.getAllTagNames();
+    const allTagNames: string[] = await CFDocsDefinitionInfo.getAllTagNames();
     return allTagNames.includes(name.toLowerCase());
   }
 
   /**
    * Returns whether the given identifier is the name of a function or tag documented in CFDocs
    * @param name The identifier to check for
+   * @returns
    */
   public static async isIdentifier(name: string): Promise<boolean> {
     return (CFDocsDefinitionInfo.isFunctionName(name) || CFDocsDefinitionInfo.isTagName(name));

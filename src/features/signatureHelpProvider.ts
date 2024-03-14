@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { CancellationToken, ParameterInformation, Position, Range, SignatureHelp, SignatureHelpProvider, SignatureInformation, TextDocument, Uri, workspace, WorkspaceConfiguration, SignatureHelpContext } from "vscode";
 import { Component, objectNewInstanceInitPrefix } from "../entities/component";
 import { DataType } from "../entities/dataType";
@@ -20,6 +21,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
    * @param position The position at which the command was invoked.
    * @param _token A cancellation token.
    * @param _context Information about how signature help was triggered.
+   * @returns
    */
   public async provideSignatureHelp(document: TextDocument, position: Position, _token: CancellationToken, _context: SignatureHelpContext): Promise<SignatureHelp | null> {
     const cfmlSignatureSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.signature", document.uri);
@@ -30,25 +32,24 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments);
-
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
     if (documentPositionStateContext.positionInComment) {
       return null;
     }
 
     const sanitizedDocumentText: string = documentPositionStateContext.sanitizedDocumentText;
 
-    let backwardIterator: BackwardIterator = new BackwardIterator(documentPositionStateContext, position);
+    const backwardIterator: BackwardIterator = new BackwardIterator(documentPositionStateContext, position, _token);
 
-    backwardIterator.next();
-    const iteratedSigPosition: Position = findStartSigPosition(backwardIterator);
+    backwardIterator.next(_token);
+    const iteratedSigPosition: Position = findStartSigPosition(backwardIterator, _token);
     if (!iteratedSigPosition) {
       return null;
     }
 
     const startSigPosition: Position = document.positionAt(document.offsetAt(iteratedSigPosition) + 2);
-    const endSigPosition: Position = getClosingPosition(documentPositionStateContext, document.offsetAt(startSigPosition), ")").translate(0, -1);
-    const functionArgRanges: Range[] = getScriptFunctionArgRanges(documentPositionStateContext, new Range(startSigPosition, endSigPosition));
+    const endSigPosition: Position = getClosingPosition(documentPositionStateContext, document.offsetAt(startSigPosition), ")", _token).translate(0, -1);
+    const functionArgRanges: Range[] = getScriptFunctionArgRanges(documentPositionStateContext, new Range(startSigPosition, endSigPosition), ",", _token);
 
     let paramIndex: number = 0;
     paramIndex = functionArgRanges.findIndex((range: Range) => {
@@ -61,15 +62,16 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
     const startSigPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(startSigPosition));
 
+    // eslint-disable-next-line @typescript-eslint/ban-types
     let entry: Function;
 
     // Check if initializing via "new" operator
     const objectNewInstanceInitPrefixMatch: RegExpExecArray = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
     if (objectNewInstanceInitPrefixMatch) {
       const componentDotPath: string = objectNewInstanceInitPrefixMatch[2];
-      const componentUri: Uri = componentPathToUri(componentDotPath, document.uri);
+      const componentUri: Uri = componentPathToUri(componentDotPath, document.uri, _token);
       if (componentUri) {
-        const initComponent: Component = getComponent(componentUri);
+        const initComponent: Component = getComponent(componentUri, _token);
         if (initComponent) {
           const initMethod: string = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
           if (initComponent.functions.has(initMethod)) {
@@ -80,7 +82,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
     }
 
     if (!entry) {
-      let identWordRange: Range = getPrecedingIdentifierRange(documentPositionStateContext, backwardIterator.getPosition());
+      const identWordRange: Range = getPrecedingIdentifierRange(documentPositionStateContext, backwardIterator.getPosition(), _token);
       if (!identWordRange) {
         return null;
       }
@@ -91,13 +93,13 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
       const startIdentPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(identWordRange.start));
 
       // Global function
-      if (!isContinuingExpression(startIdentPositionPrefix)) {
+      if (!isContinuingExpression(startIdentPositionPrefix, _token)) {
         entry = cachedEntity.getGlobalFunction(lowerIdent);
       }
 
       // Check user functions
       if (!entry) {
-        const userFun: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerIdent, startIdentPositionPrefix);
+        const userFun: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerIdent, startIdentPositionPrefix, _token);
 
         // Ensure this does not trigger on script function definition
         if (userFun && userFun.location.uri === document.uri && userFun.location.range.contains(position) && (!userFun.bodyRange || !userFun.bodyRange.contains(position))) {
@@ -117,7 +119,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
           if (scopePrefix) {
             prefixScope = Scope.valueOf(scopePrefix);
           }
-          const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext);
+          const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext, _token);
           const userFunctionVariables: UserFunctionVariable[] = allDocumentVariableAssignments.filter((variable: Variable) => {
             if (variable.dataType !== DataType.Function || !isUserFunctionVariable(variable) || !equalsIgnoreCase(variable.identifier, lowerIdent)) {
               return false;
@@ -143,12 +145,12 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
       return null;
     }
 
-    let sigHelp = new SignatureHelp();
+    const sigHelp = new SignatureHelp();
 
     entry.signatures.forEach((signature: Signature, sigIndex: number) => {
       const sigDesc: string = signature.description ? signature.description : entry.description;
       const sigLabel: string = constructSyntaxString(entry, sigIndex);
-      let signatureInfo = new SignatureInformation(sigLabel, textToMarkdownString(sigDesc));
+      const signatureInfo = new SignatureInformation(sigLabel, textToMarkdownString(sigDesc));
 
       const sigParamsPrefixLength: number = constructSignatureLabelParamsPrefix(entry).length + 1;
       const sigParamsLabelOffsetTuples: [number, number][] = getSignatureParamsLabelOffsetTuples(signature.parameters).map((val: [number, number]) => {
@@ -156,7 +158,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
       });
 
       signatureInfo.parameters = signature.parameters.map((param: Parameter, paramIdx: number) => {
-        let paramInfo: ParameterInformation = new ParameterInformation(sigParamsLabelOffsetTuples[paramIdx], textToMarkdownString(param.description));
+        const paramInfo: ParameterInformation = new ParameterInformation(sigParamsLabelOffsetTuples[paramIdx], textToMarkdownString(param.description));
         return paramInfo;
       });
       sigHelp.signatures.push(signatureInfo);
@@ -173,6 +175,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
     // Consider named parameters
     let namedParamMatch: RegExpExecArray = null;
+    // eslint-disable-next-line no-cond-assign
     if (namedParamMatch = namedParameterPattern.exec(paramText)) {
       // TODO: Consider argumentCollection
       const paramName: string = namedParamMatch[1];

@@ -2,6 +2,7 @@
 import { CancellationToken, DocumentLink, DocumentLinkProvider, FileStat, FileType, Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode";
 import { isUri } from "../utils/textUtil";
 import { fileExists } from "../utils/fileUtil";
+import { Utils } from "vscode-uri";
 
 export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
 
@@ -22,14 +23,16 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
    * Provide links for the given document.
    * @param document The document in which the links are located.
    * @param _token A cancellation token.
+   * @returns
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideDocumentLinks(document: TextDocument, _token: CancellationToken): Promise<DocumentLink[]> {
     const results: DocumentLink[] = [];
     const documentText: string = document.getText();
 
     let match: RegExpExecArray | null;
 
-    this.linkPatterns.forEach(async (element: LinkPattern) => {
+    for (const element of this.linkPatterns) {
       const pattern: RegExp = element.pattern;
       while ((match = pattern.exec(documentText))) {
         const link: string = match[element.linkIndex];
@@ -49,9 +52,10 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
           }
         } catch (e) {
           // noop
+          console.error(e);
         }
       }
-    });
+    }
 
     return results;
   }
@@ -60,6 +64,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
    * Resolves given link text within a given document to a URI
    * @param document The document containing link text
    * @param link The link text to resolve
+   * @returns
    */
   private async resolveLink(document: TextDocument, link: string): Promise<Uri | undefined> {
     if (link.startsWith("#")) {
@@ -89,7 +94,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
       }
     } else {
       // Relative to document location
-      const base: Uri = Uri.parse(document.fileName);
+      const base: Uri = Utils.dirname(Uri.parse(document.fileName));
       resourcePath = Uri.joinPath(base, linkPath);
     }
 
