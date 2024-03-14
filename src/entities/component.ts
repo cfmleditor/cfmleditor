@@ -5,7 +5,7 @@ import { getComponent, hasComponent } from "../features/cachedEntities";
 import { MySet } from "../utils/collections";
 import { isCfcFile } from "../utils/contextUtil";
 import { DocumentPositionStateContext, DocumentStateContext } from "../utils/documentUtil";
-import { fileExists, resolveCustomMappingPaths, resolveRelativePath, resolveRootPath } from "../utils/fileUtil";
+import { fileExists, resolveBaseName, resolveCustomMappingPaths, resolveRelativePath, resolveRootPath } from "../utils/fileUtil";
 import { Attribute, Attributes, parseAttributes } from "./attribute";
 import { DataType } from "./dataType";
 import { DocBlockKeyValue, parseDocBlock } from "./docblock";
@@ -229,7 +229,7 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
   const componentAttributes: ComponentAttributes = {};
   const component: Component = {
     uri: document.uri,
-    name: document.fileName,
+    name: resolveBaseName(document.fileName, COMPONENT_EXT),
     isScript: componentIsScript,
     isInterface: componentType === "interface",
     declarationRange: new Range(document.positionAt(declarationStartOffset), document.positionAt(declarationStartOffset + componentType.length)),

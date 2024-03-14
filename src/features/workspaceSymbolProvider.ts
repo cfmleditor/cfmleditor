@@ -1,11 +1,11 @@
 
 import { CancellationToken, Location, Position, SymbolInformation, SymbolKind, TextDocument, TextEditor, Uri, window, workspace, WorkspaceSymbolProvider } from "vscode";
 import { LANGUAGE_ID } from "../cfmlMain";
-import { Component } from "../entities/component";
+import { Component, COMPONENT_EXT } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import { equalsIgnoreCase } from "../utils/textUtil";
 import * as cachedEntity from "./cachedEntities";
-import { Utils } from "vscode-uri";
+import { uriBaseName } from "../utils/fileUtil";
 
 export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvider {
 
@@ -51,7 +51,7 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
         return new SymbolInformation(
           userFunction.name + "()",
           equalsIgnoreCase(userFunction.name, "init") ? SymbolKind.Constructor : SymbolKind.Function,
-          Utils.basename(userFunction.location.uri),
+          uriBaseName(userFunction.location.uri, COMPONENT_EXT),
           userFunction.location
         );
       })
@@ -61,7 +61,7 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
     workspaceSymbols = workspaceSymbols.concat(
       components.map((component: Component) => {
         return new SymbolInformation(
-          Utils.basename(component.uri),
+          uriBaseName(component.uri, COMPONENT_EXT),
           component.isInterface ? SymbolKind.Interface : SymbolKind.Class,
           "",
           new Location(component.uri, new Position(0, 0))

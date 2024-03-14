@@ -9,10 +9,9 @@ import { CFDocsDefinitionInfo } from "../utils/cfdocs/definitionInfo";
 import { MyMap, SearchMode } from "../utils/collections";
 import { APPLICATION_CFM_GLOB } from "../utils/contextUtil";
 import { DocumentStateContext, getDocumentStateContext } from "../utils/documentUtil";
-import { resolveCustomMappingPaths, resolveRelativePath, resolveRootPath } from "../utils/fileUtil";
+import { resolveCustomMappingPaths, resolveRelativePath, resolveRootPath, uriBaseName } from "../utils/fileUtil";
 import trie from "trie-prefix-tree";
 import { Snippet, Snippets } from "../entities/snippet";
-import { Utils } from "vscode-uri";
 
 let allGlobalEntityDefinitions = new MyMap<string, CFDocsDefinitionInfo>();
 
@@ -195,7 +194,7 @@ export function clearAllGlobalEntityDefinitions(): void {
  */
 function setComponent(comp: Component): void {
   allComponentsByUri[comp.uri.toString()] = comp;
-  const componentKey: string = Utils.basename(comp.uri).toLowerCase();
+  const componentKey: string = uriBaseName(comp.uri, COMPONENT_EXT).toLowerCase();
   if (!allComponentsByName[componentKey]) {
     allComponentsByName[componentKey] = {};
   }
@@ -354,16 +353,16 @@ export async function cacheComponent(component: Component, documentStateContext:
   });
 
   const componentUri: Uri = component.uri;
-  const fileName: string = Utils.basename(componentUri);
+  const fileName: string = uriBaseName(componentUri);
   if (fileName === "Application.cfc") {
-    const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, null, _token);
+    const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
 
     const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
       return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
     });
     setApplicationVariables(componentUri, thisApplicationFilteredVariables);
   } else if (fileName === "Server.cfc") {
-    const thisServerVariables: Variable[] = (await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, null, _token)).filter((variable: Variable) => {
+    const thisServerVariables: Variable[] = (await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token)).filter((variable: Variable) => {
       return variable.scope === Scope.Server;
     });
     allServerVariables.set(componentUri.toString(), thisServerVariables);
@@ -481,7 +480,7 @@ export function clearCachedComponent(componentUri: Uri): void {
     delete allComponentsByUri[componentUri.toString()];
   }
 
-  const componentKey: string = Utils.basename(componentUri).toLowerCase();
+  const componentKey: string = uriBaseName(componentUri).toLowerCase();
   const componentsByName: ComponentsByUri = allComponentsByName[componentKey];
   if (componentsByName) {
     const componentsByNameLen: number = Object.keys(componentsByName).length;
@@ -552,7 +551,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: Cancel
       const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
       const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
       const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token);
-      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, null, _token);
+      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
       });

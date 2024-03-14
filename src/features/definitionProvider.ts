@@ -209,7 +209,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
         }
       }
     } else if (docIsCfmFile) {
-      const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, null, _token);
+      const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, undefined, _token);
       const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
       const variableScopePrefixMatch: RegExpExecArray = variableScopePrefixPattern.exec(docPrefix);
       if (variableScopePrefixMatch) {
@@ -240,7 +240,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
     }
 
     // User function
-    const userFunc: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, null, _token);
+    const userFunc: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
     if (userFunc) {
       results.push({
         targetUri: userFunc.location.uri,

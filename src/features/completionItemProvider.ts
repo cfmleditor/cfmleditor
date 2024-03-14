@@ -2,7 +2,7 @@ import { CancellationToken, Command, CompletionContext, CompletionItem, Completi
 import { AttributeQuoteType, Attributes, IncludeAttributesCustom, IncludeAttributesSetType, parseAttributes, VALUE_PATTERN } from "../entities/attribute";
 import { CatchInfo, catchProperties, CatchPropertyDetails, parseCatches } from "../entities/catch";
 import { cgiVariables } from "../entities/cgi";
-import { Component, componentDottedPathPrefix, componentExtendsPathPrefix, isInComponentHead, isSubcomponentOrEqual } from "../entities/component";
+import { Component, COMPONENT_EXT, componentDottedPathPrefix, componentExtendsPathPrefix, isInComponentHead, isSubcomponentOrEqual } from "../entities/component";
 import { IPropertyData, IAtDirectiveData } from "../entities/css/cssLanguageTypes";
 import { cssDataManager, getEntryDescription as getCSSEntryDescription, cssWordRegex } from "../entities/css/languageFacts";
 import { DataType } from "../entities/dataType";
@@ -23,7 +23,7 @@ import { CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 import { MyMap, MySet } from "../utils/collections";
 import { getCfScriptRanges, isInCss, isInRanges } from "../utils/contextUtil";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
-import { CFMLMapping, filterComponents, filterDirectories, resolveDottedPaths, resolveRootPath } from "../utils/fileUtil";
+import { CFMLMapping, filterComponents, filterDirectories, resolveDottedPaths, resolveRootPath, resolveBaseName } from "../utils/fileUtil";
 import { equalsIgnoreCase, escapeMarkdown, textToMarkdownString } from "../utils/textUtil";
 import { getAllCustomSnippets, getAllGlobalFunctions, getAllGlobalMemberFunctions, getAllGlobalTags, getComponent, getGlobalTag } from "./cachedEntities";
 import { Snippet, Snippets } from "../entities/snippet";
@@ -110,7 +110,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         return undefined;
     }
 
-    const cfscriptRanges: Range[] = getCfScriptRanges(document, null, _token);
+    const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token);
 
     const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
 
@@ -278,7 +278,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
     }
 
     // Catch variable
-    const catchInfoArr: CatchInfo[] = parseCatches(documentPositionStateContext, documentPositionStateContext.docIsScript, null, _token);
+    const catchInfoArr: CatchInfo[] = parseCatches(documentPositionStateContext, documentPositionStateContext.docIsScript, undefined, _token);
     const applicableCatches: CatchInfo[] = catchInfoArr.filter((catchInfo: CatchInfo) => {
       return catchInfo.bodyRange.contains(position);
     });
@@ -1151,10 +1151,10 @@ async function getDottedPathCompletions(state: CompletionState, parentDottedPath
     });
     const componentFiles: [string, FileType][] = filterComponents(files);
     componentFiles.filter((componentFile: [string, FileType]) => {
-      const componentName: string = Uri.parse(componentFile[0]).toString();
+      const componentName: string = resolveBaseName(componentFile[0], COMPONENT_EXT);
       return state.currentWordMatches(componentName);
     }).forEach((componentFile: [string, FileType]) => {
-      const componentName: string = Uri.parse(componentFile[0]).toString();
+      const componentName: string = resolveBaseName(componentFile[0], COMPONENT_EXT);
       newInstanceCompletions.push(createNewProposal(
         componentName,
         CompletionItemKind.Class,

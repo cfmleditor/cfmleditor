@@ -1,6 +1,7 @@
+import { uriBaseName } from "../utils/fileUtil";
+import { COMPONENT_EXT } from "./component";
 import { DataType } from "./dataType";
 import { Argument } from "./userFunction";
-import { Utils } from "vscode-uri";
 
 export interface Parameter {
   name: string;
@@ -39,7 +40,7 @@ export function constructParameterLabel(param: Parameter): string {
     if (param.dataType === DataType.Component) {
         const arg: Argument = param as Argument;
         if (arg.dataTypeComponentUri) {
-            paramType = Utils.basename(arg.dataTypeComponentUri);
+            paramType = uriBaseName(arg.dataTypeComponentUri, COMPONENT_EXT);
         }
     }
 

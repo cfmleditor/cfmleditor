@@ -61,6 +61,36 @@ export function filterComponents(files: [string, FileType][]): [string, FileType
 /**
  *
  * @param path file path
+ * @param ext
+ * @returns string
+ */
+export function resolveBaseName(path: string, ext?: string): string {
+    let base = Utils.basename(Uri.parse(path));
+    if (ext) {
+        base = base.replace(ext, '');
+    }
+    return base;
+}
+
+
+/**
+ *
+ * @param path file path
+ * @param ext
+ * @returns string
+ */
+export function uriBaseName(path: Uri, ext?: string): string {
+    let base = Utils.basename(path);
+    if (ext) {
+        base = base.replace(ext, '');
+    }
+    return base;
+}
+
+
+/**
+ *
+ * @param path file path
  * @returns Promise
  */
 export async function fileExists(path: string): Promise<boolean> {

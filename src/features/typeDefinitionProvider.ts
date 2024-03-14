@@ -131,7 +131,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
         }
       }
     } else if (docIsCfmFile) {
-      const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, null, _token);
+      const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, undefined, _token);
       const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
       const variableScopePrefixMatch: RegExpExecArray = variableScopePrefixPattern.exec(docPrefix);
       if (variableScopePrefixMatch) {
@@ -164,7 +164,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
     }
 
     // User functions
-    const externalUserFunc: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, null, _token);
+    const externalUserFunc: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
     if (externalUserFunc && externalUserFunc.returnTypeUri) {
       const returnTypeComponent: Component = getComponent(externalUserFunc.returnTypeUri, _token);
       if (returnTypeComponent) {

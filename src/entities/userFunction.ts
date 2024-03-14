@@ -16,6 +16,7 @@ import { parseTags, Tag } from "./tag";
 import { DocumentStateContext, DocumentPositionStateContext } from "../utils/documentUtil";
 import { getClosingPosition, getNextCharacterPosition, isInRanges, getCfScriptRanges } from "../utils/contextUtil";
 import { Utils } from "vscode-uri";
+import { uriBaseName } from "../utils/fileUtil";
 
 const scriptFunctionPattern: RegExp = /((\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?)(?:\b([A-Za-z0-9_.$]+)\s+)?function\s+([_$a-zA-Z][$\w]*)\s*\(/gi;
 const scriptFunctionArgPattern: RegExp = /((?:(required)\s+)?(?:\b([\w.]+)\b\s+)?(\b[_$a-zA-Z][$\w]*\b)(?:\s*=\s*(\{[^}]*\}|\[[^\]]*\]|\([^)]*\)|(?:(?!\b\w+\s*=).)+))?)(.*)?/i;
@@ -361,7 +362,7 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
   const document: TextDocument = documentStateContext.document;
   const documentUri: Uri = document.uri;
 
-  const scriptArgRanges: Range[] = getScriptFunctionArgRanges(documentStateContext, argsRange, null, _token);
+  const scriptArgRanges: Range[] = getScriptFunctionArgRanges(documentStateContext, argsRange, ",", _token);
   scriptArgRanges.forEach((argRange: Range) => {
     const argText: string = documentStateContext.sanitizedDocumentText.slice(document.offsetAt(argRange.start), document.offsetAt(argRange.end));
     const argStartOffset = document.offsetAt(argRange.start);
@@ -521,7 +522,7 @@ export function parseTagFunctions(documentStateContext: DocumentStateContext, _t
   const userFunctions: UserFunction[] = [];
   const documentUri: Uri = documentStateContext.document.uri;
 
-  const parsedFunctionTags: Tag[] = parseTags(documentStateContext, "cffunction", null, _token);
+  const parsedFunctionTags: Tag[] = parseTags(documentStateContext, "cffunction", undefined, _token);
 
   parsedFunctionTags.forEach((tag: Tag) => {
     const functionRange: Range = tag.tagRange;
@@ -571,7 +572,7 @@ function parseTagFunctionArguments(documentStateContext: DocumentStateContext, f
   const args: Argument[] = [];
   const documentUri: Uri = documentStateContext.document.uri;
 
-  if (functionBodyRange === undefined) {
+  if (functionBodyRange === undefined || functionBodyRange === null) {
     return args;
   }
 
@@ -751,7 +752,7 @@ function parseModifier(modifier: string): string {
 export async function getFunctionFromPrefix(documentPositionStateContext: DocumentPositionStateContext, functionKey: string, docPrefix: string, _token: CancellationToken): Promise<UserFunction | undefined> {
   let foundFunction: UserFunction;
 
-  if (docPrefix === undefined) {
+  if (docPrefix === undefined || docPrefix === null) {
     docPrefix = documentPositionStateContext.docPrefix;
   }
 
@@ -774,7 +775,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
         if (documentPositionStateContext.component && documentPositionStateContext.component.extends, _token) {
           const baseComponent: Component = getComponent(documentPositionStateContext.component.extends, _token);
           if (baseComponent) {
-            foundFunction = getFunctionFromComponent(baseComponent, functionKey, documentPositionStateContext.document.uri, null, false, _token);
+            foundFunction = getFunctionFromComponent(baseComponent, functionKey, documentPositionStateContext.document.uri, undefined, false, _token);
           }
         }
       } else if (documentPositionStateContext.isCfcFile && !varScope && (equalsIgnoreCase(varName, Scope.Variables) || equalsIgnoreCase(varName, Scope.This))) {
@@ -793,7 +794,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
         const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext, _token);
 
         let variableAssignments: Variable[] = allDocumentVariableAssignments;
-        const fileName: string = Utils.basename(documentPositionStateContext.document.uri);
+        const fileName: string = uriBaseName(documentPositionStateContext.document.uri);
         if (varScope && fileName !== "Application.cfm") {
           const applicationDocVariables: Variable[] = await getApplicationVariables(documentPositionStateContext.document.uri);
           variableAssignments = variableAssignments.concat(applicationDocVariables);
@@ -805,7 +806,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
         if (foundVar && foundVar.dataTypeComponentUri) {
           const foundVarComponent: Component = getComponent(foundVar.dataTypeComponentUri, _token);
           if (foundVarComponent) {
-            foundFunction = getFunctionFromComponent(foundVarComponent, functionKey, documentPositionStateContext.document.uri, null, false, _token);
+            foundFunction = getFunctionFromComponent(foundVarComponent, functionKey, documentPositionStateContext.document.uri, undefined, false, _token);
           }
         }
       }
@@ -813,7 +814,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
   } else if (documentPositionStateContext.isCfmFile) {
     foundFunction = getFunctionFromTemplate(documentPositionStateContext, functionKey, _token);
   } else if (documentPositionStateContext.component) {
-    foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, null, false, _token);
+    foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, undefined, false, _token);
   }
 
   return foundFunction;
@@ -875,7 +876,7 @@ export function getFunctionFromComponent(component: Component, lowerFunctionName
  */
 export function getFunctionFromTemplate(documentStateContext: DocumentStateContext, lowerFunctionName: string, _token: CancellationToken): UserFunction | undefined {
   const tagFunctions: UserFunction[] = parseTagFunctions(documentStateContext, _token);
-  const cfscriptRanges: Range[] = getCfScriptRanges(documentStateContext.document, null, _token);
+  const cfscriptRanges: Range[] = getCfScriptRanges(documentStateContext.document, undefined, _token);
   const scriptFunctions: UserFunction[] = parseScriptFunctions(documentStateContext, _token).filter((func: UserFunction) => {
     return isInRanges(cfscriptRanges, func.location.range.start, false, _token);
   });

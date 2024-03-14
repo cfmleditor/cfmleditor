@@ -4,7 +4,8 @@ import { UserFunction } from "./userFunction";
 import { DocumentStateContext } from "../utils/documentUtil";
 import { Range, TextDocument, Position, CancellationToken } from "vscode";
 import { getNextCharacterPosition } from "../utils/contextUtil";
-import { Utils } from "vscode-uri";
+import { COMPONENT_EXT } from "./component";
+import { uriBaseName } from "../utils/fileUtil";
 
 const functionSuffixPattern: RegExp = /^\s*\(([^)]*)/;
 
@@ -60,7 +61,7 @@ export function getReturnTypeString(func: Function): string {
   if ("returnTypeUri" in func) {
     const userFunction: UserFunction = func as UserFunction;
     if (userFunction.returnTypeUri) {
-      returnType = Utils.basename(userFunction.returnTypeUri);
+      returnType = uriBaseName(userFunction.returnTypeUri, COMPONENT_EXT);
     }
   }
 

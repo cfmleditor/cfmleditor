@@ -27,7 +27,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
     const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token);
-    const cssRanges: Range[] = getCssRanges(documentStateContext, null, _token);
+    const cssRanges: Range[] = getCssRanges(documentStateContext, undefined, _token);
 
     for (const cssRange of cssRanges) {
       const rangeTextOffset: number = document.offsetAt(cssRange.start);

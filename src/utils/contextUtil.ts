@@ -622,7 +622,7 @@ export function getCfOutputRanges(documentStateContext: DocumentStateContext, ra
  * @returns
  */
 export function isInCfOutput(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): boolean {
-  return isInRanges(getCfOutputRanges(documentStateContext, null, _token), position, false, _token);
+  return isInRanges(getCfOutputRanges(documentStateContext, undefined, _token), position, false, _token);
 }
 
 /**
@@ -633,7 +633,7 @@ export function isInCfOutput(documentStateContext: DocumentStateContext, positio
  * @returns
  */
 export function isInCfScript(document: TextDocument, position: Position, _token: CancellationToken): boolean {
-  return isInRanges(getCfScriptRanges(document, null, _token), position, false, _token);
+  return isInRanges(getCfScriptRanges(document, undefined, _token), position, false, _token);
 }
 
 /**
@@ -655,7 +655,7 @@ export function isPositionScript(document: TextDocument, position: Position, _to
  * @returns
  */
 export function isInJavaScript(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): boolean {
-  return isInRanges(getJavaScriptRanges(documentStateContext, null, _token), position, false, _token);
+  return isInRanges(getJavaScriptRanges(documentStateContext, undefined, _token), position, false, _token);
 }
 
 /**
@@ -666,7 +666,7 @@ export function isInJavaScript(documentStateContext: DocumentStateContext, posit
  * @returns
  */
 export function isInCss(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): boolean {
-  return isInRanges(getCssRanges(documentStateContext, null, _token), position, false, _token);
+  return isInRanges(getCssRanges(documentStateContext, undefined, _token), position, false, _token);
 }
 
 /**
@@ -678,7 +678,7 @@ export function isInCss(documentStateContext: DocumentStateContext, position: Po
  * @returns
  */
 export function isInComment(document: TextDocument, position: Position, isScript: boolean = false, _token: CancellationToken): boolean {
-  return isInRanges(getDocumentContextRanges(document, isScript, null, false, _token).commentRanges, position, false, _token);
+  return isInRanges(getDocumentContextRanges(document, isScript, undefined, false, _token).commentRanges, position, false, _token);
 }
 
 /**

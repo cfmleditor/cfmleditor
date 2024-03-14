@@ -3,7 +3,7 @@ import { DataType } from "./dataType";
 import { Scope, unscopedPrecedence } from "./scope";
 import { Location, TextDocument, Range, Uri, Position, WorkspaceConfiguration, workspace, CancellationToken } from "vscode";
 import { getCfScriptRanges, isCfcFile, getClosingPosition } from "../utils/contextUtil";
-import { Component, getApplicationUri, getServerUri } from "./component";
+import { COMPONENT_EXT, Component, getApplicationUri, getServerUri } from "./component";
 import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, UserFunctionVariable, parseScriptFunctionArgs, functionValuePattern, isUserFunctionVariable } from "./userFunction";
 import * as cachedEntities from "../features/cachedEntities";
 import { equalsIgnoreCase } from "../utils/textUtil";
@@ -16,7 +16,7 @@ import { CFMLEngineName, CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 import { DocumentStateContext, DocumentPositionStateContext } from "../utils/documentUtil";
 import { getScriptFunctionArgRanges } from "./function";
 import { constructParameterLabel } from "./parameter";
-import { Utils } from "vscode-uri";
+import { uriBaseName } from "../utils/fileUtil";
 
 
 // FIXME: Erroneously matches implicit struct key assignments using = since '{' can also open a code block. Also matches within string or comment.
@@ -870,7 +870,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
   let allVariableAssignments: Variable[] = [];
 
   if (documentPositionStateContext.isCfmFile) {
-    const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, null, _token);
+    const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, undefined, _token);
     allVariableAssignments = allVariableAssignments.concat(docVariableAssignments);
   } else if (documentPositionStateContext.isCfcFile) {
     const thisComponent = documentPositionStateContext.component;
@@ -952,7 +952,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 export function getVariableTypeString(variable: Variable): string {
   let varType: string = variable.dataType;
   if (variable.dataTypeComponentUri) {
-    varType = Utils.basename(variable.dataTypeComponentUri);
+    varType = uriBaseName(variable.dataTypeComponentUri, COMPONENT_EXT);
   } else if (variable.dataType === DataType.Function) {
     let argString: string = "...";
     if (isUserFunctionVariable(variable)) {

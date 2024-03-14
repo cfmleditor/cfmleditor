@@ -599,6 +599,7 @@ export function getNonClosingCfmlTags(): string[] {
  * @param _token
  * @returns
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function parseTags(documentStateContext: DocumentStateContext, tagName: string, range: Range, _token: CancellationToken): Tag[] {
   const tags: Tag[] = [];
   const document: TextDocument = documentStateContext.document;
@@ -657,6 +658,7 @@ export function parseTags(documentStateContext: DocumentStateContext, tagName: s
  * @param _token
  * @returns
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function parseStartTags(documentStateContext: DocumentStateContext, tagName: string, isScript: boolean, range: Range, _token: CancellationToken): StartTag[] {
   const startTags: StartTag[] = [];
   const document: TextDocument = documentStateContext.document;

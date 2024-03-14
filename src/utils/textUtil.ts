@@ -108,7 +108,7 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges: 
     documentCommentRanges = commentRanges;
   } else {
     const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && getComponent(document.uri, _token).isScript);
-    documentCommentRanges = getDocumentContextRanges(document, docIsScript, null, false, _token).commentRanges;
+    documentCommentRanges = getDocumentContextRanges(document, docIsScript, undefined, false, _token).commentRanges;
   }
 
   return replaceRangeWithSpaces(document, documentCommentRanges);
@@ -125,7 +125,7 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges: 
 export function getPrefixText(document: TextDocument, position: Position, replaceComments: boolean = false, _token: CancellationToken): string {
   let documentText: string = document.getText();
   if (replaceComments) {
-    documentText = getSanitizedDocumentText(document, null, false, _token);
+    documentText = getSanitizedDocumentText(document, undefined, false, _token);
   }
 
   return documentText.slice(0, document.offsetAt(position));
