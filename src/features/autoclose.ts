@@ -1,11 +1,12 @@
 "use strict";
-import { TextDocumentChangeEvent, TextDocumentChangeReason, workspace, window, Range, Position, Selection, TextDocumentContentChangeEvent, TextEditor, WorkspaceConfiguration } from "vscode";
+import { TextDocumentChangeEvent, TextDocumentChangeReason, workspace, window, Range, Position, Selection, TextDocumentContentChangeEvent, TextEditor, WorkspaceConfiguration, TextEditorEdit } from "vscode";
 import { nonClosingTags } from "../entities/tag";
 
 /**
+ * @param event
  * @description Inserts closing tag when user types '/' or '>'.
  */
-export function handleContentChanges(event: TextDocumentChangeEvent): void {
+export async function handleContentChanges(event: TextDocumentChangeEvent): Promise<void> {
 
     if (!event.contentChanges[0] || event.reason === TextDocumentChangeReason.Undo || event.reason === TextDocumentChangeReason.Redo ) {
         return;
@@ -29,24 +30,39 @@ export function handleContentChanges(event: TextDocumentChangeEvent): void {
         return;
     }
 
-    event.contentChanges.forEach((contentChange) => {
-        closeTag(contentChange);
-    });
+    // for ( const contentChange of event.contentChanges ) {
+
+        const contentChange = event.contentChanges[0];
+        const isRightAngleBracket = checkRightAngleBracket(contentChange);
+        const isForwardSlash = contentChange.text === "/";
+
+        if (!isRightAngleBracket && !isForwardSlash) {
+            return;
+        }
+
+        // if ( editor.selections.length > 1 ) {
+            // return;
+        // }
+
+        for ( let i = 0; i < editor.selections.length; i++ ) {
+            await closeTag(contentChange, editor, editor.selections[i], i, editor.selections.length);
+        }
+
+    // }
 }
 
 /**
+ * @param contentChange
+ * @param editor
+ * @param selection
+ * @param selectionPosn
+ * @param selectionLength
  * @description Evaluates a contentChange and inserts a closing tag when user types '/' or '>'
  */
-function closeTag(contentChange: TextDocumentContentChangeEvent): void {
+async function closeTag(contentChange: TextDocumentContentChangeEvent, editor: TextEditor, selection: Selection, selectionPosn: number, selectionLength: number): Promise<void> {
+
     const isRightAngleBracket = checkRightAngleBracket(contentChange);
     const isForwardSlash = contentChange.text === "/";
-
-    if (!isRightAngleBracket && !isForwardSlash) {
-        return;
-    }
-
-    const editor = window.activeTextEditor;
-    const selection = editor.selection;
     const originalPosition = selection.start.translate(0, 1);
 
     if (isForwardSlash) {
@@ -58,7 +74,7 @@ function closeTag(contentChange: TextDocumentContentChangeEvent): void {
                 if (nextChar === ">") {
                     closeTag = closeTag.substr(0, closeTag.length - 1);
                 }
-                editor.edit((editBuilder) => {
+                await editor.edit((editBuilder: TextEditorEdit) => {
                     editBuilder.insert(originalPosition, closeTag);
                 }).then(() => {
                     if (nextChar === ">") {
@@ -77,16 +93,18 @@ function closeTag(contentChange: TextDocumentContentChangeEvent): void {
             && (occurrenceCount(result[0], "\"") % 2 === 0) && (occurrenceCount(result[0], "`") % 2 === 0))) {
             if (result[2] === ">") {
                 if (nonClosingTags.indexOf(result[1].toLowerCase()) === -1) {
-                    editor.edit((editBuilder) => {
+                    await editor.edit((editBuilder: TextEditorEdit) => {
                         editBuilder.insert(originalPosition, "</" + result[1] + ">");
                     }).then(() => {
-                        editor.selection = new Selection(originalPosition, originalPosition);
+                        if ( selectionLength < 2 ) {
+                            editor.selection = new Selection(originalPosition, originalPosition);
+                        }
                     });
                 }
             } else {
                 // if not typing "/" just before ">", add the ">" after "/"
                 if (textLine.text.length <= selection.start.character + 1 || textLine.text[selection.start.character + 1] !== ">") {
-                    editor.edit((editBuilder) => {
+                    await editor.edit((editBuilder: TextEditorEdit) => {
                         editBuilder.insert(originalPosition, ">");
                     });
                 }
@@ -96,7 +114,10 @@ function closeTag(contentChange: TextDocumentContentChangeEvent): void {
 }
 
 /**
+ * @param originalPosition
+ * @param editor
  * @description Gets the preceding two characters of a cursor position.
+ * @returns
  */
 function getPrecedingCharacters(originalPosition: Position, editor: TextEditor){
     const range = new Range(new Position(Math.max(originalPosition.line - 1000, 0), 0), originalPosition);
@@ -109,14 +130,18 @@ function getPrecedingCharacters(originalPosition: Position, editor: TextEditor){
 }
 
 /**
+ * @param contentChange
  * @description Checks if the user has typed a right angle bracket.
+ * @returns
  */
 function checkRightAngleBracket(contentChange: TextDocumentContentChangeEvent): boolean {
     return contentChange.text === ">" || checkRightAngleBracketInVSCode1Dot8(contentChange);
 }
 
 /**
+ * @param contentChange
  * @description Checks if the user has typed a right angle bracket in VSCode 1.8.
+ * @returns
  */
 function checkRightAngleBracketInVSCode1Dot8(contentChange: TextDocumentContentChangeEvent): boolean {
     return contentChange.text.endsWith(">") && contentChange.range.start.character === 0
@@ -125,7 +150,10 @@ function checkRightAngleBracketInVSCode1Dot8(contentChange: TextDocumentContentC
 }
 
 /**
+ * @param editor
+ * @param position
  * @description Gets the next character in the editor.
+ * @returns
  */
 function getNextChar(editor: TextEditor, position: Position): string {
     const nextPosition = position.translate(0, 1);
@@ -136,7 +164,10 @@ function getNextChar(editor: TextEditor, position: Position): string {
 const TAG_RE = /<(\/?[a-zA-Z][a-zA-Z0-9:_.-]*)(?![\s\S]*<\/?[a-zA-Z])/;
 
 /**
+ * @param text
+ * @param excludedTags
  * @description Gets the closing tag for the given text.
+ * @returns
  */
 function getCloseTag(text: string, excludedTags: string[]): string {
     const s = text[text.length - 1] === "/" && text[text.length - 2] === "<" ? text.slice(0, -2) : text[text.length - 1] === "<" ? text.slice(0, -1) : text;
@@ -159,7 +190,10 @@ function getCloseTag(text: string, excludedTags: string[]): string {
 }
 
 /**
+ * @param selection
+ * @param shift
  * @description Moves the selection to the right.
+ * @returns
  */
 function moveSelectionRight(selection: Selection, shift: number): Selection {
     const newPosition = selection.active.translate(0, shift);
@@ -167,7 +201,10 @@ function moveSelectionRight(selection: Selection, shift: number): Selection {
 }
 
 /**
+ * @param source
+ * @param find
  * @description Counts the number of occurrences of a string in another string.
+ * @returns
  */
 function occurrenceCount(source: string, find: string): number {
     return source.split(find).length - 1;
