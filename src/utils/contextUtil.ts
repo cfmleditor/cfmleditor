@@ -194,7 +194,7 @@ export function isCfmFile(document: TextDocument, _token: CancellationToken): bo
  */
 export function isCfsFile(document: TextDocument, _token: CancellationToken): boolean {
   const extensionName: string = Utils.extname(Uri.parse(document.fileName));
-  for (const currExt of CFM_FILE_EXTS) {
+  for (const currExt of CFS_FILE_EXTS) {
     if (equalsIgnoreCase(extensionName, currExt)) {
       return true;
     }
