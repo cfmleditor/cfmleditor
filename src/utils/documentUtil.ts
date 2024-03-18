@@ -2,7 +2,7 @@ import { CancellationToken, Position, Range, TextDocument, WorkspaceConfiguratio
 import { Component, isScriptComponent } from "../entities/component";
 import { getComponent } from "../features/cachedEntities";
 import { CFMLEngine, CFMLEngineName } from "./cfdocs/cfmlEngine";
-import { getCfScriptRanges, getDocumentContextRanges, isCfcFile, isCfmFile, isContinuingExpression, isInRanges, DocumentContextRanges, isMemberExpression } from "./contextUtil";
+import { getCfScriptRanges, getDocumentContextRanges, isCfcFile, isCfmFile, isCfsFile, isContinuingExpression, isInRanges, DocumentContextRanges, isMemberExpression } from "./contextUtil";
 import { getSanitizedDocumentText } from "./textUtil";
 
 export interface DocumentStateContext {
@@ -42,10 +42,11 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
   const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name"));
   const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version"));
 
-  const docIsCfmFile: boolean = isCfmFile(document, _token);
   const docIsCfcFile: boolean = isCfcFile(document, _token);
+  const docIsCfmFile: boolean = isCfmFile(document, _token);
+  const docIsCfsFile: boolean = isCfsFile(document, _token);
   const thisComponent: Component = getComponent(document.uri, _token);
-  const docIsScript: boolean = (docIsCfcFile && isScriptComponent(document, _token));
+  const docIsScript: boolean = (docIsCfcFile && isScriptComponent(document, _token)) || docIsCfsFile;
   const documentRanges: DocumentContextRanges = getDocumentContextRanges(document, docIsScript, undefined, fast, _token);
   const commentRanges: Range[] = documentRanges.commentRanges;
   const stringRanges: Range[] = documentRanges.stringRanges;
