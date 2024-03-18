@@ -191,7 +191,9 @@ export function isCfmFile(document: TextDocument, _token: CancellationToken): bo
  * Returns true if the file extension is a CFS file
  * @param document
  * @param _token
+ * @returns
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function isCfsFile(document: TextDocument, _token: CancellationToken): boolean {
   const extensionName: string = Utils.extname(Uri.parse(document.fileName));
   for (const currExt of CFS_FILE_EXTS) {

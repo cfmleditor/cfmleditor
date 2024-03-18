@@ -1,5 +1,5 @@
 import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken } from "vscode";
-import { LANGUAGE_ID } from "../cfmlMain";
+import { LANGUAGE_ID, LANGUAGE_CFS_ID } from "../cfmlMain";
 import { isInCfScript, isCfcFile } from "../utils/contextUtil";
 import { getComponent, hasComponent } from "./cachedEntities";
 
@@ -74,6 +74,13 @@ export function toggleComment(commentType: CommentType, _token: CancellationToke
         }
       };
 
+      const cfsLanguageConfig: LanguageConfiguration = {
+        comments: {
+          lineComment: cfmlCommentRules.scriptLineComment,
+          blockComment: cfmlCommentRules.scriptBlockComment
+        }
+      };
+
       // Changes the comment in language configuration based on the context
       if (isTagComment(editor.document, editor.selection.start, _token)) {
         languageConfig = {
@@ -83,6 +90,7 @@ export function toggleComment(commentType: CommentType, _token: CancellationToke
         };
       }
       languages.setLanguageConfiguration(LANGUAGE_ID, languageConfig);
+      languages.setLanguageConfiguration(LANGUAGE_CFS_ID, cfsLanguageConfig);
       const command: string = getCommentCommand(commentType);
       commands.executeCommand(command);
     } else {

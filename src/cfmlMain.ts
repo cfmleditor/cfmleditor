@@ -1,7 +1,7 @@
 import { some } from "micromatch";
 import {
   commands, ConfigurationChangeEvent, ConfigurationTarget, DocumentSelector, ExtensionContext, extensions,
-  FileSystemWatcher, IndentAction, languages, TextDocument, Uri, workspace, WorkspaceConfiguration
+  FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, workspace, WorkspaceConfiguration
 } from "vscode";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
@@ -27,9 +27,14 @@ import { handleContentChanges } from "./features/autoclose";
 import { resolveBaseName, uriBaseName } from "./utils/fileUtil";
 
 export const LANGUAGE_ID: string = "cfml";
+export const LANGUAGE_CFS_ID: string = "cfs";
 const DOCUMENT_SELECTOR: DocumentSelector = [
   {
     language: LANGUAGE_ID,
+    scheme: "file"
+  },
+  {
+    language: LANGUAGE_CFS_ID,
     scheme: "file"
   },
   {
@@ -96,7 +101,7 @@ export function activate(context: ExtensionContext): void {
 
   extensionContext = context;
 
-  languages.setLanguageConfiguration(LANGUAGE_ID, {
+  const languageConfiguration: LanguageConfiguration = {
     indentationRules: {
       increaseIndentPattern: new RegExp(`<(?!\\?|(?:${nonIndentingTags.join("|")})\\b|[^>]*\\/>)([-_.A-Za-z0-9]+)(?=\\s|>)\\b[^>]*>(?!.*<\\/\\1>)|<!--(?!.*-->)|\\{[^}"']*$`, "i"),
       decreaseIndentPattern: new RegExp(`^\\s*(<\\/[-_.A-Za-z0-9]+\\b[^>]*>|-?-->|\\}|<(${decreasingIndentingTags.join("|")})\\b[^>]*>)`, "i")
@@ -130,7 +135,10 @@ export function activate(context: ExtensionContext): void {
         action: { indentAction: IndentAction.IndentOutdent }
       }
     ]
-  });
+  };
+
+  languages.setLanguageConfiguration(LANGUAGE_ID, languageConfiguration);
+  languages.setLanguageConfiguration(LANGUAGE_CFS_ID, languageConfiguration);
 
   context.subscriptions.push(commands.registerCommand("cfml.refreshGlobalDefinitionCache", refreshGlobalDefinitionCache));
   context.subscriptions.push(commands.registerCommand("cfml.refreshWorkspaceDefinitionCache", refreshWorkspaceDefinitionCache));

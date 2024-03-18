@@ -1,6 +1,6 @@
 
 import { CancellationToken, Location, Position, SymbolInformation, SymbolKind, TextDocument, TextEditor, Uri, window, workspace, WorkspaceSymbolProvider } from "vscode";
-import { LANGUAGE_ID } from "../cfmlMain";
+import { LANGUAGE_CFS_ID, LANGUAGE_ID } from "../cfmlMain";
 import { Component, COMPONENT_EXT } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import { equalsIgnoreCase } from "../utils/textUtil";
@@ -26,14 +26,14 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
     const editor: TextEditor = window.activeTextEditor;
     if (editor) {
       const document: TextDocument = editor.document;
-      if (document && document.languageId === LANGUAGE_ID) {
+      if (document && ( document.languageId === LANGUAGE_ID || document.languageId === LANGUAGE_CFS_ID ) ) {
         uri = document.uri;
       }
     }
     if (!uri) {
       const documents: ReadonlyArray<TextDocument> = workspace.textDocuments;
       for (const document of documents) {
-        if (document.languageId === LANGUAGE_ID) {
+        if (document.languageId === LANGUAGE_ID || document.languageId === LANGUAGE_CFS_ID ) {
           uri = document.uri;
           break;
         }

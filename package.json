@@ -2,7 +2,7 @@
 	"name": "cfmleditor",
 	"displayName": "CFML Editor",
 	"description": "CFML Language Editor",
-	"version": "0.6.18",
+	"version": "0.6.19",
 	"preview": true,
 	"author": "cfmleditor",
 	"publisher": "cfmleditor",
@@ -45,7 +45,16 @@
 				"extensions": [
 					".cfml",
 					".cfm",
-					".cfc",
+					".cfc"
+				],
+				"configuration": "./language-configuration.json"
+			},
+            {
+				"id": "cfs",
+				"aliases": [
+					"CFS"
+				],
+				"extensions": [
 					".cfs"
 				],
 				"configuration": "./language-configuration.json"
@@ -56,6 +65,26 @@
 				"language": "cfml",
 				"scopeName": "embedding.cfml",
 				"path": "./syntaxes/cfml.tmLanguage.json",
+				"embeddedLanguages": {
+					"source.css": "css",
+					"meta.embedded.block.css": "css",
+					"source.js": "javascript",
+					"meta.embedded.block.js": "javascript",
+					"meta.embedded.line.js": "javascript",
+					"source.sql": "sql",
+					"meta.embedded.block.sql": "sql",
+					"meta.tag.cfml": "cfml",
+					"constant.character.escape.hash.cfml": "cfml",
+					"punctuation.definition.template-expression.begin.cfml": "cfml",
+					"meta.embedded.line.cfml": "cfml",
+					"meta.embedded.block.cfml": "cfml",
+					"punctuation.definition.template-expression.end.cfml": "cfml"
+				}
+			},
+            {
+				"language": "cfs",
+				"scopeName": "embedding.cfml.cfs",
+				"path": "./syntaxes/cfml-cfs.tmLanguage.json",
 				"embeddedLanguages": {
 					"source.css": "css",
 					"meta.embedded.block.css": "css",
