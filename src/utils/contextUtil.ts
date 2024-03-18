@@ -10,6 +10,7 @@ import { stringArrayIncludesIgnoreCase } from "./collections";
 import { Utils } from "vscode-uri";
 
 const CFM_FILE_EXTS: string[] = [".cfm", ".cfml"];
+const CFS_FILE_EXTS: string[] = [".cfs"];
 export const APPLICATION_CFM_GLOB: string = "**/Application.cfm";
 // const notContinuingExpressionPattern: RegExp = /(?:^|[^\w$.\s])\s*$/;
 const continuingExpressionPattern: RegExp = /(?:\.\s*|[\w$])$/;
@@ -179,6 +180,21 @@ export class BackwardIterator {
 export function isCfmFile(document: TextDocument, _token: CancellationToken): boolean {
   const extensionName: string = Utils.extname(Uri.parse(document.fileName));
   for (const currExt of CFM_FILE_EXTS) {
+    if (equalsIgnoreCase(extensionName, currExt)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Returns true if the file extension is a CFS file
+ * @param document
+ * @param _token
+ */
+export function isCfsFile(document: TextDocument, _token: CancellationToken): boolean {
+  const extensionName: string = Utils.extname(Uri.parse(document.fileName));
+  for (const currExt of CFS_FILE_EXTS) {
     if (equalsIgnoreCase(extensionName, currExt)) {
       return true;
     }

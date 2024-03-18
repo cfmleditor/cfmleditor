@@ -28,7 +28,8 @@
 	"activationEvents": [
 		"workspaceContains:**/*.cfm",
 		"workspaceContains:**/*.cfml",
-		"workspaceContains:**/*.cfc"
+		"workspaceContains:**/*.cfc",
+		"workspaceContains:**/*.cfs"
 	],
 	"icon": "images/icon2x.png",
 	"main": "./out/cfmlMain",
@@ -44,7 +45,8 @@
 				"extensions": [
 					".cfml",
 					".cfm",
-					".cfc"
+					".cfc",
+					".cfs"
 				],
 				"configuration": "./language-configuration.json"
 			}
