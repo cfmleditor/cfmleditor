@@ -211,4 +211,4 @@ See [CONTRIBUTING.md](/CONTRIBUTING.md)
 
 ## Support
 
-For questions or help, join the `#ide` channel in the [CFML Slack workspace](https://cfml-slack.herokuapp.com/) to talk with people about this or other editor tools. To file a bug or feature request, open a [GitHub issue](https://github.com/cfmleditor/cfmleditor/issues).
+For questions or help, join the `#ide` channel in the [CFML Slack workspace](https://cfml.slack.com/) to talk with people about this or other editor tools. To file a bug or feature request, open a [GitHub issue](https://github.com/cfmleditor/cfmleditor/issues).
