@@ -1,5 +1,5 @@
 
-import { CancellationToken, ConfigurationTarget, extensions, ProgressLocation, TextDocument, Uri, window, workspace, WorkspaceConfiguration } from "vscode";
+import { CancellationToken, ProgressLocation, TextDocument, Uri, window, workspace, WorkspaceConfiguration } from "vscode";
 import { Component, ComponentsByName, ComponentsByUri, COMPONENT_EXT, COMPONENT_FILE_GLOB, parseComponent } from "../entities/component";
 import { GlobalFunction, GlobalFunctions, GlobalMemberFunction, GlobalMemberFunctions, GlobalTag, GlobalTags } from "../entities/globals";
 import { Scope } from "../entities/scope";
@@ -12,6 +12,7 @@ import { DocumentStateContext, getDocumentStateContext } from "../utils/document
 import { resolveCustomMappingPaths, resolveRelativePath, resolveRootPath, uriBaseName } from "../utils/fileUtil";
 import trie from "trie-prefix-tree";
 import { Snippet, Snippets } from "../entities/snippet";
+import { setBulkCaching } from "../cfmlMain";
 
 let allGlobalEntityDefinitions = new MyMap<string, CFDocsDefinitionInfo>();
 
@@ -375,39 +376,18 @@ export async function cacheComponent(component: Component, documentStateContext:
  * @returns
  */
 export async function cacheAllComponents(_token: CancellationToken): Promise<void> {
+
+    setBulkCaching(true);
+
     clearAllCachedComponents();
 
-    return workspace.findFiles(COMPONENT_FILE_GLOB).then(
-        async (componentUris: Uri[]) => {
-            // TODO: Remove cflint setting update for workspace state when CFLint checks it. Remove workspace state when CFLint can get list of open editors.
-            let cflintExt = extensions.getExtension("cfmleditor.cfmleditor-lint");
-            if (!cflintExt) {
-                cflintExt = extensions.getExtension("KamasamaK.vscode-cflint");
-            }
-            if (cflintExt) {
-                const cflintSettings: WorkspaceConfiguration = workspace.getConfiguration("cflint", null);
-                const runModes: object = cflintSettings.get<object>("runModes");
-                if (runModes && Object.prototype.hasOwnProperty.call(runModes, "onOpen") && runModes["onOpen"]) {
-                    const cflintEnabledValues = cflintSettings.inspect<boolean>("enabled");
-                    const cflintEnabledPrevWSValue: boolean = cflintEnabledValues.workspaceValue;
-                    cflintSettings.update("enabled", false, ConfigurationTarget.Workspace).then(async () => {
-                        await cacheGivenComponents(componentUris, _token);
-                        await cacheAllApplicationCfms();
-                        cflintSettings.update("enabled", cflintEnabledPrevWSValue, ConfigurationTarget.Workspace);
-                    });
-                } else {
-                    cacheGivenComponents(componentUris, _token);
-                    cacheAllApplicationCfms();
-                }
-            } else {
-                cacheGivenComponents(componentUris, _token);
-                cacheAllApplicationCfms();
-            }
-        },
-        (reason) => {
-            console.warn(reason);
-        }
-    );
+    const components: Uri[] = await workspace.findFiles(COMPONENT_FILE_GLOB);
+
+    await cacheGivenComponents(components, _token);
+    await cacheAllApplicationCfms();
+
+    setBulkCaching(false);
+
 }
 
 /**
@@ -433,7 +413,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
           const document: TextDocument = await workspace.openTextDocument(componentUri);
           const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
           const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-          cacheComponentFromDocument(document, false, replaceComments, _token);
+          await cacheComponentFromDocument(document, false, replaceComments, _token);
         } catch (ex) {
           console.warn(`Cannot parse document at ${componentUri}`);
         } finally {
@@ -463,7 +443,7 @@ export async function cacheComponentFromDocument(document: TextDocument, fast: b
     if (!parsedComponent) {
         return false;
     }
-    cacheComponent(parsedComponent, documentStateContext, _token);
+    await cacheComponent(parsedComponent, documentStateContext, _token);
   } catch (err) {
     return false;
   }

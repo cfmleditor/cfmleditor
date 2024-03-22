@@ -2,7 +2,7 @@
 	"name": "cfmleditor",
 	"displayName": "CFML Editor",
 	"description": "CFML Language Editor",
-	"version": "0.6.19",
+	"version": "0.6.20",
 	"preview": true,
 	"author": "cfmleditor",
 	"publisher": "cfmleditor",
@@ -49,7 +49,7 @@
 				],
 				"configuration": "./language-configuration.json"
 			},
-            {
+			{
 				"id": "cfs",
 				"aliases": [
 					"CFS"
@@ -81,7 +81,7 @@
 					"punctuation.definition.template-expression.end.cfml": "cfml"
 				}
 			},
-            {
+			{
 				"language": "cfs",
 				"scopeName": "embedding.cfml.cfs",
 				"path": "./syntaxes/cfml-cfs.tmLanguage.json",
@@ -604,8 +604,8 @@
 		"micromatch": "~4.0.4",
 		"semver": "^7.5.4",
 		"trie-prefix-tree": "1.5.1",
-		"vscode-css-languageservice": "~6.2.4",
-		"vscode-html-languageservice": "2.1.11-next.11",
+		"vscode-languageserver-textdocument": "^1.0.11",
+		"vscode-languageserver-types": "^3.17.5",
 		"vscode-uri": "^3.0.8"
 	},
 	"devDependencies": {
@@ -615,8 +615,8 @@
 		"@types/semver": "~7.5.8",
 		"@types/trie-prefix-tree": "~1.5.1",
 		"@types/vscode": "^1.85.0",
-		"@typescript-eslint/eslint-plugin": "^7.0.1",
-		"@typescript-eslint/parser": "^7.0.1",
+		"@typescript-eslint/eslint-plugin": "^7.3.1",
+		"@typescript-eslint/parser": "^7.3.1",
 		"@vscode/test-electron": "^2.3.9",
 		"@vscode/test-web": "^0.0.52",
 		"@vscode/vsce": "^2.23.0",

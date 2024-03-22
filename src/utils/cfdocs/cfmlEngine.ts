@@ -1,4 +1,4 @@
-import * as semver from "semver";
+import { valid, eq, lt, lte, gt, gte, clean } from "semver";
 import { DataType } from "../../entities/dataType";
 import { Uri } from "vscode";
 import { extensionContext } from "../../cfmlMain";
@@ -45,8 +45,8 @@ export class CFMLEngine {
    */
   constructor(name: CFMLEngineName, version: string | undefined) {
     this.name = name;
-    if (version !== undefined && version !== "" && semver.valid(version, true)) {
-      this.version = semver.valid(version, true);
+    if (version !== undefined && version !== "" && valid(version, true)) {
+      this.version = valid(version, true);
     } else {
       this.version = CFMLEngine.toSemVer(version);
     }
@@ -84,7 +84,7 @@ export class CFMLEngine {
       } else if (!this.version || !other.version) {
         return false;
       } else {
-        return semver.eq(this.version, other.version);
+        return eq(this.version, other.version);
       }
     }
 
@@ -100,7 +100,7 @@ export class CFMLEngine {
     if (this.name === CFMLEngineName.Unknown || other.name === CFMLEngineName.Unknown || this.name !== other.name || !this.version || !other.version) {
       return undefined;
     }
-    return semver.lt(this.version, other.version);
+    return lt(this.version, other.version);
   }
 
   /**
@@ -112,7 +112,7 @@ export class CFMLEngine {
     if (this.name === CFMLEngineName.Unknown || other.name === CFMLEngineName.Unknown || this.name !== other.name || !this.version || !other.version) {
       return undefined;
     }
-    return semver.lte(this.version, other.version);
+    return lte(this.version, other.version);
   }
 
   /**
@@ -124,7 +124,7 @@ export class CFMLEngine {
     if (this.name === CFMLEngineName.Unknown || other.name === CFMLEngineName.Unknown || this.name !== other.name || !this.version || !other.version) {
       return undefined;
     }
-    return semver.gt(this.version, other.version);
+    return gt(this.version, other.version);
   }
 
   /**
@@ -136,7 +136,7 @@ export class CFMLEngine {
     if (this.name === CFMLEngineName.Unknown || other.name === CFMLEngineName.Unknown || this.name !== other.name || !this.version || !other.version) {
       return undefined;
     }
-    return semver.gte(this.version, other.version);
+    return gte(this.version, other.version);
   }
 
   /**
@@ -146,9 +146,9 @@ export class CFMLEngine {
   public supportsScriptTags(): boolean {
     return (
       this.name === CFMLEngineName.Unknown
-      || (this.name === CFMLEngineName.ColdFusion && semver.gte(this.version, "11.0.0"))
+      || (this.name === CFMLEngineName.ColdFusion && gte(this.version, "11.0.0"))
       || this.name === CFMLEngineName.Lucee
-      || (this.name === CFMLEngineName.Railo && semver.gte(this.version, "4.2.0"))
+      || (this.name === CFMLEngineName.Railo && gte(this.version, "4.2.0"))
     );
   }
 
@@ -159,9 +159,9 @@ export class CFMLEngine {
   public supportsGlobalFunctionNamedParams(): boolean {
     return (
       this.name === CFMLEngineName.Unknown
-      || (this.name === CFMLEngineName.ColdFusion && semver.gte(this.version, "2018.0.0"))
+      || (this.name === CFMLEngineName.ColdFusion && gte(this.version, "2018.0.0"))
       || this.name === CFMLEngineName.Lucee
-      || (this.name === CFMLEngineName.Railo && semver.gte(this.version, "3.3.0"))
+      || (this.name === CFMLEngineName.Railo && gte(this.version, "3.3.0"))
     );
   }
 
@@ -171,16 +171,16 @@ export class CFMLEngine {
    * @returns
    */
   public static toSemVer(versionStr: string): string | undefined {
-    if (versionStr !== '' && semver.clean(versionStr, true)) {
-      return semver.clean(versionStr, true);
+    if (versionStr !== '' && clean(versionStr, true)) {
+      return clean(versionStr, true);
     } else if (DataType.isNumeric(versionStr)) {
       const splitVer: string[] = versionStr.split(".");
       while (splitVer.length < 3) {
         splitVer.push("0");
       }
       const reconstructedVer = splitVer.join(".");
-      if (semver.valid(reconstructedVer, true)) {
-        return semver.valid(reconstructedVer, true);
+      if (valid(reconstructedVer, true)) {
+        return valid(reconstructedVer, true);
       }
     }
 

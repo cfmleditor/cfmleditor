@@ -7,7 +7,7 @@ import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
 import { decreasingIndentingTags, goToMatchingTag, nonClosingTags, nonIndentingTags } from "./entities/tag";
 import { parseVariableAssignments, Variable } from "./entities/variable";
-import * as cachedEntity from "./features/cachedEntities";
+import { cacheComponentFromDocument, setApplicationVariables, clearCachedComponent, removeApplicationVariables } from "./features/cachedEntities";
 import CFMLDocumentColorProvider from "./features/colorProvider";
 import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache } from "./features/commands";
 import { CommentType, toggleComment } from "./features/comment";
@@ -44,6 +44,7 @@ const DOCUMENT_SELECTOR: DocumentSelector = [
 ];
 
 export let extensionContext: ExtensionContext;
+let bulkCaching: boolean = false;
 
 /**
  * Gets a ConfigurationTarget enumerable based on a string representation
@@ -96,8 +97,9 @@ function shouldExcludeDocument(documentUri: Uri): boolean {
 /**
  * This method is called when the extension is activated.
  * @param context The context object for this extension.
+ * @returns
  */
-export function activate(context: ExtensionContext): void {
+export function activate(context: ExtensionContext): object {
 
   extensionContext = context;
 
@@ -171,14 +173,14 @@ export function activate(context: ExtensionContext): void {
     if (isCfcFile(document, undefined)) {
       const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
       const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-      cachedEntity.cacheComponentFromDocument(document, false, replaceComments, undefined);
+      cacheComponentFromDocument(document, false, replaceComments, undefined);
     } else if ( resolveBaseName(document.fileName) === "Application.cfm") {
       const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true, undefined);
       const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, undefined);
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
       });
-      cachedEntity.setApplicationVariables(document.uri, thisApplicationFilteredVariables);
+      setApplicationVariables(document.uri, thisApplicationFilteredVariables);
     }
   }));
 
@@ -191,7 +193,7 @@ export function activate(context: ExtensionContext): void {
     workspace.openTextDocument(componentUri).then((document: TextDocument) => {
         const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
         const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-        cachedEntity.cacheComponentFromDocument(document, false, replaceComments, undefined);
+        cacheComponentFromDocument(document, false, replaceComments, undefined);
     });
   });
   componentWatcher.onDidDelete((componentUri: Uri) => {
@@ -199,11 +201,11 @@ export function activate(context: ExtensionContext): void {
       return;
     }
 
-    cachedEntity.clearCachedComponent(componentUri);
+    clearCachedComponent(componentUri);
 
     const fileName: string = uriBaseName(componentUri);
     if (fileName === "Application.cfc") {
-      cachedEntity.removeApplicationVariables(componentUri);
+      removeApplicationVariables(componentUri);
     }
   });
   context.subscriptions.push(componentWatcher);
@@ -221,7 +223,7 @@ export function activate(context: ExtensionContext): void {
       const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
         return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
       });
-      cachedEntity.setApplicationVariables(applicationUri, thisApplicationFilteredVariables);
+      setApplicationVariables(applicationUri, thisApplicationFilteredVariables);
     });
   });
   applicationCfmWatcher.onDidDelete((applicationUri: Uri) => {
@@ -229,7 +231,7 @@ export function activate(context: ExtensionContext): void {
       return;
     }
 
-    cachedEntity.removeApplicationVariables(applicationUri);
+    removeApplicationVariables(applicationUri);
   });
 
   context.subscriptions.push(workspace.onDidChangeConfiguration((evt: ConfigurationChangeEvent) => {
@@ -287,6 +289,30 @@ export function activate(context: ExtensionContext): void {
 
   commands.executeCommand("cfml.refreshGlobalDefinitionCache");
   commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
+
+  const api : object = {
+    isBulkCaching(): boolean {
+        return bulkCaching;
+    }
+  }
+
+  return api;
+}
+
+/**
+ *
+ * @param value
+ */
+export function setBulkCaching(value: boolean): void {
+    bulkCaching = value;
+}
+
+/**
+ *
+ * @returns
+ */
+export function getBulkCaching(): boolean {
+    return bulkCaching;
 }
 
 /**

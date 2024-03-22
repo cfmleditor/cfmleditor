@@ -3,17 +3,17 @@ import { Component, getApplicationUri } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
 import { isCfcFile } from "../utils/contextUtil";
-import * as cachedEntity from "./cachedEntities";
+import { clearAllGlobalFunctions, clearAllGlobalTags, clearAllGlobalEntityDefinitions, clearAllCustomSnippets, cacheAllComponents, getComponent } from "./cachedEntities";
 import SnippetService from "../utils/snippetService";
 
 /**
  * Refreshes (clears and retrieves) all CFML global definitions
  */
 export async function refreshGlobalDefinitionCache(): Promise<void> {
-  cachedEntity.clearAllGlobalFunctions();
-  cachedEntity.clearAllGlobalTags();
-  cachedEntity.clearAllGlobalEntityDefinitions();
-  cachedEntity.clearAllCustomSnippets();
+  clearAllGlobalFunctions();
+  clearAllGlobalTags();
+  clearAllGlobalEntityDefinitions();
+  clearAllCustomSnippets();
 
   const cfmlGlobalDefinitionsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.globalDefinitions");
   if (cfmlGlobalDefinitionsSettings.get<string>("source") === "cfdocs") {
@@ -30,7 +30,7 @@ export async function refreshGlobalDefinitionCache(): Promise<void> {
 export async function refreshWorkspaceDefinitionCache(_token: CancellationToken): Promise<void> {
   const cfmlIndexComponentsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.indexComponents");
   if (cfmlIndexComponentsSettings.get<boolean>("enable")) {
-    cachedEntity.cacheAllComponents(_token);
+    await cacheAllComponents(_token);
   }
 }
 
@@ -67,7 +67,7 @@ export async function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit,
   const document: TextDocument = editor.document;
 
   if (isCfcFile(document, _token)) {
-    const thisComponent: Component = cachedEntity.getComponent(document.uri, _token);
+    const thisComponent: Component = getComponent(document.uri, _token);
     if (thisComponent) {
       const functionStartLines: number[] = [];
       thisComponent.functions.filter((func: UserFunction) => {
