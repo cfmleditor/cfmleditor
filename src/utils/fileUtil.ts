@@ -1,5 +1,5 @@
 
-import { FileType, Uri, workspace, WorkspaceFolder } from "vscode";
+import { FileStat, FileType, Uri, workspace, WorkspaceFolder } from "vscode";
 import { Utils } from "vscode-uri";
 
 export interface CFMLMapping {
@@ -101,6 +101,30 @@ export async function fileExists(path: string): Promise<boolean> {
         return false;
     }
 }
+
+/**
+ *
+ * @param path file path
+ * @returns Promise
+ */
+export async function uriExists(path: Uri): Promise<boolean> {
+    try {
+        await workspace.fs.stat(path);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+/**
+ *
+ * @param path file path
+ * @returns Promise
+ */
+export async function uriStat(path: Uri): Promise<FileStat> {
+    return await workspace.fs.stat(path);
+}
+
 
 /**
  * Resolves a dot path to a list of file paths

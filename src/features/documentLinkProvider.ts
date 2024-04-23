@@ -1,7 +1,7 @@
 
 import { CancellationToken, DocumentLink, DocumentLinkProvider, FileStat, FileType, Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode";
 import { isUri } from "../utils/textUtil";
-import { fileExists } from "../utils/fileUtil";
+import { uriExists, uriStat } from "../utils/fileUtil";
 import { Utils } from "vscode-uri";
 
 export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
@@ -84,7 +84,8 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
     }
 
     // Check for relative local file
-    const linkPath: string = link.split(/[?#]/)[0];
+    let linkPath: string = link.split(/[?#]/)[0];
+    linkPath = linkPath.replace(/\\/,'/');
     let resourcePath: Uri;
     if (linkPath && linkPath[0] === "/") {
       // Relative to root
@@ -94,14 +95,13 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
       }
     } else {
       // Relative to document location
-      const base: Uri = Utils.dirname(Uri.parse(document.fileName));
+      const base: Uri = Utils.dirname(document.uri);
       resourcePath = Uri.joinPath(base, linkPath);
     }
 
     // Check custom virtual directories?
-
-    if (resourcePath && await fileExists(resourcePath.fsPath) ) {
-        const fileStat: FileStat = await workspace.fs.stat(resourcePath);
+    if (resourcePath && await uriExists(resourcePath) ) {
+        const fileStat: FileStat = await uriStat(resourcePath);
         if ( fileStat.type === FileType.File ) {
             return resourcePath;
         }
