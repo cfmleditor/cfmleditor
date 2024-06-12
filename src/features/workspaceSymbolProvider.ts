@@ -4,7 +4,7 @@ import { LANGUAGE_CFS_ID, LANGUAGE_ID } from "../cfmlMain";
 import { Component, COMPONENT_EXT } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import { equalsIgnoreCase } from "../utils/textUtil";
-import * as cachedEntity from "./cachedEntities";
+import { searchAllFunctionNames, searchAllComponentNames } from "./cachedEntities";
 import { uriBaseName } from "../utils/fileUtil";
 
 export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvider {
@@ -44,7 +44,7 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
       return workspaceSymbols;
     }
 
-    const userFunctions: UserFunction[] = cachedEntity.searchAllFunctionNames(query);
+    const userFunctions: UserFunction[] = searchAllFunctionNames(query);
 
     workspaceSymbols = workspaceSymbols.concat(
       userFunctions.map((userFunction: UserFunction) => {
@@ -57,7 +57,7 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
       })
     );
 
-    const components: Component[] = cachedEntity.searchAllComponentNames(query, _token);
+    const components: Component[] = searchAllComponentNames(query, _token);
     workspaceSymbols = workspaceSymbols.concat(
       components.map((component: Component) => {
         return new SymbolInformation(
