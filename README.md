@@ -196,8 +196,7 @@ Feel free to open issues for these or any other features you would find helpful 
 
 VS Code and this extension lack features and functionality that I find useful for development. Below are some supplemental extensions that I believe will improve the development experience for most.
 
-- [Auto Close Tag](https://marketplace.visualstudio.com/items?itemName=formulahendry.auto-close-tag) - Enables automatic closing of tags. There are settings (`cfml.autoCloseTags.*`) for this extension to automate the configuration for CFML tags.
-- [CFLint](https://marketplace.visualstudio.com/items?itemName=KamasamaK.vscode-cflint) - Integrates CFLint into VS Code as diagnostics/problems.
+- [cfmleditor-lint](https://marketplace.visualstudio.com/items?itemName=CFMLEditor.cfmleditor-lint) - Integrates CFLint into VS Code as diagnostics/problems.
 - [highlight-matching-tag](https://marketplace.visualstudio.com/items?itemName=vincaslt.highlight-matching-tag) - This will highlight the relevant tags based on your configuration with a configurable style. There are also some useful commands.
 - [Path Autocomplete](https://marketplace.visualstudio.com/items?itemName=ionutvmi.path-autocomplete) - Provides suggestions when entering file paths
 
