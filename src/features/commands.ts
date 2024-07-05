@@ -1,10 +1,11 @@
-import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit } from "vscode";
+import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit, Position } from "vscode";
 import { Component, getApplicationUri } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
 import { isCfcFile } from "../utils/contextUtil";
 import { clearAllGlobalFunctions, clearAllGlobalTags, clearAllGlobalEntityDefinitions, clearAllCustomSnippets, cacheAllComponents, getComponent } from "./cachedEntities";
 import SnippetService from "../utils/snippetService";
+import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 
 /**
  * Refreshes (clears and retrieves) all CFML global definitions
@@ -81,4 +82,30 @@ export async function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit,
       }
     }
   }
+}
+
+
+/**
+ * @param editor  The text editor which represents the document for which to fold all function
+ * @param edit
+ * @param args
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: any): Promise<void> {
+
+    const position: Position = editor.selection.start;
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, true, null);
+
+    if ( documentPositionStateContext.positionIsScript ) {
+        commands.executeCommand("editor.action.insertSnippet", {
+            "langId": "cfml",
+            "snippet": args.script
+        });
+    } else {
+        commands.executeCommand("editor.action.insertSnippet", {
+            "langId": "cfml",
+            "snippet": args.tag
+        });
+    }
+
 }

@@ -2,7 +2,7 @@
 	"name": "cfmleditor",
 	"displayName": "CFML Editor",
 	"description": "CFML Language Editor",
-	"version": "0.6.22",
+	"version": "0.6.23",
 	"preview": true,
 	"author": "cfmleditor",
 	"publisher": "cfmleditor",
@@ -575,10 +575,13 @@
 				"when": "editorTextFocus && !editorReadonly && editorLangId == cfml"
 			},
 			{
-				"command": "cfml.toggleBlockComment",
-				"key": "shift+alt+a",
-				"mac": "shift+alt+a",
-				"when": "editorTextFocus && !editorReadonly && editorLangId == cfml"
+				"command": "cfml.insertSnippet",
+				"key": "ctrl+shift+d",
+				"mac": "ctrl+shift+d",
+				"args": {
+					"tag": "<cfdump var=\"$TM_SELECTED_TEXT\">",
+					"script": "writeDump($TM_SELECTED_TEXT)"
+				}
 			}
 		]
 	},
@@ -609,7 +612,7 @@
 		"vscode-uri": "^3.0.8"
 	},
 	"devDependencies": {
-		"@types/micromatch": "^4.0.7",
+		"@types/micromatch": "^4.0.9",
 		"@types/node": "~18.15.10",
 		"@types/request": "~2.48.7",
 		"@types/semver": "~7.5.8",
@@ -625,7 +628,7 @@
 		"rimraf": "^5.0.7",
 		"ts-loader": "^9.2.2",
 		"typescript": "^5.3.3",
-		"webpack": "^5.92.0",
+		"webpack": "^5.92.1",
 		"webpack-cli": "^5.1.4"
 	}
 }
