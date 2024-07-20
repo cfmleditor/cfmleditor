@@ -2,6 +2,51 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.23] - 2024-07-04
+
+- Create "cfml.insertSnippet" command as a wrapper for editor.action.insertSnippet
+- Update recommended extensions
+
+## [0.6.22] - 2024-06-11
+
+- Update cfml slack link
+- Update dependencies 
+
+## [0.6.21] - 2024-04-23
+
+- Fix include path resolution
+
+## [0.6.20] - 2024-03-22
+
+- Updates for cfmleditor-lint integration
+
+## [0.6.19] - 2024-03-18
+
+- Added .cfs file support
+
+## [0.6.18] - 2024-03-15
+
+- Multi line autoclose fixes
+
+## [0.6.17] - 2024-03-14
+
+- Fix relative path resolution
+
+## [0.6.16] - 2024-03-10
+
+- Test release
+
+## [0.6.15] - 2024-03-10
+
+- Upgraded TSLint to typescript-eslint plugin for ESLint
+- Improvements for nested comments
+- Various bug fixes
+
+## [0.6.14] - 2024-02-02
+
+- Pruned some packages 
+- Fixed some cfscript function parsing and highlighting
+
 ## [0.6.12] - 2024-01-12
 
 - Further fixes to Auto Tag close
