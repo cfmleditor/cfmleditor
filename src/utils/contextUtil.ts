@@ -271,11 +271,16 @@ export function getCfScriptRanges(document: TextDocument, range: Range, _token: 
  * @param docRange Range within which to check
  * @param fast Whether to choose the faster but less accurate method
  * @param _token
+ * @param exclDocumentRanges
  * @returns
  */
-export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range, fast: boolean = false, _token: CancellationToken): DocumentContextRanges {
+export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range, fast: boolean = false, _token: CancellationToken, exclDocumentRanges: boolean = false): DocumentContextRanges {
   if (fast) {
     return { commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token) };
+  }
+
+  if ( exclDocumentRanges ) {
+    return { commentRanges: [], stringRanges: [], stringEmbeddedCfmlRanges: [] }
   }
 
   return getCommentAndStringRangesIterated(document, isScript, docRange, _token);
@@ -584,7 +589,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
     });
   }
 
-  return { commentRanges, stringRanges, stringEmbeddedCfmlRanges: stringEmbeddedCFMLRanges };
+  return { commentRanges: commentRanges, stringRanges: stringRanges, stringEmbeddedCfmlRanges: stringEmbeddedCFMLRanges };
 }
 
 /**

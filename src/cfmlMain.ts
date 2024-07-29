@@ -165,6 +165,11 @@ export function activate(context: ExtensionContext): object {
   context.subscriptions.push(languages.registerColorProvider(DOCUMENT_SELECTOR, new CFMLDocumentColorProvider()));
 
   context.subscriptions.push(workspace.onDidSaveTextDocument(async (document: TextDocument) => {
+
+    if ( !document ) {
+        return;
+    }
+
     const documentUri = document.uri;
 
     if (shouldExcludeDocument(documentUri)) {

@@ -94,7 +94,7 @@ export async function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit,
 export async function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: any): Promise<void> {
 
     const position: Position = editor.selection.start;
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, true, null);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, true, null, false);
 
     if ( documentPositionStateContext.positionIsScript ) {
         commands.executeCommand("editor.action.insertSnippet", {

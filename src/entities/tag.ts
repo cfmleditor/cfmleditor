@@ -888,7 +888,7 @@ export async function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, 
   const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
   const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-  const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments, _token);
+  const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments, _token, false);
 
   const currentWord: string = documentPositionStateContext.currentWord;
   let globalTag: GlobalTag = getGlobalTag(currentWord);

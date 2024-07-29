@@ -112,7 +112,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
     const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 
     const currentWordMatches = (name: string): boolean => {
       return matches(documentPositionStateContext.currentWord, name);

@@ -25,7 +25,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token);
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token, true);
 
     if (documentStateContext.isCfcFile) {
         const componentSymbols = await CFMLDocumentSymbolProvider.getComponentSymbols(documentStateContext, _token)
@@ -109,6 +109,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
       if (!userFunction.isImplicit) {
         // Component function local variables
         const localVarSymbols: DocumentSymbol[] = [];
+        // TODO: Improve performance
         const localVariables: Variable[] = await getLocalVariables(userFunction, documentStateContext, component.isScript, _token);
         localVariables.forEach((variable: Variable) => {
           let detail = "";

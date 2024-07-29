@@ -21,7 +21,7 @@ import { MyMap, MySet } from "../utils/collections";
 import { getCssRanges, isCfmFile } from "../utils/contextUtil";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { equalsIgnoreCase, textToMarkdownCompatibleString, textToMarkdownString } from "../utils/textUtil";
-import * as cachedEntity from "./cachedEntities";
+import { isGlobalFunction, getGlobalFunction, getGlobalTag, isGlobalTag, componentPathToUri, getGlobalEntityDefinition } from "./cachedEntities";
 import { getComponent } from "./cachedEntities";
 import { uriBaseName } from "../utils/fileUtil";
 
@@ -77,7 +77,7 @@ export default class CFMLHoverProvider implements HoverProvider {
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 
     const userEngine: CFMLEngine = documentPositionStateContext.userEngine;
 
@@ -101,14 +101,14 @@ export default class CFMLHoverProvider implements HoverProvider {
       }
 
       // Global tags
-      if (cachedEntity.isGlobalTag(currentWord)) {
+      if (isGlobalTag(currentWord)) {
         if (tagPrefixPattern.test(docPrefix)) {
-          definition = this.globalTagToHoverProviderItem(cachedEntity.getGlobalTag(lowerCurrentWord));
+          definition = this.globalTagToHoverProviderItem(getGlobalTag(lowerCurrentWord));
           return this.createHover(definition);
         }
 
         if (userEngine.supportsScriptTags() && functionSuffixPattern.test(lineSuffix)) {
-          definition = this.globalTagToHoverProviderItem(cachedEntity.getGlobalTag(lowerCurrentWord), true);
+          definition = this.globalTagToHoverProviderItem(getGlobalTag(lowerCurrentWord), true);
           return this.createHover(definition);
         }
       }
@@ -120,7 +120,7 @@ export default class CFMLHoverProvider implements HoverProvider {
       const startSigPositionPrefix = `${componentPathWordPrefix}${componentPathWord}(`;
       const objectNewInstanceInitPrefixMatch: RegExpExecArray = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
       if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
-        const componentUri: Uri = cachedEntity.componentPathToUri(componentPathWord, document.uri, _token);
+        const componentUri: Uri = componentPathToUri(componentPathWord, document.uri, _token);
         if (componentUri) {
           const initComponent: Component = getComponent(componentUri, _token);
           if (initComponent) {
@@ -137,8 +137,8 @@ export default class CFMLHoverProvider implements HoverProvider {
       // Functions
       if (functionSuffixPattern.test(lineSuffix)) {
         // Global function
-        if (!documentPositionStateContext.isContinuingExpression && cachedEntity.isGlobalFunction(currentWord)) {
-          definition = this.functionToHoverProviderItem(cachedEntity.getGlobalFunction(lowerCurrentWord));
+        if (!documentPositionStateContext.isContinuingExpression && isGlobalFunction(currentWord)) {
+          definition = this.functionToHoverProviderItem(getGlobalFunction(lowerCurrentWord));
           return this.createHover(definition);
         }
 
@@ -157,7 +157,7 @@ export default class CFMLHoverProvider implements HoverProvider {
         if (cfTagAttributeMatch) {
           const ignoredTags: string[] = expressionCfmlTags;
           const tagName: string = cfTagAttributeMatch[2];
-          const globalTag: GlobalTag = cachedEntity.getGlobalTag(tagName);
+          const globalTag: GlobalTag = getGlobalTag(tagName);
           const attributeValueMatch: RegExpExecArray = VALUE_PATTERN.exec(docPrefix);
           if (globalTag && !ignoredTags.includes(globalTag.name) && !attributeValueMatch) {
             // TODO: Check valid attribute before calling createHover
@@ -252,7 +252,7 @@ export default class CFMLHoverProvider implements HoverProvider {
       language: LANGUAGE_ID
     };
 
-    const globalEntity: CFDocsDefinitionInfo = cachedEntity.getGlobalEntityDefinition(tag.name);
+    const globalEntity: CFDocsDefinitionInfo = getGlobalEntityDefinition(tag.name);
     if (globalEntity && globalEntity.engines) {
       hoverItem.engineLinks = new MyMap();
       const cfmlEngineNames: CFMLEngineName[] = [
@@ -321,13 +321,13 @@ export default class CFMLHoverProvider implements HoverProvider {
       returnType: returnType
     };
 
-    if (cachedEntity.isGlobalFunction(func.name)) {
+    if (isGlobalFunction(func.name)) {
       const globalFunc = func as GlobalFunction;
       // TODO: Use constructed syntax string instead. Indicate overloads/multiple signatures
       hoverItem.syntax = globalFunc.syntax + ": " + returnType;
       hoverItem.genericDocLink = cfDocsLinkPrefix + globalFunc.name;
 
-      const globalEntity: CFDocsDefinitionInfo = cachedEntity.getGlobalEntityDefinition(globalFunc.name);
+      const globalEntity: CFDocsDefinitionInfo = getGlobalEntityDefinition(globalFunc.name);
       if (globalEntity && globalEntity.engines) {
         hoverItem.engineLinks = new MyMap();
         const cfmlEngineNames: CFMLEngineName[] = [

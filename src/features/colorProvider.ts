@@ -23,10 +23,10 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
   public async provideDocumentColors(document: TextDocument, _token: CancellationToken): Promise<ColorInformation[]> {
     const result: ColorInformation[] = [];
 
-    const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
-    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+    // const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+    // const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token);
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, false, _token, true);
     const cssRanges: Range[] = getCssRanges(documentStateContext, undefined, _token);
 
     for (const cssRange of cssRanges) {

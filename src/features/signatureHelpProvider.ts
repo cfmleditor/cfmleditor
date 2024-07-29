@@ -11,7 +11,7 @@ import { collectDocumentVariableAssignments, Variable } from "../entities/variab
 import { BackwardIterator, getPrecedingIdentifierRange, isContinuingExpression, getStartSigPosition as findStartSigPosition, getClosingPosition } from "../utils/contextUtil";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { equalsIgnoreCase, textToMarkdownString } from "../utils/textUtil";
-import * as cachedEntity from "./cachedEntities";
+import { getGlobalFunction } from "./cachedEntities";
 import { componentPathToUri, getComponent } from "./cachedEntities";
 
 export default class CFMLSignatureHelpProvider implements SignatureHelpProvider {
@@ -32,7 +32,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
     if (documentPositionStateContext.positionInComment) {
       return null;
     }
@@ -94,7 +94,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
       // Global function
       if (!isContinuingExpression(startIdentPositionPrefix, _token)) {
-        entry = cachedEntity.getGlobalFunction(lowerIdent);
+        entry = getGlobalFunction(lowerIdent);
       }
 
       // Check user functions

@@ -321,9 +321,13 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
   let textOffset: number = 0;
   let documentText: string = documentStateContext.sanitizedDocumentText;
 
-  if (docRange && document.validateRange(docRange)) {
-    textOffset = document.offsetAt(docRange.start);
-    documentText = documentText.slice(textOffset, document.offsetAt(docRange.end));
+  if (docRange) {
+    if ( document.validateRange(docRange) ) {
+        textOffset = document.offsetAt(docRange.start);
+        documentText = documentText.slice(textOffset, document.offsetAt(docRange.end));
+    } else {
+        return variables;
+    }
   }
 
   const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
