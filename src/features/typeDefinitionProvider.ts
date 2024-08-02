@@ -19,6 +19,8 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideTypeDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<Definition> {
+    // console.log("provideTypeDefinition:CFMLTypeDefinitionProvider:" + _token?.isCancellationRequested);
+
     const results: Definition = [];
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);

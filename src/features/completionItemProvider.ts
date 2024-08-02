@@ -94,6 +94,9 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
    * @returns
    */
   public async provideCompletionItems(document: TextDocument, position: Position, _token: CancellationToken, context: CompletionContext): Promise<CompletionItem[] | undefined> {
+
+    // console.log("provideWorkspaceSymbols:CFMLCompletionItemProvider" + _token?.isCancellationRequested);
+
     let result: CompletionItem[] = [];
 
     const documentUri: Uri = document.uri;

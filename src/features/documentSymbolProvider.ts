@@ -16,11 +16,14 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideDocumentSymbols(document: TextDocument, _token: CancellationToken): Promise<DocumentSymbol[]> {
+
     let documentSymbols: DocumentSymbol[] = [];
 
     if (!document.fileName) {
       return documentSymbols;
     }
+
+    // console.log("provideDocumentSymbols:CFMLDocumentSymbolProvider:" + _token?.isCancellationRequested);
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);

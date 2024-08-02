@@ -51,6 +51,7 @@ export default class CFMLHoverProvider implements HoverProvider {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideHover(document: TextDocument, position: Position, _token: CancellationToken): Promise<Hover | undefined> {
+
     const cfmlHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover", document.uri);
     if (!cfmlHoverSettings.get<boolean>("enable", true)) {
       return undefined;
@@ -73,6 +74,8 @@ export default class CFMLHoverProvider implements HoverProvider {
    */
   public async getHover(document: TextDocument, position: Position, _token: CancellationToken): Promise<Hover | undefined> {
     let definition: HoverProviderItem;
+
+    // console.log("getHover:CFMLHoverProvider:" + _token?.isCancellationRequested);
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);

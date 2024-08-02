@@ -26,6 +26,9 @@ export default class DocBlockCompletions implements CompletionItemProvider {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideCompletionItems(document: TextDocument, position: Position, _token: CancellationToken): Promise<CompletionItem[]> {
+
+    // console.log("provideCompletionItems:DocBlockCompletions:" + _token?.isCancellationRequested);
+
     const result: CompletionItem[] = [];
     let wordMatchRange: Range;
 

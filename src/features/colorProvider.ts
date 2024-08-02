@@ -21,6 +21,8 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideDocumentColors(document: TextDocument, _token: CancellationToken): Promise<ColorInformation[]> {
+    // console.log("provideDocumentColors:CFMLDocumentColorProvider:" + _token?.isCancellationRequested);
+
     const result: ColorInformation[] = [];
 
     // const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);

@@ -24,6 +24,8 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
    * @returns
    */
   public async provideSignatureHelp(document: TextDocument, position: Position, _token: CancellationToken, _context: SignatureHelpContext): Promise<SignatureHelp | null> {
+    // console.log("provideSignatureHelp:CFMLSignatureHelpProvider:" + _token?.isCancellationRequested);
+
     const cfmlSignatureSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.signature", document.uri);
     if (!cfmlSignatureSettings.get<boolean>("enable", true)) {
       return null;

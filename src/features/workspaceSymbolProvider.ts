@@ -17,6 +17,9 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideWorkspaceSymbols(query: string, _token: CancellationToken): Promise<SymbolInformation[]> {
+
+    // console.log("provideWorkspaceSymbols:CFMLWorkspaceSymbolProvider:" + _token?.isCancellationRequested);
+
     let workspaceSymbols: SymbolInformation[] = [];
     if (query === "") {
       return workspaceSymbols;
