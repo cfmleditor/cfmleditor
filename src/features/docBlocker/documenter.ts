@@ -9,47 +9,50 @@ import { Doc, DocType } from "./doc";
  * snippet and pass it back
  */
 export default class Documenter {
-  /**
-   * The target position of the comment block
-   */
-  protected targetPosition: Position;
+    /**
+     * The target position of the comment block
+     */
+    protected targetPosition: Position;
 
-  /**
-   * The document to pass to each editor
-   */
-  protected document: TextDocument;
+    /**
+     * The document to pass to each editor
+     */
+    protected document: TextDocument;
 
-  /**
-   * Creates an instance of Documenter.
-   * @param position
-   * @param document
-   */
-  public constructor(position: Position, document: TextDocument) {
-    this.targetPosition = position;
-    this.document = document;
-  }
-
-  /**
-   * Load and test each type of signature to see if they can trigger and
-   * if not load an empty block
-   * @returns
-   */
-  public autoDocument(): SnippetString {
-    const func = new FunctionBlock(this.targetPosition, this.document, undefined);
-    if (func.test()) {
-      return func.constructDoc().build();
+    /**
+     * Creates an instance of Documenter.
+     * @param position
+     * @param document
+     */
+    public constructor(position: Position, document: TextDocument) {
+        this.targetPosition = position;
+        this.document = document;
     }
 
-    const prop = new Property(this.targetPosition, this.document, undefined);
-    if (prop.test()) {
-      return prop.constructDoc().build();
-    }
+    /**
+     * Load and test each type of signature to see if they can trigger and
+     * if not load an empty block
+     * @returns
+     */
+    public async autoDocument(): Promise<SnippetString> {
+        const func = new FunctionBlock(this.targetPosition, this.document);
+        await func.setup();
+        if (func.test()) {
+            return func.constructDoc().build();
+        }
 
-    const comp = new Component(this.targetPosition, this.document, undefined);
-    if (comp.test()) {
-      return comp.constructDoc().build();
-    }
+        const prop = new Property(this.targetPosition, this.document);
+        await prop.setup();
+        if (prop.test()) {
+            return prop.constructDoc().build();
+        }
 
-    return new Doc(DocType.Unknown, this.document.uri).build(true);
-  }
+        const comp = new Component(this.targetPosition, this.document);
+        await comp.setup();
+        if (comp.test()) {
+            return comp.constructDoc().build();
+        }
+
+        return new Doc(DocType.Unknown, this.document.uri).build(true);
+    }
 }

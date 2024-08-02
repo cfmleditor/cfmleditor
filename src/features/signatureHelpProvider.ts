@@ -34,7 +34,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
+    const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
     if (documentPositionStateContext.positionInComment) {
       return null;
     }
@@ -73,7 +73,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
       const componentDotPath: string = objectNewInstanceInitPrefixMatch[2];
       const componentUri: Uri = componentPathToUri(componentDotPath, document.uri, _token);
       if (componentUri) {
-        const initComponent: Component = getComponent(componentUri, _token);
+        const initComponent: Component = await getComponent(componentUri, _token);
         if (initComponent) {
           const initMethod: string = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
           if (initComponent.functions.has(initMethod)) {

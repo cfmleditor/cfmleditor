@@ -80,10 +80,12 @@ export default class CFMLHoverProvider implements HoverProvider {
             return undefined;
         }
 
+        // console.log("getHover:CFMLHoverProvider:" + _token?.isCancellationRequested);
+
         let definition: HoverProviderItem;
         const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
         const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-        const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, true);
+        const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(document, position, false, replaceComments, _token, true);
         const userEngine: CFMLEngine = documentPositionStateContext.userEngine;
         const textLine: TextLine = document.lineAt(position);
         const lineText: string = documentPositionStateContext.sanitizedDocumentText.slice(document.offsetAt(textLine.range.start), document.offsetAt(textLine.range.end));
@@ -124,7 +126,7 @@ export default class CFMLHoverProvider implements HoverProvider {
         if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
             const componentUri: Uri = componentPathToUri(componentPathWord, document.uri, _token);
             if (componentUri) {
-                const initComponent: Component = getComponent(componentUri, _token);
+                const initComponent: Component = await getComponent(componentUri, _token);
                 if (initComponent) {
                     const initMethod = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
                     if (initComponent.functions.has(initMethod)) {

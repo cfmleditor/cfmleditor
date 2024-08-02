@@ -4,8 +4,8 @@ import { getComponent, hasComponent } from "../features/cachedEntities";
 import { AttributeQuoteType } from "../entities/attribute";
 
 export enum Quote {
-  Single = "single",
-  Double = "double"
+    Single = "single",
+    Double = "double"
 }
 
 /**
@@ -14,20 +14,20 @@ export enum Quote {
  * @returns string literal for type of quote
  */
 export function getQuote(quote: Quote | AttributeQuoteType): string {
-  let quoteStr: string = "";
+    let quoteStr: string = "";
 
-  switch (quote) {
-    case Quote.Single:
-      quoteStr = "'";
-      break;
-    case Quote.Double:
-      quoteStr = '"';
-      break;
-    default:
-      break;
-  }
+    switch (quote) {
+        case Quote.Single:
+            quoteStr = "'";
+            break;
+        case Quote.Double:
+            quoteStr = '"';
+            break;
+        default:
+            break;
+    }
 
-  return quoteStr;
+    return quoteStr;
 }
 
 /**
@@ -37,10 +37,10 @@ export function getQuote(quote: Quote | AttributeQuoteType): string {
  * @returns boolean
  */
 export function equalsIgnoreCase(string1: string, string2: string): boolean {
-  if (string1 === undefined || string2 === undefined) {
-    return false;
-  }
-  return string1.toLowerCase() === string2.toLowerCase();
+    if (string1 === undefined || string2 === undefined) {
+        return false;
+    }
+    return string1.toLowerCase() === string2.toLowerCase();
 }
 
 /**
@@ -49,7 +49,7 @@ export function equalsIgnoreCase(string1: string, string2: string): boolean {
  * @returns string
  */
 export function textToMarkdownCompatibleString(text: string): string {
-  return text.replace(/\n(?!\n)/g, "  \n");
+    return text.replace(/\n(?!\n)/g, "  \n");
 }
 
 /**
@@ -58,7 +58,7 @@ export function textToMarkdownCompatibleString(text: string): string {
  * @returns MarkdownString
  */
 export function textToMarkdownString(text: string): MarkdownString {
-  return new MarkdownString(textToMarkdownCompatibleString(text));
+    return new MarkdownString(textToMarkdownCompatibleString(text));
 }
 
 /**
@@ -67,7 +67,7 @@ export function textToMarkdownString(text: string): MarkdownString {
  * @returns string
  */
 export function escapeMarkdown(text: string): string {
-  return text.replace(/[\\`*_{}[\]()#+\-.!]/g, "\\$&");
+    return text.replace(/[\\`*_{}[\]()#+\-.!]/g, "\\$&");
 }
 
 /**
@@ -77,18 +77,18 @@ export function escapeMarkdown(text: string): string {
  * @returns string
  */
 export function replaceRangeWithSpaces(document: TextDocument, ranges: Range[]): string {
-  let documentText: string = document.getText();
-  const stringRegex: RegExp = /\S/g;
+    let documentText: string = document.getText();
+    const stringRegex: RegExp = /\S/g;
 
-  ranges.forEach((range: Range) => {
-    const rangeStartOffset: number = document.offsetAt(range.start);
-    const rangeEndOffset: number = document.offsetAt(range.end);
-    documentText = documentText.substring(0, rangeStartOffset)
-      + documentText.substring(rangeStartOffset, rangeEndOffset).replace(stringRegex, " ")
-      + documentText.substring(rangeEndOffset, documentText.length);
-  });
+    ranges.forEach((range: Range) => {
+        const rangeStartOffset: number = document.offsetAt(range.start);
+        const rangeEndOffset: number = document.offsetAt(range.end);
+        documentText = documentText.substring(0, rangeStartOffset)
+            + documentText.substring(rangeStartOffset, rangeEndOffset).replace(stringRegex, " ")
+            + documentText.substring(rangeEndOffset, documentText.length);
+    });
 
-  return documentText;
+    return documentText;
 }
 
 /**
@@ -99,19 +99,19 @@ export function replaceRangeWithSpaces(document: TextDocument, ranges: Range[]):
  * @param _token
  * @returns string
  */
-export function getSanitizedDocumentText(document: TextDocument, commentRanges: Range[], replaceComments: boolean = false, _token: CancellationToken): string {
-  if ( replaceComments !== true ) {
-    return document.getText();
-  }
-  let documentCommentRanges: Range[];
-  if (commentRanges) {
-    documentCommentRanges = commentRanges;
-  } else {
-    const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && getComponent(document.uri, _token).isScript);
-    documentCommentRanges = getDocumentContextRanges(document, docIsScript, undefined, false, _token).commentRanges;
-  }
+export async function getSanitizedDocumentText(document: TextDocument, commentRanges: Range[], replaceComments: boolean = false, _token: CancellationToken): Promise<string> {
+    if (replaceComments !== true) {
+        return document.getText();
+    }
+    let documentCommentRanges: Range[];
+    if (commentRanges) {
+        documentCommentRanges = commentRanges;
+    } else {
+        const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (await getComponent(document.uri, _token)).isScript);
+        documentCommentRanges = getDocumentContextRanges(document, docIsScript, undefined, false, _token).commentRanges;
+    }
 
-  return replaceRangeWithSpaces(document, documentCommentRanges);
+    return replaceRangeWithSpaces(document, documentCommentRanges);
 }
 
 /**
@@ -122,13 +122,13 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges: 
  * @param _token
  * @returns string
  */
-export function getPrefixText(document: TextDocument, position: Position, replaceComments: boolean = false, _token: CancellationToken): string {
-  let documentText: string = document.getText();
-  if (replaceComments) {
-    documentText = getSanitizedDocumentText(document, undefined, false, _token);
-  }
+export async function getPrefixText(document: TextDocument, position: Position, replaceComments: boolean = false, _token: CancellationToken): Promise<string> {
+    let documentText: string = document.getText();
+    if (replaceComments) {
+        documentText = await getSanitizedDocumentText(document, undefined, false, _token);
+    }
 
-  return documentText.slice(0, document.offsetAt(position));
+    return documentText.slice(0, document.offsetAt(position));
 }
 
 
@@ -141,5 +141,5 @@ const schemePattern = /^[a-zA-Z][a-zA-Z0-9+\-.]+:/;
  * @returns boolean
  */
 export function isUri(str: string): boolean {
-  return str && schemePattern.test(str);
+    return str && schemePattern.test(str);
 }

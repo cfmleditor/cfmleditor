@@ -40,7 +40,7 @@ let customSnippets: Snippets = {};
  * @returns
  */
 export function isGlobalFunction(name: string): boolean {
-  return Object.prototype.hasOwnProperty.call(allGlobalFunctions, name.toLowerCase());
+    return Object.prototype.hasOwnProperty.call(allGlobalFunctions, name.toLowerCase());
 }
 
 /**
@@ -49,7 +49,7 @@ export function isGlobalFunction(name: string): boolean {
  * @returns
  */
 export function isGlobalTag(name: string): boolean {
-  return Object.prototype.hasOwnProperty.call(allGlobalTags, name.toLowerCase());
+    return Object.prototype.hasOwnProperty.call(allGlobalTags, name.toLowerCase());
 }
 
 /**
@@ -58,7 +58,7 @@ export function isGlobalTag(name: string): boolean {
  * @returns
  */
 export function isGlobalEntity(name: string): boolean {
-  return Object.prototype.hasOwnProperty.call(allGlobalTags, name.toLowerCase()) || Object.prototype.hasOwnProperty.call(allGlobalFunctions, name.toLowerCase());
+    return Object.prototype.hasOwnProperty.call(allGlobalTags, name.toLowerCase()) || Object.prototype.hasOwnProperty.call(allGlobalFunctions, name.toLowerCase());
 }
 
 /**
@@ -66,7 +66,7 @@ export function isGlobalEntity(name: string): boolean {
  * @param functionDefinition The global function object to cache
  */
 export function setGlobalFunction(functionDefinition: GlobalFunction): void {
-  allGlobalFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+    allGlobalFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
 }
 
 /**
@@ -75,7 +75,7 @@ export function setGlobalFunction(functionDefinition: GlobalFunction): void {
  * @returns
  */
 export function getGlobalFunction(functionName: string): GlobalFunction {
-  return allGlobalFunctions[functionName.toLowerCase()];
+    return allGlobalFunctions[functionName.toLowerCase()];
 }
 
 /**
@@ -83,7 +83,7 @@ export function getGlobalFunction(functionName: string): GlobalFunction {
  * @returns
  */
 export function getAllGlobalFunctions(): GlobalFunctions {
-  return allGlobalFunctions;
+    return allGlobalFunctions;
 }
 
 /**
@@ -130,7 +130,7 @@ export function clearAllGlobalMemberFunctions(): void {
  * @param tagDefinition The global tag object to cache
  */
 export function setGlobalTag(tagDefinition: GlobalTag): void {
-  allGlobalTags[tagDefinition.name.toLowerCase()] = tagDefinition;
+    allGlobalTags[tagDefinition.name.toLowerCase()] = tagDefinition;
 }
 
 /**
@@ -139,7 +139,7 @@ export function setGlobalTag(tagDefinition: GlobalTag): void {
  * @returns
  */
 export function getGlobalTag(tagName: string): GlobalTag {
-  return allGlobalTags[tagName.toLowerCase()];
+    return allGlobalTags[tagName.toLowerCase()];
 }
 
 /**
@@ -147,14 +147,14 @@ export function getGlobalTag(tagName: string): GlobalTag {
  * @returns
  */
 export function getAllGlobalTags(): GlobalTags {
-  return allGlobalTags;
+    return allGlobalTags;
 }
 
 /**
  * Clears all of the cached global tags
  */
 export function clearAllGlobalTags(): void {
-  allGlobalTags = {};
+    allGlobalTags = {};
 }
 
 /**
@@ -162,7 +162,7 @@ export function clearAllGlobalTags(): void {
  * @param definition The global definition object to cache
  */
 export function setGlobalEntityDefinition(definition: CFDocsDefinitionInfo): void {
-  allGlobalEntityDefinitions.set(definition.name.toLowerCase(), definition);
+    allGlobalEntityDefinitions.set(definition.name.toLowerCase(), definition);
 }
 
 /**
@@ -171,7 +171,7 @@ export function setGlobalEntityDefinition(definition: CFDocsDefinitionInfo): voi
  * @returns
  */
 export function getGlobalEntityDefinition(name: string): CFDocsDefinitionInfo {
-  return allGlobalEntityDefinitions.get(name.toLowerCase());
+    return allGlobalEntityDefinitions.get(name.toLowerCase());
 }
 
 /**
@@ -179,14 +179,14 @@ export function getGlobalEntityDefinition(name: string): CFDocsDefinitionInfo {
  * @returns
  */
 export function getAllGlobalEntityDefinitions(): MyMap<string, CFDocsDefinitionInfo> {
-  return allGlobalEntityDefinitions;
+    return allGlobalEntityDefinitions;
 }
 
 /**
  * Clears all of the cached global entity definitions
  */
 export function clearAllGlobalEntityDefinitions(): void {
-  allGlobalEntityDefinitions = new MyMap<string, CFDocsDefinitionInfo>();
+    allGlobalEntityDefinitions = new MyMap<string, CFDocsDefinitionInfo>();
 }
 
 /**
@@ -194,19 +194,19 @@ export function clearAllGlobalEntityDefinitions(): void {
  * @param comp The component to cache
  */
 function setComponent(comp: Component): void {
-  allComponentsByUri[comp.uri.toString()] = comp;
-  const componentKey: string = uriBaseName(comp.uri, COMPONENT_EXT).toLowerCase();
-  if (!allComponentsByName[componentKey]) {
-    allComponentsByName[componentKey] = {};
-  }
-  allComponentsByName[componentKey][comp.uri.toString()] = comp;
+    allComponentsByUri[comp.uri.toString()] = comp;
+    const componentKey: string = uriBaseName(comp.uri, COMPONENT_EXT).toLowerCase();
+    if (!allComponentsByName[componentKey]) {
+        allComponentsByName[componentKey] = {};
+    }
+    allComponentsByName[componentKey][comp.uri.toString()] = comp;
 
-  try {
-    allComponentNames.addWord(componentKey);
-  } catch (ex) {
-    //console.warn(ex);
-    console.warn(`Unable to add ${componentKey} to trie`);
-  }
+    try {
+        allComponentNames.addWord(componentKey);
+    } catch (ex) {
+        //console.warn(ex);
+        console.warn(`Unable to add ${componentKey} to trie`);
+    }
 }
 
 /**
@@ -215,12 +215,13 @@ function setComponent(comp: Component): void {
  * @param _token
  * @returns
  */
-export function getComponent(uri: Uri, _token: CancellationToken): Component {
-  if (!hasComponent(uri, _token)) {
-    /* TODO: If not already cached, attempt to read, parse and cache. Tricky since read is async */
-  }
+export async function getComponent(uri: Uri, _token: CancellationToken): Promise<Component> {
+    if (!hasComponent(uri, _token)) {
+        /* TODO: If not already cached, attempt to read, parse and cache. Tricky since read is async */
+        return undefined;
+    }
 
-  return allComponentsByUri[uri.toString()];
+    return allComponentsByUri[uri.toString()];
 }
 
 /**
@@ -231,7 +232,7 @@ export function getComponent(uri: Uri, _token: CancellationToken): Component {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
-  return Object.prototype.hasOwnProperty.call(allComponentsByUri, uri.toString());
+    return Object.prototype.hasOwnProperty.call(allComponentsByUri, uri.toString());
 }
 
 /**
@@ -242,11 +243,11 @@ export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function searchAllComponentNames(query: string, _token: CancellationToken): Component[] {
-  let components: Component[] = [];
-  allComponentNames.getPrefix(query.toLowerCase()).forEach((compKey: string) => {
-    components = components.concat(Object.values(allComponentsByName[compKey]));
-  });
-  return components;
+    let components: Component[] = [];
+    allComponentNames.getPrefix(query.toLowerCase()).forEach((compKey: string) => {
+        components = components.concat(Object.values(allComponentsByName[compKey]));
+    });
+    return components;
 }
 
 /**
@@ -254,18 +255,18 @@ export function searchAllComponentNames(query: string, _token: CancellationToken
  * @param userFunction The user function to cache
  */
 function setUserFunction(userFunction: UserFunction): void {
-  const functionKey: string = userFunction.name.toLowerCase();
+    const functionKey: string = userFunction.name.toLowerCase();
 
-  if (!allUserFunctionsByName[functionKey]) {
-    allUserFunctionsByName[functionKey] = {};
-  }
-  allUserFunctionsByName[functionKey][userFunction.location.uri.toString()] = userFunction;
+    if (!allUserFunctionsByName[functionKey]) {
+        allUserFunctionsByName[functionKey] = {};
+    }
+    allUserFunctionsByName[functionKey][userFunction.location.uri.toString()] = userFunction;
 
-  try {
-    allFunctionNames.addWord(functionKey);
-  } catch (ex) {
-    console.warn(`Unable to add ${functionKey} to trie`);
-  }
+    try {
+        allFunctionNames.addWord(functionKey);
+    } catch (ex) {
+        console.warn(`Unable to add ${functionKey} to trie`);
+    }
 }
 
 /**
@@ -275,26 +276,26 @@ function setUserFunction(userFunction: UserFunction): void {
  * @returns
  */
 export function searchAllFunctionNames(query: string, searchMode: SearchMode = SearchMode.StartsWith): UserFunction[] {
-  let functions: UserFunction[] = [];
-  const lowerQuery = query.toLowerCase();
+    let functions: UserFunction[] = [];
+    const lowerQuery = query.toLowerCase();
 
-  if (searchMode === SearchMode.StartsWith) {
-    allFunctionNames.getPrefix(lowerQuery).forEach((funcKey: string) => {
-      functions = functions.concat(Object.values(allUserFunctionsByName[funcKey]));
-    });
-  } else if (searchMode === SearchMode.Contains) {
-    for (const name in allUserFunctionsByName) {
-      if (name.includes(lowerQuery)) {
-        functions = functions.concat(Object.values(allUserFunctionsByName[name]));
-      }
+    if (searchMode === SearchMode.StartsWith) {
+        allFunctionNames.getPrefix(lowerQuery).forEach((funcKey: string) => {
+            functions = functions.concat(Object.values(allUserFunctionsByName[funcKey]));
+        });
+    } else if (searchMode === SearchMode.Contains) {
+        for (const name in allUserFunctionsByName) {
+            if (name.includes(lowerQuery)) {
+                functions = functions.concat(Object.values(allUserFunctionsByName[name]));
+            }
+        }
+    } else if (searchMode === SearchMode.EqualTo) {
+        if (Object.prototype.hasOwnProperty.call(allUserFunctionsByName, lowerQuery)) {
+            functions = Object.values(allUserFunctionsByName[lowerQuery]);
+        }
     }
-  } else if (searchMode === SearchMode.EqualTo) {
-    if (Object.prototype.hasOwnProperty.call(allUserFunctionsByName, lowerQuery)) {
-      functions = Object.values(allUserFunctionsByName[lowerQuery]);
-    }
-  }
 
-  return functions;
+    return functions;
 }
 
 /**
@@ -306,38 +307,38 @@ export function searchAllFunctionNames(query: string, searchMode: SearchMode = S
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function componentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken): Uri | undefined {
-  if (!dotPath) {
+    if (!dotPath) {
+        return undefined;
+    }
+
+    const normalizedPath: string = dotPath.replace(/\./g, "/") + COMPONENT_EXT;
+
+    // relative to local directory
+    const localPath: string = resolveRelativePath(baseUri, normalizedPath);
+    const localFile: Uri = Uri.file(localPath);
+    if (allComponentsByUri[localFile.toString()]) {
+        return localFile;
+    }
+
+    // relative to web root
+    const rootPath: string = resolveRootPath(baseUri, normalizedPath);
+    if (rootPath) {
+        const rootFile: Uri = Uri.file(rootPath);
+        if (allComponentsByUri[rootFile.toString()]) {
+            return rootFile;
+        }
+    }
+
+    // custom mappings
+    const customMappingPaths: string[] = resolveCustomMappingPaths(baseUri, normalizedPath);
+    for (const mappedPath of customMappingPaths) {
+        const mappedFile: Uri = Uri.file(mappedPath);
+        if (allComponentsByUri[mappedFile.toString()]) {
+            return mappedFile;
+        }
+    }
+
     return undefined;
-  }
-
-  const normalizedPath: string = dotPath.replace(/\./g, "/") + COMPONENT_EXT;
-
-  // relative to local directory
-  const localPath: string = resolveRelativePath(baseUri, normalizedPath);
-  const localFile: Uri = Uri.file(localPath);
-  if (allComponentsByUri[localFile.toString()]) {
-    return localFile;
-  }
-
-  // relative to web root
-  const rootPath: string = resolveRootPath(baseUri, normalizedPath);
-  if (rootPath) {
-    const rootFile: Uri = Uri.file(rootPath);
-    if (allComponentsByUri[rootFile.toString()]) {
-      return rootFile;
-    }
-  }
-
-  // custom mappings
-  const customMappingPaths: string[] = resolveCustomMappingPaths(baseUri, normalizedPath);
-  for (const mappedPath of customMappingPaths) {
-    const mappedFile: Uri = Uri.file(mappedPath);
-    if (allComponentsByUri[mappedFile.toString()]) {
-      return mappedFile;
-    }
-  }
-
-  return undefined;
 }
 
 /**
@@ -347,27 +348,27 @@ export function componentPathToUri(dotPath: string, baseUri: Uri, _token: Cancel
  * @param _token
  */
 export async function cacheComponent(component: Component, documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<void> {
-  clearCachedComponent(component.uri);
-  setComponent(component);
-  component.functions.forEach((funcObj: UserFunction) => {
-    setUserFunction(funcObj);
-  });
-
-  const componentUri: Uri = component.uri;
-  const fileName: string = uriBaseName(componentUri);
-  if (fileName === "Application.cfc") {
-    const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
-
-    const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
-      return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
+    clearCachedComponent(component.uri);
+    setComponent(component);
+    component.functions.forEach((funcObj: UserFunction) => {
+        setUserFunction(funcObj);
     });
-    setApplicationVariables(componentUri, thisApplicationFilteredVariables);
-  } else if (fileName === "Server.cfc") {
-    const thisServerVariables: Variable[] = (await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token)).filter((variable: Variable) => {
-      return variable.scope === Scope.Server;
-    });
-    allServerVariables.set(componentUri.toString(), thisServerVariables);
-  }
+
+    const componentUri: Uri = component.uri;
+    const fileName: string = uriBaseName(componentUri);
+    if (fileName === "Application.cfc") {
+        const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
+
+        const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
+            return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
+        });
+        setApplicationVariables(componentUri, thisApplicationFilteredVariables);
+    } else if (fileName === "Server.cfc") {
+        const thisServerVariables: Variable[] = (await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token)).filter((variable: Variable) => {
+            return variable.scope === Scope.Server;
+        });
+        allServerVariables.set(componentUri.toString(), thisServerVariables);
+    }
 }
 
 /**
@@ -396,36 +397,36 @@ export async function cacheAllComponents(_token: CancellationToken): Promise<voi
  * @param _token
  */
 async function cacheGivenComponents(componentUris: Uri[], _token: CancellationToken): Promise<void> {
-  await window.withProgress(
-    {
-      location: ProgressLocation.Notification,
-      title: "Caching components",
-      cancellable: true
-    },
-    async (progress, token) => {
-      const componentCount = componentUris.length;
-      let i = 0;
+    await window.withProgress(
+        {
+            location: ProgressLocation.Notification,
+            title: "Caching components",
+            cancellable: true
+        },
+        async (progress, token) => {
+            const componentCount = componentUris.length;
+            let i = 0;
 
-      for (const componentUri of componentUris) {
-        if (token.isCancellationRequested) { break; }
+            for (const componentUri of componentUris) {
+                if (token.isCancellationRequested) { break; }
 
-        try {
-          const document: TextDocument = await workspace.openTextDocument(componentUri);
-          const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
-          const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-          await cacheComponentFromDocument(document, false, replaceComments, _token);
-        } catch (ex) {
-          console.warn(`Cannot parse document at ${componentUri}`);
-        } finally {
-          i++;
-          progress.report({
-            message: `${i} / ${componentCount}`,
-            increment: (100 / componentCount)
-          });
+                try {
+                    const document: TextDocument = await workspace.openTextDocument(componentUri);
+                    const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+                    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+                    await cacheComponentFromDocument(document, false, replaceComments, _token);
+                } catch (ex) {
+                    console.warn(`Cannot parse document at ${componentUri}`);
+                } finally {
+                    i++;
+                    progress.report({
+                        message: `${i} / ${componentCount}`,
+                        increment: (100 / componentCount)
+                    });
+                }
+            }
         }
-      }
-    }
-  );
+    );
 }
 
 /**
@@ -437,17 +438,17 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
  * @returns
  */
 export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken): Promise<boolean> {
-  const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token);
-  try {
-    const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
-    if (!parsedComponent) {
+    const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, fast, replaceComments, _token);
+    try {
+        const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
+        if (!parsedComponent) {
+            return false;
+        }
+        await cacheComponent(parsedComponent, documentStateContext, _token);
+    } catch (err) {
         return false;
     }
-    await cacheComponent(parsedComponent, documentStateContext, _token);
-  } catch (err) {
-    return false;
-  }
-  return true;
+    return true;
 }
 
 /**
@@ -455,55 +456,55 @@ export async function cacheComponentFromDocument(document: TextDocument, fast: b
  * @param componentUri The URI of the component to be removed from cache
  */
 export function clearCachedComponent(componentUri: Uri): void {
-  const componentByUri: Component = allComponentsByUri[componentUri.toString()];
-  if (componentByUri) {
-    delete allComponentsByUri[componentUri.toString()];
-  }
-
-  const componentKey: string = uriBaseName(componentUri).toLowerCase();
-  const componentsByName: ComponentsByUri = allComponentsByName[componentKey];
-  if (componentsByName) {
-    const componentsByNameLen: number = Object.keys(componentsByName).length;
-    if (componentsByName[componentUri.toString()]) {
-      const prevCompFunctions: ComponentFunctions = componentsByName[componentUri.toString()].functions;
-      if (componentsByNameLen === 1) {
-        delete allComponentsByName[componentKey];
-        allComponentNames.removeWord(componentKey);
-      } else {
-        delete componentsByName[componentUri.toString()];
-      }
-
-      if (prevCompFunctions) {
-        for (const funcName of prevCompFunctions.keys()) {
-          const userFunctions: UserFunctionByUri = allUserFunctionsByName[funcName];
-          if (userFunctions) {
-            const userFunctionsLen: number = Object.keys(userFunctions).length;
-
-            if (userFunctions[componentUri.toString()]) {
-              if (userFunctionsLen === 1) {
-                delete allUserFunctionsByName[funcName];
-                allFunctionNames.removeWord(funcName);
-              } else {
-                delete userFunctions[componentUri.toString()];
-              }
-            }
-          }
-        }
-      }
+    const componentByUri: Component = allComponentsByUri[componentUri.toString()];
+    if (componentByUri) {
+        delete allComponentsByUri[componentUri.toString()];
     }
-  }
+
+    const componentKey: string = uriBaseName(componentUri).toLowerCase();
+    const componentsByName: ComponentsByUri = allComponentsByName[componentKey];
+    if (componentsByName) {
+        const componentsByNameLen: number = Object.keys(componentsByName).length;
+        if (componentsByName[componentUri.toString()]) {
+            const prevCompFunctions: ComponentFunctions = componentsByName[componentUri.toString()].functions;
+            if (componentsByNameLen === 1) {
+                delete allComponentsByName[componentKey];
+                allComponentNames.removeWord(componentKey);
+            } else {
+                delete componentsByName[componentUri.toString()];
+            }
+
+            if (prevCompFunctions) {
+                for (const funcName of prevCompFunctions.keys()) {
+                    const userFunctions: UserFunctionByUri = allUserFunctionsByName[funcName];
+                    if (userFunctions) {
+                        const userFunctionsLen: number = Object.keys(userFunctions).length;
+
+                        if (userFunctions[componentUri.toString()]) {
+                            if (userFunctionsLen === 1) {
+                                delete allUserFunctionsByName[funcName];
+                                allFunctionNames.removeWord(funcName);
+                            } else {
+                                delete userFunctions[componentUri.toString()];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /**
  * Clears all cached references to components and their contents
  */
 function clearAllCachedComponents(): void {
-  allComponentsByUri = {};
-  allComponentsByName = {};
-  allComponentNames = trie([]);
+    allComponentsByUri = {};
+    allComponentsByName = {};
+    allComponentNames = trie([]);
 
-  allUserFunctionsByName = {};
-  allFunctionNames = trie([]);
+    allUserFunctionsByName = {};
+    allFunctionNames = trie([]);
 }
 
 /**
@@ -511,12 +512,12 @@ function clearAllCachedComponents(): void {
  * @returns
  */
 export async function cacheAllApplicationCfms(): Promise<void> {
-  return workspace.findFiles(APPLICATION_CFM_GLOB).then(
-    cacheGivenApplicationCfms,
-    (reason) => {
-      console.warn(reason);
-    }
-  );
+    return workspace.findFiles(APPLICATION_CFM_GLOB).then(
+        cacheGivenApplicationCfms,
+        (reason) => {
+            console.warn(reason);
+        }
+    );
 }
 
 /**
@@ -525,21 +526,21 @@ export async function cacheAllApplicationCfms(): Promise<void> {
  * @param _token
  */
 async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: CancellationToken): Promise<void> {
-  for (const applicationUri of applicationUris) {
-    try {
-      const document: TextDocument = await workspace.openTextDocument(applicationUri);
-      const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
-      const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-      const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token);
-      const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
-      const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
-        return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
-      });
-      setApplicationVariables(applicationUri, thisApplicationFilteredVariables);
-    } catch (ex) {
-      console.warn(`Cannot parse document at ${applicationUri}`);
+    for (const applicationUri of applicationUris) {
+        try {
+            const document: TextDocument = await workspace.openTextDocument(applicationUri);
+            const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+            const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+            const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, false, replaceComments, _token);
+            const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
+            const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
+                return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
+            });
+            setApplicationVariables(applicationUri, thisApplicationFilteredVariables);
+        } catch (ex) {
+            console.warn(`Cannot parse document at ${applicationUri}`);
+        }
     }
-  }
 }
 
 /**
@@ -548,7 +549,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: Cancel
  * @returns
  */
 export function getApplicationVariables(uri: Uri): Variable[] {
-  return allApplicationVariables.get(uri.toString());
+    return allApplicationVariables.get(uri.toString());
 }
 
 /**
@@ -557,7 +558,7 @@ export function getApplicationVariables(uri: Uri): Variable[] {
  * @param applicationVariables The application variables to set
  */
 export function setApplicationVariables(uri: Uri, applicationVariables: Variable[]): void {
-  allApplicationVariables.set(uri.toString(), applicationVariables);
+    allApplicationVariables.set(uri.toString(), applicationVariables);
 }
 
 /**
@@ -566,7 +567,7 @@ export function setApplicationVariables(uri: Uri, applicationVariables: Variable
  * @returns
  */
 export function removeApplicationVariables(uri: Uri): boolean {
-  return allApplicationVariables.delete(uri.toString());
+    return allApplicationVariables.delete(uri.toString());
 }
 
 /**
@@ -575,7 +576,7 @@ export function removeApplicationVariables(uri: Uri): boolean {
  * @returns
  */
 export function getServerVariables(uri: Uri): Variable[] {
-  return allServerVariables.get(uri.toString());
+    return allServerVariables.get(uri.toString());
 }
 
 /**

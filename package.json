@@ -607,7 +607,7 @@
 		"micromatch": "~4.0.4",
 		"semver": "^7.6.3",
 		"trie-prefix-tree": "1.5.1",
-		"vscode-languageserver-textdocument": "^1.0.11",
+		"vscode-languageserver-textdocument": "^1.0.12",
 		"vscode-languageserver-types": "^3.17.5",
 		"vscode-uri": "^3.0.8"
 	},
@@ -625,7 +625,7 @@
 		"@vscode/vsce": "^2.26.0",
 		"eslint": "^8.57.0",
 		"eslint-plugin-jsdoc": "^48.2.9",
-		"rimraf": "^5.0.9",
+		"rimraf": "^5.0.10",
 		"ts-loader": "^9.2.2",
 		"typescript": "^5.5.4",
 		"webpack": "^5.92.1",
