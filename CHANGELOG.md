@@ -2,6 +2,11 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.24] - 2024-08-05
+
+- Performance Improvements
+- Update packages / VSCode version to 1.92
+
 ## [0.6.23] - 2024-07-04
 
 - Create "cfml.insertSnippet" command as a wrapper for editor.action.insertSnippet
