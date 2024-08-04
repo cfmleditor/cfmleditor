@@ -11,7 +11,7 @@ import { collectDocumentVariableAssignments, Variable } from "../entities/variab
 import { BackwardIterator, getPrecedingIdentifierRange, isContinuingExpression, getStartSigPosition as findStartSigPosition, getClosingPosition } from "../utils/contextUtil";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { equalsIgnoreCase, textToMarkdownString } from "../utils/textUtil";
-import * as cachedEntity from "./cachedEntities";
+import { getGlobalFunction } from "./cachedEntities";
 import { componentPathToUri, getComponent } from "./cachedEntities";
 
 export default class CFMLSignatureHelpProvider implements SignatureHelpProvider {
@@ -24,6 +24,8 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
    * @returns
    */
   public async provideSignatureHelp(document: TextDocument, position: Position, _token: CancellationToken, _context: SignatureHelpContext): Promise<SignatureHelp | null> {
+    // console.log("provideSignatureHelp:CFMLSignatureHelpProvider:" + _token?.isCancellationRequested);
+
     const cfmlSignatureSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.signature", document.uri);
     if (!cfmlSignatureSettings.get<boolean>("enable", true)) {
       return null;
@@ -32,7 +34,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token);
+    const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
     if (documentPositionStateContext.positionInComment) {
       return null;
     }
@@ -71,7 +73,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
       const componentDotPath: string = objectNewInstanceInitPrefixMatch[2];
       const componentUri: Uri = componentPathToUri(componentDotPath, document.uri, _token);
       if (componentUri) {
-        const initComponent: Component = getComponent(componentUri, _token);
+        const initComponent: Component = await getComponent(componentUri, _token);
         if (initComponent) {
           const initMethod: string = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
           if (initComponent.functions.has(initMethod)) {
@@ -94,7 +96,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
       // Global function
       if (!isContinuingExpression(startIdentPositionPrefix, _token)) {
-        entry = cachedEntity.getGlobalFunction(lowerIdent);
+        entry = getGlobalFunction(lowerIdent);
       }
 
       // Check user functions

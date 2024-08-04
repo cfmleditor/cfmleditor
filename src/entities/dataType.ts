@@ -271,7 +271,7 @@ export namespace DataType {
       return [DataType.Component, null];
     }
 
-    const objectMatch2 = /^(?:["']\s*#\s*)?(new\s+(["'])?([^'"(]+)\2\()/i.exec(value);
+    const objectMatch2 = /^(?:["']\s*#\s*)?(new\s+(["'])?([^\s'"(]+)\2\()/i.exec(value);
     if (objectMatch2) {
       const findUri: [DataType, Uri] = await getDataTypeAndUri(objectMatch2[3], documentUri, _token);
       if (findUri) {

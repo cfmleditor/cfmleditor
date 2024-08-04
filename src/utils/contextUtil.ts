@@ -231,10 +231,11 @@ export function isCfcUri(uri: Uri, _token: CancellationToken): boolean {
  * @param document The document to check
  * @param range Optional range within which to check
  * @param _token
+ * @param commentRanges
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function getCfScriptRanges(document: TextDocument, range: Range, _token: CancellationToken): Range[] {
+export function getCfScriptRanges(document: TextDocument, range: Range, _token: CancellationToken, commentRanges: Range[] = []): Range[] {
   const ranges: Range[] = [];
   let documentText: string;
   let textOffset: number;
@@ -254,10 +255,13 @@ export function getCfScriptRanges(document: TextDocument, range: Range, _token: 
     const cfscriptBodyText: string = cfscriptTagMatch[3];
     if (cfscriptBodyText) {
       const cfscriptBodyStartOffset: number = textOffset + cfscriptTagMatch.index + prefixLen;
-      ranges.push(new Range(
+      const range = new Range(
         document.positionAt(cfscriptBodyStartOffset),
         document.positionAt(cfscriptBodyStartOffset + cfscriptBodyText.length)
-      ));
+      );
+      if ( !isInRanges(commentRanges, range, false, _token) ) {
+        ranges.push(range);
+      }
     }
   }
 
@@ -271,11 +275,16 @@ export function getCfScriptRanges(document: TextDocument, range: Range, _token: 
  * @param docRange Range within which to check
  * @param fast Whether to choose the faster but less accurate method
  * @param _token
+ * @param exclDocumentRanges
  * @returns
  */
-export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range, fast: boolean = false, _token: CancellationToken): DocumentContextRanges {
+export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range, fast: boolean = false, _token: CancellationToken, exclDocumentRanges: boolean = false): DocumentContextRanges {
   if (fast) {
     return { commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token) };
+  }
+
+  if ( exclDocumentRanges ) {
+    return { commentRanges: [], stringRanges: [], stringEmbeddedCfmlRanges: [] }
   }
 
   return getCommentAndStringRangesIterated(document, isScript, docRange, _token);
@@ -335,7 +344,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
       ));
     }
 
-    const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token);
+    const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token, commentRanges);
     cfScriptRanges.forEach((range: Range) => {
       const cfscriptCommentRanges: Range[] = getCommentRangesByRegex(document, true, range, _token);
       commentRanges = commentRanges.concat(cfscriptCommentRanges);
@@ -354,6 +363,9 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
  * @returns
  */
 function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange: Range, _token: CancellationToken): DocumentContextRanges {
+
+  // console.log("getCommentAndStringRangesIterated:" + _token?.isCancellationRequested);
+
   let commentRanges: Range[] = [];
   let stringRanges: Range[] = [];
   const documentText: string = document.getText();
@@ -396,10 +408,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
   const stringEmbeddedCFMLRanges: Range[] = [];
   let commentDepth: number = 0;
 
-  let cfScriptRanges: Range[] = [];
-  if (!isScript) {
-    cfScriptRanges = getCfScriptRanges(document, docRange, _token);
-  }
+
 
   // TODO: Account for code delimited by hashes within cfoutput, cfmail, cfquery, etc. blocks
 
@@ -567,11 +576,16 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
     previousPosition = position;
   }
 
+  let cfScriptRanges: Range[] = [];
+  if (!isScript) {
+    cfScriptRanges = getCfScriptRanges(document, docRange, _token, commentRanges);
+  }
+
   if (cfScriptRanges.length > 0) {
     // Remove tag comments found within CFScripts
-    commentRanges = commentRanges.filter((range: Range) => {
-      return !isInRanges(cfScriptRanges, range, false, _token);
-    });
+    // commentRanges = commentRanges.filter((range: Range) => {
+    //   return !isInRanges(cfScriptRanges, range, false, _token);
+    // });
 
     cfScriptRanges.forEach((range: Range) => {
       if (!isInRanges(commentRanges, range, false, _token)) {
@@ -584,7 +598,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
     });
   }
 
-  return { commentRanges, stringRanges, stringEmbeddedCfmlRanges: stringEmbeddedCFMLRanges };
+  return { commentRanges: commentRanges, stringRanges: stringRanges, stringEmbeddedCfmlRanges: stringEmbeddedCFMLRanges };
 }
 
 /**

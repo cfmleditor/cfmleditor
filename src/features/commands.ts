@@ -11,17 +11,17 @@ import { DocumentPositionStateContext, getDocumentPositionStateContext } from ".
  * Refreshes (clears and retrieves) all CFML global definitions
  */
 export async function refreshGlobalDefinitionCache(): Promise<void> {
-  clearAllGlobalFunctions();
-  clearAllGlobalTags();
-  clearAllGlobalEntityDefinitions();
-  clearAllCustomSnippets();
+    clearAllGlobalFunctions();
+    clearAllGlobalTags();
+    clearAllGlobalEntityDefinitions();
+    clearAllCustomSnippets();
 
-  const cfmlGlobalDefinitionsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.globalDefinitions");
-  if (cfmlGlobalDefinitionsSettings.get<string>("source") === "cfdocs") {
-    CFDocsService.cacheAll();
-  }
+    const cfmlGlobalDefinitionsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.globalDefinitions");
+    if (cfmlGlobalDefinitionsSettings.get<string>("source") === "cfdocs") {
+        CFDocsService.cacheAll();
+    }
 
-  SnippetService.cacheAllCustomSnippets();
+    SnippetService.cacheAllCustomSnippets();
 }
 
 /**
@@ -29,10 +29,10 @@ export async function refreshGlobalDefinitionCache(): Promise<void> {
  * @param _token
  */
 export async function refreshWorkspaceDefinitionCache(_token: CancellationToken): Promise<void> {
-  const cfmlIndexComponentsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.indexComponents");
-  if (cfmlIndexComponentsSettings.get<boolean>("enable")) {
-    await cacheAllComponents(_token);
-  }
+    const cfmlIndexComponentsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.indexComponents");
+    if (cfmlIndexComponentsSettings.get<boolean>("enable")) {
+        await cacheAllComponents(_token);
+    }
 }
 
 /**
@@ -40,22 +40,22 @@ export async function refreshWorkspaceDefinitionCache(_token: CancellationToken)
  * @param editor The text editor which represents the document for which to open the file
  */
 export async function showApplicationDocument(editor: TextEditor): Promise<void> {
-  const activeDocumentUri: Uri = editor.document.uri;
+    const activeDocumentUri: Uri = editor.document.uri;
 
-  if (activeDocumentUri.scheme === "untitled") {
-    return;
-  }
-
-  const applicationUri: Uri = getApplicationUri(activeDocumentUri);
-  if (applicationUri) {
-    const applicationDocument: TextDocument = await workspace.openTextDocument(applicationUri);
-    if (!applicationDocument) {
-      window.showErrorMessage("No Application found for the currently active document.");
-      return;
+    if (activeDocumentUri.scheme === "untitled") {
+        return;
     }
 
-    window.showTextDocument(applicationDocument);
-  }
+    const applicationUri: Uri = getApplicationUri(activeDocumentUri);
+    if (applicationUri) {
+        const applicationDocument: TextDocument = await workspace.openTextDocument(applicationUri);
+        if (!applicationDocument) {
+            window.showErrorMessage("No Application found for the currently active document.");
+            return;
+        }
+
+        window.showTextDocument(applicationDocument);
+    }
 }
 
 /**
@@ -65,23 +65,23 @@ export async function showApplicationDocument(editor: TextEditor): Promise<void>
  * @param _token
  */
 export async function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): Promise<void> {
-  const document: TextDocument = editor.document;
+    const document: TextDocument = editor.document;
 
-  if (isCfcFile(document, _token)) {
-    const thisComponent: Component = getComponent(document.uri, _token);
-    if (thisComponent) {
-      const functionStartLines: number[] = [];
-      thisComponent.functions.filter((func: UserFunction) => {
-        return !func.isImplicit && func.bodyRange !== undefined;
-      }).forEach((func: UserFunction) => {
-        functionStartLines.push(func.bodyRange.start.line);
-      });
+    if (isCfcFile(document, _token)) {
+        const thisComponent: Component = await getComponent(document.uri, _token);
+        if (thisComponent) {
+            const functionStartLines: number[] = [];
+            thisComponent.functions.filter((func: UserFunction) => {
+                return !func.isImplicit && func.bodyRange !== undefined;
+            }).forEach((func: UserFunction) => {
+                functionStartLines.push(func.bodyRange.start.line);
+            });
 
-      if (functionStartLines.length > 0) {
-        commands.executeCommand("editor.fold", { selectionLines: functionStartLines });
-      }
+            if (functionStartLines.length > 0) {
+                commands.executeCommand("editor.fold", { selectionLines: functionStartLines });
+            }
+        }
     }
-  }
 }
 
 
@@ -94,9 +94,9 @@ export async function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit,
 export async function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: any): Promise<void> {
 
     const position: Position = editor.selection.start;
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, true, null);
+    const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(editor.document, position, false, true, null, false);
 
-    if ( documentPositionStateContext.positionIsScript ) {
+    if (documentPositionStateContext.positionIsScript) {
         commands.executeCommand("editor.action.insertSnippet", {
             "langId": "cfml",
             "snippet": args.script

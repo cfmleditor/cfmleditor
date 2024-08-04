@@ -9,7 +9,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
   private linkPatterns: LinkPattern[] = [
     // attribute/value link
     {
-      pattern: /\b(href|src|template|action|url)\s*(?:=|:|\()\s*(['"])([^'"]+?)\2/gi,
+      pattern: /\b(href|src|template|action|url)\s*(?:=|:|\()\s*(['"])((?!read|write|cfml2wddx|wddx2cfml|begin|commit|rollback|move|upload|zip|add|edit|create|captcha)[^'"#]+?)\2/gi,
       linkIndex: 3
     },
     // include script
@@ -27,6 +27,9 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async provideDocumentLinks(document: TextDocument, _token: CancellationToken): Promise<DocumentLink[]> {
+
+    // console.log("provideDocumentLinks:CFMLDocumentLinkProvider:" + _token?.isCancellationRequested);
+
     const results: DocumentLink[] = [];
     const documentText: string = document.getText();
 

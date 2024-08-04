@@ -6,7 +6,7 @@ import { DocBlockKeyValue, parseDocBlock } from "./docblock";
 import { Access, UserFunction, UserFunctionSignature } from "./userFunction";
 import { DocumentStateContext } from "../utils/documentUtil";
 
-const propertyPattern: RegExp = /((\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s+)?(?:<cf)?property\b)([^;>]*)/gi;
+const propertyPattern: RegExp = /((\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s+)?(?:<cf|[\s\t])property\b)\s((?!=)[^;>]*)/gi;
 // const attributePattern: RegExp = /\b(\w+)\b(?:\s*=\s*(?:(['"])(.*?)\2|([a-z0-9:.]+)))?/gi;
 
 const propertyAttributeNames: MySet<string> = new MySet([
