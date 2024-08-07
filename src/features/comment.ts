@@ -82,7 +82,7 @@ export function toggleComment(commentType: CommentType, _token: CancellationToke
             };
 
             // Changes the comment in language configuration based on the context
-            if (isTagComment(editor.document, editor.selection.start, _token)) {
+            if (await isTagComment(editor.document, editor.selection.start, _token)) {
                 languageConfig = {
                     comments: {
                         blockComment: cfmlCommentRules.tagBlockComment
