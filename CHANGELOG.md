@@ -2,6 +2,9 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.25] - 2024-08-07
+- Fix regression with Tag / Script toggle comment logic
+
 ## [0.6.24] - 2024-08-05
 
 - Performance Improvements
