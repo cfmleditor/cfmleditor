@@ -2,8 +2,7 @@
 
 [![cfml](https://img.shields.io/badge/cfml-ide-blue.svg?logo=slack&labelColor=555555)](http://cfml-slack.net/)
 
-# Buy Me a Coffee
-[`buymeacoffee.com/garetheddies`](buymeacoffee.com/garetheddies)
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/garetheddies)
 
 An extension for the development of CFML.
 
