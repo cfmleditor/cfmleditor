@@ -604,7 +604,7 @@
 		"buffer": "^6.0.3",
 		"html-entities": "~2.5.2",
 		"isomorphic-fetch": "^3.0.0",
-		"micromatch": "~4.0.4",
+		"micromatch": "~4.0.8",
 		"semver": "^7.6.3",
 		"trie-prefix-tree": "1.5.1",
 		"vscode-languageserver-textdocument": "^1.0.12",
