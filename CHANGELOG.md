@@ -2,6 +2,10 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.28] - 2024-09-18
+
+- Update path-to-regexp ( npm audit fix )
+
 ## [0.6.26] - 2024-09-02
 
 - Update Dependencies
