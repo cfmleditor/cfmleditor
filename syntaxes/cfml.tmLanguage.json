@@ -2275,7 +2275,7 @@
       ]
     },
     "source-js-ternary-expression": {
-      "begin": "(\\?)",
+      "begin": "(\\?(?!\\.))",
       "beginCaptures": {
         "0": {
           "name": "keyword.operator.ternary.js"
@@ -4625,7 +4625,7 @@
       ]
     },
     "source-js-cfoutput-ternary-expression": {
-      "begin": "\\?",
+      "begin": "\\?(?!\\.)",
       "beginCaptures": {
         "0": {
           "name": "keyword.operator.ternary.js"
