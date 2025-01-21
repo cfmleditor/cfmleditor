@@ -2,6 +2,10 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.31] - 2025-01-22
+
+- Bump dependencies
+
 ## [0.6.30] - 2024-09-18
 
 - Fix for https://github.com/cfmleditor/cfmleditor/issues/33
