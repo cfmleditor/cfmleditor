@@ -1,5 +1,6 @@
 
 import { CancellationToken, ProgressLocation, TextDocument, Uri, window, workspace, WorkspaceConfiguration } from "vscode";
+import { LSTextDocument } from "../utils/LSTextDocument";
 import { Component, ComponentsByName, ComponentsByUri, COMPONENT_EXT, COMPONENT_FILE_GLOB, parseComponent } from "../entities/component";
 import { GlobalFunction, GlobalFunctions, GlobalMemberFunction, GlobalMemberFunctions, GlobalTag, GlobalTags } from "../entities/globals";
 import { Scope } from "../entities/scope";
@@ -411,7 +412,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
                 if (token.isCancellationRequested) { break; }
 
                 try {
-                    const document: TextDocument = await workspace.openTextDocument(componentUri);
+                    const document: TextDocument = await LSTextDocument.openTextDocument(componentUri);
                     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
                     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
                     await cacheComponentFromDocument(document, false, replaceComments, _token);
