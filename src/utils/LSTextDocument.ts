@@ -1,6 +1,5 @@
-import { EndOfLine, Position, Range, TextDocument, TextLine, Uri } from "vscode";
+import { EndOfLine, Position, Range, TextDocument, TextLine, Uri, workspace } from "vscode";
 import { TextDocument as FastTextDocument } from "vscode-languageserver-textdocument";
-const fs = require('fs').promises;
 
 export class LSTextDocument implements TextDocument {
 
@@ -39,7 +38,8 @@ export class LSTextDocument implements TextDocument {
     }
 
     public static async openTextDocument(uri: Uri, languageId: string = "plaintext"): Promise<LSTextDocument> {
-        const content = await fs.readFile(uri.fsPath, 'utf8');
+        const contentBytes = await workspace.fs.readFile(uri);
+        const content = new TextDecoder("utf-8").decode(contentBytes);
         const version = 1; // Initial version
         return new LSTextDocument(uri, languageId, version, content);
     }
