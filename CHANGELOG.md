@@ -2,6 +2,11 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.32] - 2025-02-17
+
+- Use fast textdocument for caching PR #40 @pixilation - improves the performance of the CFML: Refresh cache for workspace definitions command that runs on startup. This is the "Caching components" progress meter that appears.
+- Bump packages (semver, vscode-uri, @vscode/vsce)
+
 ## [0.6.31] - 2025-01-22
 
 - Bump dependencies
