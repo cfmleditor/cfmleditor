@@ -606,7 +606,7 @@
 		"isomorphic-fetch": "^3.0.0",
 		"micromatch": "~4.0.8",
 		"semver": "^7.7.1",
-		"trie-prefix-tree": "1.5.1",
+		"trie-search": "^2.2.0",
 		"vscode-languageserver-textdocument": "^1.0.12",
 		"vscode-languageserver-types": "^3.17.5",
 		"vscode-uri": "^3.1.0"
@@ -616,7 +616,6 @@
 		"@types/node": "~20.10.0",
 		"@types/request": "~2.48.7",
 		"@types/semver": "~7.5.8",
-		"@types/trie-prefix-tree": "^1.5.4",
 		"@types/vscode": "^1.95.0",
 		"@typescript-eslint/eslint-plugin": "^8.24.0",
 		"@typescript-eslint/parser": "^8.24.0",

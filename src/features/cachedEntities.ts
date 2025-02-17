@@ -11,7 +11,7 @@ import { MyMap, SearchMode } from "../utils/collections";
 import { APPLICATION_CFM_GLOB } from "../utils/contextUtil";
 import { DocumentStateContext, getDocumentStateContext } from "../utils/documentUtil";
 import { resolveCustomMappingPaths, resolveRelativePath, resolveRootPath, uriBaseName } from "../utils/fileUtil";
-import trie from "trie-prefix-tree";
+import TrieSearch from 'trie-search';
 import { Snippet, Snippets } from "../entities/snippet";
 import { setBulkCaching } from "../cfmlMain";
 
@@ -28,8 +28,8 @@ let allComponentsByName: ComponentsByName = {};
 // let allUserFunctionsByUri: UserFunctionsByUri = {};
 let allUserFunctionsByName: UserFunctionsByName = {};
 
-let allComponentNames = trie([]);
-let allFunctionNames = trie([]);
+let allComponentNames : TrieSearch<Component> = new TrieSearch<Component>('name');
+let allFunctionNames : TrieSearch<UserFunction> = new TrieSearch<UserFunction>('name');
 
 const allServerVariables: VariablesByUri = new VariablesByUri();
 const allApplicationVariables: VariablesByUri = new VariablesByUri();
@@ -203,7 +203,7 @@ function setComponent(comp: Component): void {
     allComponentsByName[componentKey][comp.uri.toString()] = comp;
 
     try {
-        allComponentNames.addWord(componentKey);
+        allComponentNames.add(comp);
     } catch (ex) {
         //console.warn(ex);
         console.warn(`Unable to add ${componentKey} to trie`);
@@ -245,8 +245,8 @@ export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function searchAllComponentNames(query: string, _token: CancellationToken): Component[] {
     let components: Component[] = [];
-    allComponentNames.getPrefix(query.toLowerCase()).forEach((compKey: string) => {
-        components = components.concat(Object.values(allComponentsByName[compKey]));
+    allComponentNames.search(query.toLowerCase()).forEach((component: Component) => {
+        components = components.concat(Object.values(allComponentsByName[component.name]));
     });
     return components;
 }
@@ -264,7 +264,7 @@ function setUserFunction(userFunction: UserFunction): void {
     allUserFunctionsByName[functionKey][userFunction.location.uri.toString()] = userFunction;
 
     try {
-        allFunctionNames.addWord(functionKey);
+        allFunctionNames.add(userFunction);
     } catch (ex) {
         console.warn(`Unable to add ${functionKey} to trie`);
     }
@@ -281,8 +281,8 @@ export function searchAllFunctionNames(query: string, searchMode: SearchMode = S
     const lowerQuery = query.toLowerCase();
 
     if (searchMode === SearchMode.StartsWith) {
-        allFunctionNames.getPrefix(lowerQuery).forEach((funcKey: string) => {
-            functions = functions.concat(Object.values(allUserFunctionsByName[funcKey]));
+        allFunctionNames.search(lowerQuery).forEach((userFunction: UserFunction) => {
+            functions = functions.concat(Object.values(allUserFunctionsByName[userFunction.name]));
         });
     } else if (searchMode === SearchMode.Contains) {
         for (const name in allUserFunctionsByName) {
@@ -470,7 +470,7 @@ export function clearCachedComponent(componentUri: Uri): void {
             const prevCompFunctions: ComponentFunctions = componentsByName[componentUri.toString()].functions;
             if (componentsByNameLen === 1) {
                 delete allComponentsByName[componentKey];
-                allComponentNames.removeWord(componentKey);
+                allComponentNames.remove(componentKey);
             } else {
                 delete componentsByName[componentUri.toString()];
             }
@@ -484,7 +484,7 @@ export function clearCachedComponent(componentUri: Uri): void {
                         if (userFunctions[componentUri.toString()]) {
                             if (userFunctionsLen === 1) {
                                 delete allUserFunctionsByName[funcName];
-                                allFunctionNames.removeWord(funcName);
+                                allFunctionNames.remove(funcName);
                             } else {
                                 delete userFunctions[componentUri.toString()];
                             }
@@ -502,10 +502,10 @@ export function clearCachedComponent(componentUri: Uri): void {
 function clearAllCachedComponents(): void {
     allComponentsByUri = {};
     allComponentsByName = {};
-    allComponentNames = trie([]);
+    allComponentNames = new TrieSearch<Component>('name');
 
     allUserFunctionsByName = {};
-    allFunctionNames = trie([]);
+    allFunctionNames = new TrieSearch<UserFunction>('name');
 }
 
 /**
