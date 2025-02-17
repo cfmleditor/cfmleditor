@@ -4,7 +4,7 @@ import { LSTextDocument } from "../utils/LSTextDocument";
 import { Component, ComponentsByName, ComponentsByUri, COMPONENT_EXT, COMPONENT_FILE_GLOB, parseComponent } from "../entities/component";
 import { GlobalFunction, GlobalFunctions, GlobalMemberFunction, GlobalMemberFunctions, GlobalTag, GlobalTags } from "../entities/globals";
 import { Scope } from "../entities/scope";
-import { ComponentFunctions, UserFunction, UserFunctionByUri, UserFunctionsByName } from "../entities/userFunction";
+import { ComponentFunctions, UserFunction } from "../entities/userFunction";
 import { parseVariableAssignments, Variable, VariablesByUri } from "../entities/variable";
 import { CFDocsDefinitionInfo } from "../utils/cfdocs/definitionInfo";
 import { MyMap, SearchMode } from "../utils/collections";
@@ -25,11 +25,8 @@ let allGlobalTags: GlobalTags = {};
 let allComponentsByUri: ComponentsByUri = {};
 let allComponentsByName: ComponentsByName = {};
 
-// let allUserFunctionsByUri: UserFunctionsByUri = {};
-let allUserFunctionsByName: UserFunctionsByName = {};
-
-let allComponentNames : TrieSearch<Component> = new TrieSearch<Component>('name');
-let allFunctionNames : TrieSearch<UserFunction> = new TrieSearch<UserFunction>('name');
+const allComponentNames : TrieSearch<Component> = new TrieSearch<Component>('uri');
+const allFunctionNames : TrieSearch<UserFunction> = new TrieSearch<UserFunction>('name');
 
 const allServerVariables: VariablesByUri = new VariablesByUri();
 const allApplicationVariables: VariablesByUri = new VariablesByUri();
@@ -245,9 +242,7 @@ export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function searchAllComponentNames(query: string, _token: CancellationToken): Component[] {
     let components: Component[] = [];
-    allComponentNames.search(query.toLowerCase()).forEach((component: Component) => {
-        components = components.concat(Object.values(allComponentsByName[component.name]));
-    });
+    components = allComponentNames.search(query);
     return components;
 }
 
@@ -256,17 +251,10 @@ export function searchAllComponentNames(query: string, _token: CancellationToken
  * @param userFunction The user function to cache
  */
 function setUserFunction(userFunction: UserFunction): void {
-    const functionKey: string = userFunction.name.toLowerCase();
-
-    if (!allUserFunctionsByName[functionKey]) {
-        allUserFunctionsByName[functionKey] = {};
-    }
-    allUserFunctionsByName[functionKey][userFunction.location.uri.toString()] = userFunction;
-
     try {
         allFunctionNames.add(userFunction);
     } catch (ex) {
-        console.warn(`Unable to add ${functionKey} to trie`);
+        console.warn(`Unable to add ${userFunction.name} to trie`);
     }
 }
 
@@ -278,24 +266,7 @@ function setUserFunction(userFunction: UserFunction): void {
  */
 export function searchAllFunctionNames(query: string, searchMode: SearchMode = SearchMode.StartsWith): UserFunction[] {
     let functions: UserFunction[] = [];
-    const lowerQuery = query.toLowerCase();
-
-    if (searchMode === SearchMode.StartsWith) {
-        allFunctionNames.search(lowerQuery).forEach((userFunction: UserFunction) => {
-            functions = functions.concat(Object.values(allUserFunctionsByName[userFunction.name]));
-        });
-    } else if (searchMode === SearchMode.Contains) {
-        for (const name in allUserFunctionsByName) {
-            if (name.includes(lowerQuery)) {
-                functions = functions.concat(Object.values(allUserFunctionsByName[name]));
-            }
-        }
-    } else if (searchMode === SearchMode.EqualTo) {
-        if (Object.prototype.hasOwnProperty.call(allUserFunctionsByName, lowerQuery)) {
-            functions = Object.values(allUserFunctionsByName[lowerQuery]);
-        }
-    }
-
+    functions = allFunctionNames.search(query)
     return functions;
 }
 
@@ -477,19 +448,7 @@ export function clearCachedComponent(componentUri: Uri): void {
 
             if (prevCompFunctions) {
                 for (const funcName of prevCompFunctions.keys()) {
-                    const userFunctions: UserFunctionByUri = allUserFunctionsByName[funcName];
-                    if (userFunctions) {
-                        const userFunctionsLen: number = Object.keys(userFunctions).length;
-
-                        if (userFunctions[componentUri.toString()]) {
-                            if (userFunctionsLen === 1) {
-                                delete allUserFunctionsByName[funcName];
-                                allFunctionNames.remove(funcName);
-                            } else {
-                                delete userFunctions[componentUri.toString()];
-                            }
-                        }
-                    }
+                    allFunctionNames.remove(funcName);
                 }
             }
         }
@@ -502,10 +461,8 @@ export function clearCachedComponent(componentUri: Uri): void {
 function clearAllCachedComponents(): void {
     allComponentsByUri = {};
     allComponentsByName = {};
-    allComponentNames = new TrieSearch<Component>('name');
-
-    allUserFunctionsByName = {};
-    allFunctionNames = new TrieSearch<UserFunction>('name');
+    allComponentNames.reset();
+    allFunctionNames.reset();
 }
 
 /**
