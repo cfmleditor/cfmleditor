@@ -173,7 +173,6 @@ export namespace DataType {
    * @param dataType A string to check
    * @returns
    */
-  // eslint-disable-next-line no-inner-declarations
   function isDataType(dataType: string): boolean {
     return (dataType && (equalsIgnoreCase(dataType, "any") || valueOf(dataType) !== DataType.Any));
   }
