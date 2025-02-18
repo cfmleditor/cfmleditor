@@ -14,7 +14,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
      * @param _token A cancellation token.
      * @returns
      */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     public async provideDocumentSymbols(document: TextDocument, _token: CancellationToken): Promise<DocumentSymbol[]> {
 
         let documentSymbols: DocumentSymbol[] = [];

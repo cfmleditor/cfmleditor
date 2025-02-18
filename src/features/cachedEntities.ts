@@ -204,6 +204,7 @@ function setComponent(comp: Component): void {
 
     try {
         allComponentNames.addWord(componentKey);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (ex) {
         //console.warn(ex);
         console.warn(`Unable to add ${componentKey} to trie`);
@@ -265,6 +266,7 @@ function setUserFunction(userFunction: UserFunction): void {
 
     try {
         allFunctionNames.addWord(functionKey);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (ex) {
         console.warn(`Unable to add ${functionKey} to trie`);
     }
@@ -416,6 +418,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
                     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
                     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
                     await cacheComponentFromDocument(document, false, replaceComments, _token);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 } catch (ex) {
                     console.warn(`Cannot parse document at ${componentUri}`);
                 } finally {
@@ -446,6 +449,7 @@ export async function cacheComponentFromDocument(document: TextDocument, fast: b
             return false;
         }
         await cacheComponent(parsedComponent, documentStateContext, _token);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
         return false;
     }
@@ -538,6 +542,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: Cancel
                 return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
             });
             setApplicationVariables(applicationUri, thisApplicationFilteredVariables);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (ex) {
             console.warn(`Cannot parse document at ${applicationUri}`);
         }

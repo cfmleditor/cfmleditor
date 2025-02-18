@@ -234,7 +234,6 @@ export function isCfcUri(uri: Uri, _token: CancellationToken): boolean {
  * @param commentRanges
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getCfScriptRanges(document: TextDocument, range: Range, _token: CancellationToken, commentRanges: Range[] = []): Range[] {
   const ranges: Range[] = [];
   let documentText: string;
@@ -461,6 +460,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
             characterAtNextPosition = documentText.charAt(offset + 1);
             hashEscaped = characterAtNextPosition === stringEmbeddedCFMLDelimiter;
           }
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           catch (e) {
             // Keep value
           }
@@ -481,6 +481,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
           characterAtNextPosition = documentText.charAt(offset + 1);
           quoteEscaped = characterAtNextPosition === stringContext.activeStringDelimiter;
         }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         catch (e) {
           // Keep value
         }

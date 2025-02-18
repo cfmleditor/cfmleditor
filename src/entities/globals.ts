@@ -1,5 +1,5 @@
 import { SnippetString } from "vscode";
-import { MyMap, NameWithOptionalValue } from "../utils/collections";
+import { NameWithOptionalValue } from "../utils/collections";
 import { ATTRIBUTES_PATTERN, IncludeAttributesSetType, AttributeQuoteType } from "./attribute";
 import { DataType } from "./dataType";
 import { Function } from "./function";
@@ -14,19 +14,17 @@ export interface GlobalEntity {
   description: string;
   signatures: Signature[];
 }
-// eslint-disable-next-line @typescript-eslint/ban-types
+
 export interface GlobalFunction extends GlobalEntity, Function { }
 export interface GlobalFunctions {
   [name: string]: GlobalFunction;
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
 export interface GlobalMemberFunction extends GlobalEntity, Function { }
 export interface GlobalMemberFunctions {
   [name: string]: GlobalMemberFunction;
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
 export interface MemberFunction extends Function {
   name: string;
   syntax: string;
@@ -34,7 +32,7 @@ export interface MemberFunction extends Function {
   returntype: DataType;
   signatures: Signature[];
 }
-export interface MemberFunctionsByType extends MyMap<DataType, Set<MemberFunction>> { }
+// export interface MemberFunctionsByType extends MyMap<DataType, Set<MemberFunction>> { }
 export interface GlobalTag extends GlobalEntity {
   scriptSyntax?: string;
   hasBody: boolean;

@@ -23,6 +23,13 @@ export interface IWordAtPosition {
 }
 
 // source: https://github.com/microsoft/vscode/blob/45aafeb326d0d3d56cbc9e2932f87e368dbf652d/src/vs/editor/common/model/wordHelper.ts#L64
+/**
+ *
+ * @param column
+ * @param wordDefinition
+ * @param text
+ * @returns
+ */
 export function getWordAtText(column: number, wordDefinition: RegExp, text: string): IWordAtPosition | null {
     let textOffset = 0;
     if (text.length > maxLen) {
@@ -69,6 +76,7 @@ export function getWordAtText(column: number, wordDefinition: RegExp, text: stri
 
 function _findRegexMatchEnclosingPosition(wordDefinition: RegExp, text: string, pos: number, stopPos: number): RegExpExecArray | null {
     let match: RegExpExecArray | null;
+    // eslint-disable-next-line no-cond-assign
     while (match = wordDefinition.exec(text)) {
         if (match.index <= pos && wordDefinition.lastIndex >= pos) {
             break;

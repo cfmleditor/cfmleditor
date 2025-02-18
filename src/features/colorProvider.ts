@@ -19,7 +19,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
      * @param _token A cancellation token
      * @returns
      */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     public async provideDocumentColors(document: TextDocument, _token: CancellationToken): Promise<ColorInformation[]> {
         // console.log("provideDocumentColors:CFMLDocumentColorProvider:" + _token?.isCancellationRequested);
 
@@ -141,7 +141,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
      * @param _token A cancellation token
      * @returns
      */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     public async provideColorPresentations(color: Color, context: { document: TextDocument, range: Range }, _token: CancellationToken): Promise<ColorPresentation[]> {
         const result: ColorPresentation[] = [];
         const red256 = Math.round(color.red * 255), green256 = Math.round(color.green * 255), blue256 = Math.round(color.blue * 255);

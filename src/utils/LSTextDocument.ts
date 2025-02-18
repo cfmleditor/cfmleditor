@@ -60,8 +60,8 @@ export class LSTextDocument implements TextDocument {
         this.uri = uri;
         this.fileName = uri.fsPath;
         this.eol = lineEnding === '\r\n' ? EndOfLine.CRLF : EndOfLine.LF;
-        this.textDocument.uri
-        this.textDocument.version
+        // this.textDocument.uri
+        // this.textDocument.version
     }
 
     public static async openTextDocument(uri: Uri, languageId: string = "plaintext"): Promise<LSTextDocument> {
@@ -153,8 +153,8 @@ export class LSTextDocument implements TextDocument {
         // We need to recreate `vscode.TextDocument.validatePosition()`
 
         // Validate the start and end positions separately
-        let start = this.positionAt(this.textDocument.offsetAt(range.start));
-        let end = this.positionAt(this.textDocument.offsetAt(range.end));
+        const start = this.positionAt(this.textDocument.offsetAt(range.start));
+        const end = this.positionAt(this.textDocument.offsetAt(range.end));
 
         // Convert the validated positions back to a `vscode.Range`
         return new Range(start, end);
@@ -164,27 +164,28 @@ export class LSTextDocument implements TextDocument {
         // We need to recreate `vscode.TextDocument.validatePosition()`
 
         // We can leverage the validation in the `offsetAt` method
-        let validOffset = this.textDocument.offsetAt(position);
+        const validOffset = this.textDocument.offsetAt(position);
 
         // Convert the offset back to a position and turn it into a `vscode.Position`
-        let pos = this.textDocument.positionAt(validOffset);
+        const pos = this.textDocument.positionAt(validOffset);
         return new Position(pos.line, pos.character);
     }
 
 }
 
-/**
-This is the default word definition regex used by VSCode.
+/*
+    This is the default word definition regex used by VSCode.
 
-`(-?\d*\.\d\w*)`
-- Floating point numbers
-- Matches `.1`, `-5.4f`, `123.0HelloWorld`
+    `(-?\d*\.\d\w*)`
+    - Floating point numbers
+    - Matches `.1`, `-5.4f`, `123.0HelloWorld`
 
-`([^\`\~\!\@\#\$\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)`
-- This ignores the printable ASCII characters except for "_"
-- Basically just `[a-zA-Z_]`
-- Matches `Hello_World`
+    `([^\`\~\!\@\#\$\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)`
+    - This ignores the printable ASCII characters except for "_"
+    - Basically just `[a-zA-Z_]`
+    - Matches `Hello_World`
 
-See: https://github.com/microsoft/vscode/blob/d718ff4ef98365abe53739bde33044a326a98f29/src/vs/editor/common/core/wordHelper.ts#L35C4-L35C92
+    See: https://github.com/microsoft/vscode/blob/d718ff4ef98365abe53739bde33044a326a98f29/src/vs/editor/common/core/wordHelper.ts#L35C4-L35C92
 */
+// eslint-disable-next-line no-useless-escape
 const DEFAULT_WORD_REGEXP = /(-?\d*\.\d\w*)|([^\`\~\!\@\#\$\%\^\&\*\(\)\-\=\+\[\{\]\}\\\|\;\:\'\"\,\.\<\>\/\?\s]+)/g
