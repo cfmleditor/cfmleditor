@@ -21,7 +21,7 @@ import { MyMap, MySet } from "../utils/collections";
 import { getCssRanges, isCfmFile } from "../utils/contextUtil";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { equalsIgnoreCase, textToMarkdownCompatibleString, textToMarkdownString } from "../utils/textUtil";
-import { isGlobalFunction, getGlobalFunction, getGlobalTag, isGlobalTag, componentPathToUri, getGlobalEntityDefinition } from "./cachedEntities";
+import { isGlobalFunction, getGlobalFunction, getGlobalTag, isGlobalTag, cachedComponentPathToUri, getGlobalEntityDefinition } from "./cachedEntities";
 import { getComponent } from "./cachedEntities";
 import { uriBaseName } from "../utils/fileUtil";
 
@@ -124,7 +124,7 @@ export default class CFMLHoverProvider implements HoverProvider {
         const startSigPositionPrefix = `${componentPathWordPrefix}${componentPathWord}(`;
         const objectNewInstanceInitPrefixMatch: RegExpExecArray = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
         if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
-            const componentUri: Uri = componentPathToUri(componentPathWord, document.uri, _token);
+            const componentUri: Uri = cachedComponentPathToUri(componentPathWord, document.uri, _token);
             if (componentUri) {
                 const initComponent: Component = await getComponent(componentUri, _token);
                 if (initComponent) {

@@ -1,6 +1,6 @@
 import { DefinitionProvider, TextDocument, Position, CancellationToken, DefinitionLink, Uri, Range, workspace, WorkspaceConfiguration } from "vscode";
 import { objectReferencePatterns, ReferencePattern, Component } from "../entities/component";
-import { componentPathToUri, getComponent, searchAllFunctionNames } from "./cachedEntities";
+import { cachedComponentPathToUri, getComponent, searchAllFunctionNames } from "./cachedEntities";
 import { Scope, getValidScopesPrefixPattern, getVariableScopePrefixPattern, unscopedPrecedence } from "../entities/scope";
 import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, getFunctionFromPrefix } from "../entities/userFunction";
 import { Property } from "../entities/property";
@@ -66,7 +66,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
                 );
 
                 if (pathRange.contains(position)) {
-                    const componentUri: Uri = componentPathToUri(path, document.uri, _token);
+                    const componentUri: Uri = cachedComponentPathToUri(path, document.uri, _token);
                     if (componentUri) {
                         const comp: Component = await getComponent(componentUri, _token);
                         if (comp) {

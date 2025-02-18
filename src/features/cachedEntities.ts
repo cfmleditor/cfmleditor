@@ -278,7 +278,7 @@ export function searchAllFunctionNames(query: string, searchMode: SearchMode = S
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function componentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken): Uri | undefined {
+export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken): Uri | undefined {
     if (!dotPath) {
         return undefined;
     }
