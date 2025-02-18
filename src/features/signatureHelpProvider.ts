@@ -12,7 +12,7 @@ import { BackwardIterator, getPrecedingIdentifierRange, isContinuingExpression, 
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { equalsIgnoreCase, textToMarkdownString } from "../utils/textUtil";
 import { getGlobalFunction } from "./cachedEntities";
-import { componentPathToUri, getComponent } from "./cachedEntities";
+import { cachedComponentPathToUri, getComponent } from "./cachedEntities";
 
 export default class CFMLSignatureHelpProvider implements SignatureHelpProvider {
   /**
@@ -70,7 +70,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
     const objectNewInstanceInitPrefixMatch: RegExpExecArray = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
     if (objectNewInstanceInitPrefixMatch) {
       const componentDotPath: string = objectNewInstanceInitPrefixMatch[2];
-      const componentUri: Uri = componentPathToUri(componentDotPath, document.uri, _token);
+      const componentUri: Uri = cachedComponentPathToUri(componentDotPath, document.uri, _token);
       if (componentUri) {
         const initComponent: Component = await getComponent(componentUri, _token);
         if (initComponent) {

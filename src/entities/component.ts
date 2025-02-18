@@ -1,7 +1,6 @@
 
 import { CancellationToken, Position, Range, TextDocument, Uri } from "vscode";
-import * as cachedEntities from "../features/cachedEntities";
-import { getComponent, hasComponent } from "../features/cachedEntities";
+import { getComponent, hasComponent, cachedComponentPathToUri } from "../features/cachedEntities";
 import { MySet } from "../utils/collections";
 import { isCfcFile } from "../utils/contextUtil";
 import { DocumentPositionStateContext, DocumentStateContext } from "../utils/documentUtil";
@@ -468,7 +467,7 @@ export async function componentPathToUri(dotPath: string, baseUri: Uri, _token: 
         return undefined;
     }
 
-    const cachedResult: Uri = cachedEntities.componentPathToUri(dotPath, baseUri, _token);
+    const cachedResult: Uri = cachedComponentPathToUri(dotPath, baseUri, _token);
     if (cachedResult) {
         return cachedResult;
     }
