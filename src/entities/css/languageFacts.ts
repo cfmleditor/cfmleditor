@@ -98,7 +98,7 @@ export function getBrowserLabel(browsers: string[] = []): string | null {
 	return browsers
 		.map(b => {
 			let result = '';
-			const matches = b.match(/([A-Z]+)(\d+)?/)!;
+			const matches = b.match(/([A-Z]+)(\d+)?/);
 
 			const name = matches[1];
 			const version = matches[2];
