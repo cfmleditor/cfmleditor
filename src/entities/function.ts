@@ -34,7 +34,6 @@ export enum MemberType {
  * @param signatureIndex The index of the signature to use
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
 export function constructSyntaxString(func: Function, signatureIndex: number = 0): string {
   const funcSignatureParamsLabel = func.signatures.length !== 0 ? constructSignatureLabelParamsPart(func.signatures[signatureIndex].parameters) : "";
   const returnType: string = getReturnTypeString(func);
@@ -55,7 +54,6 @@ export function getFunctionSuffixPattern(): RegExp {
  * @param func The function for which to get the display return type
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
 export function getReturnTypeString(func: Function): string {
   let returnType: string;
   if ("returnTypeUri" in func) {

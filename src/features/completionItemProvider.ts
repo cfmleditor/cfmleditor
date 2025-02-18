@@ -29,7 +29,7 @@ import { getAllCustomSnippets, getAllGlobalFunctions, getAllGlobalMemberFunction
 import { Snippet, Snippets } from "../entities/snippet";
 import { Utils } from "vscode-uri";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const snippets: Snippets = require("../../snippets/snippets.json");
 
 const triggerCompletionCommand: Command = {

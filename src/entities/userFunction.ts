@@ -124,7 +124,6 @@ export interface UserFunctionSignature extends Signature {
     parameters: Argument[];
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
 export interface UserFunction extends Function {
     access: Access;
     static: boolean;
@@ -229,6 +228,7 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext,
                     argumentsEndPosition,
                     functionBodyStartPos.translate(0, -1)
                 );
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (ex) {
                 console.warn(`Error parsing ${document.uri.fsPath}:${functionName}`);
                 functionAttributeRange = new Range(

@@ -49,7 +49,6 @@ export default class CFMLHoverProvider implements HoverProvider {
      * @param _token A cancellation token.
      * @returns
      */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public async provideHover(document: TextDocument, position: Position, _token: CancellationToken): Promise<Hover | undefined> {
 
         const cfmlHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover", document.uri);
@@ -286,7 +285,6 @@ export default class CFMLHoverProvider implements HoverProvider {
      * @param func Function to convert
      * @returns
      */
-    // eslint-disable-next-line @typescript-eslint/ban-types
     public functionToHoverProviderItem(func: Function): HoverProviderItem {
         const paramArr: Parameter[] = [];
         const paramNames = new MySet<string>();

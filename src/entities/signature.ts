@@ -11,7 +11,6 @@ export interface Signature {
  * @param func The function from which to construct the parameter prefix
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
 export function constructSignatureLabelParamsPrefix(func: Function): string {
   // TODO: If UserFunction, use ComponentName.functionName based on location
   return func.name;

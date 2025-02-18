@@ -64,7 +64,6 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
     const startSigPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(startSigPosition));
 
-    // eslint-disable-next-line @typescript-eslint/ban-types
     let entry: Function;
 
     // Check if initializing via "new" operator

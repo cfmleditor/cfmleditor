@@ -19,7 +19,6 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
      * @param _token A cancellation token.
      * @returns
      */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public async provideDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<DefinitionLink[]> {
 
         // console.log("provideDefinition:CFMLDefinitionProvider:" + _token?.isCancellationRequested);

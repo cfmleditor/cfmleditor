@@ -81,6 +81,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
         if (uri.scheme) {
           return uri;
         }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (e) {
         // noop
       }

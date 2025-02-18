@@ -2,7 +2,7 @@
 
 import { MyMap } from "../collections";
 
-export interface MinMultiSigs extends MyMap<string, string[][]> { }
+export type MinMultiSigs = MyMap<string, string[][]>
 
 // TODO: Indicate version when signature was added
 export const multiSigGlobalFunctions: MinMultiSigs =

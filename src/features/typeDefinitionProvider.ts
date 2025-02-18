@@ -17,7 +17,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
      * @param _token A cancellation token.
      * @returns
      */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     public async provideTypeDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<Definition> {
         // console.log("provideTypeDefinition:CFMLTypeDefinitionProvider:" + _token?.isCancellationRequested);
 
