@@ -787,7 +787,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
 
                 foundFunction = await getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, disallowedAccess, disallowImplicit, _token);
             } else if (documentPositionStateContext.isCfmFile && !varScope && equalsIgnoreCase(varName, Scope.Variables)) {
-                foundFunction = await getFunctionFromTemplate(documentPositionStateContext, functionKey, _token);
+                foundFunction = getFunctionFromTemplate(documentPositionStateContext, functionKey, _token);
             } else {
                 // TODO: Allow passing variable assignments
                 const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext, _token);
@@ -795,7 +795,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
                 let variableAssignments: Variable[] = allDocumentVariableAssignments;
                 const fileName: string = uriBaseName(documentPositionStateContext.document.uri);
                 if (varScope && fileName !== "Application.cfm") {
-                    const applicationDocVariables: Variable[] = await getApplicationVariables(documentPositionStateContext.document.uri);
+                    const applicationDocVariables: Variable[] = getApplicationVariables(documentPositionStateContext.document.uri);
                     variableAssignments = variableAssignments.concat(applicationDocVariables);
                 }
 
@@ -811,7 +811,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
             }
         }
     } else if (documentPositionStateContext.isCfmFile) {
-        foundFunction = await getFunctionFromTemplate(documentPositionStateContext, functionKey, _token);
+        foundFunction = getFunctionFromTemplate(documentPositionStateContext, functionKey, _token);
     } else if (documentPositionStateContext.component) {
         foundFunction = await getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, undefined, false, _token);
     }

@@ -71,7 +71,6 @@ export default [{
         }],
         //#region disabled errors
         //TODO: fix these 1 at a time
-        "@typescript-eslint/await-thenable": "off",
         "@typescript-eslint/no-base-to-string": "off",
         "@typescript-eslint/no-floating-promises": "off",
         "@typescript-eslint/no-misused-promises": "off",

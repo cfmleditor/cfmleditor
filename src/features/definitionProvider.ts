@@ -262,7 +262,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
         if (variableScopePrefixMatch) {
             const currentScope: string = Scope.valueOf(variableScopePrefixMatch[1]);
 
-            const applicationDocVariables: Variable[] = await getApplicationVariables(document.uri);
+            const applicationDocVariables: Variable[] = getApplicationVariables(document.uri);
             applicationDocVariables.filter((variable: Variable) => {
                 return variable.scope === currentScope && equalsIgnoreCase(variable.identifier, currentWord);
             }).forEach((variable: Variable) => {
