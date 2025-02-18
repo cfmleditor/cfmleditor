@@ -4,8 +4,9 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [0.6.33] - 2025-02-18
 
-- Replace trie-prefix-tree with trie-search and simplify search implementation for user defined functions #41 
+- Replace trie-prefix-tree with trie-search and simplify search implementation for user defined functions #41 ( fixes issues with $ in function name )
 - Fix Inefficient Regular Expression Complexity in koa - https://github.com/advisories/GHSA-593f-38f6-jp5m
+- Add support for cfscript tag islands
 
 ## [0.6.32] - 2025-02-17
 
