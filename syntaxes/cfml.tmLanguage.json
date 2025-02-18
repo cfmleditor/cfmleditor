@@ -10675,6 +10675,21 @@
         }
       ]
     },
+
+    "source-cfml-script-tagisland": {
+      "begin": "(```)",
+      "contentName": "source.cfml",
+      "end": "(```)",
+      "patterns": [
+        {
+            "include": "#cfml-tags"
+        },
+        {
+           "include": "#text-html-cfml"
+        }
+      ]
+    },
+
     "source-cfml-string": {
       "patterns": [
         {
@@ -14249,6 +14264,9 @@
         },
         {
           "include": "#source-cfml-script-statements"
+        },
+        {
+          "include": "#source-cfml-script-tagisland"
         }
       ]
     },
