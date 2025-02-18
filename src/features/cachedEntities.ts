@@ -201,6 +201,7 @@ function setComponent(comp: Component): void {
 
     try {
         allComponentNames.add(comp);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (ex) {
         //console.warn(ex);
         console.warn(`Unable to add ${componentKey} to trie`);
@@ -253,6 +254,7 @@ export function searchAllComponentNames(query: string, _token: CancellationToken
 function setUserFunction(userFunction: UserFunction): void {
     try {
         allFunctionNames.add(userFunction);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (ex) {
         console.warn(`Unable to add ${userFunction.name} to trie`);
     }
@@ -261,10 +263,11 @@ function setUserFunction(userFunction: UserFunction): void {
 /**
  * Retrieves all cached user functions matched by the given query
  * @param query Some query text used to search for cached user functions
- * @param searchMode How the query will be searched for
+ * @param _searchMode How the query will be searched for
  * @returns
  */
-export function searchAllFunctionNames(query: string, searchMode: SearchMode = SearchMode.StartsWith): UserFunction[] {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function searchAllFunctionNames(query: string, _searchMode: SearchMode = SearchMode.StartsWith): UserFunction[] {
     let functions: UserFunction[] = [];
     functions = allFunctionNames.search(query)
     return functions;

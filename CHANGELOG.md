@@ -2,6 +2,11 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.33] - 2025-02-18
+
+- Replace trie-prefix-tree with trie-search and simplify search implementation for user defined functions #41 
+- Fix Inefficient Regular Expression Complexity in koa - https://github.com/advisories/GHSA-593f-38f6-jp5m
+
 ## [0.6.32] - 2025-02-17
 
 - Use fast textdocument for caching PR #40 @pixilation - improves the performance of the CFML: Refresh cache for workspace definitions command that runs on startup. This is the "Caching components" progress meter that appears.
