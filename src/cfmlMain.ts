@@ -179,7 +179,7 @@ export function activate(context: ExtensionContext): object {
         if (isCfcFile(document, undefined)) {
             const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
             const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-            cacheComponentFromDocument(document, false, replaceComments, undefined);
+            await cacheComponentFromDocument(document, false, replaceComments, undefined);
         } else if (resolveBaseName(document.fileName) === "Application.cfm") {
             const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, false, true, undefined);
             const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, undefined);
@@ -196,10 +196,10 @@ export function activate(context: ExtensionContext): object {
             return;
         }
 
-        workspace.openTextDocument(componentUri).then((document: TextDocument) => {
+        workspace.openTextDocument(componentUri).then(async (document: TextDocument) => {
             const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
             const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-            cacheComponentFromDocument(document, false, replaceComments, undefined);
+            await cacheComponentFromDocument(document, false, replaceComments, undefined);
         });
     });
     componentWatcher.onDidDelete((componentUri: Uri) => {
@@ -288,8 +288,8 @@ export function activate(context: ExtensionContext): object {
             }
         }
     } else if (enableAutoCloseTags) {
-        workspace.onDidChangeTextDocument((event) => {
-            handleContentChanges(event);
+        workspace.onDidChangeTextDocument(async (event) => {
+            await handleContentChanges(event);
         });
     }
 

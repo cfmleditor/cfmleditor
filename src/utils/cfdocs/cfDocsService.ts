@@ -296,13 +296,12 @@ export default class CFDocsService {
         CFDocsService.getExtensionDefinitionInfo : CFDocsService.getRemoteDefinitionInfo );
     // const getMemberFunctionDefinition = CFDocsService.getExtensionDefinitionInfo;
 
-    CFDocsService.getAllFunctionNames(cfdocsSource).then((allFunctionNames: string[]) => {
-      allFunctionNames.forEach((functionName: string) => {
-        getDefinitionInfo(functionName).then((definitionInfo: CFDocsDefinitionInfo) => {
-          CFDocsService.setGlobalFunction(definitionInfo);
-        });
-      });
-    });
+    const allFunctionNames: string[] = await CFDocsService.getAllFunctionNames(cfdocsSource);
+
+    await Promise.all(allFunctionNames.map(async (functionName: string) => {
+        const definitionInfo: CFDocsDefinitionInfo = await getDefinitionInfo(functionName);
+        CFDocsService.setGlobalFunction(definitionInfo);
+    }));
 
     /* CFDocsService.getAllMemberFunctionNames(cfdocsSource).then((allMemberFunctionNames: string[]) => {
         allMemberFunctionNames.forEach((memberFunctionName: string) => {
@@ -312,13 +311,12 @@ export default class CFDocsService {
         });
     }); */
 
-    CFDocsService.getAllTagNames(cfdocsSource).then((allTagNames: string[]) => {
-      allTagNames.forEach((tagName: string) => {
-        getDefinitionInfo(tagName).then((definitionInfo: CFDocsDefinitionInfo) => {
-          CFDocsService.setGlobalTag(definitionInfo);
-        });
-      });
-    });
+    const allTagNames: string[] = await CFDocsService.getAllTagNames(cfdocsSource);
+
+    await Promise.all(allTagNames.map(async (tagName: string) => {
+        const definitionInfo: CFDocsDefinitionInfo = await getDefinitionInfo(tagName);
+        CFDocsService.setGlobalTag(definitionInfo);
+    }));
 
     return true;
   }
