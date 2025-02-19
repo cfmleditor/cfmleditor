@@ -512,7 +512,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: Cancel
  * @param uri The URI of the application file
  * @returns
  */
-export function getApplicationVariables(uri: Uri): Variable[] {
+export function getCachedApplicationVariables(uri: Uri): Variable[] {
     return allApplicationVariables.get(uri.toString());
 }
 
@@ -539,7 +539,7 @@ export function removeApplicationVariables(uri: Uri): boolean {
  * @param uri The URI of the component to be check
  * @returns
  */
-export function getServerVariables(uri: Uri): Variable[] {
+export function getCachedServerVariables(uri: Uri): Variable[] {
     return allServerVariables.get(uri.toString());
 }
 

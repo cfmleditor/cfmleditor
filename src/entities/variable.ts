@@ -5,7 +5,7 @@ import { Location, TextDocument, Range, Uri, Position, WorkspaceConfiguration, w
 import { getCfScriptRanges, isCfcFile, getClosingPosition } from "../utils/contextUtil";
 import { COMPONENT_EXT, Component, getApplicationUri, getServerUri } from "./component";
 import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, UserFunctionVariable, parseScriptFunctionArgs, functionValuePattern, isUserFunctionVariable } from "./userFunction";
-import * as cachedEntities from "../features/cachedEntities";
+import { getCachedApplicationVariables, getCachedServerVariables, getComponent } from "../features/cachedEntities";
 import { equalsIgnoreCase } from "../utils/textUtil";
 import { MyMap, MySet } from "../utils/collections";
 import { parseAttributes, Attributes } from "./attribute";
@@ -336,7 +336,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
     // Add function arguments
     if (isCfcFile(document, _token)) {
-        const comp: Component = await cachedEntities.getComponent(document.uri, _token);
+        const comp: Component = await getComponent(document.uri, _token);
         if (comp) {
             comp.functions.forEach((func: UserFunction) => {
                 if (!func.isImplicit && (!docRange || (func.bodyRange && func.bodyRange.contains(docRange)))) {
@@ -838,7 +838,7 @@ export async function getApplicationVariables(baseUri: Uri): Promise<Variable[]>
     let applicationVariables: Variable[] = [];
     const applicationUri: Uri = await getApplicationUri(baseUri);
     if (applicationUri) {
-        const cachedApplicationVariables: Variable[] = cachedEntities.getApplicationVariables(applicationUri);
+        const cachedApplicationVariables: Variable[] = getCachedApplicationVariables(applicationUri);
         if (cachedApplicationVariables) {
             applicationVariables = cachedApplicationVariables;
         }
@@ -858,7 +858,7 @@ export function getServerVariables(baseUri: Uri, _token: CancellationToken): Var
 
     const serverUri: Uri = getServerUri(baseUri, _token);
     if (serverUri) {
-        serverVariables = cachedEntities.getServerVariables(serverUri);
+        serverVariables = getCachedServerVariables(serverUri);
     }
 
     return serverVariables;
@@ -914,7 +914,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
                 allVariableAssignments = allVariableAssignments.concat(componentVariables);
 
                 if (currComponent.extends) {
-                    currComponent = await cachedEntities.getComponent(currComponent.extends, _token);
+                    currComponent = await getComponent(currComponent.extends, _token);
                 } else {
                     currComponent = undefined;
                 }
