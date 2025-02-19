@@ -291,16 +291,18 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
     // relative to local directory
     const localPath: string = resolveRelativePath(baseUri, normalizedPath);
     const localFile: Uri = Uri.file(localPath);
-    if (allComponentsByUri[localFile.toString().toLowerCase()]) {
-        return localFile;
+    const localFileKey = localFile.toString().toLowerCase();
+    if (allComponentsByUri[localFileKey]) {
+        return allComponentsByUri[localFileKey].uri;
     }
 
     // relative to web root
     const rootPath: string = resolveRootPath(baseUri, normalizedPath);
     if (rootPath) {
         const rootFile: Uri = Uri.file(rootPath);
-        if (allComponentsByUri[rootFile.toString().toLowerCase()]) {
-            return rootFile;
+        const rootFileKey = rootFile.toString().toLowerCase();
+        if (allComponentsByUri[rootFileKey]) {
+            return allComponentsByUri[rootFileKey].uri;
         }
     }
 
@@ -308,8 +310,9 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
     const customMappingPaths: string[] = resolveCustomMappingPaths(baseUri, normalizedPath);
     for (const mappedPath of customMappingPaths) {
         const mappedFile: Uri = Uri.file(mappedPath);
-        if (allComponentsByUri[mappedFile.toString().toLowerCase()]) {
-            return mappedFile;
+        const mappedFileKey = mappedFile.toString().toLowerCase();
+        if (allComponentsByUri[mappedFileKey]) {
+            return allComponentsByUri[mappedFileKey].uri;
         }
     }
 
