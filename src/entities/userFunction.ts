@@ -795,7 +795,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
                 let variableAssignments: Variable[] = allDocumentVariableAssignments;
                 const fileName: string = uriBaseName(documentPositionStateContext.document.uri);
                 if (varScope && fileName !== "Application.cfm") {
-                    const applicationDocVariables: Variable[] = getApplicationVariables(documentPositionStateContext.document.uri);
+                    const applicationDocVariables: Variable[] = await getApplicationVariables(documentPositionStateContext.document.uri);
                     variableAssignments = variableAssignments.concat(applicationDocVariables);
                 }
 

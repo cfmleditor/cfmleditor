@@ -193,7 +193,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
         if (variableScopePrefixMatch) {
             const currentScope: string = Scope.valueOf(variableScopePrefixMatch[1]);
 
-            const applicationDocVariables: Variable[] = getApplicationVariables(document.uri);
+            const applicationDocVariables: Variable[] = await getApplicationVariables(document.uri);
             const applicationDocVariablesfiltered = applicationDocVariables.filter((variable: Variable) => {
                 return variable.scope === currentScope && equalsIgnoreCase(variable.identifier, currentWord) && variable.dataTypeComponentUri;
             });
