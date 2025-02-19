@@ -192,7 +192,7 @@ export function clearAllGlobalEntityDefinitions(): void {
  * @param comp The component to cache
  */
 function setComponent(comp: Component): void {
-    allComponentsByUri[comp.uri.toString()] = comp;
+    allComponentsByUri[comp.uri.toString().toLowerCase()] = comp;
     const componentKey: string = uriBaseName(comp.uri, COMPONENT_EXT).toLowerCase();
     if (!allComponentsByName[componentKey]) {
         allComponentsByName[componentKey] = {};
@@ -220,7 +220,7 @@ export async function getComponent(uri: Uri, _token: CancellationToken): Promise
         return undefined;
     }
 
-    return allComponentsByUri[uri.toString()];
+    return allComponentsByUri[uri.toString().toLowerCase()];
 }
 
 /**
@@ -231,7 +231,7 @@ export async function getComponent(uri: Uri, _token: CancellationToken): Promise
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
-    return Object.prototype.hasOwnProperty.call(allComponentsByUri, uri.toString());
+    return Object.prototype.hasOwnProperty.call(allComponentsByUri, uri.toString().toLowerCase());
 }
 
 /**
@@ -291,7 +291,7 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
     // relative to local directory
     const localPath: string = resolveRelativePath(baseUri, normalizedPath);
     const localFile: Uri = Uri.file(localPath);
-    if (allComponentsByUri[localFile.toString()]) {
+    if (allComponentsByUri[localFile.toString().toLowerCase()]) {
         return localFile;
     }
 
@@ -299,7 +299,7 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
     const rootPath: string = resolveRootPath(baseUri, normalizedPath);
     if (rootPath) {
         const rootFile: Uri = Uri.file(rootPath);
-        if (allComponentsByUri[rootFile.toString()]) {
+        if (allComponentsByUri[rootFile.toString().toLowerCase()]) {
             return rootFile;
         }
     }
@@ -308,7 +308,7 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
     const customMappingPaths: string[] = resolveCustomMappingPaths(baseUri, normalizedPath);
     for (const mappedPath of customMappingPaths) {
         const mappedFile: Uri = Uri.file(mappedPath);
-        if (allComponentsByUri[mappedFile.toString()]) {
+        if (allComponentsByUri[mappedFile.toString().toLowerCase()]) {
             return mappedFile;
         }
     }
@@ -433,9 +433,9 @@ export async function cacheComponentFromDocument(document: TextDocument, fast: b
  * @param componentUri The URI of the component to be removed from cache
  */
 export function clearCachedComponent(componentUri: Uri): void {
-    const componentByUri: Component = allComponentsByUri[componentUri.toString()];
+    const componentByUri: Component = allComponentsByUri[componentUri.toString().toLowerCase()];
     if (componentByUri) {
-        delete allComponentsByUri[componentUri.toString()];
+        delete allComponentsByUri[componentUri.toString().toLowerCase()];
     }
 
     const componentKey: string = uriBaseName(componentUri).toLowerCase();
