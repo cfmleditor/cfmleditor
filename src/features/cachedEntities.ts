@@ -220,7 +220,7 @@ export async function getComponent(uri: Uri, _token: CancellationToken): Promise
         return undefined;
     }
 
-    return allComponentsByUri[uri.toString()];
+    return Promise.resolve(allComponentsByUri[uri.toString()]);
 }
 
 /**

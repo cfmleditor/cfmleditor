@@ -684,7 +684,7 @@ async function getCFTagAttributeCompletions(state: CompletionState, globalTag: G
         return attributeItem;
     });
 
-    return attributeCompletions;
+    return Promise.resolve(attributeCompletions);
 }
 
 /**

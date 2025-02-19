@@ -22,7 +22,7 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
 
         let workspaceSymbols: SymbolInformation[] = [];
         if (query === "") {
-            return workspaceSymbols;
+            return Promise.resolve(workspaceSymbols);
         }
 
         let uri: Uri | undefined = undefined;
@@ -44,7 +44,7 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
         }
 
         if (!uri) {
-            return workspaceSymbols;
+            return Promise.resolve(workspaceSymbols);
         }
 
         const userFunctions: UserFunction[] = searchAllFunctionNames(query);
@@ -72,6 +72,6 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
             })
         );
 
-        return workspaceSymbols;
+        return Promise.resolve(workspaceSymbols);
     }
 }
