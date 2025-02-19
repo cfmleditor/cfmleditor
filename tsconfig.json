@@ -9,10 +9,10 @@
         ],
         "sourceMap": true,
         "rootDir": "src",
-        "alwaysStrict": true,
+        "strict": true,
+        "strictNullChecks": false,
         "noFallthroughCasesInSwitch": true,
         "noImplicitReturns": true,
-        "noImplicitThis": true,
         "noUnusedLocals": true,
         "esModuleInterop": true
     },

@@ -77,7 +77,6 @@ export default [{
         "@typescript-eslint/no-unsafe-assignment": "off",
         "@typescript-eslint/no-unsafe-enum-comparison": "off",
         "@typescript-eslint/no-unsafe-member-access": "off",
-        "@typescript-eslint/no-unsafe-return": "off",
         "@typescript-eslint/prefer-promise-reject-errors": "off",
         "@typescript-eslint/require-await": "off",
         "@typescript-eslint/restrict-plus-operands": "off",
