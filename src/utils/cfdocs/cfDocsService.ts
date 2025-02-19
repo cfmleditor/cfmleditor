@@ -1,6 +1,6 @@
 /* eslint-disable jsdoc/require-param */
 /* eslint-disable jsdoc/check-tag-names */
-import { fetch } from "isomorphic-fetch";
+import fetch from "isomorphic-fetch";
 import { commands, Position, Range, TextDocument, TextLine, Uri, window, workspace, WorkspaceConfiguration, TextEditor, env, CancellationToken, TextEditorEdit } from "vscode";
 import { getFunctionSuffixPattern } from "../../entities/function";
 import { GlobalEntity } from "../../entities/globals";
@@ -82,7 +82,7 @@ export default class CFDocsService {
     return new Promise<CFDocsDefinitionInfo>((resolve, reject) => {
         // Unable to utilize GitHub API due to rate limiting
         fetch(cfDocsLink)
-            .then((response) => response.json())
+            .then((response) => response.json() as Promise<CFDocsDefinitionInfo>)
             .then((data) => {
                 try {
                     resolve(CFDocsService.constructDefinitionFromJsonDoc(data));
@@ -158,7 +158,7 @@ export default class CFDocsService {
       } else {
         const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
         fetch(cfDocsLink)
-            .then((response) => response.json())
+            .then((response) => response.json() as Promise<CFDocsDefinitionInfo>)
             .then((data) => {
                 try {
                     resolve(data.related);
@@ -214,7 +214,7 @@ export default class CFDocsService {
                 const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
 
                 fetch(cfDocsLink)
-                    .then((response) => response.json())
+                    .then((response) => response.json() as Promise<CFDocsDefinitionInfo>)
                     .then((data) => {
                         try {
                             resolve(data.related);

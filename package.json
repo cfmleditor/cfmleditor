@@ -599,6 +599,7 @@
 		"vscode:prepublish": "webpack --mode production --devtool hidden-source-map &&  npm run build"
 	},
 	"dependencies": {
+		"@types/isomorphic-fetch": "^0.0.39",
 		"async_hooks": "^1.0.0",
 		"browserify": "^17.0.1",
 		"buffer": "^6.0.3",
