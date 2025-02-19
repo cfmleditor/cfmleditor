@@ -254,7 +254,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         // TODO: Add struct keys?
 
         // Application variables
-        const applicationDocVariables: Variable[] = getApplicationVariables(documentUri);
+        const applicationDocVariables: Variable[] = await getApplicationVariables(documentUri);
         allVariableAssignments = allVariableAssignments.concat(applicationDocVariables.filter((variable: Variable) => {
             return getMatchingVariables(allVariableAssignments, variable.identifier, variable.scope).length === 0;
         }));

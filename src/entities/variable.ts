@@ -834,9 +834,9 @@ export function getMatchingVariables(variables: Variable[], varName: string, sco
  * @param baseUri The URI of the document for which the Application file will be found
  * @returns
  */
-export function getApplicationVariables(baseUri: Uri): Variable[] {
+export async function getApplicationVariables(baseUri: Uri): Promise<Variable[]> {
     let applicationVariables: Variable[] = [];
-    const applicationUri: Uri = getApplicationUri(baseUri);
+    const applicationUri: Uri = await getApplicationUri(baseUri);
     if (applicationUri) {
         const cachedApplicationVariables: Variable[] = cachedEntities.getApplicationVariables(applicationUri);
         if (cachedApplicationVariables) {

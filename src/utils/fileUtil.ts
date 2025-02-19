@@ -224,3 +224,39 @@ export function resolveCustomMappingPaths(baseUri: Uri, appendingPath: string): 
 
   return customMappingPaths;
 }
+
+/**
+ *
+ * @param name
+ * @param workingDir
+ * @returns Uri | undefined
+ */
+export async function findUpWorkspaceFile(name: string, workingDir: Uri): Promise<Uri | undefined> {
+
+    let directory: Uri = Utils.dirname(workingDir);
+    const workspaceDir: WorkspaceFolder = workspace.getWorkspaceFolder(workingDir);
+
+	while (directory) {
+
+        const filePath: Uri = Uri.joinPath(directory, name);
+
+        try {
+            const stats: FileStat = await workspace.fs.stat(filePath);
+            if ( stats.type === FileType.File ) {
+                return filePath;
+            }
+        } catch {
+            /* empty */
+        }
+
+        // Stop at the workspace folder
+        if (directory.fsPath === workspaceDir.uri.fsPath) {
+            break;
+        }
+
+        directory = Utils.joinPath(directory, "../");
+
+	}
+
+    return undefined;
+}

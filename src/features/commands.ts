@@ -46,7 +46,7 @@ export async function showApplicationDocument(editor: TextEditor): Promise<void>
         return;
     }
 
-    const applicationUri: Uri = getApplicationUri(activeDocumentUri);
+    const applicationUri: Uri = await getApplicationUri(activeDocumentUri);
     if (applicationUri) {
         const applicationDocument: TextDocument = await workspace.openTextDocument(applicationUri);
         if (!applicationDocument) {

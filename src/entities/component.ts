@@ -4,7 +4,7 @@ import { getComponent, hasComponent, cachedComponentPathToUri } from "../feature
 import { MySet } from "../utils/collections";
 import { isCfcFile } from "../utils/contextUtil";
 import { DocumentPositionStateContext, DocumentStateContext } from "../utils/documentUtil";
-import { fileExists, resolveBaseName, resolveCustomMappingPaths, resolveRelativePath, resolveRootPath } from "../utils/fileUtil";
+import { fileExists, findUpWorkspaceFile, resolveBaseName, resolveCustomMappingPaths, resolveRelativePath, resolveRootPath } from "../utils/fileUtil";
 import { Attribute, Attributes, parseAttributes } from "./attribute";
 import { DataType } from "./dataType";
 import { DocBlockKeyValue, parseDocBlock } from "./docblock";
@@ -518,23 +518,14 @@ export function getComponentNameFromDotPath(path: string): string {
  * @param baseUri The URI from which the Application file will be searched
  * @returns
  */
-export function getApplicationUri(baseUri: Uri): Uri | undefined {
+export async function getApplicationUri(baseUri: Uri): Promise<Uri> {
     if (baseUri.scheme !== "file") {
         return undefined;
     }
 
-    let componentUri: Uri;
+    const applicationFile: Uri = await findUpWorkspaceFile("Application.cfc", baseUri);
 
-    //   if ( findup ) {
-    //     const fileNamesGlob = "Application.@(cfc|cfm)";
-    //     const currentWorkingDir: string = path.dirname(baseUri.fsPath);
-    //     console.log(baseUri.fsPath);
-    //     const applicationFile: string = findup(fileNamesGlob, { cwd: currentWorkingDir });
-    //     if (applicationFile) {
-    //         componentUri = Uri.file(applicationFile);
-    //     }
-    //   }
-    return componentUri;
+    return applicationFile;
 }
 
 /**
