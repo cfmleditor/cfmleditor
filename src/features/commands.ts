@@ -18,10 +18,10 @@ export async function refreshGlobalDefinitionCache(): Promise<void> {
 
     const cfmlGlobalDefinitionsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.globalDefinitions");
     if (cfmlGlobalDefinitionsSettings.get<string>("source") === "cfdocs") {
-        CFDocsService.cacheAll();
+        await CFDocsService.cacheAll();
     }
 
-    SnippetService.cacheAllCustomSnippets();
+    await SnippetService.cacheAllCustomSnippets();
 }
 
 /**

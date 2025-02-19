@@ -350,8 +350,8 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
     documentStateContext.component = component;
     const componentFunctions = new ComponentFunctions();
     let userFunctions: UserFunction[] = [];
-    userFunctions = userFunctions.concat(parseScriptFunctions(documentStateContext, _token));
-    userFunctions = userFunctions.concat(parseTagFunctions(documentStateContext, _token));
+    userFunctions = userFunctions.concat(await parseScriptFunctions(documentStateContext, _token));
+    userFunctions = userFunctions.concat(await parseTagFunctions(documentStateContext, _token));
     let earliestFunctionRangeStart: Position = document.positionAt(documentText.length);
     userFunctions.forEach((compFun: UserFunction) => {
         if (compFun.location.range.start.isBefore(earliestFunctionRangeStart)) {

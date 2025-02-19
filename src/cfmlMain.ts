@@ -144,13 +144,21 @@ export function activate(context: ExtensionContext): object {
 
     context.subscriptions.push(commands.registerCommand("cfml.refreshGlobalDefinitionCache", refreshGlobalDefinitionCache));
     context.subscriptions.push(commands.registerCommand("cfml.refreshWorkspaceDefinitionCache", refreshWorkspaceDefinitionCache));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleComment(CommentType.Line, undefined)));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.insertSnippet", insertSnippet));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleComment(CommentType.Block, undefined)));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.openActiveApplicationFile", showApplicationDocument));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToMatchingTag", goToMatchingTag));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.openCfDocs", CFDocsService.openCfDocsForCurrentWord));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.openEngineDocs", CFDocsService.openEngineDocsForCurrentWord));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.foldAllFunctions", foldAllFunctions));
 
     context.subscriptions.push(languages.registerHoverProvider(DOCUMENT_SELECTOR, new CFMLHoverProvider()));
@@ -179,7 +187,7 @@ export function activate(context: ExtensionContext): object {
         if (isCfcFile(document, undefined)) {
             const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
             const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-            cacheComponentFromDocument(document, false, replaceComments, undefined);
+            await cacheComponentFromDocument(document, false, replaceComments, undefined);
         } else if (resolveBaseName(document.fileName) === "Application.cfm") {
             const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, false, true, undefined);
             const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, undefined);
@@ -196,10 +204,10 @@ export function activate(context: ExtensionContext): object {
             return;
         }
 
-        workspace.openTextDocument(componentUri).then((document: TextDocument) => {
+        workspace.openTextDocument(componentUri).then(async (document: TextDocument) => {
             const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
             const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-            cacheComponentFromDocument(document, false, replaceComments, undefined);
+            await cacheComponentFromDocument(document, false, replaceComments, undefined);
         });
     });
     componentWatcher.onDidDelete((componentUri: Uri) => {
@@ -288,8 +296,8 @@ export function activate(context: ExtensionContext): object {
             }
         }
     } else if (enableAutoCloseTags) {
-        workspace.onDidChangeTextDocument((event) => {
-            handleContentChanges(event);
+        workspace.onDidChangeTextDocument(async (event) => {
+            await handleContentChanges(event);
         });
     }
 
