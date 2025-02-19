@@ -144,13 +144,21 @@ export function activate(context: ExtensionContext): object {
 
     context.subscriptions.push(commands.registerCommand("cfml.refreshGlobalDefinitionCache", refreshGlobalDefinitionCache));
     context.subscriptions.push(commands.registerCommand("cfml.refreshWorkspaceDefinitionCache", refreshWorkspaceDefinitionCache));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleComment(CommentType.Line, undefined)));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.insertSnippet", insertSnippet));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleComment(CommentType.Block, undefined)));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.openActiveApplicationFile", showApplicationDocument));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToMatchingTag", goToMatchingTag));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.openCfDocs", CFDocsService.openCfDocsForCurrentWord));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.openEngineDocs", CFDocsService.openEngineDocsForCurrentWord));
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     context.subscriptions.push(commands.registerTextEditorCommand("cfml.foldAllFunctions", foldAllFunctions));
 
     context.subscriptions.push(languages.registerHoverProvider(DOCUMENT_SELECTOR, new CFMLHoverProvider()));

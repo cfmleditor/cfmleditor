@@ -344,8 +344,9 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         // Document user functions
         if (docIsCfmFile) {
             if (getValidScopesPrefixPattern([Scope.Variables], true).test(docPrefix)) {
-                const tagFunctions: UserFunction[] = parseTagFunctions(documentPositionStateContext, _token);
-                const scriptFunctions: UserFunction[] = parseScriptFunctions(documentPositionStateContext, _token).filter((func: UserFunction) => {
+                const tagFunctions: UserFunction[] = await parseTagFunctions(documentPositionStateContext, _token);
+                const scriptFunctions: UserFunction[] = await parseScriptFunctions(documentPositionStateContext, _token);
+                scriptFunctions.filter((func: UserFunction) => {
                     return isInRanges(cfscriptRanges, func.location.range.start, false, _token);
                 });
 
@@ -418,7 +419,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                                 const addedVariables: MySet<string> = new MySet();
                                 const validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
                                 if (thisComponent) {
-                                    if (isSubcomponentOrEqual(thisComponent, initialFoundComp, _token)) {
+                                    if (await isSubcomponentOrEqual(thisComponent, initialFoundComp, _token)) {
                                         validFunctionAccess.add(Access.Private);
                                         validFunctionAccess.add(Access.Package);
                                     }

@@ -385,6 +385,6 @@ export class CFDocsDefinitionInfo {
    * @returns
    */
   public static async isIdentifier(name: string): Promise<boolean> {
-    return (CFDocsDefinitionInfo.isFunctionName(name) || CFDocsDefinitionInfo.isTagName(name));
+    return (await CFDocsDefinitionInfo.isFunctionName(name) || await CFDocsDefinitionInfo.isTagName(name));
   }
 }

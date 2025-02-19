@@ -547,7 +547,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
                 );
 
                 userFunction.signature = {
-                    parameters: parseScriptFunctionArgs(documentStateContext, paramsRange, [], _token)
+                    parameters: await parseScriptFunctionArgs(documentStateContext, paramsRange, [], _token)
                 };
                 thisVar = userFunction;
             }
