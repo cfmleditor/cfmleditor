@@ -83,11 +83,11 @@ export async function parseProperties(documentStateContext: DocumentStateContext
       for (const docElem of propertyDocBlockParsed) {
         const activeKey: string = docElem.key;
         if (activeKey === "type") {
-          const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
-          if (checkDataType) {
-            property.dataType = checkDataType[0];
-            if (checkDataType[1]) {
-              property.dataTypeComponentUri = checkDataType[1];
+          const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
+          if (dataType) {
+            property.dataType = dataType;
+            if (dataTypeComponentUri) {
+              property.dataTypeComponentUri = dataTypeComponentUri;
             }
 
             property.dataTypeRange = docElem.valueRange;
@@ -118,11 +118,11 @@ export async function parseProperties(documentStateContext: DocumentStateContext
           property.name = attr.value;
           property.nameRange = attr.valueRange;
         } else if (attrKey === "type") {
-          const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(attr.value, document.uri, _token);
-          if (checkDataType) {
-            property.dataType = checkDataType[0];
-            if (checkDataType[1]) {
-              property.dataTypeComponentUri = checkDataType[1];
+          const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.getDataTypeAndUri(attr.value, document.uri, _token);
+          if (dataType) {
+            property.dataType = dataType;
+            if (dataTypeComponentUri) {
+              property.dataTypeComponentUri = dataTypeComponentUri;
             }
 
             property.dataTypeRange = attr.valueRange;
@@ -142,11 +142,11 @@ export async function parseProperties(documentStateContext: DocumentStateContext
       }
 
       const dataTypeString: string = parsedPropertyAttributes[1];
-      const checkDataType: [DataType, Uri] = await DataType.getDataTypeAndUri(dataTypeString, document.uri, _token);
-      if (checkDataType) {
-        property.dataType = checkDataType[0];
-        if (checkDataType[1]) {
-          property.dataTypeComponentUri = checkDataType[1];
+      const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.getDataTypeAndUri(dataTypeString, document.uri, _token);
+      if (dataType) {
+        property.dataType = dataType;
+        if (dataTypeComponentUri) {
+          property.dataTypeComponentUri = dataTypeComponentUri;
         }
       }
       property.name = parsedPropertyAttributes[2];

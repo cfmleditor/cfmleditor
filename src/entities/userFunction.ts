@@ -264,11 +264,11 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
         };
 
         if (returnType) {
-            const checkDataType = await DataType.getDataTypeAndUri(returnType, document.uri, _token);
-            if (checkDataType) {
-                userFunction.returntype = checkDataType[0];
-                if (checkDataType[1]) {
-                    userFunction.returnTypeUri = checkDataType[1];
+            const [dataType, returnTypeUri] : [DataType, Uri] = await DataType.getDataTypeAndUri(returnType, document.uri, _token);
+            if (dataType) {
+                userFunction.returntype = dataType;
+                if (returnTypeUri) {
+                    userFunction.returnTypeUri = returnTypeUri;
                 }
                 const returnTypeOffset: number = scriptFunctionMatch.index + returnTypePrefix.length;
                 userFunction.returnTypeRange = new Range(
@@ -311,7 +311,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
                 if (docElem.key === "access") {
                     userFunction.access = Access.valueOf(docElem.value);
                 } else if (docElem.key === "returntype") {
-                    const [ dataType, uri ] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
+                    const [dataType, uri] : [DataType, Uri] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
                     if (dataType) {
                         userFunction.returntype = dataType;
 
@@ -407,11 +407,11 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
             let typeUri: Uri;
             let argTypeRange: Range;
             if (argType) {
-                const checkDataType:[DataType, Uri] = await DataType.getDataTypeAndUri(argType, documentUri, _token);
-                if (checkDataType) {
-                    convertedArgType = checkDataType[0];
-                    if (checkDataType[1]) {
-                        typeUri = checkDataType[1];
+                const [dataType, returnTypeUri] : [DataType, Uri] = await DataType.getDataTypeAndUri(argType, documentUri, _token);
+                if (dataType) {
+                    convertedArgType = dataType;
+                    if (returnTypeUri) {
+                        typeUri = returnTypeUri;
                     }
 
                     const argTypeOffset: number = fullArg.indexOf(argType);
@@ -470,11 +470,11 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
                     } else if (argAttrName === "default") {
                         argument.default = argAttrVal;
                     } else if (argAttrName === "type") {
-                        const checkDataType:[DataType, Uri] = await DataType.getDataTypeAndUri(argAttrVal, documentUri, _token);
-                        if (checkDataType) {
-                            argument.dataType = checkDataType[0];
-                            if (checkDataType[1]) {
-                                argument.dataTypeComponentUri = checkDataType[1];
+                        const [dataType, dataTypeComponentUri] : [DataType, Uri] = await DataType.getDataTypeAndUri(argAttrVal, documentUri, _token);
+                        if (dataType) {
+                            argument.dataType = dataType;
+                            if (dataTypeComponentUri) {
+                                argument.dataTypeComponentUri = dataTypeComponentUri;
                             }
 
                             argument.dataTypeRange = new Range(
@@ -498,11 +498,11 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
                 } else if (docElem.subkey === "default") {
                     argument.default = docElem.value;
                 } else if (docElem.subkey === "type") {
-                    const checkDataType:[DataType,Uri] = await DataType.getDataTypeAndUri(docElem.value, documentUri, _token);
-                    if (checkDataType) {
-                        argument.dataType = checkDataType[0];
-                        if (checkDataType[1]) {
-                            argument.dataTypeComponentUri = checkDataType[1];
+                    const [dataType, dataTypeComponentUri] : [DataType, Uri] = await DataType.getDataTypeAndUri(docElem.value, documentUri, _token);
+                    if (dataType) {
+                        argument.dataType = dataType;
+                        if (dataTypeComponentUri) {
+                            argument.dataTypeComponentUri = dataTypeComponentUri;
                         }
 
                         argument.dataTypeRange = new Range(
@@ -611,11 +611,11 @@ async function parseTagFunctionArguments(documentStateContext: DocumentStateCont
         let typeUri: Uri;
         let argTypeRange: Range;
         if (argType) {
-            const checkDataType:[DataType, Uri] = await DataType.getDataTypeAndUri(argType, documentUri, _token);
-            if (checkDataType) {
-                convertedArgType = checkDataType[0];
-                if (checkDataType[1]) {
-                    typeUri = checkDataType[1];
+            const [dataType, uri] : [DataType, Uri] = await DataType.getDataTypeAndUri(argType, documentUri, _token);
+            if (dataType) {
+                convertedArgType = dataType;
+                if (uri) {
+                    typeUri = uri;
                 }
                 argTypeRange = parsedAttributes.get("type").valueRange;
                 argTypeRange = new Range(
@@ -682,11 +682,11 @@ async function assignFunctionAttributes(userFunction: UserFunction, functionAttr
             if (attrName === "access") {
                 userFunction.access = Access.valueOf(attrVal);
             } else if (attrName === "returntype") {
-                const checkDataType:[DataType, Uri] = await DataType.getDataTypeAndUri(attrVal, userFunction.location.uri, _token);
-                if (checkDataType) {
-                    userFunction.returntype = checkDataType[0];
-                    if (checkDataType[1]) {
-                        userFunction.returnTypeUri = checkDataType[1];
+                const [returntype, returnTypeUri] : [DataType, Uri] = await DataType.getDataTypeAndUri(attrVal, userFunction.location.uri, _token);
+                if (returntype) {
+                    userFunction.returntype = returntype;
+                    if (returnTypeUri) {
+                        userFunction.returnTypeUri = returnTypeUri;
                     }
                     const returnTypeRange: Range = functionAttributes.get("returntype").valueRange;
                     userFunction.returnTypeRange = new Range(

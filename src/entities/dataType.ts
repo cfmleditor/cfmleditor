@@ -263,18 +263,18 @@ export namespace DataType {
 
     const objectMatch1 = /^(?:["']\s*#\s*)?(createObject\((["'])component\2\s*,\s*(["'])([^'"]+)\3)/i.exec(value);
     if (objectMatch1) {
-      const findUri: [DataType, Uri] = await getDataTypeAndUri(objectMatch1[4], documentUri, _token);
-      if (findUri) {
-        return findUri;
+      const [dataType, uri]: [DataType, Uri] = await getDataTypeAndUri(objectMatch1[4], documentUri, _token);
+      if (dataType) {
+        return [dataType, uri];
       }
       return [DataType.Component, null];
     }
 
     const objectMatch2 = /^(?:["']\s*#\s*)?(new\s+(["'])?([^\s'"(]+)\2\()/i.exec(value);
     if (objectMatch2) {
-      const findUri: [DataType, Uri] = await getDataTypeAndUri(objectMatch2[3], documentUri, _token);
-      if (findUri) {
-        return findUri;
+      const [dataType, uri]: [DataType, Uri] = await getDataTypeAndUri(objectMatch2[3], documentUri, _token);
+      if (dataType) {
+        return [dataType, uri];
       }
       return [DataType.Component, null];
     }

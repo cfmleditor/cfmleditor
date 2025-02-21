@@ -1141,26 +1141,26 @@ async function getDottedPathCompletions(state: CompletionState, parentDottedPath
     for (const thisPath of paths) {
         const files: [string, FileType][] = await workspace.fs.readDirectory(Uri.parse(thisPath));
         const directories: [string, FileType][] = filterDirectories(files);
-        directories.filter((directory: [string, FileType]) => {
-            return state.currentWordMatches(directory[0]);
-        }).forEach((directory: [string, FileType]) => {
+        directories.filter(([directory]: [string, FileType]) => {
+            return state.currentWordMatches(directory);
+        }).forEach(([directory]: [string, FileType]) => {
             newInstanceCompletions.push(createNewProposal(
-                directory[0],
+                directory,
                 CompletionItemKind.Folder,
-                { detail: `(folder) ${directory}`, description: escapeMarkdown(Uri.joinPath(Uri.parse(thisPath), directory[0]).toString()) },
+                { detail: `(folder) ${directory}`, description: escapeMarkdown(Uri.joinPath(Uri.parse(thisPath), directory).toString()) },
                 "!"
             ));
         });
         const componentFiles: [string, FileType][] = filterComponents(files);
-        componentFiles.filter((componentFile: [string, FileType]) => {
-            const componentName: string = resolveBaseName(componentFile[0], COMPONENT_EXT);
+        componentFiles.filter(([componentFile]: [string, FileType]) => {
+            const componentName: string = resolveBaseName(componentFile, COMPONENT_EXT);
             return state.currentWordMatches(componentName);
-        }).forEach((componentFile: [string, FileType]) => {
-            const componentName: string = resolveBaseName(componentFile[0], COMPONENT_EXT);
+        }).forEach(([componentFile]: [string, FileType]) => {
+            const componentName: string = resolveBaseName(componentFile, COMPONENT_EXT);
             newInstanceCompletions.push(createNewProposal(
                 componentName,
                 CompletionItemKind.Class,
-                { detail: `(component) ${componentName}`, description: escapeMarkdown(Uri.joinPath(Uri.parse(thisPath), componentFile[0]).toString()) },
+                { detail: `(component) ${componentName}`, description: escapeMarkdown(Uri.joinPath(Uri.parse(thisPath), componentFile).toString()) },
                 "!"
             ));
         });

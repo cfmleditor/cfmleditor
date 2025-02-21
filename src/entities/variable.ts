@@ -389,9 +389,9 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
         if (parsedAttr.has("type") && !!parsedAttr.get("type").value) {
             paramType = DataType.paramTypeToDataType(parsedAttr.get("type").value);
         } else if (parsedAttr.has("default") && parsedAttr.get("default").value !== undefined) {
-            const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(parsedAttr.get("default").value, documentUri, _token);
-            paramType = inferredType[0];
-            paramTypeComponentUri = inferredType[1];
+            const [dataType, uri]: [DataType, Uri] = await DataType.inferDataTypeFromValue(parsedAttr.get("default").value, documentUri, _token);
+            paramType = dataType;
+            paramTypeComponentUri = uri;
         }
 
         const paramName = parsedAttr.get("name").value;
@@ -484,12 +484,12 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
         if (scopeVal === Scope.Unknown) {
             scopeVal = Scope.Variables;
         }
-        const inferredType: [DataType, Uri] = await DataType.inferDataTypeFromValue(initValue, documentUri, _token);
+        const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.inferDataTypeFromValue(initValue, documentUri, _token);
 
         let thisVar: Variable = {
             identifier: varName,
-            dataType: inferredType[0],
-            dataTypeComponentUri: inferredType[1],
+            dataType: dataType,
+            dataTypeComponentUri: dataTypeComponentUri,
             scope: scopeVal,
             final: false,
             declarationLocation: new Location(
@@ -498,7 +498,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
             )
         };
 
-        if (inferredType[0] === DataType.Query) {
+        if (dataType === DataType.Query) {
             let valueMatch: RegExpExecArray = null;
             // eslint-disable-next-line no-cond-assign
             if (valueMatch = queryValuePattern.exec(initValue)) {
@@ -530,7 +530,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
                     }
                 }
             }
-        } else if (inferredType[0] === DataType.Function) {
+        } else if (dataType === DataType.Function) {
             const userFunction: UserFunctionVariable = thisVar as UserFunctionVariable;
 
             let valueMatch: RegExpExecArray = null;
