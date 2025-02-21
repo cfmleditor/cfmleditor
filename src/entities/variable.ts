@@ -336,7 +336,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
     // Add function arguments
     if (isCfcFile(document, _token)) {
-        const comp: Component = await getComponent(document.uri, _token);
+        const comp: Component = getComponent(document.uri, _token);
         if (comp) {
             comp.functions.forEach((func: UserFunction) => {
                 if (!func.isImplicit && (!docRange || (func.bodyRange && func.bodyRange.contains(docRange)))) {
@@ -914,7 +914,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
                 allVariableAssignments = allVariableAssignments.concat(componentVariables);
 
                 if (currComponent.extends) {
-                    currComponent = await getComponent(currComponent.extends, _token);
+                    currComponent = getComponent(currComponent.extends, _token);
                 } else {
                     currComponent = undefined;
                 }

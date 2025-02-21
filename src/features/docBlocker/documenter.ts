@@ -34,21 +34,21 @@ export default class Documenter {
      * if not load an empty block
      * @returns
      */
-    public async autoDocument(): Promise<SnippetString> {
+    public autoDocument(): SnippetString {
         const func = new FunctionBlock(this.targetPosition, this.document);
-        await func.setup();
+        func.setup();
         if (func.test()) {
             return func.constructDoc().build();
         }
 
         const prop = new Property(this.targetPosition, this.document);
-        await prop.setup();
+        prop.setup();
         if (prop.test()) {
             return prop.constructDoc().build();
         }
 
         const comp = new Component(this.targetPosition, this.document);
-        await comp.setup();
+        comp.setup();
         if (comp.test()) {
             return comp.constructDoc().build();
         }

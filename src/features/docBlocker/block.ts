@@ -49,8 +49,8 @@ export abstract class Block {
 
   }
 
-  public async setup(): Promise<void> {
-    this.component = await getComponent(this.document.uri, undefined);
+  public setup(): void {
+    this.component = getComponent(this.document.uri, undefined);
   }
 
   /**

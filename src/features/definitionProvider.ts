@@ -31,7 +31,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
         const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
         const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-        const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
+        const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 
         if (documentPositionStateContext.positionInComment) {
             return null;
@@ -54,7 +54,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
         // TODO: These references should ideally be in cachedEntities.
         let referenceMatch: RegExpExecArray | null;
-        await Promise.all(objectReferencePatterns.map(async (element: ReferencePattern) => {
+        await Promise.all(objectReferencePatterns.map((element: ReferencePattern) => {
             const pattern: RegExp = element.pattern;
             while ((referenceMatch = pattern.exec(documentText))) {
                 const path: string = referenceMatch[element.refIndex];
@@ -67,7 +67,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
                 if (pathRange.contains(position)) {
                     const componentUri: Uri = cachedComponentPathToUri(path, document.uri, _token);
                     if (componentUri) {
-                        const comp: Component = await getComponent(componentUri, _token);
+                        const comp: Component = getComponent(componentUri, _token);
                         if (comp) {
                             results.push({
                                 originSelectionRange: pathRange,
@@ -86,7 +86,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
             if (thisComponent) {
                 // Extends
                 if (thisComponent.extendsRange && thisComponent.extendsRange.contains(position)) {
-                    const extendsComp: Component = await getComponent(thisComponent.extends, _token);
+                    const extendsComp: Component = getComponent(thisComponent.extends, _token);
                     if (extendsComp) {
                         results.push({
                             originSelectionRange: thisComponent.extendsRange,
@@ -99,9 +99,9 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
                 // Implements
                 if (thisComponent.implementsRanges) {
-                    await Promise.all(thisComponent.implementsRanges.map(async (range: Range, idx: number) => {
+                    await Promise.all(thisComponent.implementsRanges.map((range: Range, idx: number) => {
                         if (range && range.contains(position)) {
-                            const implComp: Component = await getComponent(thisComponent.implements[idx], _token);
+                            const implComp: Component = getComponent(thisComponent.implements[idx], _token);
                             if (implComp) {
                                 results.push({
                                     originSelectionRange: range,
@@ -118,7 +118,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
                 for (const [, func] of thisComponent.functions) {
                     // Function return types
                     if (func.returnTypeUri && func.returnTypeRange && func.returnTypeRange.contains(position)) {
-                        const returnTypeComp: Component = await getComponent(func.returnTypeUri, _token);
+                        const returnTypeComp: Component = getComponent(func.returnTypeUri, _token);
                         if (returnTypeComp) {
                             results.push({
                                 originSelectionRange: func.returnTypeRange,
@@ -135,8 +135,8 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
                             return arg.dataTypeComponentUri && arg.dataTypeRange && arg.dataTypeRange.contains(position);
                         });
 
-                        await Promise.all(parameters.map(async (arg: Argument) => {
-                            const argTypeComp: Component = await getComponent(arg.dataTypeComponentUri, _token);
+                        await Promise.all(parameters.map((arg: Argument) => {
+                            const argTypeComp: Component = getComponent(arg.dataTypeComponentUri, _token);
                             if (argTypeComp) {
                                 results.push({
                                     originSelectionRange: arg.dataTypeRange,
@@ -190,7 +190,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
                 })
 
                 for (const [, prop] of componentproperties) {
-                    const dataTypeComp: Component = await getComponent(prop.dataTypeComponentUri, _token);
+                    const dataTypeComp: Component = getComponent(prop.dataTypeComponentUri, _token);
                     if (dataTypeComp) {
                         results.push({
                             originSelectionRange: prop.dataTypeRange,

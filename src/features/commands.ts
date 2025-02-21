@@ -64,11 +64,11 @@ export async function showApplicationDocument(editor: TextEditor): Promise<void>
  * @param edit
  * @param _token
  */
-export async function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): Promise<void> {
+export function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): void {
     const document: TextDocument = editor.document;
 
     if (isCfcFile(document, _token)) {
-        const thisComponent: Component = await getComponent(document.uri, _token);
+        const thisComponent: Component = getComponent(document.uri, _token);
         if (thisComponent) {
             const functionStartLines: number[] = [];
             thisComponent.functions.filter((func: UserFunction) => {
@@ -91,10 +91,10 @@ export async function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit,
  * @param args
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: any): Promise<void> {
+export function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: any): void {
 
     const position: Position = editor.selection.start;
-    const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(editor.document, position, false, true, null, false);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, true, null, false);
 
     if (documentPositionStateContext.positionIsScript) {
         commands.executeCommand("editor.action.insertSnippet", {

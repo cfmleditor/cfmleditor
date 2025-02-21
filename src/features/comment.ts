@@ -35,8 +35,8 @@ export const cfmlCommentRules: CFMLCommentRules = {
  * @param _token
  * @returns
  */
-async function isTagComment(document: TextDocument, startPosition: Position, _token: CancellationToken): Promise<boolean> {
-    const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (await getComponent(document.uri, _token)).isScript);
+function isTagComment(document: TextDocument, startPosition: Position, _token: CancellationToken): boolean {
+    const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (getComponent(document.uri, _token)).isScript);
 
     return !docIsScript && !isInCfScript(document, startPosition, _token);
 }
@@ -63,8 +63,8 @@ function getCommentCommand(commentType: CommentType): string {
  * @param _token
  * @returns
  */
-export function toggleComment(commentType: CommentType, _token: CancellationToken): (editor: TextEditor) => Promise<void> {
-    return async (editor: TextEditor) => {
+export function toggleComment(commentType: CommentType, _token: CancellationToken): (editor: TextEditor) => void {
+    return (editor: TextEditor) => {
         if (editor) {
             // default comment config
             let languageConfig: LanguageConfiguration = {
@@ -82,7 +82,7 @@ export function toggleComment(commentType: CommentType, _token: CancellationToke
             };
 
             // Changes the comment in language configuration based on the context
-            if (await isTagComment(editor.document, editor.selection.start, _token)) {
+            if (isTagComment(editor.document, editor.selection.start, _token)) {
                 languageConfig = {
                     comments: {
                         blockComment: cfmlCommentRules.tagBlockComment
