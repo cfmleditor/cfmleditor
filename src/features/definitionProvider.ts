@@ -54,7 +54,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
         // TODO: These references should ideally be in cachedEntities.
         let referenceMatch: RegExpExecArray | null;
-        await Promise.all(objectReferencePatterns.map((element: ReferencePattern) => {
+        objectReferencePatterns.map((element: ReferencePattern) => {
             const pattern: RegExp = element.pattern;
             while ((referenceMatch = pattern.exec(documentText))) {
                 const path: string = referenceMatch[element.refIndex];
@@ -79,7 +79,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
                     }
                 }
             }
-        }));
+        });
 
         if (docIsCfcFile) {
             const thisComponent: Component = documentPositionStateContext.component;
@@ -99,7 +99,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
                 // Implements
                 if (thisComponent.implementsRanges) {
-                    await Promise.all(thisComponent.implementsRanges.map((range: Range, idx: number) => {
+                    thisComponent.implementsRanges.map((range: Range, idx: number) => {
                         if (range && range.contains(position)) {
                             const implComp: Component = getComponent(thisComponent.implements[idx], _token);
                             if (implComp) {
@@ -111,7 +111,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
                                 });
                             }
                         }
-                    }));
+                    });
                 }
 
                 // Component functions (related)
@@ -130,12 +130,12 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
                     }
 
                     // Argument types
-                    await Promise.all(func.signatures.map(async (signature: UserFunctionSignature) => {
+                    func.signatures.map((signature: UserFunctionSignature) => {
                         const parameters = signature.parameters.filter((arg: Argument) => {
                             return arg.dataTypeComponentUri && arg.dataTypeRange && arg.dataTypeRange.contains(position);
                         });
 
-                        await Promise.all(parameters.map((arg: Argument) => {
+                        parameters.map((arg: Argument) => {
                             const argTypeComp: Component = getComponent(arg.dataTypeComponentUri, _token);
                             if (argTypeComp) {
                                 results.push({
@@ -145,8 +145,8 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
                                     targetSelectionRange: argTypeComp.declarationRange
                                 });
                             }
-                        }));
-                    }));
+                        });
+                    });
 
                     if (func.bodyRange && func.bodyRange.contains(position)) {
                         // Local variable uses

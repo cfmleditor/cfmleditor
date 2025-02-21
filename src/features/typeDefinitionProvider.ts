@@ -49,12 +49,12 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                 // Component functions (related)
                 for (const [, func] of thisComponent.functions) {
                     // Argument declarations
-                    await Promise.all(func.signatures.map(async (signature: UserFunctionSignature) => {
+                    func.signatures.map((signature: UserFunctionSignature) => {
                         const signatureparameters = signature.parameters.filter((arg: Argument) => {
                             return arg.dataTypeComponentUri && arg.nameRange && arg.nameRange.contains(position);
                         })
 
-                        await Promise.all(signatureparameters.map((arg: Argument) => {
+                        signatureparameters.map((arg: Argument) => {
                             const argTypeComp: Component = getComponent(arg.dataTypeComponentUri, _token);
                             if (argTypeComp) {
                                 results.push(new Location(
@@ -62,8 +62,8 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                                     argTypeComp.declarationRange
                                 ));
                             }
-                        }));
-                    }));
+                        });
+                    });
 
                     if (func.bodyRange && func.bodyRange.contains(position)) {
                         // Local variable uses
@@ -73,7 +73,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                             const localVariablesfiltered = localVariables.filter((localVar: Variable) => {
                                 return position.isAfterOrEqual(localVar.declarationLocation.range.start) && equalsIgnoreCase(localVar.identifier, currentWord) && localVar.dataTypeComponentUri;
                             });
-                            await Promise.all(localVariablesfiltered.map((localVar: Variable) => {
+                            localVariablesfiltered.map((localVar: Variable) => {
                                 const localVarTypeComp: Component = getComponent(localVar.dataTypeComponentUri, _token);
                                 if (localVarTypeComp) {
                                     results.push(new Location(
@@ -81,18 +81,18 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                                         localVarTypeComp.declarationRange
                                     ));
                                 }
-                            }));
+                            });
                         }
 
                         // Argument uses
                         if (results.length === 0) {
                             const argumentPrefixPattern = getValidScopesPrefixPattern([Scope.Arguments], true);
                             if (argumentPrefixPattern.test(docPrefix)) {
-                                await Promise.all(func.signatures.map(async (signature: UserFunctionSignature) => {
+                                func.signatures.map((signature: UserFunctionSignature) => {
                                     const signatureparameters = signature.parameters.filter((arg: Argument) => {
                                         return equalsIgnoreCase(arg.name, currentWord) && arg.dataTypeComponentUri;
                                     });
-                                    await Promise.all(signatureparameters.map((arg: Argument) => {
+                                    signatureparameters.map((arg: Argument) => {
                                         const argTypeComp: Component = getComponent(arg.dataTypeComponentUri, _token);
                                         if (argTypeComp) {
                                             results.push(new Location(
@@ -100,8 +100,8 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                                                 argTypeComp.declarationRange
                                             ));
                                         }
-                                    }));
-                                }));
+                                    });
+                                });
                             }
                         }
                     }
@@ -129,7 +129,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                     const thisComponentvariables = thisComponent.variables.filter((variable: Variable) => {
                         return equalsIgnoreCase(variable.identifier, currentWord) && variable.dataTypeComponentUri;
                     });
-                    await Promise.all(thisComponentvariables.map((variable: Variable) => {
+                    thisComponentvariables.map((variable: Variable) => {
                         const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
                         if (varTypeComp) {
                             results.push(new Location(
@@ -137,7 +137,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                                 varTypeComp.declarationRange
                             ));
                         }
-                    }));
+                    });
                 }
             }
         } else if (docIsCfmFile) {
@@ -163,7 +163,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                     return (unscopedPrecedence.includes(variable.scope) || variable.scope === Scope.Unknown);
                 });
 
-                await Promise.all(docVariableAssignmentsfiltered.map((variable: Variable) => {
+                docVariableAssignmentsfiltered.map((variable: Variable) => {
                     const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
                     if (varTypeComp) {
                         results.push(new Location(
@@ -171,7 +171,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                             varTypeComp.declarationRange
                         ));
                     }
-                }));
+                });
             }
         }
 
@@ -198,7 +198,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                 return variable.scope === currentScope && equalsIgnoreCase(variable.identifier, currentWord) && variable.dataTypeComponentUri;
             });
 
-            await Promise.all(applicationDocVariablesfiltered.map((variable: Variable) => {
+            applicationDocVariablesfiltered.map((variable: Variable) => {
                 const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
                 if (varTypeComp) {
                     results.push(new Location(
@@ -206,7 +206,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                         varTypeComp.declarationRange
                     ));
                 }
-            }));
+            });
         }
 
         // Server variables
@@ -217,7 +217,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                 return variable.scope === Scope.Server && equalsIgnoreCase(variable.identifier, currentWord) && variable.dataTypeComponentUri;
             });
 
-            await Promise.all(serverDocVariablesfiltered.map((variable: Variable) => {
+            serverDocVariablesfiltered.map((variable: Variable) => {
                 const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
                 if (varTypeComp) {
                     results.push(new Location(
@@ -225,7 +225,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                         varTypeComp.declarationRange
                     ));
                 }
-            }));
+            });
         }
 
         return results;
