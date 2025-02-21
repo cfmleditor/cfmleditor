@@ -202,7 +202,7 @@ export namespace DataType {
    */
   export async function getDataTypeAndUri(dataType: string, documentUri: Uri, _token: CancellationToken): Promise<[DataType, Uri]> {
     if (!dataType) {
-      return undefined;
+      return [null, null];
     }
 
     if (isDataType(dataType)) {
@@ -214,7 +214,7 @@ export namespace DataType {
       }
     }
 
-    return undefined;
+    return [null, null];
   }
 
   /**
