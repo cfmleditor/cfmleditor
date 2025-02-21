@@ -24,6 +24,7 @@ let allGlobalTags: GlobalTags = {};
 
 let allComponentsByUri: ComponentsByUri = {};
 let allComponentsByName: ComponentsByName = {};
+let allComponentUris: { [key: string]: Uri } = {};
 
 const allComponentNames : TrieSearch<Component> = new TrieSearch<Component>('uri');
 const allFunctionNames : TrieSearch<UserFunction> = new TrieSearch<UserFunction>('name');
@@ -193,6 +194,7 @@ export function clearAllGlobalEntityDefinitions(): void {
  */
 function setComponent(comp: Component): void {
     allComponentsByUri[comp.uri.toString().toLowerCase()] = comp;
+    allComponentUris[comp.uri.toString().toLowerCase()] = comp.uri;
     const componentKey: string = uriBaseName(comp.uri, COMPONENT_EXT).toLowerCase();
     if (!allComponentsByName[componentKey]) {
         allComponentsByName[componentKey] = {};
@@ -292,8 +294,8 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
     const localPath: string = resolveRelativePath(baseUri, normalizedPath);
     const localFile: Uri = Uri.file(localPath);
     const localFileKey = localFile.toString().toLowerCase();
-    if (allComponentsByUri[localFileKey]) {
-        return allComponentsByUri[localFileKey].uri;
+    if (allComponentUris[localFileKey]) {
+        return allComponentUris[localFileKey];
     }
 
     // relative to web root
@@ -301,8 +303,8 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
     if (rootPath) {
         const rootFile: Uri = Uri.file(rootPath);
         const rootFileKey = rootFile.toString().toLowerCase();
-        if (allComponentsByUri[rootFileKey]) {
-            return allComponentsByUri[rootFileKey].uri;
+        if (allComponentUris[rootFileKey]) {
+            return allComponentUris[rootFileKey];
         }
     }
 
@@ -311,8 +313,8 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
     for (const mappedPath of customMappingPaths) {
         const mappedFile: Uri = Uri.file(mappedPath);
         const mappedFileKey = mappedFile.toString().toLowerCase();
-        if (allComponentsByUri[mappedFileKey]) {
-            return allComponentsByUri[mappedFileKey].uri;
+        if (allComponentUris[mappedFileKey]) {
+            return allComponentUris[mappedFileKey];
         }
     }
 
@@ -361,6 +363,10 @@ export async function cacheAllComponents(_token: CancellationToken): Promise<voi
     clearAllCachedComponents();
 
     const components: Uri[] = await workspace.findFiles(COMPONENT_FILE_GLOB);
+
+    for (const componentUri of components) {
+        allComponentUris[componentUri.toString().toLowerCase()] = componentUri;
+    }
 
     await cacheGivenComponents(components, _token);
     await cacheAllApplicationCfms();
@@ -463,6 +469,7 @@ export function clearCachedComponent(componentUri: Uri): void {
 function clearAllCachedComponents(): void {
     allComponentsByUri = {};
     allComponentsByName = {};
+    allComponentUris = {};
     allComponentNames.reset();
     allFunctionNames.reset();
 }
