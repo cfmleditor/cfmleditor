@@ -416,19 +416,13 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
  * @param _token
  * @returns
  */
-export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken): Promise<boolean> {
+export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken): Promise<void> {
     const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token);
-    try {
-        const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
-        if (!parsedComponent) {
-            return false;
-        }
-        await cacheComponent(parsedComponent, documentStateContext, _token);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-        return false;
+    const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
+    if (!parsedComponent) {
+        return;
     }
-    return true;
+    await cacheComponent(parsedComponent, documentStateContext, _token);
 }
 
 /**
