@@ -3,7 +3,6 @@
     // for the documentation about the extensions.json format
     "recommendations": [
         "DavidAnson.vscode-markdownlint",
-        "eg2.vscode-npm-script",
         "dbaeumer.vscode-eslint",
         "amodio.tsl-problem-matcher"
     ]
