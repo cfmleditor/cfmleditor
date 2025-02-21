@@ -560,14 +560,14 @@ export function getServerUri(baseUri: Uri, _token: CancellationToken): Uri | und
  * @param _token
  * @returns
  */
-export async function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component, _token: CancellationToken): Promise<boolean> {
+export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component, _token: CancellationToken): boolean {
     while (checkComponent) {
         if (checkComponent.uri.toString() === baseComponent.uri.toString()) {
             return true;
         }
 
         if (checkComponent.extends) {
-            checkComponent = await getComponent(checkComponent.extends, _token);
+            checkComponent = getComponent(checkComponent.extends, _token);
         } else {
             checkComponent = undefined;
         }
@@ -583,9 +583,9 @@ export async function isSubcomponentOrEqual(checkComponent: Component, baseCompo
  * @param _token
  * @returns
  */
-export async function isSubcomponent(checkComponent: Component, baseComponent: Component, _token: CancellationToken): Promise<boolean> {
+export function isSubcomponent(checkComponent: Component, baseComponent: Component, _token: CancellationToken): boolean {
     if (checkComponent.extends) {
-        checkComponent = await getComponent(checkComponent.extends, _token);
+        checkComponent = getComponent(checkComponent.extends, _token);
     } else {
         return false;
     }
@@ -596,7 +596,7 @@ export async function isSubcomponent(checkComponent: Component, baseComponent: C
         }
 
         if (checkComponent.extends) {
-            checkComponent = await getComponent(checkComponent.extends, _token);
+            checkComponent = getComponent(checkComponent.extends, _token);
         } else {
             checkComponent = undefined;
         }

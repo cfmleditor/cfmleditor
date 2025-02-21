@@ -20,7 +20,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
      * @returns
      */
 
-    public async provideDocumentColors(document: TextDocument, _token: CancellationToken): Promise<ColorInformation[]> {
+    public provideDocumentColors(document: TextDocument, _token: CancellationToken): ColorInformation[] {
         // console.log("provideDocumentColors:CFMLDocumentColorProvider:" + _token?.isCancellationRequested);
 
         const result: ColorInformation[] = [];
@@ -28,7 +28,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
         // const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
         // const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-        const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, false, false, _token, true);
+        const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, false, _token, true);
         const cssRanges: Range[] = getCssRanges(documentStateContext, undefined, _token);
 
         for (const cssRange of cssRanges) {
@@ -142,7 +142,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
      * @returns
      */
 
-    public async provideColorPresentations(color: Color, context: { document: TextDocument, range: Range }, _token: CancellationToken): Promise<ColorPresentation[]> {
+    public provideColorPresentations(color: Color, context: { document: TextDocument, range: Range }, _token: CancellationToken): ColorPresentation[] {
         const result: ColorPresentation[] = [];
         const red256 = Math.round(color.red * 255), green256 = Math.round(color.green * 255), blue256 = Math.round(color.blue * 255);
 
@@ -156,7 +156,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 
         const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", context.document.uri);
         const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-        const documentStateContext: DocumentStateContext = await getDocumentStateContext(context.document, false, replaceComments, _token);
+        const documentStateContext: DocumentStateContext = getDocumentStateContext(context.document, false, replaceComments, _token);
         const hexPrefix = isInCfOutput(documentStateContext, context.range.start, _token) ? "##" : "#";
         if (color.alpha === 1) {
             label = `${hexPrefix}${toTwoDigitHex(red256)}${toTwoDigitHex(green256)}${toTwoDigitHex(blue256)}`;

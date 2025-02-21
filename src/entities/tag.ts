@@ -880,7 +880,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
  * @param edit
  * @param _token
  */
-export async function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken = null): Promise<void> {
+export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken = null): void {
 
     const position: Position = editor.selection.active;
     const documentUri: Uri = editor.document.uri;
@@ -888,7 +888,7 @@ export async function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(editor.document, position, false, replaceComments, _token, false);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments, _token, false);
 
     const currentWord: string = documentPositionStateContext.currentWord;
     let globalTag: GlobalTag = getGlobalTag(currentWord);

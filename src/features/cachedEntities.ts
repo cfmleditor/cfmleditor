@@ -214,7 +214,7 @@ function setComponent(comp: Component): void {
  * @param _token
  * @returns
  */
-export async function getComponent(uri: Uri, _token: CancellationToken): Promise<Component> {
+export function getComponent(uri: Uri, _token: CancellationToken): Component {
     if (!hasComponent(uri, _token)) {
         /* TODO: If not already cached, attempt to read, parse and cache. Tricky since read is async */
         return undefined;
@@ -417,7 +417,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
  * @returns
  */
 export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken): Promise<boolean> {
-    const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, fast, replaceComments, _token);
+    const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token);
     try {
         const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
         if (!parsedComponent) {
@@ -497,7 +497,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: Cancel
             const document: TextDocument = await workspace.openTextDocument(applicationUri);
             const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
             const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-            const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, false, replaceComments, _token);
+            const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token);
             const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
             const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
                 return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);

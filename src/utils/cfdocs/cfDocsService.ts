@@ -326,14 +326,14 @@ export default class CFDocsService {
    * @param editor
    * @editor The text editor which represents the document for which to check the word
    */
-  public static async openCfDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): Promise<void> {
+  public static openCfDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): void {
     const document: TextDocument = editor.document;
     const position: Position = editor.selection.start;
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 
     if (documentPositionStateContext.positionInComment) {
       return;
@@ -368,14 +368,14 @@ export default class CFDocsService {
    * Opens the documentation web page of the currently set CF engine for the word at the current cursor position
    * @editor The text editor which represents the document for which to check the word
    */
-  public static async openEngineDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): Promise<void> {
+  public static openEngineDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): void {
     const document: TextDocument = editor.document;
     const position: Position = editor.selection.start;
 
     const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
     const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
+    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 
     if (documentPositionStateContext.positionInComment) {
       return;

@@ -25,7 +25,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
      * @returns
      */
 
-    public async provideCompletionItems(document: TextDocument, position: Position, _token: CancellationToken): Promise<CompletionItem[]> {
+    public provideCompletionItems(document: TextDocument, position: Position, _token: CancellationToken): CompletionItem[] {
 
         // console.log("provideCompletionItems:DocBlockCompletions:" + _token?.isCancellationRequested);
 
@@ -37,14 +37,14 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 
             const block = new CompletionItem("/** */", CompletionItemKind.Snippet);
             block.range = wordMatchRange;
-            block.insertText = await documenter.autoDocument();
+            block.insertText = documenter.autoDocument();
             block.documentation = "Docblock completion";
             result.push(block);
 
             return result;
         }
 
-        const comp: Component = await getComponent(document.uri, _token);
+        const comp: Component = getComponent(document.uri, _token);
         if (!comp) {
             return result;
         }

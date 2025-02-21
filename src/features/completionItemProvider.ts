@@ -115,7 +115,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
         const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token);
 
-        const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
+        const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 
         const currentWordMatches = (name: string): boolean => {
             return matches(documentPositionStateContext.currentWord, name);
@@ -359,7 +359,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                 });
             }
         } else if (docIsCfcFile) {
-            const componentFunctionCompletions: CompletionItem[] = await getComponentFunctionCompletions(completionState, thisComponent, _token);
+            const componentFunctionCompletions: CompletionItem[] = getComponentFunctionCompletions(completionState, thisComponent, _token);
             result = result.concat(componentFunctionCompletions);
         }
 
@@ -384,7 +384,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                 // From super keyword
                 if (docIsCfcFile && !varScope && equalsIgnoreCase(varName, "super")) {
                     const addedFunctions: MySet<string> = new MySet();
-                    const baseComponent: Component = await getComponent(thisComponent.extends, _token);
+                    const baseComponent: Component = getComponent(thisComponent.extends, _token);
                     let currComponent: Component = baseComponent;
                     while (currComponent) {
                         currComponent.functions.filter((_func: UserFunction, funcKey: string) => {
@@ -397,7 +397,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                         });
 
                         if (currComponent.extends) {
-                            currComponent = await getComponent(currComponent.extends, _token);
+                            currComponent = getComponent(currComponent.extends, _token);
                         } else {
                             currComponent = undefined;
                         }
@@ -410,14 +410,14 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                     if (foundVar) {
                         // From component variable
                         if (foundVar.dataTypeComponentUri) {
-                            const initialFoundComp: Component = await getComponent(foundVar.dataTypeComponentUri, _token);
+                            const initialFoundComp: Component = getComponent(foundVar.dataTypeComponentUri, _token);
 
                             if (initialFoundComp) {
                                 const addedFunctions: MySet<string> = new MySet();
                                 const addedVariables: MySet<string> = new MySet();
                                 const validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
                                 if (thisComponent) {
-                                    if (await isSubcomponentOrEqual(thisComponent, initialFoundComp, _token)) {
+                                    if (isSubcomponentOrEqual(thisComponent, initialFoundComp, _token)) {
                                         validFunctionAccess.add(Access.Private);
                                         validFunctionAccess.add(Access.Package);
                                     }
@@ -458,7 +458,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                                     });
 
                                     if (foundComponent.extends) {
-                                        foundComponent = await getComponent(foundComponent.extends, _token);
+                                        foundComponent = getComponent(foundComponent.extends, _token);
                                     } else {
                                         foundComponent = undefined;
                                     }
@@ -627,7 +627,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
  * @param attributesLength The length of the entity's attributes string
  * @returns
  */
-async function getGlobalTagAttributeCompletions(state: CompletionState, globalTag: GlobalTag, attributeStartOffset: number, attributesLength: number): Promise<CompletionItem[]> {
+function getGlobalTagAttributeCompletions(state: CompletionState, globalTag: GlobalTag, attributeStartOffset: number, attributesLength: number): CompletionItem[] {
     const attributeDocs: MyMap<string, Parameter> = new MyMap<string, Parameter>();
     globalTag.signatures.forEach((sig: Signature) => {
         sig.parameters.forEach((param: Parameter) => {
@@ -638,7 +638,7 @@ async function getGlobalTagAttributeCompletions(state: CompletionState, globalTa
     const tagAttributeRange = new Range(state.document.positionAt(attributeStartOffset), state.document.positionAt(attributeStartOffset + attributesLength));
     const parsedAttributes: Attributes = parseAttributes(state.document, tagAttributeRange, attributeNames);
     const usedAttributeNames: MySet<string> = new MySet(parsedAttributes.keys());
-    const attributeCompletions: CompletionItem[] = await getCFTagAttributeCompletions(state, globalTag, Array.from(attributeDocs.values()), usedAttributeNames);
+    const attributeCompletions: CompletionItem[] = getCFTagAttributeCompletions(state, globalTag, Array.from(attributeDocs.values()), usedAttributeNames);
 
     return attributeCompletions;
 }
@@ -651,7 +651,7 @@ async function getGlobalTagAttributeCompletions(state: CompletionState, globalTa
  * @param usedAttributeNames The set of attribute names that are already being used
  * @returns
  */
-async function getCFTagAttributeCompletions(state: CompletionState, globalTag: GlobalTag, params: Parameter[], usedAttributeNames: MySet<string>): Promise<CompletionItem[]> {
+function getCFTagAttributeCompletions(state: CompletionState, globalTag: GlobalTag, params: Parameter[], usedAttributeNames: MySet<string>): CompletionItem[] {
     const cfmlGTAttributesQuoteType: AttributeQuoteType = state.cfmlCompletionSettings.get<AttributeQuoteType>("globalTags.attributes.quoteType", AttributeQuoteType.Double);
     const cfmlGTAttributesDefault: boolean = state.cfmlCompletionSettings.get<boolean>("globalTags.attributes.defaultValue", false);
 
@@ -864,7 +864,7 @@ function getVariableCompletions(state: CompletionState, variables: Variable[]): 
  * @param _token
  * @returns
  */
-async function getComponentFunctionCompletions(state: CompletionState, component: Component, _token: CancellationToken): Promise<CompletionItem[]> {
+function getComponentFunctionCompletions(state: CompletionState, component: Component, _token: CancellationToken): CompletionItem[] {
     const componentFunctionCompletions: CompletionItem[] = [];
     if (component) {
         const addedFunctions: MySet<string> = new MySet();
@@ -891,7 +891,7 @@ async function getComponentFunctionCompletions(state: CompletionState, component
             });
 
             if (currComponent.extends) {
-                currComponent = await getComponent(currComponent.extends, _token);
+                currComponent = getComponent(currComponent.extends, _token);
             } else {
                 currComponent = undefined;
             }
