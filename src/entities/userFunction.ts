@@ -175,7 +175,7 @@ export interface UserFunctionsByName {
  * @param _token
  * @returns
  */
-export function parseScriptFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken): UserFunction[] {
+export async function parseScriptFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<UserFunction[]> {
     const document: TextDocument = documentStateContext.document;
     const userFunctions: UserFunction[] = [];
     // sanitizedDocumentText removes doc blocks
@@ -264,7 +264,7 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext,
         };
 
         if (returnType) {
-            const checkDataType = DataType.getDataTypeAndUri(returnType, document.uri, _token);
+            const checkDataType = await DataType.getDataTypeAndUri(returnType, document.uri, _token);
             if (checkDataType) {
                 userFunction.returntype = checkDataType[0];
                 if (checkDataType[1]) {
@@ -297,7 +297,7 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext,
         }
 
         const parsedAttributes: Attributes = parseAttributes(document, functionAttributeRange);
-        userFunction = assignFunctionAttributes(userFunction, parsedAttributes, _token);
+        userFunction = await assignFunctionAttributes(userFunction, parsedAttributes, _token);
 
         let scriptDocBlockParsed: DocBlockKeyValue[] = [];
         if (fullDocBlock) {
@@ -307,13 +307,13 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext,
                     document.positionAt(scriptFunctionMatch.index + 3 + scriptDocBlockContent.length)
                 )
             );
-            scriptDocBlockParsed.forEach((docElem: DocBlockKeyValue) => {
+            await Promise.all(scriptDocBlockParsed.map(async (docElem: DocBlockKeyValue) => {
                 if (docElem.key === "access") {
                     userFunction.access = Access.valueOf(docElem.value);
                 } else if (docElem.key === "returntype") {
-                    const checkDataType = DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
-                    if (checkDataType) {
-                        userFunction.returntype = checkDataType[0];
+                    const [ dataType, uri ] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
+                    if (dataType) {
+                        userFunction.returntype = dataType;
 
                         const returnTypeKeyMatch: RegExpExecArray = getKeyPattern("returnType").exec(fullDocBlock);
                         if (returnTypeKeyMatch) {
@@ -324,8 +324,8 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext,
                                 document.positionAt(returnTypeOffset + returnTypePath.length)
                             );
                         }
-                        if (checkDataType[1]) {
-                            userFunction.returnTypeUri = checkDataType[1];
+                        if (uri) {
+                            userFunction.returnTypeUri = uri;
                         }
                     }
                 } else if (userFunctionBooleanAttributes.has(docElem.key)) {
@@ -335,10 +335,10 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext,
                 } else if (docElem.key === "description" && userFunction.description === "") {
                     userFunction.description = docElem.value;
                 }
-            });
+            }));
         }
         const signature: UserFunctionSignature = {
-            parameters: parseScriptFunctionArgs(documentStateContext, functionArgsRange, scriptDocBlockParsed, _token)
+            parameters: await parseScriptFunctionArgs(documentStateContext, functionArgsRange, scriptDocBlockParsed, _token)
         };
         userFunction.signatures = [signature];
 
@@ -356,13 +356,14 @@ export function parseScriptFunctions(documentStateContext: DocumentStateContext,
  * @param _token
  * @returns
  */
-export function parseScriptFunctionArgs(documentStateContext: DocumentStateContext, argsRange: Range, docBlock: DocBlockKeyValue[], _token: CancellationToken): Argument[] {
+export async function parseScriptFunctionArgs(documentStateContext: DocumentStateContext, argsRange: Range, docBlock: DocBlockKeyValue[], _token: CancellationToken): Promise<Argument[]> {
     const args: Argument[] = [];
     const document: TextDocument = documentStateContext.document;
     const documentUri: Uri = document.uri;
 
     const scriptArgRanges: Range[] = getScriptFunctionArgRanges(documentStateContext, argsRange, ",", _token);
-    scriptArgRanges.forEach((argRange: Range) => {
+
+    await Promise.all(scriptArgRanges.map(async (argRange: Range) => {
         const argText: string = documentStateContext.sanitizedDocumentText.slice(document.offsetAt(argRange.start), document.offsetAt(argRange.end));
         const argStartOffset = document.offsetAt(argRange.start);
         const scriptFunctionArgMatch: RegExpExecArray = scriptFunctionArgPattern.exec(argText);
@@ -406,7 +407,7 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
             let typeUri: Uri;
             let argTypeRange: Range;
             if (argType) {
-                const checkDataType = DataType.getDataTypeAndUri(argType, documentUri, _token);
+                const checkDataType:[DataType, Uri] = await DataType.getDataTypeAndUri(argType, documentUri, _token);
                 if (checkDataType) {
                     convertedArgType = checkDataType[0];
                     if (checkDataType[1]) {
@@ -453,7 +454,13 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
             }
 
             if (parsedArgAttributes) {
-                parsedArgAttributes.forEach((attr: Attribute) => {
+                // Bit of a hack because I can't work this out right now
+                const attributes: Attribute[] = [];
+                parsedArgAttributes.forEach((attribute: Attribute) => {
+                    attributes.push(attribute);
+                });
+
+                await Promise.all(attributes.map(async (attr: Attribute) => {
                     const argAttrName: string = attr.name;
                     const argAttrVal: string = attr.value;
                     if (argAttrName === "required") {
@@ -463,7 +470,7 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
                     } else if (argAttrName === "default") {
                         argument.default = argAttrVal;
                     } else if (argAttrName === "type") {
-                        const checkDataType = DataType.getDataTypeAndUri(argAttrVal, documentUri, _token);
+                        const checkDataType:[DataType, Uri] = await DataType.getDataTypeAndUri(argAttrVal, documentUri, _token);
                         if (checkDataType) {
                             argument.dataType = checkDataType[0];
                             if (checkDataType[1]) {
@@ -476,12 +483,14 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
                             );
                         }
                     }
-                });
+                }));
             }
 
-            docBlock.filter((docElem: DocBlockKeyValue) => {
+            docBlock = docBlock.filter((docElem: DocBlockKeyValue) => {
                 return equalsIgnoreCase(docElem.key, argument.name);
-            }).forEach((docElem: DocBlockKeyValue) => {
+            });
+
+            await Promise.all(docBlock.map(async (docElem: DocBlockKeyValue) => {
                 if (docElem.subkey === "required") {
                     argument.required = DataType.isTruthy(docElem.value);
                 } else if (!docElem.subkey || docElem.subkey === "hint") {
@@ -489,7 +498,7 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
                 } else if (docElem.subkey === "default") {
                     argument.default = docElem.value;
                 } else if (docElem.subkey === "type") {
-                    const checkDataType = DataType.getDataTypeAndUri(docElem.value, documentUri, _token);
+                    const checkDataType:[DataType,Uri] = await DataType.getDataTypeAndUri(docElem.value, documentUri, _token);
                     if (checkDataType) {
                         argument.dataType = checkDataType[0];
                         if (checkDataType[1]) {
@@ -502,11 +511,11 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
                         );
                     }
                 }
-            });
+            }));
 
             args.push(argument);
         }
-    });
+    }));
 
     return args;
 }
@@ -517,13 +526,14 @@ export function parseScriptFunctionArgs(documentStateContext: DocumentStateConte
  * @param _token
  * @returns
  */
-export function parseTagFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken): UserFunction[] {
+export async function parseTagFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<UserFunction[]> {
     const userFunctions: UserFunction[] = [];
     const documentUri: Uri = documentStateContext.document.uri;
 
     const parsedFunctionTags: Tag[] = parseTags(documentStateContext, "cffunction", undefined, _token);
 
-    parsedFunctionTags.forEach((tag: Tag) => {
+    await Promise.all(parsedFunctionTags.map(async (tag: Tag) => {
+
         const functionRange: Range = tag.tagRange;
         const functionBodyRange: Range = tag.bodyRange;
         const parsedAttributes: Attributes = tag.attributes;
@@ -547,15 +557,15 @@ export function parseTagFunctions(documentStateContext: DocumentStateContext, _t
             isImplicit: false
         };
 
-        assignFunctionAttributes(userFunction, parsedAttributes, _token);
+        await assignFunctionAttributes(userFunction, parsedAttributes, _token);
 
         const signature: UserFunctionSignature = {
-            parameters: parseTagFunctionArguments(documentStateContext, functionBodyRange, _token)
+            parameters: await parseTagFunctionArguments(documentStateContext, functionBodyRange, _token)
         };
         userFunction.signatures = [signature];
 
         userFunctions.push(userFunction);
-    });
+    }));
 
     return userFunctions;
 }
@@ -567,7 +577,7 @@ export function parseTagFunctions(documentStateContext: DocumentStateContext, _t
  * @param _token
  * @returns
  */
-function parseTagFunctionArguments(documentStateContext: DocumentStateContext, functionBodyRange: Range | undefined, _token: CancellationToken): Argument[] {
+async function parseTagFunctionArguments(documentStateContext: DocumentStateContext, functionBodyRange: Range | undefined, _token: CancellationToken): Promise<Argument[]> {
     const args: Argument[] = [];
     const documentUri: Uri = documentStateContext.document.uri;
 
@@ -577,7 +587,8 @@ function parseTagFunctionArguments(documentStateContext: DocumentStateContext, f
 
     const parsedArgumentTags: Tag[] = parseTags(documentStateContext, "cfargument", functionBodyRange, _token);
 
-    parsedArgumentTags.forEach((tag: Tag) => {
+    await Promise.all(parsedArgumentTags.map(async (tag: Tag) => {
+
         const parsedAttributes: Attributes = tag.attributes;
 
         const argumentAttributes: ArgumentAttributes = processArgumentAttributes(parsedAttributes);
@@ -600,7 +611,7 @@ function parseTagFunctionArguments(documentStateContext: DocumentStateContext, f
         let typeUri: Uri;
         let argTypeRange: Range;
         if (argType) {
-            const checkDataType = DataType.getDataTypeAndUri(argType, documentUri, _token);
+            const checkDataType:[DataType, Uri] = await DataType.getDataTypeAndUri(argType, documentUri, _token);
             if (checkDataType) {
                 convertedArgType = checkDataType[0];
                 if (checkDataType[1]) {
@@ -644,7 +655,7 @@ function parseTagFunctionArguments(documentStateContext: DocumentStateContext, f
         }
 
         args.push(argument);
-    });
+    }));
 
     return args;
 }
@@ -656,15 +667,22 @@ function parseTagFunctionArguments(documentStateContext: DocumentStateContext, f
  * @param _token
  * @returns
  */
-function assignFunctionAttributes(userFunction: UserFunction, functionAttributes: Attributes, _token: CancellationToken): UserFunction {
+async function assignFunctionAttributes(userFunction: UserFunction, functionAttributes: Attributes, _token: CancellationToken): Promise<UserFunction> {
+
+    // Bit of a hack because I can't work this out right now
+    const attributes: Attribute[] = [];
     functionAttributes.forEach((attribute: Attribute) => {
+        attributes.push(attribute);
+    });
+
+    await Promise.all(attributes.map(async (attribute: Attribute) => {
         const attrName: string = attribute.name;
         if (attribute.value) {
             const attrVal: string = attribute.value;
             if (attrName === "access") {
                 userFunction.access = Access.valueOf(attrVal);
             } else if (attrName === "returntype") {
-                const checkDataType = DataType.getDataTypeAndUri(attrVal, userFunction.location.uri, _token);
+                const checkDataType:[DataType, Uri] = await DataType.getDataTypeAndUri(attrVal, userFunction.location.uri, _token);
                 if (checkDataType) {
                     userFunction.returntype = checkDataType[0];
                     if (checkDataType[1]) {
@@ -684,7 +702,7 @@ function assignFunctionAttributes(userFunction: UserFunction, functionAttributes
                 userFunction.description = attrVal;
             }
         }
-    });
+    }));
 
     return userFunction;
 }
@@ -833,7 +851,7 @@ export async function getFunctionFromComponent(component: Component, lowerFuncti
     const validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
     if (hasComponent(callerUri, _token)) {
         const callerComponent: Component = await getComponent(callerUri, _token);
-        if (isSubcomponentOrEqual(callerComponent, component, _token)) {
+        if (await isSubcomponentOrEqual(callerComponent, component, _token)) {
             validFunctionAccess.add(Access.Private);
             validFunctionAccess.add(Access.Package);
         }
@@ -873,10 +891,12 @@ export async function getFunctionFromComponent(component: Component, lowerFuncti
  * @param _token
  * @returns
  */
-export function getFunctionFromTemplate(documentStateContext: DocumentStateContext, lowerFunctionName: string, _token: CancellationToken): UserFunction | undefined {
-    const tagFunctions: UserFunction[] = parseTagFunctions(documentStateContext, _token);
+export async function getFunctionFromTemplate(documentStateContext: DocumentStateContext, lowerFunctionName: string, _token: CancellationToken): Promise<UserFunction | undefined> {
+    const tagFunctions: UserFunction[] = await parseTagFunctions(documentStateContext, _token);
     const cfscriptRanges: Range[] = getCfScriptRanges(documentStateContext.document, undefined, _token);
-    const scriptFunctions: UserFunction[] = parseScriptFunctions(documentStateContext, _token).filter((func: UserFunction) => {
+    const scriptFunctions: UserFunction[] = await parseScriptFunctions(documentStateContext, _token);
+
+    scriptFunctions.filter((func: UserFunction) => {
         return isInRanges(cfscriptRanges, func.location.range.start, false, _token);
     });
 

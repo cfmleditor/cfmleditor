@@ -42,7 +42,13 @@ export function getEntryDescription(entry: IEntry): string | null {
     result += getEntryStatus(entry.status);
   }
 
-  result += entry.description;
+  if (typeof entry.description === "string") {
+    result += entry.description;
+  } else if (entry.description.kind === "plaintext") {
+    result += entry.description.value;
+  } else if (entry.description.kind === "markdown") {
+    result += entry.description.value;
+  }
 
   const browserLabel = getBrowserLabel(entry.browsers);
   if (browserLabel) {
@@ -92,7 +98,7 @@ export function getBrowserLabel(browsers: string[] = []): string | null {
 	return browsers
 		.map(b => {
 			let result = '';
-			const matches = b.match(/([A-Z]+)(\d+)?/)!;
+			const matches = b.match(/([A-Z]+)(\d+)?/);
 
 			const name = matches[1];
 			const version = matches[2];

@@ -9,13 +9,11 @@ export default class SnippetService {
      */
     public static async cacheAllCustomSnippets(): Promise<boolean> {
 
-        SnippetService.getCustomSnippets().then((snippets: Snippets) => {
-            for (const key in snippets) {
-                const snippet: Snippet = snippets[key];
-                setCustomSnippet(key, snippet);
-            }
-        });
-
+        const snippets: Snippets = await SnippetService.getCustomSnippets();
+        for (const key in snippets) {
+            const snippet: Snippet = snippets[key];
+            setCustomSnippet(key, snippet);
+        }
         return true;
     }
 
