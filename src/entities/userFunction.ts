@@ -896,11 +896,9 @@ export async function getFunctionFromTemplate(documentStateContext: DocumentStat
     const cfscriptRanges: Range[] = getCfScriptRanges(documentStateContext.document, undefined, _token);
     const scriptFunctions: UserFunction[] = await parseScriptFunctions(documentStateContext, _token);
 
-    scriptFunctions.filter((func: UserFunction) => {
+    const allTemplateFunctions: UserFunction[] = tagFunctions.concat(scriptFunctions.filter((func: UserFunction) => {
         return isInRanges(cfscriptRanges, func.location.range.start, false, _token);
-    });
-
-    const allTemplateFunctions: UserFunction[] = tagFunctions.concat(scriptFunctions);
+    }));
 
     return allTemplateFunctions.find((func: UserFunction) => {
         return equalsIgnoreCase(func.name, lowerFunctionName);

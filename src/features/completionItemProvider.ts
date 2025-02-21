@@ -346,11 +346,9 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
             if (getValidScopesPrefixPattern([Scope.Variables], true).test(docPrefix)) {
                 const tagFunctions: UserFunction[] = await parseTagFunctions(documentPositionStateContext, _token);
                 const scriptFunctions: UserFunction[] = await parseScriptFunctions(documentPositionStateContext, _token);
-                scriptFunctions.filter((func: UserFunction) => {
+                const allTemplateFunctions: UserFunction[] = tagFunctions.concat(scriptFunctions.filter((func: UserFunction) => {
                     return isInRanges(cfscriptRanges, func.location.range.start, false, _token);
-                });
-
-                const allTemplateFunctions: UserFunction[] = tagFunctions.concat(scriptFunctions);
+                }));
 
                 allTemplateFunctions.filter((func: UserFunction) => {
                     return currentWordMatches(func.name);
