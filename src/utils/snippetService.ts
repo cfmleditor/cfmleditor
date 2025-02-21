@@ -21,35 +21,18 @@ export default class SnippetService {
      * @returns Snippets
      */
     public static async getCustomSnippets(): Promise<Snippets> {
+        const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest");
+        const snippetsLocalPath: string = cfmlCompletionSettings.get("snippets.localPath");
 
-        return new Promise<Snippets>((resolve, reject) => {
-
-            const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest");
-
-            const snippetsLocalPath: string = cfmlCompletionSettings.get("snippets.localPath");
-
-            if ( snippetsLocalPath && snippetsLocalPath.length > 0 ) {
-
-                const snippetsPathUri: Uri = Uri.file(snippetsLocalPath);
-
-                try {
-                    workspace.fs.readFile(snippetsPathUri).then((readData) => {
-                        const readStr = Buffer.from(readData).toString("utf8");
-                        const readJson = JSON.parse(readStr);
-                        resolve(readJson);
-                    });
-                } catch (ex) {
-                    reject(ex);
-                }
-
-            } else {
-
-                resolve({});
-
-            }
-
-        });
-
+        if (snippetsLocalPath && snippetsLocalPath.length > 0) {
+            const snippetsPathUri: Uri = Uri.file(snippetsLocalPath);
+            const readData = await workspace.fs.readFile(snippetsPathUri);
+            const readStr = Buffer.from(readData).toString("utf8");
+            const readJson = JSON.parse(readStr) as Snippets;
+            return readJson;
+        } else {
+            return {};
+        }
     }
 
 }
