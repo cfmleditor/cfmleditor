@@ -306,12 +306,34 @@ export function activate(context: ExtensionContext): object {
     return api;
 }
 
+// Used to wait for refreshGlobalDefinitionCache to complete (on activation or when called manually)
+let bulkCachingPromise: Promise<void> | undefined;
+let bulkCachingPromiseResolve: () => void;
+
 /**
  *
  * @param value
  */
 export function setBulkCaching(value: boolean): void {
+    // Only update the promise if the value has changed
+    const started = !bulkCaching && value;
+    const stopped = bulkCaching && !value;
+
     bulkCaching = value;
+
+    if (started) {
+        // If we don't have an unresolved promise, create one
+        if (bulkCachingPromiseResolve === undefined) {
+            // initialize a promise to be resolved with bulkCaching is set to false
+            bulkCachingPromise = new Promise((resolve) => {
+                bulkCachingPromiseResolve = resolve;
+            });
+        }
+    } else if (stopped) {
+        // Resolve the promise, and clear the resolve function so we know it's resolved
+        bulkCachingPromiseResolve();
+        bulkCachingPromiseResolve = undefined;
+    }
 }
 
 /**
@@ -320,6 +342,23 @@ export function setBulkCaching(value: boolean): void {
  */
 export function getBulkCaching(): boolean {
     return bulkCaching;
+}
+
+/**
+ * Waits for bulk caching to complete.
+ *
+ * This can be used by tests to ensure bulk caching is finished before they run.
+ * @returns Promise<void>
+ */
+export function waitForBulkCaching(): Promise<void> {
+    // Handle this being called before the extension is activated
+    if (bulkCachingPromiseResolve === undefined) {
+        bulkCachingPromise = new Promise((resolve) => {
+            bulkCachingPromiseResolve = resolve;
+        });
+    }
+    // This will be resolved when setBulkCaching(false) is called while bulkCaching is true
+    return bulkCachingPromise;
 }
 
 /**
