@@ -29,20 +29,17 @@ export default class CFDocsService {
   private static async getLocalDefinitionInfo(identifier: string): Promise<CFDocsDefinitionInfo> {
     const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
     const jsonFileName = CFDocsService.getJsonFileName(identifier);
-    return new Promise<CFDocsDefinitionInfo>((resolve, reject) => {
-      try {
-        const cfdocsPath: Uri = Uri.file(cfmlCfDocsSettings.get("localPath"));
-        const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
-        workspace.fs.readFile(docFilePath).then((readData) => {
-            const readStr = Buffer.from(readData).toString("utf8");
-            const readJson = JSON.parse(readStr);
-            resolve(CFDocsService.constructDefinitionFromJsonDoc(readJson));
-        });
-      } catch (e) {
-        console.log(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
-        reject(e);
-      }
-    });
+    try {
+      const cfdocsPath: Uri = Uri.file(cfmlCfDocsSettings.get("localPath"));
+      const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
+      const readData = await workspace.fs.readFile(docFilePath);
+      const readStr = Buffer.from(readData).toString("utf8");
+      const readJson = JSON.parse(readStr);
+      return CFDocsService.constructDefinitionFromJsonDoc(readJson);
+    } catch (e) {
+      console.log(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
+      throw e;
+    }
   }
 
   /**
@@ -51,50 +48,34 @@ export default class CFDocsService {
    * @returns
    */
   private static async getExtensionDefinitionInfo(identifier: string): Promise<CFDocsDefinitionInfo> {
-
-    return new Promise<CFDocsDefinitionInfo>((resolve, reject) => {
-      try {
-        const pathUri: Uri = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/en/" + CFDocsService.getJsonFileName(identifier)));
-        try {
-            workspace.fs.readFile(pathUri).then((readData) => {
-                const readStr = Buffer.from(readData).toString("utf8");
-                const readJson = JSON.parse(readStr);
-                resolve(CFDocsService.constructDefinitionFromJsonDoc(readJson));
-            });
-        } catch (ex) {
-            console.log(`Error with the JSON doc for ${identifier}:`, (<Error>ex).message);
-          reject(ex);
-        }
-      } catch (e) {
-        console.log(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
-        reject(e);
-      }
-    });
+    try {
+      const pathUri: Uri = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/en/" + CFDocsService.getJsonFileName(identifier)));
+      const readData = await workspace.fs.readFile(pathUri);
+      const readStr = Buffer.from(readData).toString("utf8");
+      const readJson = JSON.parse(readStr);
+      return CFDocsService.constructDefinitionFromJsonDoc(readJson);
+    } catch (e) {
+      console.log(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
+      throw e;
+    }
   }
 
   /**
    * Gets definition information for global identifiers based on a remote CFDocs repository
    * @param identifier The global identifier for which to get definition info
+   * @returns
    */
   private static async getRemoteDefinitionInfo(identifier: string): Promise<CFDocsDefinitionInfo> {
     const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + CFDocsService.getJsonFileName(identifier);
 
-    return new Promise<CFDocsDefinitionInfo>((resolve, reject) => {
-        // Unable to utilize GitHub API due to rate limiting
-        fetch(cfDocsLink)
-            .then((response) => response.json() as Promise<CFDocsDefinitionInfo>)
-            .then((data) => {
-                try {
-                    resolve(CFDocsService.constructDefinitionFromJsonDoc(data));
-                } catch (ex) {
-                    console.log(`Error with the JSON doc for ${identifier}:`, (<Error>ex).message);
-                    reject(ex);
-                }
-            }).catch(function(fex){
-                console.log("Error retrieving all tag names:", (<Error>fex).message);
-                reject(fex);
-            });
-    });
+    try {
+      const response = await fetch(cfDocsLink);
+      const data = await response.json() as CFDocsDefinitionInfo;
+      return CFDocsService.constructDefinitionFromJsonDoc(data);
+    } catch (ex) {
+      console.log(`Error with the JSON doc for ${identifier}:`, (<Error>ex).message);
+      throw ex;
+    }
   }
 
   /**
@@ -128,50 +109,31 @@ export default class CFDocsService {
   public static async getAllFunctionNames(source = CFDocsSource.remote): Promise<string[]> {
     const jsonFileName: string = CFDocsService.getJsonFileName("functions");
 
-    return new Promise<string[]>((resolve, reject) => {
-      if (source === CFDocsSource.local && env.appHost === "desktop" ) {
+    try {
+      if (source === CFDocsSource.local && env.appHost === "desktop") {
         const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
         const cfdocsPath: Uri = Uri.file(cfmlCfDocsSettings.get("localPath"));
         const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
-        try {
-            workspace.fs.readFile(docFilePath).then((readData) => {
-                const readStr = Buffer.from(readData).toString("utf8");
-                const readJson = JSON.parse(readStr);
-                resolve(readJson.related);
-            });
-        } catch (ex) {
-            console.log("Error retrieving all function names:", (<Error>ex).message);
-            reject(ex);
-        }
-      } else if ( source === CFDocsSource.extension ) {
+        const readData = await workspace.fs.readFile(docFilePath);
+        const readStr = Buffer.from(readData).toString("utf8");
+        const readJson = JSON.parse(readStr) as CFDocsDefinitionInfo;
+        return readJson.related;
+      } else if (source === CFDocsSource.extension) {
         const extensionPathUri: Uri = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/en/" + jsonFileName));
-         try {
-            workspace.fs.readFile(extensionPathUri).then((readData) => {
-                const readStr = Buffer.from(readData).toString("utf8");
-                const readJson = JSON.parse(readStr);
-                resolve(readJson.related);
-            });
-        } catch (ex) {
-          console.log("Error retrieving all function names:", (<Error>ex).message);
-          reject(ex);
-        }
+        const readData = await workspace.fs.readFile(extensionPathUri);
+        const readStr = Buffer.from(readData).toString("utf8");
+        const readJson = JSON.parse(readStr) as CFDocsDefinitionInfo;
+        return readJson.related;
       } else {
         const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
-        fetch(cfDocsLink)
-            .then((response) => response.json() as Promise<CFDocsDefinitionInfo>)
-            .then((data) => {
-                try {
-                    resolve(data.related);
-                } catch (ex) {
-                    console.log("Error retrieving all function names:", (<Error>ex).message);
-                    reject(ex);
-                }
-            }).catch(function(fex){
-                console.log("Error retrieving all function names:", (<Error>fex).message);
-                reject(fex);
-            });
+        const response = await fetch(cfDocsLink);
+        const data = await response.json() as CFDocsDefinitionInfo;
+        return data.related;
       }
-    });
+    } catch (ex) {
+      console.log("Error retrieving all function names:", (<Error>ex).message);
+      throw ex;
+    }
   }
 
   /**
@@ -179,57 +141,35 @@ export default class CFDocsService {
    * @param source Indicates whether the data will be retrieved locally or remotely
    * @returns
    */
-    public static async getAllTagNames(source = CFDocsSource.remote): Promise<string[]> {
-        const jsonFileName: string = CFDocsService.getJsonFileName("tags");
+  public static async getAllTagNames(source = CFDocsSource.remote): Promise<string[]> {
+    const jsonFileName: string = CFDocsService.getJsonFileName("tags");
 
-        return new Promise<string[]>((resolve, reject) => {
-            if (source === CFDocsSource.local && env.appHost === "desktop" ) {
-                const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
-                const cfdocsPath: Uri = Uri.file(cfmlCfDocsSettings.get("localPath"));
-                const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
-
-                try {
-                    workspace.fs.readFile(docFilePath).then((readData) => {
-                        const readStr = Buffer.from(readData).toString("utf8");
-                        const readJson = JSON.parse(readStr);
-                        resolve(readJson.related);
-                    });
-                } catch (ex) {
-                console.log("Error retrieving all tag names:", (<Error>ex).message);
-                reject(ex);
-                }
-            } else if ( source === CFDocsSource.extension ) {
-                const extensionPathUri: Uri = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/en/" + jsonFileName));
-                try {
-                    workspace.fs.readFile(extensionPathUri).then((readData) => {
-                        const readStr = Buffer.from(readData).toString("utf8");
-                        const readJson = JSON.parse(readStr);
-                        resolve(readJson.related);
-                    });
-                } catch (ex) {
-                    console.log("Error retrieving all tag names:", (<Error>ex).message);
-                    reject(ex);
-                }
-            } else {
-                const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
-
-                fetch(cfDocsLink)
-                    .then((response) => response.json() as Promise<CFDocsDefinitionInfo>)
-                    .then((data) => {
-                        try {
-                            resolve(data.related);
-                        } catch (ex) {
-                            console.log("Error retrieving all tag names:", (<Error>ex).message);
-                            reject(ex);
-                        }
-                    }).catch(function(fex){
-                        console.log("Error retrieving all tag names:", (<Error>fex).message);
-                        reject(fex);
-                    });
-            }
-
-        });
+    try {
+      if (source === CFDocsSource.local && env.appHost === "desktop") {
+        const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
+        const cfdocsPath: Uri = Uri.file(cfmlCfDocsSettings.get("localPath"));
+        const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
+        const readData = await workspace.fs.readFile(docFilePath);
+        const readStr = Buffer.from(readData).toString("utf8");
+        const readJson = JSON.parse(readStr) as CFDocsDefinitionInfo;
+        return readJson.related;
+      } else if (source === CFDocsSource.extension) {
+        const extensionPathUri: Uri = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/en/" + jsonFileName));
+        const readData = await workspace.fs.readFile(extensionPathUri);
+        const readStr = Buffer.from(readData).toString("utf8");
+        const readJson = JSON.parse(readStr) as CFDocsDefinitionInfo;
+        return readJson.related;
+      } else {
+        const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
+        const response = await fetch(cfDocsLink);
+        const data = await response.json() as CFDocsDefinitionInfo;
+        return data.related;
+      }
+    } catch (ex) {
+      console.log("Error retrieving all tag names:", (<Error>ex).message);
+      throw ex;
     }
+  }
 
   /**
    * Sets the given definition as a global function in the cached entities
@@ -420,27 +360,4 @@ export default class CFDocsService {
     window.showInformationMessage("No matching compatible entity was found");
   }
 
-  /**
-   * Returns a list of all global CFML functions documented on CFDocs
-   * @param source Indicates whether the data will be retrieved locally or remotely
-   */
-  /* public static async getAllMemberFunctionNames(source = CFDocsSource.Remote): Promise<string[]> {
-    const jsonFileName: string = CFDocsService.getJsonFileName("memberfunctions");
-
-    return new Promise<string[]>((resolve, reject) => {
-        const extensionDocFilePath: string = path.join("./resources/schemas/en/", jsonFileName);
-        const extensionPathUri: Uri = vscode.Uri.file(extensionContext.asAbsolutePath(extensionDocFilePath));
-        try {
-            workspace.fs.readFile(extensionPathUri).then((readData) => {
-                const readStr = Buffer.from(readData).toString('utf8');
-                const readJson = JSON.parse(readStr);
-                resolve(readJson.related);
-            });
-        } catch (ex) {
-            console.warn("Error retrieving all member function names:", (<Error>ex).message);
-            reject(ex);
-        }
-    });
-
-  } */
 }

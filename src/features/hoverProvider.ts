@@ -453,13 +453,13 @@ export default class CFMLHoverProvider implements HoverProvider {
      * @param range An optional range to which this hover applies
      * @returns
      */
-    public async createHover(definition: HoverProviderItem, range?: Range): Promise<Hover> {
+    public createHover(definition: HoverProviderItem, range?: Range): Hover {
         if (!definition) {
-            return Promise.reject(new Error("Definition not found"));
+            throw new Error("Definition not found");
         }
 
         if (!definition.name) {
-            return Promise.reject(new Error("Invalid definition format"));
+            throw new Error("Invalid definition format");
         }
 
         return new Hover(this.createHoverText(definition), range);
