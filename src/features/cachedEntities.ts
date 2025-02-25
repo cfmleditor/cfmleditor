@@ -137,8 +137,12 @@ export function setGlobalTag(tagDefinition: GlobalTag): void {
  * @param tagName The name of the global tag to be retrieved
  * @returns
  */
-export function getGlobalTag(tagName: string): GlobalTag {
-    return allGlobalTags[tagName.toLowerCase()];
+export function getGlobalTag(tagName: string | undefined): GlobalTag | undefined {
+    if (tagName) {
+        return allGlobalTags[tagName.toLowerCase()];
+    } else {
+        return undefined;
+    }
 }
 
 /**
@@ -169,7 +173,7 @@ export function setGlobalEntityDefinition(definition: CFDocsDefinitionInfo): voi
  * @param name The name of the global definition to be retrieved
  * @returns
  */
-export function getGlobalEntityDefinition(name: string): CFDocsDefinitionInfo {
+export function getGlobalEntityDefinition(name: string): CFDocsDefinitionInfo | undefined {
     return allGlobalEntityDefinitions.get(name.toLowerCase());
 }
 
@@ -216,8 +220,8 @@ function setComponent(comp: Component): void {
  * @param _token
  * @returns
  */
-export function getComponent(uri: Uri, _token: CancellationToken): Component {
-    if (!hasComponent(uri, _token)) {
+export function getComponent(uri: Uri | undefined, _token: CancellationToken | undefined | null): Component | undefined {
+    if (!uri || !hasComponent(uri, _token)) {
         /* TODO: If not already cached, attempt to read, parse and cache. Tricky since read is async */
         return undefined;
     }
@@ -232,7 +236,7 @@ export function getComponent(uri: Uri, _token: CancellationToken): Component {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
+export function hasComponent(uri: Uri, _token: CancellationToken | undefined | null): boolean {
     return Object.prototype.hasOwnProperty.call(allComponentsByUri, uri.toString().toLowerCase());
 }
 
@@ -243,7 +247,7 @@ export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function searchAllComponentNames(query: string, _token: CancellationToken): Component[] {
+export function searchAllComponentNames(query: string, _token: CancellationToken | undefined | null): Component[] {
     let components: Component[] = [];
     components = allComponentNames.search(query);
     return components;
@@ -299,7 +303,7 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
     }
 
     // relative to web root
-    const rootPath: string = resolveRootPath(baseUri, normalizedPath);
+    const rootPath: string | undefined = resolveRootPath(baseUri, normalizedPath);
     if (rootPath) {
         const rootFile: Uri = Uri.file(rootPath);
         const rootFileKey = rootFile.toString().toLowerCase();
@@ -516,7 +520,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: Cancel
  * @param uri The URI of the application file
  * @returns
  */
-export function getCachedApplicationVariables(uri: Uri): Variable[] {
+export function getCachedApplicationVariables(uri: Uri): Variable[] | undefined {
     return allApplicationVariables.get(uri.toString());
 }
 
@@ -543,7 +547,7 @@ export function removeApplicationVariables(uri: Uri): boolean {
  * @param uri The URI of the component to be check
  * @returns
  */
-export function getCachedServerVariables(uri: Uri): Variable[] {
+export function getCachedServerVariables(uri: Uri): Variable[] | undefined {
     return allServerVariables.get(uri.toString());
 }
 

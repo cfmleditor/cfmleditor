@@ -22,7 +22,7 @@ export default class SnippetService {
      */
     public static async getCustomSnippets(): Promise<Snippets> {
         const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest");
-        const snippetsLocalPath: string = cfmlCompletionSettings.get("snippets.localPath");
+        const snippetsLocalPath: string | undefined = cfmlCompletionSettings.get("snippets.localPath");
 
         if (snippetsLocalPath && snippetsLocalPath.length > 0) {
             const snippetsPathUri: Uri = Uri.file(snippetsLocalPath);

@@ -89,8 +89,8 @@ export const catchProperties: CatchProperties = {
 export const scriptCatchPattern: RegExp = /\}\s*catch\s*\(\s*([A-Za-z0-9_.$]+)\s+([_$a-zA-Z][$\w]*)\s*\)\s*\{/gi;
 
 export interface CatchInfo {
-  type: string;
-  variableName: string;
+  type: string | undefined;
+  variableName: string | undefined;
   bodyRange: Range;
 }
 
@@ -102,7 +102,7 @@ export interface CatchInfo {
  * @param _token
  * @returns
  */
-export function parseCatches(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range, _token: CancellationToken): CatchInfo[] {
+export function parseCatches(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range | undefined, _token: CancellationToken): CatchInfo[] {
   let catchInfoArr: CatchInfo[] = [];
   const document: TextDocument = documentStateContext.document;
   let textOffset: number = 0;
@@ -114,9 +114,12 @@ export function parseCatches(documentStateContext: DocumentStateContext, isScrip
   }
 
   if (isScript) {
-    let scriptCatchMatch: RegExpExecArray = null;
+    let scriptCatchMatch: RegExpExecArray | null = null;
     // eslint-disable-next-line no-cond-assign
     while (scriptCatchMatch = scriptCatchPattern.exec(documentText)) {
+      if ( !scriptCatchMatch ) {
+        break;
+      }
       const catchType = scriptCatchMatch[1] ? scriptCatchMatch[1] : "any";
       const catchVariable = scriptCatchMatch[2];
 
@@ -141,19 +144,19 @@ export function parseCatches(documentStateContext: DocumentStateContext, isScrip
     const tags: Tag[] = parseTags(documentStateContext, tagName, docRange, _token);
 
     tags.forEach((tag: Tag) => {
-      if (tag.bodyRange === undefined) {
+      if (!tag || tag.bodyRange === undefined) {
         return;
       }
 
-      let catchType: string = "any";
-      let catchVariable: string = tagName;
+      let catchType: string | undefined = "any";
+      let catchVariable: string | undefined = tagName;
 
-      if (tag.attributes.has("type")) {
-        catchType = tag.attributes.get("type").value;
+      if (tag && tag.attributes && tag.attributes.has("type")) {
+        catchType = tag.attributes.get("type")?.value;
       }
 
-      if (tag.attributes.has("name")) {
-        catchVariable = tag.attributes.get("name").value;
+      if (tag && tag.attributes && tag.attributes.has("name")) {
+        catchVariable = tag.attributes.get("name")?.value;
       }
 
       const catchInfo: CatchInfo = {

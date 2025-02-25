@@ -150,7 +150,7 @@ export async function resolveDottedPaths(dotPath: string, baseUri: Uri): Promise
   }
 
   // relative to web root
-  const rootPath: string = resolveRootPath(baseUri, normalizedPath);
+  const rootPath: string | undefined = resolveRootPath(baseUri, normalizedPath);
   if (rootPath && await fileExists(rootPath)) {
     paths.push(rootPath);
 
@@ -191,7 +191,7 @@ export function resolveRelativePath(baseUri: Uri, appendingPath: string): string
  * @returns string
  */
 export function resolveRootPath(baseUri: Uri, appendingPath: string): string | undefined {
-  const root: WorkspaceFolder = workspace.getWorkspaceFolder(baseUri);
+  const root: WorkspaceFolder | undefined = workspace.getWorkspaceFolder(baseUri);
 
   // When baseUri is not in workspace
   if (!root) {
@@ -216,9 +216,11 @@ export function resolveCustomMappingPaths(baseUri: Uri, appendingPath: string): 
     const slicedLogicalPath: string = cfmlMapping.logicalPath.slice(1);
     const logicalPathStartPattern = new RegExp(`^${slicedLogicalPath}(?:/|$)`);
     if (logicalPathStartPattern.test(normalizedPath)) {
-      const directoryPath: string = cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath ? cfmlMapping.directoryPath : resolveRootPath(baseUri, cfmlMapping.directoryPath);
-      const mappedPath: string = Uri.joinPath(Uri.parse(directoryPath), appendingPath.slice(slicedLogicalPath.length)).fsPath;
-      customMappingPaths.push(mappedPath);
+      const directoryPath: string | undefined = cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath ? cfmlMapping.directoryPath : resolveRootPath(baseUri, cfmlMapping.directoryPath);
+      if ( directoryPath ) {
+        const mappedPath: string = Uri.joinPath(Uri.parse(directoryPath), appendingPath.slice(slicedLogicalPath.length)).fsPath;
+        customMappingPaths.push(mappedPath);
+      }
     }
   }
 
@@ -234,7 +236,11 @@ export function resolveCustomMappingPaths(baseUri: Uri, appendingPath: string): 
 export async function findUpWorkspaceFile(name: string, workingDir: Uri): Promise<Uri | undefined> {
 
     let directory: Uri = Utils.dirname(workingDir);
-    const workspaceDir: WorkspaceFolder = workspace.getWorkspaceFolder(workingDir);
+    const workspaceDir: WorkspaceFolder | undefined = workspace.getWorkspaceFolder(workingDir);
+
+    if ( !workspaceDir ) {
+        return undefined;
+    }
 
 	while (directory) {
 

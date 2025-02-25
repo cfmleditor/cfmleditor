@@ -18,7 +18,7 @@ export interface CommentContext {
     inComment: boolean;
     activeComment: string | CharacterPair | undefined;
     commentType: CommentType | undefined;
-    start: Position;
+    start: Position | undefined;
     depth: number;
 }
 

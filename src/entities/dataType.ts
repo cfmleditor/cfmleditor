@@ -74,7 +74,10 @@ export namespace DataType {
    * @param paramType The param type string to resolve
    * @returns
    */
-  export function paramTypeToDataType(paramType: string): DataType {
+  export function paramTypeToDataType(paramType: string | undefined): DataType {
+    if ( !paramType ) {
+        return DataType.Any;
+    }
     switch (paramType.toLowerCase()) {
       case "any":
         return DataType.Any;
@@ -174,7 +177,11 @@ export namespace DataType {
    * @returns
    */
   function isDataType(dataType: string): boolean {
-    return (dataType && (equalsIgnoreCase(dataType, "any") || valueOf(dataType) !== DataType.Any));
+    if ( dataType ) {
+        return ((equalsIgnoreCase(dataType, "any") || valueOf(dataType) !== DataType.Any));
+    } else {
+        return false;
+    }
   }
 
   /**
@@ -200,7 +207,7 @@ export namespace DataType {
    * @param _token
    * @returns
    */
-  export async function getDataTypeAndUri(dataType: string, documentUri: Uri, _token: CancellationToken): Promise<[DataType, Uri]> {
+  export async function getDataTypeAndUri(dataType: string, documentUri: Uri, _token: CancellationToken): Promise<[DataType | null, Uri | null]> {
     if (!dataType) {
       return [null, null];
     }
@@ -208,7 +215,7 @@ export namespace DataType {
     if (isDataType(dataType)) {
       return [valueOf(dataType), null];
     } else {
-      const typeUri: Uri = await componentPathToUri(dataType, documentUri, _token);
+      const typeUri: Uri | undefined = await componentPathToUri(dataType, documentUri, _token);
       if (typeUri) {
         return [DataType.Component, typeUri];
       }
@@ -224,8 +231,8 @@ export namespace DataType {
    * @param _token
    * @returns
    */
-  export async function inferDataTypeFromValue(value: string, documentUri: Uri, _token: CancellationToken): Promise<[DataType, Uri]> {
-    if (value.length === 0) {
+  export async function inferDataTypeFromValue(value: string | undefined, documentUri: Uri, _token: CancellationToken): Promise<[DataType, Uri | null]> {
+    if (typeof value === "undefined" || value.length === 0) {
       return [DataType.String, null];
     }
 
@@ -263,7 +270,7 @@ export namespace DataType {
 
     const objectMatch1 = /^(?:["']\s*#\s*)?(createObject\((["'])component\2\s*,\s*(["'])([^'"]+)\3)/i.exec(value);
     if (objectMatch1) {
-      const [dataType, uri]: [DataType, Uri] = await getDataTypeAndUri(objectMatch1[4], documentUri, _token);
+      const [dataType, uri]: [DataType | null, Uri | null] = await getDataTypeAndUri(objectMatch1[4], documentUri, _token);
       if (dataType) {
         return [dataType, uri];
       }
@@ -272,7 +279,7 @@ export namespace DataType {
 
     const objectMatch2 = /^(?:["']\s*#\s*)?(new\s+(["'])?([^\s'"(]+)\2\()/i.exec(value);
     if (objectMatch2) {
-      const [dataType, uri]: [DataType, Uri] = await getDataTypeAndUri(objectMatch2[3], documentUri, _token);
+      const [dataType, uri]: [DataType | null, Uri | null] = await getDataTypeAndUri(objectMatch2[3], documentUri, _token);
       if (dataType) {
         return [dataType, uri];
       }

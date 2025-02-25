@@ -132,7 +132,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         const userEngine: CFMLEngine = completionState.userEngine;
         const docIsCfmFile: boolean = completionState.isCfmFile;
         const docIsCfcFile: boolean = completionState.isCfcFile;
-        const thisComponent: Component = completionState.component;
+        const thisComponent: Component | undefined = completionState.component;
         const positionIsCfScript: boolean = completionState.positionIsScript;
         const docPrefix: string = completionState.docPrefix;
         const isContinuingExpression: boolean = completionState.isContinuingExpression;
@@ -149,7 +149,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         if (!positionIsCfScript || userEngine.supportsScriptTags()) {
             const ignoredTags: string[] = expressionCfmlTags;
             const cfTagAttributePattern: RegExp = positionIsCfScript ? getCfScriptTagAttributePattern() : getCfTagAttributePattern();
-            const cfTagAttributeMatch: RegExpExecArray = cfTagAttributePattern.exec(docPrefix);
+            const cfTagAttributeMatch: RegExpExecArray | null = cfTagAttributePattern.exec(docPrefix);
             if (cfTagAttributeMatch) {
                 const cfTagAttributeMatchOffset: number = cfTagAttributeMatch.index;
                 const tagAttributePrefix: string = cfTagAttributeMatch[1];
@@ -158,7 +158,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                 const tagAttributesLength: number = cfTagAttributeMatch[3].length;
                 const globalTag: GlobalTag = getGlobalTag(tagName);
                 if (globalTag && !ignoredTags.includes(globalTag.name)) {
-                    const attributeValueMatch: RegExpExecArray = VALUE_PATTERN.exec(docPrefix);
+                    const attributeValueMatch: RegExpExecArray | null = VALUE_PATTERN.exec(docPrefix);
                     if (attributeValueMatch) {
                         const attributeName: string = attributeValueMatch[1];
                         const currentValue: string = attributeValueMatch[3] !== undefined ? attributeValueMatch[3] : attributeValueMatch[4];
@@ -190,7 +190,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         // HTML tag attributes
         if (!positionIsCfScript) {
             const tagAttributePattern: RegExp = getTagAttributePattern();
-            const tagAttributeMatch: RegExpExecArray = tagAttributePattern.exec(docPrefix);
+            const tagAttributeMatch: RegExpExecArray | null = tagAttributePattern.exec(docPrefix);
             if (tagAttributeMatch) {
                 const tagAttributeMatchOffset: number = tagAttributeMatch.index;
                 const tagAttributePrefix: string = tagAttributeMatch[1];
@@ -198,7 +198,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                 const tagName: string = tagAttributeMatch[2].toLowerCase();
                 const tagAttributesLength: number = tagAttributeMatch[3].length;
                 if (isKnownHTMLTag(tagName)) {
-                    const attributeValueMatch: RegExpExecArray = VALUE_PATTERN.exec(docPrefix);
+                    const attributeValueMatch: RegExpExecArray | null = VALUE_PATTERN.exec(docPrefix);
                     if (attributeValueMatch) {
                         const attributeName: string = attributeValueMatch[1].toLowerCase();
                         const currentValue: string = attributeValueMatch[3] !== undefined ? attributeValueMatch[3] : attributeValueMatch[4];
@@ -219,7 +219,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
         if (docIsCfcFile && isInComponentHead(documentPositionStateContext)) {
             // extends and implements path completion. does not apply to docblock
-            const componentDottedPathMatch: RegExpExecArray = componentExtendsPathPrefix.exec(docPrefix);
+            const componentDottedPathMatch: RegExpExecArray | null = componentExtendsPathPrefix.exec(docPrefix);
             if (componentDottedPathMatch) {
                 const componentDottedPath: string = componentDottedPathMatch[3];
                 const parentDottedPath: string = componentDottedPath.split(".").slice(0, -1).join(".");
@@ -291,8 +291,8 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
         }
 
         if (applicableCatches.length > 0) {
-            const closestCatch: CatchInfo = applicableCatches.pop();
-            if (!isContinuingExpression && currentWordMatches(closestCatch.variableName)) {
+            const closestCatch: CatchInfo | undefined = applicableCatches.pop();
+            if (closestCatch && !isContinuingExpression && closestCatch.variableName && currentWordMatches(closestCatch.variableName)) {
                 result.push(createNewProposal(
                     closestCatch.variableName,
                     CompletionItemKind.Struct,
@@ -307,10 +307,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                 return undefined;
             }
 
-            if (getVariablePrefixPattern(closestCatch.variableName).test(docPrefix)) {
+            if (closestCatch && closestCatch.variableName && getVariablePrefixPattern(closestCatch.variableName).test(docPrefix)) {
                 for (const propName in catchProperties) {
                     const catchProp: CatchPropertyDetails = catchProperties[propName];
-                    const catchType: string = closestCatch.type.toLowerCase();
+                    const catchType: string = closestCatch.type ? closestCatch.type.toLowerCase() : "any";
                     if (currentWordMatches(propName) && (catchType === "any" || catchProp.appliesToTypes === undefined || catchProp.appliesToTypes.includes(catchType))) {
                         result.push(createNewProposal(propName, CompletionItemKind.Property, catchProp));
                     }
@@ -384,8 +384,8 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
                 // From super keyword
                 if (docIsCfcFile && !varScope && equalsIgnoreCase(varName, "super")) {
                     const addedFunctions: MySet<string> = new MySet();
-                    const baseComponent: Component = getComponent(thisComponent.extends, _token);
-                    let currComponent: Component = baseComponent;
+                    const baseComponent: Component | undefined = thisComponent ? getComponent(thisComponent.extends, _token) : undefined;
+                    let currComponent: Component | undefined = baseComponent;
                     while (currComponent) {
                         currComponent.functions.filter((_func: UserFunction, funcKey: string) => {
                             return currentWordMatches(funcKey) && !addedFunctions.has(funcKey);
