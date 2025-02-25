@@ -1,7 +1,7 @@
 const esbuild = require('esbuild');
-
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
+const polyfill = require('@esbuild-plugins/node-globals-polyfill');
 
 async function main() {
   const desktop = await esbuild.context({
@@ -17,7 +17,7 @@ async function main() {
     logLevel: 'warning',
     plugins: [
       /* add to the end of plugins array */
-      esbuildProblemMatcherPlugin
+      esbuildProblemMatcherPlugin,
     ]
   });
   if (watch) {
@@ -37,9 +37,15 @@ async function main() {
     platform: 'browser',
     outfile: 'dist/web/extension.js',
     external: ['vscode'],
+    define: {
+      global: 'globalThis'
+    },
     logLevel: 'warning',
     plugins: [
-      /* add to the end of plugins array */
+      polyfill.NodeGlobalsPolyfillPlugin({
+        process: true,
+        buffer: true
+      }),
       replacePath(),
       esbuildProblemMatcherPlugin
     ]
@@ -54,7 +60,8 @@ async function main() {
 
 const replacePath = () => {
     const replace = {
-        'path': require.resolve('path-browserify')
+        'path': require.resolve('path-browserify'),
+        'buffer': require.resolve('buffer/')
     }
     const filter = RegExp(`^(${Object.keys(replace).join("|")})$`);
     return {
