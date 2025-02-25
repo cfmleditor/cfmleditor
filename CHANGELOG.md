@@ -2,6 +2,10 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.34] - 2025-02-25
+
+- Fix broken "Go to definition"
+
 ## [0.6.33] - 2025-02-18
 
 - Replace trie-prefix-tree with trie-search and simplify search implementation for user defined functions #41 ( fixes issues with $ in function name )

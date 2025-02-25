@@ -99,7 +99,7 @@ export function replaceRangeWithSpaces(document: TextDocument, ranges: Range[]):
  * @param _token
  * @returns string
  */
-export function getSanitizedDocumentText(document: TextDocument, commentRanges: Range[], replaceComments: boolean = false, _token: CancellationToken): string {
+export function getSanitizedDocumentText(document: TextDocument, commentRanges: Range[] | undefined, replaceComments: boolean = false, _token: CancellationToken): string {
     if (replaceComments !== true) {
         return document.getText();
     }
@@ -141,5 +141,5 @@ const schemePattern = /^[a-zA-Z][a-zA-Z0-9+\-.]+:/;
  * @returns boolean
  */
 export function isUri(str: string): boolean {
-    return str && schemePattern.test(str);
+    return str ? schemePattern.test(str) : false;
 }
