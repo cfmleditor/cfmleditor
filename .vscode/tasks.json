@@ -1,56 +1,40 @@
-// See https://go.microsoft.com/fwlink/?LinkId=733558
-// for the documentation about the tasks.json format
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "type": "npm",
-      "script": "watch",
-      "problemMatcher": "$tsc-watch",
-      "isBackground": true,
-      "presentation": {
-        "reveal": "never",
-        "panel": "dedicated"
-      },
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      }
-    },
-    {
-      "type": "npm",
-      "script": "build",
-      "group": "build",
-      "problemMatcher": "$tsc",
-      "presentation": {
-        "reveal": "never",
-        "panel": "dedicated"
-      }
-    },
-    {
-      "type": "npm",
-      "script": "lint",
-      "problemMatcher": "$eslint-stylish",
-    },
-    {
-        "type": "npm",
-        "script": "compile-web",
-        "group": {
-            "kind": "build",
-            "isDefault": true
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "watch",
+        "dependsOn": ["npm: watch:tsc", "npm: watch:esbuild"],
+        "presentation": {
+          "reveal": "never"
         },
-        "problemMatcher": [
-            "$ts-webpack"
-        ]
-    },
-    {
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        }
+      },
+      {
         "type": "npm",
-        "script": "watch-web",
+        "script": "watch:esbuild",
         "group": "build",
+        "problemMatcher": "$esbuild-watch",
         "isBackground": true,
-        "problemMatcher": [
-            "$ts-webpack-watch"
-        ]
-    }
-  ]
-}
+        "label": "npm: watch:esbuild",
+        "presentation": {
+          "group": "watch",
+          "reveal": "never"
+        }
+      },
+      {
+        "type": "npm",
+        "script": "watch:tsc",
+        "group": "build",
+        "problemMatcher": "$tsc-watch",
+        "isBackground": true,
+        "label": "npm: watch:tsc",
+        "presentation": {
+          "group": "watch",
+          "reveal": "never"
+        }
+      }
+    ]
+  }

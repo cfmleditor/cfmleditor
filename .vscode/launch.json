@@ -6,22 +6,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Extension",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
-            ],
-            "sourceMaps": true,
-            "outFiles": [
-                "${workspaceFolder}/out/**/*.js"
-            ],
-            "skipFiles": ["<node_internals>/**"],
-            "preLaunchTask": "npm: watch"
-        },
+			"name": "Run Desktop Extension",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}"
+			],
+			"outFiles": [
+				"${workspaceFolder}/dist/desktop/**/*.js"
+			],
+			"preLaunchTask": "${defaultBuildTask}"
+		},
         {
-            "name": "Web Extension Tests",
+            "name": "Run Web Extension",
             "type": "extensionHost",
             "debugWebWorkerHost": true,
             "request": "launch",
@@ -29,8 +26,10 @@
               "--extensionDevelopmentPath=${workspaceFolder}",
               "--extensionDevelopmentKind=web"
             ],
-            "outFiles": ["${workspaceFolder}/dist/web/*.js"],
-            "preLaunchTask": "npm: watch-web"
+            "outFiles": [
+                "${workspaceFolder}/dist/web/**/*.js"
+            ],
+            "preLaunchTask": "${defaultBuildTask}"
         }
     ]
 }
