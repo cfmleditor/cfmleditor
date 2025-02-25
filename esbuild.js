@@ -26,6 +26,45 @@ async function main() {
     await desktop.rebuild();
     await desktop.dispose();
   }
+
+  const web = await esbuild.context({
+    entryPoints: ['src/cfmlMain.ts'],
+    bundle: true,
+    format: 'cjs',
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: 'browser',
+    outfile: 'dist/web/extension.js',
+    external: ['vscode'],
+    logLevel: 'warning',
+    plugins: [
+      /* add to the end of plugins array */
+      replacePath(),
+      esbuildProblemMatcherPlugin
+    ]
+  });
+  if (watch) {
+    await web.watch();
+  } else {
+    await web.rebuild();
+    await web.dispose();
+  }
+}
+
+const replacePath = () => {
+    const replace = {
+        'path': require.resolve('path-browserify')
+    }
+    const filter = RegExp(`^(${Object.keys(replace).join("|")})$`);
+    return {
+        name: "replacePath",
+        setup(build) {
+            build.onResolve({ filter }, arg => ({
+                path: replace[arg.path],
+            }));
+        },
+    };
 }
 
 /**

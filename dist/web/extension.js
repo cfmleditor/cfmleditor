@@ -5,7 +5,6 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
@@ -30,7 +29,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
 
 // node_modules/has-symbols/shams.js
 var require_shams = __commonJS({
@@ -13892,12 +13890,15 @@ var LIB;
   }
   const c = "", f = "/", u = /^(([^:/?#]+?):)?(\/\/([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?/;
   class l {
+    static isUri(t2) {
+      return t2 instanceof l || !!t2 && "string" == typeof t2.authority && "string" == typeof t2.fragment && "string" == typeof t2.path && "string" == typeof t2.query && "string" == typeof t2.scheme && "string" == typeof t2.fsPath && "function" == typeof t2.with && "function" == typeof t2.toString;
+    }
+    scheme;
+    authority;
+    path;
+    query;
+    fragment;
     constructor(t2, e2, r2, n2, i2, o2 = false) {
-      __publicField(this, "scheme");
-      __publicField(this, "authority");
-      __publicField(this, "path");
-      __publicField(this, "query");
-      __publicField(this, "fragment");
       "object" == typeof t2 ? (this.scheme = t2.scheme || c, this.authority = t2.authority || c, this.path = t2.path || c, this.query = t2.query || c, this.fragment = t2.fragment || c) : (this.scheme = /* @__PURE__ */ function(t3, e3) {
         return t3 || e3 ? t3 : "file";
       }(t2, o2), this.authority = e2 || c, this.path = function(t3, e3) {
@@ -13909,9 +13910,6 @@ var LIB;
         }
         return e3;
       }(this.scheme, r2 || c), this.query = n2 || c, this.fragment = i2 || c, a(this, o2));
-    }
-    static isUri(t2) {
-      return t2 instanceof l || !!t2 && "string" == typeof t2.authority && "string" == typeof t2.fragment && "string" == typeof t2.path && "string" == typeof t2.query && "string" == typeof t2.scheme && "string" == typeof t2.fsPath && "function" == typeof t2.with && "function" == typeof t2.toString;
     }
     get fsPath() {
       return v(this, false);
@@ -13956,11 +13954,8 @@ var LIB;
   }
   const g = i ? 1 : void 0;
   class d extends l {
-    constructor() {
-      super(...arguments);
-      __publicField(this, "_formatted", null);
-      __publicField(this, "_fsPath", null);
-    }
+    _formatted = null;
+    _fsPath = null;
     get fsPath() {
       return this._fsPath || (this._fsPath = v(this, false)), this._fsPath;
     }
@@ -14347,7 +14342,7 @@ function getCommentAndStringRangesIterated(document2, isScript = false, docRange
           start: void 0,
           depth: 0
         };
-      } else if (commentContext.commentType === 1 /* Block */ && lineText && lineText.endsWith(commentContext.activeComment[1])) {
+      } else if (commentContext.commentType === 1 /* Block */ && lineText.endsWith(commentContext.activeComment[1])) {
         if (commentContext.depth > 1) {
           commentDepth = commentContext.depth - 1;
           commentContext.depth = commentDepth;
@@ -14416,7 +14411,7 @@ function getCommentAndStringRangesIterated(document2, isScript = false, docRange
             start: position,
             embeddedCFML: false
           };
-        } else if (lineText && lineText.endsWith(cfmlCommentRules.scriptLineComment)) {
+        } else if (lineText.endsWith(cfmlCommentRules.scriptLineComment)) {
           if (commentContext.activeComment !== cfmlCommentRules.tagBlockComment) {
             commentDepth = commentContext.depth + 1;
             commentContext = {
@@ -14427,7 +14422,7 @@ function getCommentAndStringRangesIterated(document2, isScript = false, docRange
               depth: commentDepth
             };
           }
-        } else if (lineText && lineText.endsWith(cfmlCommentRules.scriptBlockComment[0])) {
+        } else if (lineText.endsWith(cfmlCommentRules.scriptBlockComment[0])) {
           if (commentContext.activeComment !== cfmlCommentRules.tagBlockComment) {
             commentDepth = commentContext.depth + 1;
             commentContext = {
@@ -44483,7 +44478,13 @@ var CFDocsDefinitionInfo = class _CFDocsDefinitionInfo {
 };
 
 // src/utils/cfdocs/cfDocsService.ts
-var _CFDocsService = class _CFDocsService {
+var CFDocsService = class _CFDocsService {
+  static {
+    this.cfDocsRepoLinkPrefix = "https://raw.githubusercontent.com/foundeo/cfdocs/master/data/en/";
+  }
+  static {
+    this.cfDocsLinkPrefix = "https://cfdocs.org/";
+  }
   /**
    * Gets definition information for global identifiers based on a local CFDocs directory
    * @param identifier The global identifier for which to get definition info
@@ -44778,9 +44779,6 @@ var _CFDocsService = class _CFDocsService {
     import_vscode18.window.showInformationMessage("No matching compatible entity was found");
   }
 };
-_CFDocsService.cfDocsRepoLinkPrefix = "https://raw.githubusercontent.com/foundeo/cfdocs/master/data/en/";
-_CFDocsService.cfDocsLinkPrefix = "https://cfdocs.org/";
-var CFDocsService = _CFDocsService;
 
 // src/utils/snippetService.ts
 var import_vscode19 = require("vscode");
@@ -47997,8 +47995,8 @@ function getConfigurationTarget(target) {
 }
 function shouldExcludeDocument(documentUri) {
   const fileSettings = import_vscode35.workspace.getConfiguration("files", documentUri);
-  const fileExcludeGlobs = [];
   const fileExcludes = fileSettings.get("exclude", []);
+  const fileExcludeGlobs = [];
   for (let fileExcludeGlob in fileExcludes) {
     if (fileExcludes[fileExcludeGlob]) {
       if (fileExcludeGlob.endsWith("/")) {

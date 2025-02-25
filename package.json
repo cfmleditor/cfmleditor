@@ -33,10 +33,7 @@
 	],
 	"icon": "images/icon2x.png",
 	"main": "./dist/desktop/extension.js",
-	"browser": {
-        "main": "./dist/web/extension.js",
-        "path": "path-browserify"
-    },
+	"browser": "./dist/web/extension.js",
 	"contributes": {
 		"languages": [
 			{
