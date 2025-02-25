@@ -44,7 +44,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
         const linkStart: Position = document.positionAt(offset);
         const linkEnd: Position = document.positionAt(offset + link.length);
         try {
-          const target: Uri | undefined = await this.resolveLink(document, link);
+          const target: Uri = await this.resolveLink(document, link);
           if (target) {
             results.push(
               new DocumentLink(
@@ -90,10 +90,10 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
     // Check for relative local file
     let linkPath: string = link.split(/[?#]/)[0];
     linkPath = linkPath.replace(/\\/,'/');
-    let resourcePath: Uri | undefined = undefined;
+    let resourcePath: Uri;
     if (linkPath && linkPath[0] === "/") {
       // Relative to root
-      const root: WorkspaceFolder | undefined = workspace.getWorkspaceFolder(document.uri);
+      const root: WorkspaceFolder = workspace.getWorkspaceFolder(document.uri);
       if (root) {
         resourcePath = Uri.joinPath(root.uri, linkPath);
       }

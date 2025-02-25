@@ -41,8 +41,8 @@ const identPartPattern = /[$\w]/;
 
 export interface StringContext {
   inString: boolean;
-  activeStringDelimiter: string | undefined;
-  start: Position | undefined;
+  activeStringDelimiter: string;
+  start: Position;
   embeddedCFML: boolean;
   embeddedCFMLStartPosition?: Position;
 }
@@ -106,7 +106,7 @@ export class BackwardIterator {
    * Gets current position in iterator
    * @returns Position
    */
-  public getPosition(): Position | undefined {
+  public getPosition(): Position {
     let lineNumber = this.lineNumber;
     let lineCharacterOffset = this.lineCharacterOffset;
     if (lineCharacterOffset < 0) {
@@ -234,7 +234,7 @@ export function isCfcUri(uri: Uri, _token: CancellationToken): boolean {
  * @param commentRanges
  * @returns
  */
-export function getCfScriptRanges(document: TextDocument, range: Range | undefined, _token: CancellationToken, commentRanges: Range[] = []): Range[] {
+export function getCfScriptRanges(document: TextDocument, range: Range, _token: CancellationToken, commentRanges: Range[] = []): Range[] {
   const ranges: Range[] = [];
   let documentText: string;
   let textOffset: number;
@@ -247,7 +247,7 @@ export function getCfScriptRanges(document: TextDocument, range: Range | undefin
   }
 
   const cfscriptTagPattern: RegExp = getTagPattern("cfscript");
-  let cfscriptTagMatch: RegExpExecArray | null = null;
+  let cfscriptTagMatch: RegExpExecArray = null;
   // eslint-disable-next-line no-cond-assign
   while (cfscriptTagMatch = cfscriptTagPattern.exec(documentText)) {
     const prefixLen: number = cfscriptTagMatch[1].length + cfscriptTagMatch[2].length + 1;
@@ -277,7 +277,7 @@ export function getCfScriptRanges(document: TextDocument, range: Range | undefin
  * @param exclDocumentRanges
  * @returns
  */
-export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, fast: boolean = false, _token: CancellationToken, exclDocumentRanges: boolean = false): DocumentContextRanges {
+export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range, fast: boolean = false, _token: CancellationToken, exclDocumentRanges: boolean = false): DocumentContextRanges {
   if (fast) {
     return { commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token) };
   }
@@ -297,7 +297,7 @@ export function getDocumentContextRanges(document: TextDocument, isScript: boole
  * @param _token
  * @returns
  */
-function getCommentRangesByRegex(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, _token: CancellationToken): Range[] {
+function getCommentRangesByRegex(document: TextDocument, isScript: boolean = false, docRange: Range, _token: CancellationToken): Range[] {
   let commentRanges: Range[] = [];
   let documentText: string;
   let textOffset: number;
@@ -310,7 +310,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
   }
 
   if (isScript) {
-    let scriptBlockCommentMatch: RegExpExecArray | null = null;
+    let scriptBlockCommentMatch: RegExpExecArray = null;
     // eslint-disable-next-line no-cond-assign
     while (scriptBlockCommentMatch = cfscriptBlockCommentPattern.exec(documentText)) {
       const scriptBlockCommentText: string = scriptBlockCommentMatch[0];
@@ -321,7 +321,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
       ));
     }
 
-    let scriptLineCommentMatch: RegExpExecArray | null = null;
+    let scriptLineCommentMatch: RegExpExecArray = null;
     // eslint-disable-next-line no-cond-assign
     while (scriptLineCommentMatch = cfscriptLineCommentPattern.exec(documentText)) {
       const scriptLineCommentText = scriptLineCommentMatch[0];
@@ -332,7 +332,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
       ));
     }
   } else {
-    let tagBlockCommentMatch: RegExpExecArray | null = null;
+    let tagBlockCommentMatch: RegExpExecArray = null;
     // eslint-disable-next-line no-cond-assign
     while (tagBlockCommentMatch = tagBlockCommentPattern.exec(documentText)) {
       const tagBlockCommentText = tagBlockCommentMatch[0];
@@ -361,7 +361,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
  * @param _token
  * @returns
  */
-function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, _token: CancellationToken): DocumentContextRanges {
+function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange: Range, _token: CancellationToken): DocumentContextRanges {
 
   // console.log("getCommentAndStringRangesIterated:" + _token?.isCancellationRequested);
 
@@ -1045,8 +1045,8 @@ export function getStartSigPosition(iterator: BackwardIterator, _token: Cancella
   let parenNesting = 0;
 
   const document: TextDocument = iterator.getDocumentStateContext().document;
-  const stringRanges: Range[] | undefined = iterator.getDocumentStateContext().stringRanges;
-  const stringEmbeddedCfmlRanges: Range[] | undefined = iterator.getDocumentStateContext().stringEmbeddedCfmlRanges;
+  const stringRanges: Range[] = iterator.getDocumentStateContext().stringRanges;
+  const stringEmbeddedCfmlRanges: Range[] = iterator.getDocumentStateContext().stringEmbeddedCfmlRanges;
   while (iterator.hasNext()) {
     const ch: number = iterator.next(_token);
 

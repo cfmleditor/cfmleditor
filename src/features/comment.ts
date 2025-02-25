@@ -16,8 +16,8 @@ export interface CFMLCommentRules {
 
 export interface CommentContext {
     inComment: boolean;
-    activeComment: string | CharacterPair | undefined;
-    commentType: CommentType | undefined;
+    activeComment: string | CharacterPair;
+    commentType: CommentType;
     start: Position;
     depth: number;
 }
