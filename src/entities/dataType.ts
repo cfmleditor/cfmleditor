@@ -84,10 +84,10 @@ export namespace DataType {
 				return DataType.Binary;
 			case "boolean":
 				return DataType.Boolean;
-				/*
-      case "component":
-        return DataType.Component;
-      */
+			/*
+			case "component":
+				return DataType.Component;
+			*/
 			case "date": case "eurodate": case "usdate":
 				return DataType.Date;
 			case "function":
