@@ -29,10 +29,10 @@ const cfDocsLinkPrefix = "https://cfdocs.org/";
 const mdnLinkPrefix = "https://developer.mozilla.org/docs/Web/";
 
 interface HoverProviderItem {
-    name: string;
+    name?: string;
     syntax: string;
     symbolType: string;
-    description: string;
+    description?: string;
     params?: Parameter[];
     returnType?: string;
     genericDocLink?: string;
@@ -73,7 +73,7 @@ export default class CFMLHoverProvider implements HoverProvider {
      */
     public async getHover(document: TextDocument, position: Position, _token: CancellationToken): Promise<Hover | undefined> {
 
-        const wordRange: Range = document.getWordRangeAtPosition(position);
+        const wordRange: Range | undefined = document.getWordRangeAtPosition(position);
 
         if (!wordRange) {
             return undefined;
@@ -81,7 +81,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 
         // console.log("getHover:CFMLHoverProvider:" + _token?.isCancellationRequested);
 
-        let definition: HoverProviderItem;
+        let definition: HoverProviderItem | undefined;
         const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
         const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
         const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, true);
@@ -94,7 +94,7 @@ export default class CFMLHoverProvider implements HoverProvider {
         const docPrefix: string = documentPositionStateContext.docPrefix;
         const positionIsCfScript: boolean = documentPositionStateContext.positionIsScript;
 
-        let userFunc: UserFunction;
+        let userFunc: UserFunction | undefined;
 
         const tagPrefixPattern: RegExp = getTagPrefixPattern();
         const functionSuffixPattern: RegExp = getFunctionSuffixPattern();
@@ -107,31 +107,41 @@ export default class CFMLHoverProvider implements HoverProvider {
         if (isGlobalTag(currentWord)) {
             if (tagPrefixPattern.test(docPrefix)) {
                 definition = this.globalTagToHoverProviderItem(getGlobalTag(lowerCurrentWord));
-                return this.createHover(definition);
+                if ( definition ) {
+                    return this.createHover(definition);
+                }
             }
 
             if (userEngine.supportsScriptTags() && functionSuffixPattern.test(lineSuffix)) {
                 definition = this.globalTagToHoverProviderItem(getGlobalTag(lowerCurrentWord), true);
-                return this.createHover(definition);
+                if ( definition ) {
+                    return this.createHover(definition);
+                }
             }
         }
 
         // Check if instantiating via "new" operator
-        const componentPathWordRange: Range = document.getWordRangeAtPosition(position, /[$\w.]+/);
-        const componentPathWord: string = document.getText(componentPathWordRange);
-        const componentPathWordPrefix: string = documentPositionStateContext.sanitizedDocumentText.slice(0, document.offsetAt(componentPathWordRange.start));
-        const startSigPositionPrefix = `${componentPathWordPrefix}${componentPathWord}(`;
-        const objectNewInstanceInitPrefixMatch: RegExpExecArray = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
-        if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
-            const componentUri: Uri = cachedComponentPathToUri(componentPathWord, document.uri, _token);
-            if (componentUri) {
-                const initComponent: Component = getComponent(componentUri, _token);
-                if (initComponent) {
-                    const initMethod = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
-                    if (initComponent.functions.has(initMethod)) {
-                        userFunc = initComponent.functions.get(initMethod);
-                        definition = this.functionToHoverProviderItem(userFunc);
-                        return this.createHover(definition, componentPathWordRange);
+        const componentPathWordRange: Range | undefined = document.getWordRangeAtPosition(position, /[$\w.]+/);
+        if ( componentPathWordRange ) {
+            const componentPathWord: string = document.getText(componentPathWordRange);
+            const componentPathWordPrefix: string = documentPositionStateContext.sanitizedDocumentText.slice(0, document.offsetAt(componentPathWordRange.start));
+            const startSigPositionPrefix = `${componentPathWordPrefix}${componentPathWord}(`;
+            const objectNewInstanceInitPrefixMatch: RegExpExecArray | null = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
+            if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
+                const componentUri: Uri | undefined = cachedComponentPathToUri(componentPathWord, document.uri, _token);
+                if (componentUri) {
+                    const initComponent: Component | undefined = getComponent(componentUri, _token);
+                    if (initComponent) {
+                        const initMethod = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
+                        if (initComponent.functions.has(initMethod)) {
+                            userFunc = initComponent.functions.get(initMethod);
+                            if ( userFunc ) {
+                                definition = this.functionToHoverProviderItem(userFunc);
+                                if ( definition ) {
+                                    return this.createHover(definition, componentPathWordRange);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -156,16 +166,18 @@ export default class CFMLHoverProvider implements HoverProvider {
         // Global tag attributes
         if (!positionIsCfScript || userEngine.supportsScriptTags()) {
             const cfTagAttributePattern: RegExp = positionIsCfScript ? getCfScriptTagAttributePattern() : getCfTagAttributePattern();
-            const cfTagAttributeMatch: RegExpExecArray = cfTagAttributePattern.exec(docPrefix);
+            const cfTagAttributeMatch: RegExpExecArray | null = cfTagAttributePattern.exec(docPrefix);
             if (cfTagAttributeMatch) {
                 const ignoredTags: string[] = expressionCfmlTags;
                 const tagName: string = cfTagAttributeMatch[2];
-                const globalTag: GlobalTag = getGlobalTag(tagName);
-                const attributeValueMatch: RegExpExecArray = VALUE_PATTERN.exec(docPrefix);
-                if (globalTag && !ignoredTags.includes(globalTag.name) && !attributeValueMatch) {
+                const globalTag: GlobalTag | undefined = getGlobalTag(tagName);
+                const attributeValueMatch: RegExpExecArray | null = VALUE_PATTERN.exec(docPrefix);
+                if (globalTag && globalTag.name && !ignoredTags.includes(globalTag.name) && !attributeValueMatch) {
                     // TODO: Check valid attribute before calling createHover
                     definition = this.attributeToHoverProviderItem(globalTag, currentWord);
-                    return this.createHover(definition);
+                    if ( definition ) {
+                        return this.createHover(definition);
+                    }
                 }
             }
         }
@@ -176,21 +188,23 @@ export default class CFMLHoverProvider implements HoverProvider {
         const htmlHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover.html", document.uri);
         if (isCfmFile(document, _token) && htmlHoverSettings.get<boolean>("enable", true) && tagPrefixPattern.test(docPrefix) && isKnownHTMLTag(lowerCurrentWord)) {
             definition = this.htmlTagToHoverProviderItem(getHTMLTag(lowerCurrentWord));
-            return this.createHover(definition);
+            if (definition) {
+                return this.createHover(definition);
+            }
         }
 
         // CSS
         const cssHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover.css", document.uri);
-        const cssRanges: Range[] = getCssRanges(documentPositionStateContext, undefined, _token);
+        const cssRanges: ( Range | undefined )[] = getCssRanges(documentPositionStateContext, undefined, _token);
         if (cssHoverSettings.get<boolean>("enable", true)) {
             for (const cssRange of cssRanges) {
-                if (!cssRange.contains(position)) {
+                if (!cssRange || !cssRange.contains(position)) {
                     continue;
                 }
 
                 const rangeTextOffset: number = document.offsetAt(cssRange.start);
                 const rangeText: string = documentPositionStateContext.sanitizedDocumentText.slice(rangeTextOffset, document.offsetAt(cssRange.end));
-                let propertyMatch: RegExpExecArray;
+                let propertyMatch: RegExpExecArray | null = null;
                 // eslint-disable-next-line no-cond-assign
                 while (propertyMatch = cssPropertyPattern.exec(rangeText)) {
                     const propertyName: string = propertyMatch[2];
@@ -201,16 +215,19 @@ export default class CFMLHoverProvider implements HoverProvider {
                     );
 
                     if (propertyRange.contains(position) && cssDataManager.isKnownProperty(propertyName)) {
-                        definition = this.cssPropertyToHoverProviderItem(cssDataManager.getProperty(propertyName));
-                        return this.createHover(definition, propertyRange);
+                        const property: IPropertyData | undefined = cssDataManager.getProperty(propertyName);
+                        if ( property ) {
+                            definition = this.cssPropertyToHoverProviderItem(property);
+                            return this.createHover(definition, propertyRange);
+                        }
                     }
                 }
 
-                const cssWordRange: Range = document.getWordRangeAtPosition(position, cssWordRegex);
+                const cssWordRange: Range | undefined = document.getWordRangeAtPosition(position, cssWordRegex);
                 const currentCssWord: string = cssWordRange ? document.getText(cssWordRange) : "";
 
                 if (currentCssWord.startsWith("@")) {
-                    const cssAtDir: IAtDirectiveData = cssDataManager.getAtDirective(currentCssWord);
+                    const cssAtDir: IAtDirectiveData | undefined = cssDataManager.getAtDirective(currentCssWord);
                     if (cssAtDir) {
                         definition = this.cssAtDirectiveToHoverProviderItem(cssAtDir);
                         return this.createHover(definition, cssWordRange);
@@ -228,9 +245,13 @@ export default class CFMLHoverProvider implements HoverProvider {
      * @param isScript Whether this is a script tag
      * @returns
      */
-    public globalTagToHoverProviderItem(tag: GlobalTag, isScript: boolean = false): HoverProviderItem {
+    public globalTagToHoverProviderItem(tag: GlobalTag| undefined, isScript: boolean = false): HoverProviderItem | undefined {
         const paramArr: Parameter[] = [];
         const paramNames = new MySet<string>();
+
+        if (!tag) {
+            return undefined;
+        }
 
         tag.signatures.forEach((sig: Signature) => {
             sig.parameters.forEach((param: Parameter) => {
@@ -253,7 +274,7 @@ export default class CFMLHoverProvider implements HoverProvider {
             language: LANGUAGE_ID
         };
 
-        const globalEntity: CFDocsDefinitionInfo = getGlobalEntityDefinition(tag.name);
+        const globalEntity: CFDocsDefinitionInfo | undefined = getGlobalEntityDefinition(tag.name);
         if (globalEntity && globalEntity.engines) {
             hoverItem.engineLinks = new MyMap();
             const cfmlEngineNames: CFMLEngineName[] = [
@@ -298,7 +319,7 @@ export default class CFMLHoverProvider implements HoverProvider {
             });
         });
 
-        let returnType: string;
+        let returnType: string | undefined;
         if ("returnTypeUri" in func) {
             const userFunction: UserFunction = func as UserFunction;
             if (userFunction.returnTypeUri) {
@@ -321,13 +342,13 @@ export default class CFMLHoverProvider implements HoverProvider {
             returnType: returnType
         };
 
-        if (isGlobalFunction(func.name)) {
+        if (func.name && isGlobalFunction(func.name)) {
             const globalFunc = func as GlobalFunction;
             // TODO: Use constructed syntax string instead. Indicate overloads/multiple signatures
             hoverItem.syntax = globalFunc.syntax + ": " + returnType;
             hoverItem.genericDocLink = cfDocsLinkPrefix + globalFunc.name;
 
-            const globalEntity: CFDocsDefinitionInfo = getGlobalEntityDefinition(globalFunc.name);
+            const globalEntity: CFDocsDefinitionInfo | undefined = getGlobalEntityDefinition(globalFunc.name);
             if (globalEntity && globalEntity.engines) {
                 hoverItem.engineLinks = new MyMap();
                 const cfmlEngineNames: CFMLEngineName[] = [
@@ -361,8 +382,8 @@ export default class CFMLHoverProvider implements HoverProvider {
      * @param attributeName Global tag attribute name to convert
      * @returns
      */
-    public attributeToHoverProviderItem(tag: GlobalTag, attributeName: string): HoverProviderItem {
-        let attribute: Parameter;
+    public attributeToHoverProviderItem(tag: GlobalTag, attributeName: string): HoverProviderItem | undefined {
+        let attribute: Parameter | undefined;
 
         tag.signatures.forEach((sig: Signature) => {
             attribute = sig.parameters.find((param: Parameter) => {
@@ -389,7 +410,10 @@ export default class CFMLHoverProvider implements HoverProvider {
      * @param htmlTag HTML tag to convert
      * @returns
      */
-    public htmlTagToHoverProviderItem(htmlTag: HTMLTagData): HoverProviderItem {
+    public htmlTagToHoverProviderItem(htmlTag: HTMLTagData | undefined): HoverProviderItem | undefined {
+        if (!htmlTag) {
+            return undefined;
+        }
         const hoverItem: HoverProviderItem = {
             name: htmlTag.name,
             syntax: `<${htmlTag.name}>`,
@@ -453,7 +477,7 @@ export default class CFMLHoverProvider implements HoverProvider {
      * @param range An optional range to which this hover applies
      * @returns
      */
-    public createHover(definition: HoverProviderItem, range?: Range): Hover {
+    public createHover(definition: HoverProviderItem, range?: Range): Hover | undefined {
         if (!definition) {
             throw new Error("Definition not found");
         }
@@ -462,7 +486,13 @@ export default class CFMLHoverProvider implements HoverProvider {
             throw new Error("Invalid definition format");
         }
 
-        return new Hover(this.createHoverText(definition), range);
+        const hoverText: MarkdownString[] | undefined = this.createHoverText(definition);
+
+        if ( hoverText ) {
+            return new Hover(hoverText, range);
+        } else {
+            return undefined;
+        }
     }
 
     /**
@@ -470,7 +500,7 @@ export default class CFMLHoverProvider implements HoverProvider {
      * @param definition The symbol definition information
      * @returns
      */
-    public createHoverText(definition: HoverProviderItem): MarkdownString[] {
+    public createHoverText(definition: HoverProviderItem): MarkdownString[] | undefined {
         const cfdocsIconUri: Uri = Uri.file(extensionContext.asAbsolutePath("images/cfdocs.png"));
         const mdnIconUri: Uri = Uri.file(extensionContext.asAbsolutePath("images/mdn.png"));
 
@@ -527,7 +557,7 @@ export default class CFMLHoverProvider implements HoverProvider {
             hoverTexts.push(new MarkdownString(docLinks));
         }
 
-        const paramList: Parameter[] = definition.params;
+        const paramList: Parameter[] | undefined = definition.params;
         if (paramList && paramList.length > 0) {
             hoverTexts.push(this.paramsMarkdownPreview(paramList));
         }

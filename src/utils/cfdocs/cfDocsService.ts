@@ -26,16 +26,21 @@ export default class CFDocsService {
    * @param identifier The global identifier for which to get definition info
    * @returns
    */
-  private static async getLocalDefinitionInfo(identifier: string): Promise<CFDocsDefinitionInfo> {
+  private static async getLocalDefinitionInfo(identifier: string): Promise<CFDocsDefinitionInfo | undefined> {
     const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
     const jsonFileName = CFDocsService.getJsonFileName(identifier);
     try {
-      const cfdocsPath: Uri = Uri.file(cfmlCfDocsSettings.get("localPath"));
-      const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
-      const readData = await workspace.fs.readFile(docFilePath);
-      const readStr = Buffer.from(readData).toString("utf8");
-      const readJson = JSON.parse(readStr);
-      return CFDocsService.constructDefinitionFromJsonDoc(readJson);
+      const localPath: string | undefined = cfmlCfDocsSettings.get("localPath");
+      const cfdocsPath: Uri | undefined = localPath ? Uri.file(localPath) : undefined;
+      const docFilePath: Uri | undefined = cfdocsPath ? Uri.joinPath(cfdocsPath, jsonFileName) : undefined;
+      const readData: Uint8Array | undefined = docFilePath ? await workspace.fs.readFile(docFilePath) : undefined;
+      const readStr: string | undefined = readData ? Buffer.from(readData).toString("utf8") : undefined;
+      if ( readStr ) {
+        const readJson = JSON.parse(readStr);
+        return CFDocsService.constructDefinitionFromJsonDoc(readJson);
+      } else {
+        return undefined;
+      }
     } catch (e) {
       console.log(`Error with the JSON doc for ${identifier}:`, (<Error>e).message);
       throw e;
@@ -112,23 +117,48 @@ export default class CFDocsService {
     try {
       if (source === CFDocsSource.local && env.appHost === "desktop") {
         const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
-        const cfdocsPath: Uri = Uri.file(cfmlCfDocsSettings.get("localPath"));
-        const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
-        const readData = await workspace.fs.readFile(docFilePath);
-        const readStr = Buffer.from(readData).toString("utf8");
-        const readJson = JSON.parse(readStr) as CFDocsDefinitionInfo;
-        return readJson.related;
+        const localPath: string | undefined = cfmlCfDocsSettings.get("localPath");
+        const cfdocsPath: Uri | undefined = localPath ? Uri.file(localPath) : undefined;
+        const docFilePath: Uri | undefined = cfdocsPath ? Uri.joinPath(cfdocsPath, jsonFileName) : undefined;
+        const readData: Uint8Array | undefined = docFilePath ? await workspace.fs.readFile(docFilePath) : undefined;
+        const readStr: string | undefined = readData ? Buffer.from(readData).toString("utf8") : undefined;
+        if ( readStr ) {
+            const readJson = JSON.parse(readStr) as CFDocsDefinitionInfo;
+            if ( readJson.related ) {
+                return readJson.related;
+            } else {
+                return [];
+            }
+        } else {
+            return [];
+        }
       } else if (source === CFDocsSource.extension) {
         const extensionPathUri: Uri = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/en/" + jsonFileName));
         const readData = await workspace.fs.readFile(extensionPathUri);
         const readStr = Buffer.from(readData).toString("utf8");
-        const readJson = JSON.parse(readStr) as CFDocsDefinitionInfo;
-        return readJson.related;
+        if ( readStr ) {
+            const readJson = JSON.parse(readStr) as CFDocsDefinitionInfo;
+            if ( readJson.related ) {
+                return readJson.related;
+            } else {
+                return [];
+            }
+        } else {
+            return [];
+        }
       } else {
         const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
         const response = await fetch(cfDocsLink);
-        const data = await response.json() as CFDocsDefinitionInfo;
-        return data.related;
+        if ( response ) {
+            const data = await response.json() as CFDocsDefinitionInfo;
+            if ( data.related ) {
+                return data.related;
+            } else {
+                return [];
+            }
+        } else {
+            return [];
+        }
       }
     } catch (ex) {
       console.log("Error retrieving all function names:", (<Error>ex).message);
@@ -147,23 +177,45 @@ export default class CFDocsService {
     try {
       if (source === CFDocsSource.local && env.appHost === "desktop") {
         const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
-        const cfdocsPath: Uri = Uri.file(cfmlCfDocsSettings.get("localPath"));
-        const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
-        const readData = await workspace.fs.readFile(docFilePath);
-        const readStr = Buffer.from(readData).toString("utf8");
-        const readJson = JSON.parse(readStr) as CFDocsDefinitionInfo;
-        return readJson.related;
+        const localPath: string | undefined = cfmlCfDocsSettings.get("localPath");
+        const cfdocsPath: Uri | undefined = localPath ? Uri.file(localPath) : undefined;
+        const docFilePath: Uri | undefined = cfdocsPath ? Uri.joinPath(cfdocsPath, jsonFileName) : undefined;
+        const readData: Uint8Array | undefined = docFilePath ? await workspace.fs.readFile(docFilePath) : undefined;
+        const readStr: string | undefined = readData ? Buffer.from(readData).toString("utf8") : undefined;
+        if ( readStr ) {
+            const readJson: CFDocsDefinitionInfo = JSON.parse(readStr) as CFDocsDefinitionInfo;
+            if ( readJson.related ) {
+                return readJson.related;
+            } else {
+                return [];
+            }
+        } else {
+            return [];
+        }
       } else if (source === CFDocsSource.extension) {
         const extensionPathUri: Uri = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/en/" + jsonFileName));
-        const readData = await workspace.fs.readFile(extensionPathUri);
-        const readStr = Buffer.from(readData).toString("utf8");
-        const readJson = JSON.parse(readStr) as CFDocsDefinitionInfo;
-        return readJson.related;
+        const readData: Uint8Array | undefined = await workspace.fs.readFile(extensionPathUri);
+        const readStr: string | undefined = Buffer.from(readData).toString("utf8");
+
+        if ( readStr ) {
+            const readJson: CFDocsDefinitionInfo = JSON.parse(readStr) as CFDocsDefinitionInfo;
+            if ( readJson.related ) {
+                return readJson.related;
+            } else {
+                return [];
+            }
+        } else {
+            return [];
+        }
       } else {
         const cfDocsLink: string = CFDocsService.cfDocsRepoLinkPrefix + jsonFileName;
-        const response = await fetch(cfDocsLink);
-        const data = await response.json() as CFDocsDefinitionInfo;
-        return data.related;
+        const response: Response = await fetch(cfDocsLink);
+        const data: CFDocsDefinitionInfo = await response.json() as CFDocsDefinitionInfo;
+        if ( data.related ) {
+            return data.related;
+        } else {
+            return [];
+        }
       }
     } catch (ex) {
       console.log("Error retrieving all tag names:", (<Error>ex).message);
@@ -239,8 +291,10 @@ export default class CFDocsService {
     const allFunctionNames: string[] = await CFDocsService.getAllFunctionNames(cfdocsSource);
 
     await Promise.all(allFunctionNames.map(async (functionName: string) => {
-        const definitionInfo: CFDocsDefinitionInfo = await getDefinitionInfo(functionName);
-        CFDocsService.setGlobalFunction(definitionInfo);
+        const definitionInfo: CFDocsDefinitionInfo | undefined = await getDefinitionInfo(functionName);
+        if ( definitionInfo ) {
+            CFDocsService.setGlobalFunction(definitionInfo);
+        }
     }));
 
     /* CFDocsService.getAllMemberFunctionNames(cfdocsSource).then((allMemberFunctionNames: string[]) => {
@@ -254,8 +308,10 @@ export default class CFDocsService {
     const allTagNames: string[] = await CFDocsService.getAllTagNames(cfdocsSource);
 
     await Promise.all(allTagNames.map(async (tagName: string) => {
-        const definitionInfo: CFDocsDefinitionInfo = await getDefinitionInfo(tagName);
-        CFDocsService.setGlobalTag(definitionInfo);
+        const definitionInfo: CFDocsDefinitionInfo | undefined = await getDefinitionInfo(tagName);
+        if ( definitionInfo ) {
+            CFDocsService.setGlobalTag(definitionInfo);
+        }
     }));
 
     return true;
@@ -287,7 +343,7 @@ export default class CFDocsService {
 
     const currentWord: string = documentPositionStateContext.currentWord;
 
-    let globalEntity: GlobalEntity;
+    let globalEntity: GlobalEntity | undefined;
     const tagPrefixPattern: RegExp = getTagPrefixPattern();
     const functionSuffixPattern: RegExp = getFunctionSuffixPattern();
 
@@ -335,7 +391,7 @@ export default class CFDocsService {
 
     const currentWord: string = documentPositionStateContext.currentWord;
 
-    let globalEntity: CFDocsDefinitionInfo;
+    let globalEntity: CFDocsDefinitionInfo | undefined;
     const tagPrefixPattern: RegExp = getTagPrefixPattern();
     const functionSuffixPattern: RegExp = getFunctionSuffixPattern();
 

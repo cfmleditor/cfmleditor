@@ -5,8 +5,8 @@ import { Argument } from "./userFunction";
 
 export interface Parameter {
   name: string;
-  description: string;
-  type: string;
+  description: string | undefined;
+  type: string | undefined;
   dataType: DataType;
   required: boolean;
   default?: string;

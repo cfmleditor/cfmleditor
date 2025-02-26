@@ -18,7 +18,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
      * @returns
      */
 
-    public async provideTypeDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<Definition> {
+    public async provideTypeDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<Definition | null> {
         // console.log("provideTypeDefinition:CFMLTypeDefinitionProvider:" + _token?.isCancellationRequested);
 
         const results: Definition = [];
@@ -34,7 +34,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 
         const docIsCfcFile: boolean = documentPositionStateContext.isCfcFile;
         const docIsCfmFile: boolean = documentPositionStateContext.isCfmFile;
-        let wordRange: Range = document.getWordRangeAtPosition(position);
+        let wordRange: Range | undefined = document.getWordRangeAtPosition(position);
         const currentWord: string = documentPositionStateContext.currentWord;
         const lowerCurrentWord: string = currentWord.toLowerCase();
         if (!wordRange) {
@@ -44,7 +44,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
         const docPrefix: string = documentPositionStateContext.docPrefix;
 
         if (docIsCfcFile) {
-            const thisComponent: Component = documentPositionStateContext.component;
+            const thisComponent: Component | undefined = documentPositionStateContext.component;
             if (thisComponent) {
                 // Component functions (related)
                 for (const [, func] of thisComponent.functions) {
@@ -55,7 +55,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                         })
 
                         signatureparameters.map((arg: Argument) => {
-                            const argTypeComp: Component = getComponent(arg.dataTypeComponentUri, _token);
+                            const argTypeComp: Component | undefined = getComponent(arg.dataTypeComponentUri, _token);
                             if (argTypeComp) {
                                 results.push(new Location(
                                     argTypeComp.uri,
@@ -71,10 +71,14 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                         const localVarPrefixPattern = getValidScopesPrefixPattern([Scope.Local], true);
                         if (localVarPrefixPattern.test(docPrefix)) {
                             const localVariablesfiltered = localVariables.filter((localVar: Variable) => {
-                                return position.isAfterOrEqual(localVar.declarationLocation.range.start) && equalsIgnoreCase(localVar.identifier, currentWord) && localVar.dataTypeComponentUri;
+                                if ( localVar.declarationLocation ) {
+                                    return position.isAfterOrEqual(localVar.declarationLocation.range.start) && equalsIgnoreCase(localVar.identifier, currentWord) && localVar.dataTypeComponentUri;
+                                } else {
+                                    return false;
+                                }
                             });
                             localVariablesfiltered.map((localVar: Variable) => {
-                                const localVarTypeComp: Component = getComponent(localVar.dataTypeComponentUri, _token);
+                                const localVarTypeComp: Component | undefined = getComponent(localVar.dataTypeComponentUri, _token);
                                 if (localVarTypeComp) {
                                     results.push(new Location(
                                         localVarTypeComp.uri,
@@ -93,7 +97,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                                         return equalsIgnoreCase(arg.name, currentWord) && arg.dataTypeComponentUri;
                                     });
                                     signatureparameters.map((arg: Argument) => {
-                                        const argTypeComp: Component = getComponent(arg.dataTypeComponentUri, _token);
+                                        const argTypeComp: Component | undefined = getComponent(arg.dataTypeComponentUri, _token);
                                         if (argTypeComp) {
                                             results.push(new Location(
                                                 argTypeComp.uri,
@@ -109,11 +113,15 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 
                 // Component properties (declarations)
                 const thisComponentproperties = thisComponent.properties.filter((prop: Property) => {
-                    return prop.dataTypeComponentUri !== undefined && prop.nameRange.contains(position);
+                    if ( prop.nameRange ) {
+                        return prop.dataTypeComponentUri !== undefined && prop.nameRange.contains(position);
+                    } else {
+                        return false;
+                    }
                 })
 
                 for (const [, prop] of thisComponentproperties) {
-                    const propTypeComp: Component = getComponent(prop.dataTypeComponentUri, _token);
+                    const propTypeComp: Component | undefined = getComponent(prop.dataTypeComponentUri, _token);
                     if (propTypeComp) {
                         results.push(new Location(
                             propTypeComp.uri,
@@ -130,7 +138,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                         return equalsIgnoreCase(variable.identifier, currentWord) && variable.dataTypeComponentUri;
                     });
                     thisComponentvariables.map((variable: Variable) => {
-                        const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
+                        const varTypeComp: Component | undefined = getComponent(variable.dataTypeComponentUri, _token);
                         if (varTypeComp) {
                             results.push(new Location(
                                 varTypeComp.uri,
@@ -143,7 +151,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
         } else if (docIsCfmFile) {
             const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, undefined, _token);
             const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
-            const variableScopePrefixMatch: RegExpExecArray = variableScopePrefixPattern.exec(docPrefix);
+            const variableScopePrefixMatch: RegExpExecArray | null = variableScopePrefixPattern.exec(docPrefix);
             if (variableScopePrefixMatch) {
                 const validScope: string = variableScopePrefixMatch[1];
                 let currentScope: Scope;
@@ -164,7 +172,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
                 });
 
                 docVariableAssignmentsfiltered.map((variable: Variable) => {
-                    const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
+                    const varTypeComp: Component | undefined  = getComponent(variable.dataTypeComponentUri, _token);
                     if (varTypeComp) {
                         results.push(new Location(
                             varTypeComp.uri,
@@ -176,9 +184,9 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
         }
 
         // User functions
-        const externalUserFunc: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
+        const externalUserFunc: UserFunction | undefined  = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
         if (externalUserFunc && externalUserFunc.returnTypeUri) {
-            const returnTypeComponent: Component = getComponent(externalUserFunc.returnTypeUri, _token);
+            const returnTypeComponent: Component | undefined  = getComponent(externalUserFunc.returnTypeUri, _token);
             if (returnTypeComponent) {
                 results.push(new Location(
                     returnTypeComponent.uri,
@@ -189,7 +197,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 
         // Application variables
         const applicationVariablesPrefixPattern = getValidScopesPrefixPattern([Scope.Application, Scope.Session, Scope.Request], false);
-        const variableScopePrefixMatch: RegExpExecArray = applicationVariablesPrefixPattern.exec(docPrefix);
+        const variableScopePrefixMatch: RegExpExecArray | null = applicationVariablesPrefixPattern.exec(docPrefix);
         if (variableScopePrefixMatch) {
             const currentScope: string = Scope.valueOf(variableScopePrefixMatch[1]);
 
@@ -199,7 +207,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
             });
 
             applicationDocVariablesfiltered.map((variable: Variable) => {
-                const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
+                const varTypeComp: Component | undefined  = getComponent(variable.dataTypeComponentUri, _token);
                 if (varTypeComp) {
                     results.push(new Location(
                         varTypeComp.uri,
@@ -218,7 +226,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
             });
 
             serverDocVariablesfiltered.map((variable: Variable) => {
-                const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
+                const varTypeComp: Component | undefined = getComponent(variable.dataTypeComponentUri, _token);
                 if (varTypeComp) {
                     results.push(new Location(
                         varTypeComp.uri,

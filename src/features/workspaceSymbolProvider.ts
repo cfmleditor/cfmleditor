@@ -20,13 +20,13 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
 
         // console.log("provideWorkspaceSymbols:CFMLWorkspaceSymbolProvider:" + _token?.isCancellationRequested);
 
-        let workspaceSymbols: SymbolInformation[] = [];
+        const workspaceSymbols: SymbolInformation[] = [];
         if (query === "") {
             return workspaceSymbols;
         }
 
-        let uri: Uri | undefined = undefined;
-        const editor: TextEditor = window.activeTextEditor;
+        let uri: Uri | undefined;
+        const editor: TextEditor | undefined = window.activeTextEditor;
         if (editor) {
             const document: TextDocument = editor.document;
             if (document && (document.languageId === LANGUAGE_ID || document.languageId === LANGUAGE_CFS_ID)) {
@@ -49,28 +49,32 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
 
         const userFunctions: UserFunction[] = searchAllFunctionNames(query);
 
-        workspaceSymbols = workspaceSymbols.concat(
-            userFunctions.map((userFunction: UserFunction) => {
-                return new SymbolInformation(
-                    userFunction.name + "()",
-                    equalsIgnoreCase(userFunction.name, "init") ? SymbolKind.Constructor : SymbolKind.Function,
-                    uriBaseName(userFunction.location.uri, COMPONENT_EXT),
-                    userFunction.location
-                );
+        // workspaceSymbols = workspaceSymbols.concat(
+            userFunctions.forEach((userFunction: UserFunction) => {
+                if ( userFunction.name && userFunction.location ) {
+                    const symbol: SymbolInformation = new SymbolInformation(
+                        userFunction.name + "()",
+                        equalsIgnoreCase(userFunction.name, "init") ? SymbolKind.Constructor : SymbolKind.Function,
+                        uriBaseName(userFunction.location.uri, COMPONENT_EXT),
+                        userFunction.location
+                    );
+                    workspaceSymbols.push(symbol);
+                }
             })
-        );
+//        );
 
         const components: Component[] = searchAllComponentNames(query, _token);
-        workspaceSymbols = workspaceSymbols.concat(
-            components.map((component: Component) => {
-                return new SymbolInformation(
+        // workspaceSymbols = workspaceSymbols.concat(
+            components.forEach((component: Component) => {
+                const symbol: SymbolInformation = new SymbolInformation(
                     uriBaseName(component.uri, COMPONENT_EXT),
                     component.isInterface ? SymbolKind.Interface : SymbolKind.Class,
                     "",
                     new Location(component.uri, new Position(0, 0))
                 );
+                workspaceSymbols.push(symbol);
             })
-        );
+        // );
 
         return workspaceSymbols;
     }

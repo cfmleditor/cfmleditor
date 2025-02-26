@@ -33,8 +33,12 @@ export function isKnownTag(name: string): boolean {
  * @param name The tag name
  * @returns
  */
-export function getTag(name: string): ITagData | undefined {
-  return htmlTagMap[name.toLowerCase()];
+export function getTag(name: string | undefined): ITagData | undefined {
+    if ( name ) {
+        return htmlTagMap[name.toLowerCase()];
+    } else {
+        return undefined;
+    }
 }
 
 /**

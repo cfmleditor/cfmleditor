@@ -24,9 +24,8 @@ export async function handleContentChanges(event: TextDocumentChangeEvent): Prom
 
     const languageId = editor.document.languageId;
     const languages = ["cfml"];
-    const disableOnLanguage = [];
 
-    if ((languages.indexOf("*") === -1 && languages.indexOf(languageId) === -1) || disableOnLanguage.indexOf(languageId) !== -1) {
+    if ((languages.indexOf("*") === -1 && languages.indexOf(languageId) === -1)) {
         return;
     }
 
@@ -68,19 +67,21 @@ async function closeTag(contentChange: TextDocumentContentChangeEvent, editor: T
     if (isForwardSlash) {
         const [last2chars, linePreceding] = getPrecedingCharacters(originalPosition, editor);
         if (last2chars === "</") {
-            let closeTag = getCloseTag(linePreceding, nonClosingTags);
+            let closeTag: string = getCloseTag(linePreceding, nonClosingTags) || "";
             if (closeTag) {
                 const nextChar = getNextChar(editor, originalPosition);
                 if (nextChar === ">") {
                     closeTag = closeTag.substr(0, closeTag.length - 1);
                 }
-                await editor.edit((editBuilder: TextEditorEdit) => {
-                    editBuilder.insert(originalPosition, closeTag);
-                }).then(() => {
-                    if (nextChar === ">") {
-                        editor.selection = moveSelectionRight(editor.selection, 1);
-                    }
-                });
+                if ( closeTag ) {
+                    await editor.edit((editBuilder: TextEditorEdit) => {
+                        editBuilder.insert(originalPosition, closeTag);
+                    }).then(() => {
+                        if (nextChar === ">") {
+                            editor.selection = moveSelectionRight(editor.selection, 1);
+                        }
+                    });
+                }
             }
         }
     }
@@ -169,7 +170,7 @@ const TAG_RE = /<(\/?[a-zA-Z][a-zA-Z0-9:_.-]*)(?![\s\S]*<\/?[a-zA-Z])/;
  * @description Gets the closing tag for the given text.
  * @returns
  */
-function getCloseTag(text: string, excludedTags: string[]): string {
+function getCloseTag(text: string, excludedTags: string[]): string | null {
     const s = text[text.length - 1] === "/" && text[text.length - 2] === "<" ? text.slice(0, -2) : text[text.length - 1] === "<" ? text.slice(0, -1) : text;
     let m = s.match(TAG_RE);
     // while we catch a closing tag, we jump directly to the matching opening tag

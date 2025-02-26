@@ -32,7 +32,7 @@ export interface Property {
   description?: string;
   getter?: boolean;
   setter?: boolean;
-  nameRange: Range;
+  nameRange?: Range;
   dataTypeRange?: Range;
   propertyRange: Range;
   default?: string;
@@ -47,11 +47,11 @@ export class Properties extends MyMap<string, Property> { }
  * @param _token
  * @returns
  */
-export async function parseProperties(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<Properties> {
+export async function parseProperties(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<Properties> {
   const properties: Properties = new Properties();
   const document: TextDocument = documentStateContext.document;
   const componentText: string = document.getText();
-  let propertyMatch: RegExpExecArray = null;
+  let propertyMatch: RegExpExecArray | null = null;
   // eslint-disable-next-line no-cond-assign
   while (propertyMatch = propertyPattern.exec(componentText)) {
     const propertyAttributePrefix: string = propertyMatch[1];
@@ -83,7 +83,7 @@ export async function parseProperties(documentStateContext: DocumentStateContext
       for (const docElem of propertyDocBlockParsed) {
         const activeKey: string = docElem.key;
         if (activeKey === "type") {
-          const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
+          const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
           if (dataType) {
             property.dataType = dataType;
             if (dataTypeComponentUri) {
@@ -118,7 +118,7 @@ export async function parseProperties(documentStateContext: DocumentStateContext
           property.name = attr.value;
           property.nameRange = attr.valueRange;
         } else if (attrKey === "type") {
-          const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.getDataTypeAndUri(attr.value, document.uri, _token);
+          const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(attr.value, document.uri, _token);
           if (dataType) {
             property.dataType = dataType;
             if (dataTypeComponentUri) {
@@ -136,13 +136,13 @@ export async function parseProperties(documentStateContext: DocumentStateContext
         }
       }
     } else {
-      const parsedPropertyAttributes: RegExpExecArray = /\s*(\S+)\s+([\w$]+)\s*$/.exec(propertyAttrs);
+      const parsedPropertyAttributes: RegExpExecArray | null = /\s*(\S+)\s+([\w$]+)\s*$/.exec(propertyAttrs);
       if (!parsedPropertyAttributes) {
         continue;
       }
 
       const dataTypeString: string = parsedPropertyAttributes[1];
-      const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.getDataTypeAndUri(dataTypeString, document.uri, _token);
+      const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(dataTypeString, document.uri, _token);
       if (dataType) {
         property.dataType = dataType;
         if (dataTypeComponentUri) {

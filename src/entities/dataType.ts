@@ -207,13 +207,13 @@ export namespace DataType {
    * @param _token
    * @returns
    */
-  export async function getDataTypeAndUri(dataType: string, documentUri: Uri, _token: CancellationToken): Promise<[DataType | null, Uri | null]> {
+  export async function getDataTypeAndUri(dataType: string, documentUri: Uri | undefined, _token: CancellationToken | undefined): Promise<[DataType | undefined, Uri | undefined]> {
     if (!dataType) {
-      return [null, null];
+      return [undefined, undefined];
     }
 
     if (isDataType(dataType)) {
-      return [valueOf(dataType), null];
+      return [valueOf(dataType), undefined];
     } else {
       const typeUri: Uri | undefined = await componentPathToUri(dataType, documentUri, _token);
       if (typeUri) {
@@ -221,7 +221,7 @@ export namespace DataType {
       }
     }
 
-    return [null, null];
+    return [undefined, undefined];
   }
 
   /**
@@ -231,63 +231,63 @@ export namespace DataType {
    * @param _token
    * @returns
    */
-  export async function inferDataTypeFromValue(value: string | undefined, documentUri: Uri, _token: CancellationToken): Promise<[DataType, Uri | null]> {
+  export async function inferDataTypeFromValue(value: string | undefined, documentUri: Uri, _token: CancellationToken | undefined): Promise<[DataType, Uri | undefined]> {
     if (typeof value === "undefined" || value.length === 0) {
-      return [DataType.String, null];
+      return [DataType.String, undefined];
     }
 
     if (/^(['"])?(false|true|no|yes)\1$/i.test(value)) {
-      return [DataType.Boolean, null];
+      return [DataType.Boolean, undefined];
     }
 
     if (isNumeric(value)) {
-      return [DataType.Numeric, null];
+      return [DataType.Numeric, undefined];
     }
 
     if (/^(["'])(?!#)/.test(value)) {
-      return [DataType.String, null];
+      return [DataType.String, undefined];
     }
 
     if (functionValuePattern.test(value)) {
-      return [DataType.Function, null];
+      return [DataType.Function, undefined];
     }
 
     if (/^(?:["']\s*#\s*)?(arrayNew\(|\[)/i.test(value)) {
-      return [DataType.Array, null];
+      return [DataType.Array, undefined];
     }
 
     if (queryValuePattern.test(value)) {
-      return [DataType.Query, null];
+      return [DataType.Query, undefined];
     }
 
     if (/^(?:["']\s*#\s*)?(structNew\(|\{)/i.test(value)) {
-      return [DataType.Struct, null];
+      return [DataType.Struct, undefined];
     }
 
     if (/^(?:["']\s*#\s*)?(createDate(Time)?\()/i.test(value)) {
-      return [DataType.Date, null];
+      return [DataType.Date, undefined];
     }
 
     const objectMatch1 = /^(?:["']\s*#\s*)?(createObject\((["'])component\2\s*,\s*(["'])([^'"]+)\3)/i.exec(value);
     if (objectMatch1) {
-      const [dataType, uri]: [DataType | null, Uri | null] = await getDataTypeAndUri(objectMatch1[4], documentUri, _token);
+      const [dataType, uri]: [DataType | undefined, Uri | undefined] = await getDataTypeAndUri(objectMatch1[4], documentUri, _token);
       if (dataType) {
         return [dataType, uri];
       }
-      return [DataType.Component, null];
+      return [DataType.Component, undefined];
     }
 
     const objectMatch2 = /^(?:["']\s*#\s*)?(new\s+(["'])?([^\s'"(]+)\2\()/i.exec(value);
     if (objectMatch2) {
-      const [dataType, uri]: [DataType | null, Uri | null] = await getDataTypeAndUri(objectMatch2[3], documentUri, _token);
+      const [dataType, uri]: [DataType | undefined, Uri | undefined] = await getDataTypeAndUri(objectMatch2[3], documentUri, _token);
       if (dataType) {
         return [dataType, uri];
       }
-      return [DataType.Component, null];
+      return [DataType.Component, undefined];
     }
 
     // TODO: Check against functions and use its return type
 
-    return [DataType.Any, null];
+    return [DataType.Any, undefined];
   }
 }

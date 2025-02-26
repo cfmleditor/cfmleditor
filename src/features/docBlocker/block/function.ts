@@ -18,18 +18,20 @@ export default class FunctionBlock extends Block {
     const doc = new Doc(DocType.Function, this.document.uri);
 
     const positionOffset: number = this.document.offsetAt(this.position);
-    const patternMatch: RegExpExecArray = this.pattern.exec(this.suffix);
+    const patternMatch: RegExpExecArray | null = this.suffix ? this.pattern.exec(this.suffix) : null;
     if (patternMatch) {
       const declaration: Position = this.document.positionAt(positionOffset + patternMatch[1].length + 1);
-      this.component.functions.filter((func: UserFunction) => {
-        return func.location.range.contains(declaration);
-      }).forEach((func: UserFunction) => {
-        func.signatures.forEach((sig: UserFunctionSignature) => {
-          sig.parameters.forEach((arg: Argument) => {
-            doc.params.push(arg.name);
-          });
+      if ( this.component ) {
+        this.component.functions.filter((func: UserFunction) => {
+            return func.location ? func.location.range.contains(declaration) : false;
+        }).forEach((func: UserFunction) => {
+            func.signatures.forEach((sig: UserFunctionSignature) => {
+            sig.parameters.forEach((arg: Argument) => {
+                doc.params.push(arg.name);
+            });
+            });
         });
-      });
+      }
     }
 
     return doc;

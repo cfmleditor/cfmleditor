@@ -51,7 +51,7 @@ let bulkCaching: boolean = false;
  * @param target A string representing a configuration target
  * @returns ConfigurationTarget
  */
-export function getConfigurationTarget(target: string): ConfigurationTarget {
+export function getConfigurationTarget(target: string | undefined): ConfigurationTarget {
     let configTarget: ConfigurationTarget;
     switch (target) {
         case "Global":
@@ -253,11 +253,11 @@ export function activate(context: ExtensionContext): object {
     const enableAutoCloseTags: boolean = cfmlSettings.get<boolean>("autoCloseTags.enable", true);
     if (autoCloseTagExt) {
         const autoCloseTagsSettings: WorkspaceConfiguration = workspace.getConfiguration("auto-close-tag", null);
-        const autoCloseLanguages: string[] = autoCloseTagsSettings.get<string[]>("activationOnLanguage");
-        const autoCloseExcludedTags: string[] = autoCloseTagsSettings.get<string[]>("excludedTags");
+        const autoCloseLanguages: string[] | undefined = autoCloseTagsSettings.get<string[]>("activationOnLanguage");
+        const autoCloseExcludedTags: string[] | undefined = autoCloseTagsSettings.get<string[]>("excludedTags");
 
         if (enableAutoCloseTags) {
-            if (!autoCloseLanguages.includes(LANGUAGE_ID)) {
+            if (autoCloseLanguages && !autoCloseLanguages.includes(LANGUAGE_ID)) {
                 autoCloseLanguages.push(LANGUAGE_ID);
                 autoCloseTagsSettings.update(
                     "activationOnLanguage",
@@ -268,9 +268,11 @@ export function activate(context: ExtensionContext): object {
 
             nonClosingTags.filter((tagName: string) => {
                 // Consider ignoring case
-                return !autoCloseExcludedTags.includes(tagName);
+                return !autoCloseExcludedTags || !autoCloseExcludedTags.includes(tagName);
             }).forEach((tagName: string) => {
-                autoCloseExcludedTags.push(tagName);
+                if ( autoCloseExcludedTags ) {
+                    autoCloseExcludedTags.push(tagName);
+                }
             });
             autoCloseTagsSettings.update(
                 "excludedTags",
@@ -278,8 +280,8 @@ export function activate(context: ExtensionContext): object {
                 getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget"))
             );
         } else {
-            const index: number = autoCloseLanguages.indexOf(LANGUAGE_ID);
-            if (index !== -1) {
+            const index: number = autoCloseLanguages ? autoCloseLanguages.indexOf(LANGUAGE_ID) : -1;
+            if (autoCloseLanguages && index !== -1) {
                 autoCloseLanguages.splice(index, 1);
                 autoCloseTagsSettings.update(
                     "activationOnLanguage",

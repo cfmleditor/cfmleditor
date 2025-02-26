@@ -31,9 +31,9 @@ function getEntryStatus(status: EntryStatus): string {
  * @param entry A CSS entry object
  * @returns
  */
-export function getEntryDescription(entry: IEntry): string | null {
+export function getEntryDescription(entry: IEntry): string | undefined {
   if (!entry.description || entry.description === "") {
-    return null;
+    return undefined;
   }
 
   let result: string = "";
@@ -100,10 +100,10 @@ export function getBrowserLabel(browsers: string[] = []): string | null {
 			let result = '';
 			const matches = b.match(/([A-Z]+)(\d+)?/);
 
-			const name = matches[1];
-			const version = matches[2];
+			const name = matches ? matches[1] : undefined;
+			const version = matches ? matches[2] : undefined;
 
-			if (name in browserNames) {
+			if (name && name in browserNames) {
 				result += browserNames[name as keyof typeof browserNames];
 			}
 			if (version) {

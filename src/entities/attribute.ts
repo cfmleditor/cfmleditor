@@ -8,7 +8,7 @@ export interface Attribute {
   name: string; // lowercased
   value: string;
   // range: Range;
-  valueRange: Range;
+  valueRange: Range | undefined;
 }
 
 export enum IncludeAttributesSetType {
@@ -50,7 +50,7 @@ export function getAttributePattern(attributeName: string): RegExp {
 export function parseAttributes(document: TextDocument, attributeRange: Range, validAttributeNames?: MySet<string>): Attributes {
   const attributeStr: string = document.getText(attributeRange);
   const attributes: Attributes = new Attributes();
-  let attributeMatch: RegExpExecArray = null;
+  let attributeMatch: RegExpExecArray | null = null;
   // eslint-disable-next-line no-cond-assign
   while (attributeMatch = ATTRIBUTES_PATTERN.exec(attributeStr)) {
     const attributeName = attributeMatch[1];
@@ -63,7 +63,7 @@ export function parseAttributes(document: TextDocument, attributeRange: Range, v
     const attributeValue: string = quotedValue !== undefined ? quotedValue : unquotedValue;
 
     let attributeValueOffset: number;
-    let attributeValueRange: Range;
+    let attributeValueRange: Range | undefined;
     if (attributeValue) {
       attributeValueOffset = document.offsetAt(attributeRange.start) + attributeMatch.index + attributeName.length
         + separator.length + (quotedValue !== undefined ? 1 : 0);

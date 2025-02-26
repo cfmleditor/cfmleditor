@@ -65,7 +65,9 @@ export function isGlobalEntity(name: string): boolean {
  * @param functionDefinition The global function object to cache
  */
 export function setGlobalFunction(functionDefinition: GlobalFunction): void {
-    allGlobalFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+    if ( functionDefinition.name ) {
+        allGlobalFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+    }
 }
 
 /**
@@ -97,7 +99,9 @@ export function clearAllGlobalFunctions(): void {
  * @param functionDefinition The global function object to cache
  */
 export function setGlobalMemberFunction(functionDefinition: GlobalMemberFunction): void {
-    allGlobalMemberFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+    if ( functionDefinition.name ) {
+        allGlobalMemberFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+    }
 }
 
 /**
@@ -129,7 +133,9 @@ export function clearAllGlobalMemberFunctions(): void {
  * @param tagDefinition The global tag object to cache
  */
 export function setGlobalTag(tagDefinition: GlobalTag): void {
-    allGlobalTags[tagDefinition.name.toLowerCase()] = tagDefinition;
+    if ( tagDefinition.name ) {
+        allGlobalTags[tagDefinition.name.toLowerCase()] = tagDefinition;
+    }
 }
 
 /**
@@ -173,8 +179,12 @@ export function setGlobalEntityDefinition(definition: CFDocsDefinitionInfo): voi
  * @param name The name of the global definition to be retrieved
  * @returns
  */
-export function getGlobalEntityDefinition(name: string): CFDocsDefinitionInfo | undefined {
-    return allGlobalEntityDefinitions.get(name.toLowerCase());
+export function getGlobalEntityDefinition(name: string | undefined): CFDocsDefinitionInfo | undefined {
+    if ( name ) {
+        return allGlobalEntityDefinitions.get(name.toLowerCase());
+    } else {
+        return undefined;
+    }
 }
 
 /**
@@ -220,7 +230,7 @@ function setComponent(comp: Component): void {
  * @param _token
  * @returns
  */
-export function getComponent(uri: Uri | undefined, _token: CancellationToken | undefined | null): Component | undefined {
+export function getComponent(uri: Uri | undefined, _token: CancellationToken | undefined ): Component | undefined {
     if (!uri || !hasComponent(uri, _token)) {
         /* TODO: If not already cached, attempt to read, parse and cache. Tricky since read is async */
         return undefined;
@@ -236,7 +246,7 @@ export function getComponent(uri: Uri | undefined, _token: CancellationToken | u
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function hasComponent(uri: Uri, _token: CancellationToken | undefined | null): boolean {
+export function hasComponent(uri: Uri, _token: CancellationToken | undefined ): boolean {
     return Object.prototype.hasOwnProperty.call(allComponentsByUri, uri.toString().toLowerCase());
 }
 
@@ -287,8 +297,8 @@ export function searchAllFunctionNames(query: string, _searchMode: SearchMode = 
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken): Uri | undefined {
-    if (!dotPath) {
+export function cachedComponentPathToUri(dotPath: string, baseUri: Uri | undefined, _token: CancellationToken | undefined): Uri | undefined {
+    if (!dotPath || !baseUri) {
         return undefined;
     }
 
@@ -331,7 +341,7 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
  * @param documentStateContext Contextual information for a given document's state
  * @param _token
  */
-export async function cacheComponent(component: Component, documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<void> {
+export async function cacheComponent(component: Component, documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<void> {
     clearCachedComponent(component.uri);
     setComponent(component);
     component.functions.forEach((funcObj: UserFunction) => {
@@ -426,7 +436,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
  * @param _token
  * @returns
  */
-export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken): Promise<void> {
+export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined): Promise<void> {
     const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token);
     const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
     if (!parsedComponent) {
@@ -547,8 +557,8 @@ export function removeApplicationVariables(uri: Uri): boolean {
  * @param uri The URI of the component to be check
  * @returns
  */
-export function getCachedServerVariables(uri: Uri): Variable[] | undefined {
-    return allServerVariables.get(uri.toString());
+export function getCachedServerVariables(uri: Uri): Variable[] {
+    return allServerVariables.get(uri.toString()) || [];
 }
 
 /**

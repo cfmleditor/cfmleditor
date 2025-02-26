@@ -314,7 +314,7 @@ export function getVariableExpressionPrefixPattern() {
  * @param _token
  * @returns
  */
-export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range | undefined, _token: CancellationToken | null | undefined): Promise<Variable[]> {
+export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range | undefined, _token: CancellationToken | undefined): Promise<Variable[]> {
     let variables: Variable[] = [];
     const document: TextDocument = documentStateContext.document;
     const documentUri: Uri = document.uri;
@@ -344,7 +344,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
                         func.signatures.forEach((signature: UserFunctionSignature) => {
                             signature.parameters.forEach((param: Argument) => {
                                 const argName: string = param.name;
-                                if (getMatchingVariables(variables, argName, Scope.Arguments).length === 0) {
+                                if (param.nameRange && getMatchingVariables(variables, argName, Scope.Arguments).length === 0) {
                                     variables.push({
                                         identifier: argName,
                                         dataType: param.dataType,
@@ -385,11 +385,11 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
         }
 
         let paramType: DataType = DataType.Any;
-        let paramTypeComponentUri: Uri | null = null;
+        let paramTypeComponentUri: Uri | undefined;
         if (parsedAttr.has("type") && !!parsedAttr.get("type")?.value) {
             paramType = DataType.paramTypeToDataType(parsedAttr.get("type")?.value);
         } else if (parsedAttr.has("default") && parsedAttr.get("default")?.value !== undefined) {
-            const [dataType, uri]: [DataType | null, Uri | null] = await DataType.inferDataTypeFromValue(parsedAttr.get("default")?.value, documentUri, _token);
+            const [dataType, uri]: [DataType | undefined, Uri | undefined] = await DataType.inferDataTypeFromValue(parsedAttr.get("default")?.value, documentUri, _token);
             paramType = dataType;
             paramTypeComponentUri = uri;
         }
@@ -409,7 +409,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
             scopeVal = Scope.valueOf(scope);
         }
 
-        const varRangeStart: Position | undefined = parsedAttr.get("name")?.valueRange.start.translate(0, varNamePrefixLen);
+        const varRangeStart: Position | undefined = parsedAttr.get("name")?.valueRange?.start.translate(0, varNamePrefixLen);
         const varRange: Range | undefined = varRangeStart ? new Range(
             varRangeStart,
             varRangeStart.translate(0, varName.length)
@@ -484,7 +484,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
         if (scopeVal === Scope.Unknown) {
             scopeVal = Scope.Variables;
         }
-        const [dataType, dataTypeComponentUri]: [DataType, Uri | null] = await DataType.inferDataTypeFromValue(initValue, documentUri, _token);
+        const [dataType, dataTypeComponentUri]: [DataType, Uri | undefined] = await DataType.inferDataTypeFromValue(initValue, documentUri, _token);
 
         let thisVar: Variable = {
             identifier: varName,
@@ -599,7 +599,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
                         scopeVal = Scope.valueOf(scope);
                     }
 
-                    const varRangeStart: Position | undefined = tagAttributes.get(attributeName)?.valueRange.start.translate(0, varNamePrefixLen);
+                    const varRangeStart: Position | undefined = tagAttributes.get(attributeName)?.valueRange?.start.translate(0, varNamePrefixLen);
                     const varRange: Range | undefined = varRangeStart ? new Range(
                         varRangeStart,
                         varRangeStart.translate(0, varName.length)
@@ -621,30 +621,33 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
                         scopeVal = Scope.Variables;
                     }
 
-                    let outputVar: Variable = {
-                        identifier: varName,
-                        dataType: tagOutputAttribute.dataType,
-                        scope: scopeVal,
-                        final: false,
-                        declarationLocation: varRange ? new Location(
-                            document.uri,
-                            varRange
-                        ) : undefined
-                    };
+                    if ( varRange ) {
 
-                    if (tagName === "cfquery" && "bodyRange" in tag) {
-                        const queryTag = tag as Tag;
-                        const bodyText: string = document.getText(queryTag.bodyRange);
-                        const columns: QueryColumns = getSelectColumnsFromQueryText(bodyText);
+                        let outputVar: Variable = {
+                            identifier: varName,
+                            dataType: tagOutputAttribute.dataType,
+                            scope: scopeVal,
+                            final: false,
+                            declarationLocation: new Location(
+                                document.uri,
+                                varRange
+                            )
+                        };
 
-                        if (columns.size > 0) {
-                            const query: Query = outputVar as Query;
-                            query.selectColumnNames = columns;
-                            outputVar = query;
+                        if (tagName === "cfquery" && "bodyRange" in tag) {
+                            const queryTag = tag as Tag;
+                            const bodyText: string = document.getText(queryTag.bodyRange);
+                            const columns: QueryColumns = getSelectColumnsFromQueryText(bodyText);
+
+                            if (columns.size > 0) {
+                                const query: Query = outputVar as Query;
+                                query.selectColumnNames = columns;
+                                outputVar = query;
+                            }
                         }
-                    }
 
-                    variables.push(outputVar);
+                        variables.push(outputVar);
+                    }
                 });
             });
         });
@@ -763,7 +766,7 @@ export function argumentsToVariables(args: Argument[], documentUri: Uri): Variab
             dataTypeComponentUri: arg.dataTypeComponentUri,
             scope: Scope.Arguments,
             final: false,
-            declarationLocation: new Location(documentUri, arg.nameRange),
+            declarationLocation: arg.nameRange ? new Location(documentUri, arg.nameRange) : undefined,
             description: arg.description
         };
 
@@ -836,9 +839,9 @@ export function getMatchingVariables(variables: Variable[], varName: string, sco
  */
 export async function getApplicationVariables(baseUri: Uri): Promise<Variable[]> {
     let applicationVariables: Variable[] = [];
-    const applicationUri: Uri = await getApplicationUri(baseUri);
+    const applicationUri: Uri | undefined = await getApplicationUri(baseUri);
     if (applicationUri) {
-        const cachedApplicationVariables: Variable[] = getCachedApplicationVariables(applicationUri);
+        const cachedApplicationVariables: Variable[] | undefined = getCachedApplicationVariables(applicationUri);
         if (cachedApplicationVariables) {
             applicationVariables = cachedApplicationVariables;
         }
@@ -870,7 +873,7 @@ export function getServerVariables(baseUri: Uri, _token: CancellationToken): Var
  * @param _token
  * @returns
  */
-export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext, _token: CancellationToken): Promise<Variable[]> {
+export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext, _token: CancellationToken | undefined): Promise<Variable[]> {
     let allVariableAssignments: Variable[] = [];
 
     if (documentPositionStateContext.isCfmFile) {
@@ -923,7 +926,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
             // function arguments
             let functionArgs: Argument[] = [];
             thisComponent.functions.filter((func: UserFunction) => {
-                return func.bodyRange && func.bodyRange.contains(documentPositionStateContext.position) && func.signatures && func.signatures.length !== 0;
+                return func.bodyRange ? func.bodyRange.contains(documentPositionStateContext.position) && func.signatures && func.signatures.length !== 0 : false;
             }).forEach((func: UserFunction) => {
                 func.signatures.forEach((signature: UserFunctionSignature) => {
                     functionArgs = signature.parameters;
@@ -934,7 +937,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
             // function local variables
             let localVariables: Variable[] = [];
             const filteredFunctions = thisComponent.functions.filter((func: UserFunction) => {
-                return func.bodyRange && func.bodyRange.contains(documentPositionStateContext.position);
+                return func.bodyRange ? func.bodyRange.contains(documentPositionStateContext.position) : false;
             });
 
             for (const [, func] of filteredFunctions) {
@@ -972,7 +975,7 @@ export function getVariableTypeString(variable: Variable): string {
 export interface Variable {
     identifier: string;
     dataType: DataType;
-    dataTypeComponentUri?: Uri | null; // Only when dataType is Component
+    dataTypeComponentUri?: Uri; // Only when dataType is Component
     scope: Scope;
     final: boolean;
     declarationLocation: Location | undefined;

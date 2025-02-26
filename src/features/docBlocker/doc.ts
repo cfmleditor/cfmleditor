@@ -49,7 +49,7 @@ export class Doc {
   /**
    * A config which will modify the result of the Doc
    */
-  protected config: Config;
+  protected config: Config | undefined;
 
   /**
    * Creates an instance of Doc.
@@ -66,7 +66,7 @@ export class Doc {
    * Get the config from either vs code or the manually set one
    * @returns Config
    */
-  public getConfig(): Config {
+  public getConfig(): Config | undefined {
     if (!this.config) {
       this.config = workspace.getConfiguration("cfml", this.uri).get<Config>("docBlock");
     }
@@ -104,8 +104,8 @@ export class Doc {
    */
   public build(isEmpty: boolean = false): SnippetString {
     const snippet = new SnippetString();
-    let extra: ConfigExtra[] = this.getConfig().extra;
-    let gap: boolean = !this.getConfig().gap;
+    let extra: ConfigExtra[] | undefined = this.getConfig()?.extra;
+    let gap: boolean = !this.getConfig()?.gap;
 
     if (isEmpty) {
       gap = true;

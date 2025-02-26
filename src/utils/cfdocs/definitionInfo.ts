@@ -86,7 +86,7 @@ function getParamDataType(type: string): DataType {
  * @param type The data type string to resolve
  * @returns
  */
-function getReturnDataType(type: string): DataType {
+function getReturnDataType(type: string | undefined): DataType {
   switch (type) {
     case "any":
       return DataType.Any;
@@ -199,46 +199,50 @@ export class CFDocsDefinitionInfo {
   public toGlobalFunction(): GlobalFunction {
     const signatures: Signature[] = [];
     if (multiSigGlobalFunctions.has(this.name)) {
-      const thisMultiSigs: string[][] = multiSigGlobalFunctions.get(this.name);
-      thisMultiSigs.forEach((thisMultiSig: string[]) => {
-        const parameters: Parameter[] = [];
-        thisMultiSig.forEach((multiSigParam: string) => {
-          let paramFound = false;
-          for (const param of this.params) {
-            const multiSigParamParsed: string = multiSigParam.split("=")[0];
-            if (param.name === multiSigParamParsed) {
-              const parameter: Parameter = {
-                name: multiSigParam,
-                type: param.type,
-                dataType: getParamDataType(param.type.toLowerCase()),
-                required: param.required,
-                description: param.description,
-                default: param.default,
-                enumeratedValues: param.values
-              };
-              parameters.push(parameter);
-              paramFound = true;
-              break;
+      const thisMultiSigs: string[][] | undefined = multiSigGlobalFunctions.get(this.name);
+      if ( thisMultiSigs ) {
+        thisMultiSigs.forEach((thisMultiSig: string[]) => {
+            const parameters: Parameter[] = [];
+            thisMultiSig.forEach((multiSigParam: string) => {
+                let paramFound = false;
+                if ( this.params ) {
+                    for (const param of this.params) {
+                        const multiSigParamParsed: string = multiSigParam.split("=")[0];
+                        if (param.name === multiSigParamParsed) {
+                        const parameter: Parameter = {
+                            name: multiSigParam,
+                            type: param.type,
+                            dataType: getParamDataType(param.type.toLowerCase()),
+                            required: param.required,
+                            description: param.description,
+                            default: param.default,
+                            enumeratedValues: param.values
+                        };
+                        parameters.push(parameter);
+                        paramFound = true;
+                        break;
+                    }
+                }
             }
-          }
-          if (!paramFound) {
-            const parameter: Parameter = {
-              name: multiSigParam,
-              type: "any",
-              dataType: DataType.Any,
-              required: false,
-              description: ""
+            if (!paramFound) {
+                const parameter: Parameter = {
+                name: multiSigParam,
+                type: "any",
+                dataType: DataType.Any,
+                required: false,
+                description: ""
+                };
+                parameters.push(parameter);
+            }
+            });
+            const signatureInfo: Signature = {
+            parameters: parameters
             };
-            parameters.push(parameter);
-          }
+            signatures.push(signatureInfo);
         });
-        const signatureInfo: Signature = {
-          parameters: parameters
-        };
-        signatures.push(signatureInfo);
-      });
+      }
     } else {
-      const parameters: Parameter[] = this.params.map((param: Param) => {
+      const parameters: Parameter[] = this.params ? this.params.map((param: Param) => {
         return {
           name: param.name,
           type: param.type,
@@ -248,7 +252,7 @@ export class CFDocsDefinitionInfo {
           default: param.default,
           enumeratedValues: param.values
         };
-      });
+      }) : [];
       const signatureInfo: Signature = {
         parameters: parameters
       };
@@ -259,7 +263,7 @@ export class CFDocsDefinitionInfo {
       name: this.name,
       syntax: this.syntax,
       description: (this.description ? decode(this.description) : ""),
-      returntype: getReturnDataType(this.returns.toLowerCase()),
+      returntype: getReturnDataType(this.returns?.toLowerCase()),
       signatures: signatures
     };
   }
@@ -269,7 +273,7 @@ export class CFDocsDefinitionInfo {
    * @returns
    */
   public toGlobalTag(): GlobalTag {
-    const parameters: Parameter[] = this.params.map((param: Param) => {
+    const parameters: Parameter[] = this.params ? this.params.map((param: Param) => {
       return {
         name: param.name,
         type: param.type,
@@ -279,7 +283,7 @@ export class CFDocsDefinitionInfo {
         default: param.default,
         enumeratedValues: param.values
       };
-    });
+    }) : [];
 
     const signatureInfo: Signature = {
       parameters: parameters
@@ -294,7 +298,7 @@ export class CFDocsDefinitionInfo {
       description: (this.description ? decode(this.description) : ""),
       signatures: signatures,
       hasBody: true
-    };
+    } as GlobalTag;
   }
 
   /**
@@ -313,7 +317,7 @@ export class CFDocsDefinitionInfo {
       return false;
     }
 
-    const engineVersion: string = engine.getVersion();
+    const engineVersion: string | null | undefined = engine.getVersion();
     if (!engineVersion) {
       return true;
     }

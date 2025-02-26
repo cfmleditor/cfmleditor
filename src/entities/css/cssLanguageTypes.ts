@@ -325,10 +325,10 @@ export interface ICSSDataProvider {
 }
 
 export interface ICSSDataManager {
-  getProperty(name: string): IPropertyData;
-  getAtDirective(name: string): IAtDirectiveData;
-  getPseudoClass(name: string): IPseudoClassData;
-  getPseudoElement(name: string): IPseudoElementData;
+  getProperty(name: string): IPropertyData | undefined;
+  getAtDirective(name: string): IAtDirectiveData | undefined;
+  getPseudoClass(name: string): IPseudoClassData | undefined;
+  getPseudoElement(name: string): IPseudoElementData | undefined;
   getProperties(majorBrowserSupport?: boolean): IPropertyData[];
   getAtDirectives(majorBrowserSupport?: boolean): IAtDirectiveData[];
   getPseudoClasses(majorBrowserSupport?: boolean): IPseudoClassData[];

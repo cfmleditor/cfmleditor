@@ -67,7 +67,7 @@ export class CFMLEngine {
    * Getter for CFML engine version
    * @returns
    */
-  public getVersion(): string {
+  public getVersion(): string | null | undefined {
     return this.version;
   }
 
@@ -149,9 +149,9 @@ export class CFMLEngine {
   public supportsScriptTags(): boolean {
     return (
       this.name === CFMLEngineName.Unknown
-      || (this.name === CFMLEngineName.ColdFusion && gte(this.version, "11.0.0"))
+      || (this.name === CFMLEngineName.ColdFusion && this.version !== undefined && this.version !== null && gte(this.version, "11.0.0"))
       || this.name === CFMLEngineName.Lucee
-      || (this.name === CFMLEngineName.Railo && gte(this.version, "4.2.0"))
+      || (this.name === CFMLEngineName.Railo && this.version !== undefined && this.version !== null && gte(this.version, "4.2.0"))
     );
   }
 
@@ -162,9 +162,9 @@ export class CFMLEngine {
   public supportsGlobalFunctionNamedParams(): boolean {
     return (
       this.name === CFMLEngineName.Unknown
-      || (this.name === CFMLEngineName.ColdFusion && gte(this.version, "2018.0.0"))
+      || (this.name === CFMLEngineName.ColdFusion && this.version !== undefined && this.version !== null && gte(this.version, "2018.0.0"))
       || this.name === CFMLEngineName.Lucee
-      || (this.name === CFMLEngineName.Railo && gte(this.version, "3.3.0"))
+      || (this.name === CFMLEngineName.Railo && this.version !== undefined && this.version !== null && gte(this.version, "3.3.0"))
     );
   }
 
