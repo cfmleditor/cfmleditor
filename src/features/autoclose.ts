@@ -67,15 +67,17 @@ async function closeTag(contentChange: TextDocumentContentChangeEvent, editor: T
     if (isForwardSlash) {
         const [last2chars, linePreceding] = getPrecedingCharacters(originalPosition, editor);
         if (last2chars === "</") {
-            let closeTag: string = getCloseTag(linePreceding, nonClosingTags) || "";
+            let closeTag: string | null = getCloseTag(linePreceding, nonClosingTags);
             if (closeTag) {
                 const nextChar = getNextChar(editor, originalPosition);
                 if (nextChar === ">") {
-                    closeTag = closeTag.substr(0, closeTag.length - 1);
+                    closeTag = closeTag.substring(0, closeTag.length - 1);
                 }
                 if ( closeTag ) {
                     await editor.edit((editBuilder: TextEditorEdit) => {
-                        editBuilder.insert(originalPosition, closeTag);
+                        if ( closeTag ) {
+                            editBuilder.insert(originalPosition, closeTag);
+                        }
                     }).then(() => {
                         if (nextChar === ">") {
                             editor.selection = moveSelectionRight(editor.selection, 1);
