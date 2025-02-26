@@ -1,10 +1,10 @@
-/*---------------------------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
-'use strict';
+ *-------------------------------------------------------------------------------------------- */
+"use strict";
 
-import { TextDocument, Position, Range } from 'vscode-languageserver-types';
+import { TextDocument, Position, Range } from "vscode-languageserver-types";
 
 export interface HTMLFormatConfiguration {
 	tabSize?: number;
@@ -13,7 +13,7 @@ export interface HTMLFormatConfiguration {
 	unformatted?: string;
 	contentUnformatted?: string;
 	indentInnerHtml?: boolean;
-	wrapAttributes?: 'auto' | 'force' | 'force-aligned' | 'force-expand-multiline' | 'aligned-multiple' | 'preserve' | 'preserve-aligned';
+	wrapAttributes?: "auto" | "force" | "force-aligned" | "force-expand-multiline" | "aligned-multiple" | "preserve" | "preserve-aligned";
 	wrapAttributesIndentSize?: number;
 	preserveNewLines?: boolean;
 	maxPreserveNewLines?: number;
@@ -60,7 +60,7 @@ export enum TokenType {
 	Unknown,
 	Script,
 	Styles,
-	EOS
+	EOS,
 }
 
 export enum ScannerState {
@@ -74,7 +74,7 @@ export enum ScannerState {
 	WithinScriptContent,
 	WithinStyleContent,
 	AfterAttributeName,
-	BeforeAttributeValue
+	BeforeAttributeValue,
 }
 
 export interface Scanner {

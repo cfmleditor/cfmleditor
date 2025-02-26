@@ -2,8 +2,8 @@ import { Parameter, constructParameterLabel } from "./parameter";
 import { Function } from "./function";
 
 export interface Signature {
-  parameters: Parameter[];
-  description?: string;
+	parameters: Parameter[];
+	description?: string;
 }
 
 /**
@@ -12,8 +12,8 @@ export interface Signature {
  * @returns
  */
 export function constructSignatureLabelParamsPrefix(func: Function): string {
-  // TODO: If UserFunction, use ComponentName.functionName based on location
-  return func.name;
+	// TODO: If UserFunction, use ComponentName.functionName based on location
+	return func.name;
 }
 
 /**
@@ -22,7 +22,7 @@ export function constructSignatureLabelParamsPrefix(func: Function): string {
  * @returns
  */
 export function constructSignatureLabelParamsPart(parameters: Parameter[]): string {
-  return parameters.map(constructParameterLabel).join(", ");
+	return parameters.map(constructParameterLabel).join(", ");
 }
 
 /**
@@ -31,12 +31,12 @@ export function constructSignatureLabelParamsPart(parameters: Parameter[]): stri
  * @returns
  */
 export function getSignatureParamsLabelOffsetTuples(parameters: Parameter[]): [number, number][] {
-  let endIdx: number = -2;
+	let endIdx: number = -2;
 
-  return parameters.map(constructParameterLabel).map((paramLabel: string) => {
-    const startIdx: number = endIdx + 2;
-    endIdx = startIdx + paramLabel.length;
+	return parameters.map(constructParameterLabel).map((paramLabel: string) => {
+		const startIdx: number = endIdx + 2;
+		endIdx = startIdx + paramLabel.length;
 
-    return [startIdx, endIdx] as [number, number];
-  });
+		return [startIdx, endIdx] as [number, number];
+	});
 }

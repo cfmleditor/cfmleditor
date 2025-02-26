@@ -3,18 +3,18 @@ import { HTMLDataProvider } from "./dataProvider";
 import { HTML5_TAGS, HTML5_GLOBAL_ATTRIBUTES, HTML5_EVENTS, HTML5_VALUE_MAP } from "./data/html5";
 import { equalsIgnoreCase } from "../../utils/textUtil";
 
-export const htmlDataProvider: IHTMLDataProvider = new HTMLDataProvider('html5', {
-    version: 1,
-    tags: HTML5_TAGS,
-    globalAttributes: HTML5_GLOBAL_ATTRIBUTES.concat(HTML5_EVENTS),
-    valueSets: HTML5_VALUE_MAP
+export const htmlDataProvider: IHTMLDataProvider = new HTMLDataProvider("html5", {
+	version: 1,
+	tags: HTML5_TAGS,
+	globalAttributes: HTML5_GLOBAL_ATTRIBUTES.concat(HTML5_EVENTS),
+	valueSets: HTML5_VALUE_MAP,
 });
 
 // Recreate maps since they are private
 const htmlTagMap: { [t: string]: ITagData } = {};
 
 HTML5_TAGS.forEach((t) => {
-  htmlTagMap[t.name] = t;
+	htmlTagMap[t.name] = t;
 });
 
 /**
@@ -23,7 +23,7 @@ HTML5_TAGS.forEach((t) => {
  * @returns
  */
 export function isKnownTag(name: string): boolean {
-  return name.toLowerCase() in htmlTagMap;
+	return name.toLowerCase() in htmlTagMap;
 }
 
 // isStandardTag (when status becomes available)
@@ -34,7 +34,7 @@ export function isKnownTag(name: string): boolean {
  * @returns
  */
 export function getTag(name: string): ITagData | undefined {
-  return htmlTagMap[name.toLowerCase()];
+	return htmlTagMap[name.toLowerCase()];
 }
 
 /**
@@ -44,9 +44,9 @@ export function getTag(name: string): ITagData | undefined {
  * @returns
  */
 export function hasAttribute(tagName: string, attributeName: string): boolean {
-  return htmlDataProvider.provideAttributes(tagName.toLowerCase()).some((attr: IAttributeData) => {
-    return equalsIgnoreCase(attr.name, attributeName);
-  });
+	return htmlDataProvider.provideAttributes(tagName.toLowerCase()).some((attr: IAttributeData) => {
+		return equalsIgnoreCase(attr.name, attributeName);
+	});
 }
 
 /**
@@ -56,7 +56,7 @@ export function hasAttribute(tagName: string, attributeName: string): boolean {
  * @returns
  */
 export function getAttribute(tagName: string, attributeName: string): IAttributeData | undefined {
-  return htmlDataProvider.provideAttributes(tagName.toLowerCase()).find((attr: IAttributeData) => {
-    return equalsIgnoreCase(attr.name, attributeName);
-  });
+	return htmlDataProvider.provideAttributes(tagName.toLowerCase()).find((attr: IAttributeData) => {
+		return equalsIgnoreCase(attr.name, attributeName);
+	});
 }

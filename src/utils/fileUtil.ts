@@ -1,11 +1,10 @@
-
 import { FileStat, FileType, Uri, workspace, WorkspaceFolder } from "vscode";
 import { Utils } from "vscode-uri";
 
 export interface CFMLMapping {
-  logicalPath: string;
-  directoryPath: string;
-  isPhysicalDirectoryPath?: boolean;
+	logicalPath: string;
+	directoryPath: string;
+	isPhysicalDirectoryPath?: boolean;
 }
 
 /**
@@ -14,8 +13,8 @@ export interface CFMLMapping {
  * @returns Promise
  */
 export async function getDirectories(srcPath: string): Promise<[string, FileType][]> {
-  const files: [string, FileType][] = await workspace.fs.readDirectory(Uri.parse(srcPath));
-  return filterDirectories(files);
+	const files: [string, FileType][] = await workspace.fs.readDirectory(Uri.parse(srcPath));
+	return filterDirectories(files);
 }
 
 /**
@@ -24,13 +23,14 @@ export async function getDirectories(srcPath: string): Promise<[string, FileType
  * @returns array
  */
 export function filterDirectories(files: [string, FileType][]): [string, FileType][] {
-  return files.filter((file: [string, FileType]) => {
-    if ( file[1] === FileType.Directory ) {
-        return true;
-    } else {
-        return false;
-    }
-  });
+	return files.filter((file: [string, FileType]) => {
+		if (file[1] === FileType.Directory) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	});
 }
 
 /**
@@ -39,8 +39,8 @@ export function filterDirectories(files: [string, FileType][]): [string, FileTyp
  * @returns Promise
  */
 export async function getComponents(srcPath: string): Promise<[string, FileType][]> {
-  const files: [string, FileType][] = await workspace.fs.readDirectory(Uri.parse(srcPath));
-  return filterComponents(files);
+	const files: [string, FileType][] = await workspace.fs.readDirectory(Uri.parse(srcPath));
+	return filterComponents(files);
 }
 
 /**
@@ -49,13 +49,14 @@ export async function getComponents(srcPath: string): Promise<[string, FileType]
  * @returns array
  */
 export function filterComponents(files: [string, FileType][]): [string, FileType][] {
-  return files.filter((file: [string, FileType]) => {
-    if ( file[1] === FileType.File && /\.cfc$/gi.test(file[0]) ) {
-        return true;
-    } else {
-        return false;
-    }
-  });
+	return files.filter((file: [string, FileType]) => {
+		if (file[1] === FileType.File && /\.cfc$/gi.test(file[0])) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	});
 }
 
 /**
@@ -65,13 +66,12 @@ export function filterComponents(files: [string, FileType][]): [string, FileType
  * @returns string
  */
 export function resolveBaseName(path: string, ext?: string): string {
-    let base = Utils.basename(Uri.parse(path));
-    if (ext) {
-        base = base.replace(ext, '');
-    }
-    return base;
+	let base = Utils.basename(Uri.parse(path));
+	if (ext) {
+		base = base.replace(ext, "");
+	}
+	return base;
 }
-
 
 /**
  *
@@ -80,13 +80,12 @@ export function resolveBaseName(path: string, ext?: string): string {
  * @returns string
  */
 export function uriBaseName(path: Uri, ext?: string): string {
-    let base = Utils.basename(path);
-    if (ext) {
-        base = base.replace(ext, '');
-    }
-    return base;
+	let base = Utils.basename(path);
+	if (ext) {
+		base = base.replace(ext, "");
+	}
+	return base;
 }
-
 
 /**
  *
@@ -94,12 +93,13 @@ export function uriBaseName(path: Uri, ext?: string): string {
  * @returns Promise
  */
 export async function fileExists(path: string): Promise<boolean> {
-    try {
-        await workspace.fs.stat(Uri.file(path));
-        return true;
-    } catch {
-        return false;
-    }
+	try {
+		await workspace.fs.stat(Uri.file(path));
+		return true;
+	}
+	catch {
+		return false;
+	}
 }
 
 /**
@@ -108,12 +108,13 @@ export async function fileExists(path: string): Promise<boolean> {
  * @returns Promise
  */
 export async function uriExists(path: Uri): Promise<boolean> {
-    try {
-        await workspace.fs.stat(path);
-        return true;
-    } catch {
-        return false;
-    }
+	try {
+		await workspace.fs.stat(path);
+		return true;
+	}
+	catch {
+		return false;
+	}
 }
 
 /**
@@ -122,9 +123,8 @@ export async function uriExists(path: Uri): Promise<boolean> {
  * @returns Promise
  */
 export async function uriStat(path: Uri): Promise<FileStat> {
-    return await workspace.fs.stat(path);
+	return await workspace.fs.stat(path);
 }
-
 
 /**
  * Resolves a dot path to a list of file paths
@@ -133,45 +133,45 @@ export async function uriStat(path: Uri): Promise<FileStat> {
  * @returns Promise
  */
 export async function resolveDottedPaths(dotPath: string, baseUri: Uri): Promise<string[]> {
-  const paths: string[] = [];
+	const paths: string[] = [];
 
-  const normalizedPath: string = dotPath.replace(/\./g, '/');
+	const normalizedPath: string = dotPath.replace(/\./g, "/");
 
-  // TODO: Check imports
+	// TODO: Check imports
 
-  // relative to local directory
-  const localPath: string = resolveRelativePath(baseUri, normalizedPath);
-  if (await fileExists(localPath)) {
-    paths.push(localPath);
+	// relative to local directory
+	const localPath: string = resolveRelativePath(baseUri, normalizedPath);
+	if (await fileExists(localPath)) {
+		paths.push(localPath);
 
-    if (normalizedPath.length > 0) {
-      return paths;
-    }
-  }
+		if (normalizedPath.length > 0) {
+			return paths;
+		}
+	}
 
-  // relative to web root
-  const rootPath: string = resolveRootPath(baseUri, normalizedPath);
-  if (rootPath && await fileExists(rootPath)) {
-    paths.push(rootPath);
+	// relative to web root
+	const rootPath: string = resolveRootPath(baseUri, normalizedPath);
+	if (rootPath && await fileExists(rootPath)) {
+		paths.push(rootPath);
 
-    if (normalizedPath.length > 0) {
-      return paths;
-    }
-  }
+		if (normalizedPath.length > 0) {
+			return paths;
+		}
+	}
 
-  // custom mappings
-  const customMappingPaths: string[] = resolveCustomMappingPaths(baseUri, normalizedPath);
-  for (const mappedPath of customMappingPaths) {
-    if ( await fileExists(mappedPath)) {
-      paths.push(mappedPath);
+	// custom mappings
+	const customMappingPaths: string[] = resolveCustomMappingPaths(baseUri, normalizedPath);
+	for (const mappedPath of customMappingPaths) {
+		if (await fileExists(mappedPath)) {
+			paths.push(mappedPath);
 
-      if (normalizedPath.length > 0) {
-        return paths;
-      }
-    }
-  }
+			if (normalizedPath.length > 0) {
+				return paths;
+			}
+		}
+	}
 
-  return paths;
+	return paths;
 }
 
 /**
@@ -181,7 +181,7 @@ export async function resolveDottedPaths(dotPath: string, baseUri: Uri): Promise
  * @returns string
  */
 export function resolveRelativePath(baseUri: Uri, appendingPath: string): string {
-  return Uri.joinPath(Utils.dirname(baseUri), appendingPath).fsPath;
+	return Uri.joinPath(Utils.dirname(baseUri), appendingPath).fsPath;
 }
 
 /**
@@ -191,14 +191,14 @@ export function resolveRelativePath(baseUri: Uri, appendingPath: string): string
  * @returns string
  */
 export function resolveRootPath(baseUri: Uri, appendingPath: string): string | undefined {
-  const root: WorkspaceFolder = workspace.getWorkspaceFolder(baseUri);
+	const root: WorkspaceFolder = workspace.getWorkspaceFolder(baseUri);
 
-  // When baseUri is not in workspace
-  if (!root) {
-    return undefined;
-  }
+	// When baseUri is not in workspace
+	if (!root) {
+		return undefined;
+	}
 
-  return Uri.joinPath(root.uri, appendingPath).fsPath;
+	return Uri.joinPath(root.uri, appendingPath).fsPath;
 }
 
 /**
@@ -208,21 +208,21 @@ export function resolveRootPath(baseUri: Uri, appendingPath: string): string | u
  * @returns array
  */
 export function resolveCustomMappingPaths(baseUri: Uri, appendingPath: string): string[] {
-  const customMappingPaths: string[] = [];
+	const customMappingPaths: string[] = [];
 
-  const cfmlMappings: CFMLMapping[] = workspace.getConfiguration("cfml", baseUri).get<CFMLMapping[]>("mappings", []);
-  const normalizedPath: string = appendingPath.replace(/\\/g, "/");
-  for (const cfmlMapping of cfmlMappings) {
-    const slicedLogicalPath: string = cfmlMapping.logicalPath.slice(1);
-    const logicalPathStartPattern = new RegExp(`^${slicedLogicalPath}(?:/|$)`);
-    if (logicalPathStartPattern.test(normalizedPath)) {
-      const directoryPath: string = cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath ? cfmlMapping.directoryPath : resolveRootPath(baseUri, cfmlMapping.directoryPath);
-      const mappedPath: string = Uri.joinPath(Uri.parse(directoryPath), appendingPath.slice(slicedLogicalPath.length)).fsPath;
-      customMappingPaths.push(mappedPath);
-    }
-  }
+	const cfmlMappings: CFMLMapping[] = workspace.getConfiguration("cfml", baseUri).get<CFMLMapping[]>("mappings", []);
+	const normalizedPath: string = appendingPath.replace(/\\/g, "/");
+	for (const cfmlMapping of cfmlMappings) {
+		const slicedLogicalPath: string = cfmlMapping.logicalPath.slice(1);
+		const logicalPathStartPattern = new RegExp(`^${slicedLogicalPath}(?:/|$)`);
+		if (logicalPathStartPattern.test(normalizedPath)) {
+			const directoryPath: string = cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath ? cfmlMapping.directoryPath : resolveRootPath(baseUri, cfmlMapping.directoryPath);
+			const mappedPath: string = Uri.joinPath(Uri.parse(directoryPath), appendingPath.slice(slicedLogicalPath.length)).fsPath;
+			customMappingPaths.push(mappedPath);
+		}
+	}
 
-  return customMappingPaths;
+	return customMappingPaths;
 }
 
 /**
@@ -232,31 +232,29 @@ export function resolveCustomMappingPaths(baseUri: Uri, appendingPath: string): 
  * @returns Uri | undefined
  */
 export async function findUpWorkspaceFile(name: string, workingDir: Uri): Promise<Uri | undefined> {
-
-    let directory: Uri = Utils.dirname(workingDir);
-    const workspaceDir: WorkspaceFolder = workspace.getWorkspaceFolder(workingDir);
+	let directory: Uri = Utils.dirname(workingDir);
+	const workspaceDir: WorkspaceFolder = workspace.getWorkspaceFolder(workingDir);
 
 	while (directory) {
+		const filePath: Uri = Uri.joinPath(directory, name);
 
-        const filePath: Uri = Uri.joinPath(directory, name);
+		try {
+			const stats: FileStat = await workspace.fs.stat(filePath);
+			if (stats.type === FileType.File) {
+				return filePath;
+			}
+		}
+		catch {
+			/* empty */
+		}
 
-        try {
-            const stats: FileStat = await workspace.fs.stat(filePath);
-            if ( stats.type === FileType.File ) {
-                return filePath;
-            }
-        } catch {
-            /* empty */
-        }
+		// Stop at the workspace folder
+		if (directory.fsPath === workspaceDir.uri.fsPath) {
+			break;
+		}
 
-        // Stop at the workspace folder
-        if (directory.fsPath === workspaceDir.uri.fsPath) {
-            break;
-        }
-
-        directory = Utils.joinPath(directory, "../");
-
+		directory = Utils.joinPath(directory, "../");
 	}
 
-    return undefined;
+	return undefined;
 }

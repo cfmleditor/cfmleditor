@@ -4,13 +4,13 @@ import { DataType } from "./dataType";
 import { Argument } from "./userFunction";
 
 export interface Parameter {
-  name: string;
-  description: string;
-  type: string;
-  dataType: DataType;
-  required: boolean;
-  default?: string;
-  enumeratedValues?: string[];
+	name: string;
+	description: string;
+	type: string;
+	dataType: DataType;
+	required: boolean;
+	default?: string;
+	enumeratedValues?: string[];
 }
 
 export const namedParameterPattern: RegExp = /^\s*([\w$]+)\s*=(?!=)/;
@@ -21,7 +21,7 @@ export const namedParameterPattern: RegExp = /^\s*([\w$]+)\s*=(?!=)/;
  * @returns
  */
 export function getParameterName(param: Parameter): string {
-  return param.name.split("=")[0];
+	return param.name.split("=")[0];
 }
 
 /**
@@ -30,26 +30,28 @@ export function getParameterName(param: Parameter): string {
  * @returns
  */
 export function constructParameterLabel(param: Parameter): string {
-  let paramLabel = getParameterName(param);
-  if (!param.required) {
-    paramLabel += "?";
-  }
+	let paramLabel = getParameterName(param);
+	if (!param.required) {
+		paramLabel += "?";
+	}
 
-  if ( param.dataType ) {
-    let paramType: string = param.dataType.toLowerCase();
-    if (param.dataType === DataType.Component) {
-        const arg: Argument = param as Argument;
-        if (arg.dataTypeComponentUri) {
-            paramType = uriBaseName(arg.dataTypeComponentUri, COMPONENT_EXT);
-        }
-    }
+	if (param.dataType) {
+		let paramType: string = param.dataType.toLowerCase();
+		if (param.dataType === DataType.Component) {
+			const arg: Argument = param as Argument;
+			if (arg.dataTypeComponentUri) {
+				paramType = uriBaseName(arg.dataTypeComponentUri, COMPONENT_EXT);
+			}
+		}
 
-    paramLabel += ": " + paramType;
-  } else if ( param.type ) {
-    paramLabel += ": " + param.type;
-  } else {
-    paramLabel += ": unknown";
-  }
+		paramLabel += ": " + paramType;
+	}
+	else if (param.type) {
+		paramLabel += ": " + param.type;
+	}
+	else {
+		paramLabel += ": unknown";
+	}
 
-  return paramLabel;
+	return paramLabel;
 }

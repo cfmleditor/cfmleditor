@@ -1,121 +1,121 @@
-
 import { CancellationToken, DocumentLink, DocumentLinkProvider, FileStat, FileType, Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode";
 import { isUri } from "../utils/textUtil";
 import { uriExists, uriStat } from "../utils/fileUtil";
 import { Utils } from "vscode-uri";
 
 export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
+	private linkPatterns: LinkPattern[] = [
+		// attribute/value link
+		{
+			pattern: /\b(href|src|template|action|url)\s*(?:=|:|\()\s*(['"])((?!read|write|cfml2wddx|wddx2cfml|begin|commit|rollback|move|upload|zip|add|edit|create|captcha)[^'"#]+?)\2/gi,
+			linkIndex: 3,
+		},
+		// include script
+		{
+			pattern: /\binclude\s+(['"])([^'"]+?)\1/gi,
+			linkIndex: 2,
+		},
+	];
 
-  private linkPatterns: LinkPattern[] = [
-    // attribute/value link
-    {
-      pattern: /\b(href|src|template|action|url)\s*(?:=|:|\()\s*(['"])((?!read|write|cfml2wddx|wddx2cfml|begin|commit|rollback|move|upload|zip|add|edit|create|captcha)[^'"#]+?)\2/gi,
-      linkIndex: 3
-    },
-    // include script
-    {
-      pattern: /\binclude\s+(['"])([^'"]+?)\1/gi,
-      linkIndex: 2
-    },
-  ];
+	/**
+	 * Provide links for the given document.
+	 * @param document The document in which the links are located.
+	 * @param _token A cancellation token.
+	 * @returns
+	 */
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	public async provideDocumentLinks(document: TextDocument, _token: CancellationToken): Promise<DocumentLink[]> {
+		// console.log("provideDocumentLinks:CFMLDocumentLinkProvider:" + _token?.isCancellationRequested);
 
-  /**
-   * Provide links for the given document.
-   * @param document The document in which the links are located.
-   * @param _token A cancellation token.
-   * @returns
-   */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async provideDocumentLinks(document: TextDocument, _token: CancellationToken): Promise<DocumentLink[]> {
+		const results: DocumentLink[] = [];
+		const documentText: string = document.getText();
 
-    // console.log("provideDocumentLinks:CFMLDocumentLinkProvider:" + _token?.isCancellationRequested);
+		let match: RegExpExecArray | null;
 
-    const results: DocumentLink[] = [];
-    const documentText: string = document.getText();
+		for (const element of this.linkPatterns) {
+			const pattern: RegExp = element.pattern;
+			while ((match = pattern.exec(documentText))) {
+				const link: string = match[element.linkIndex];
+				const preLen: number = match[0].indexOf(link);
+				const offset: number = (match.index || 0) + preLen;
+				const linkStart: Position = document.positionAt(offset);
+				const linkEnd: Position = document.positionAt(offset + link.length);
+				try {
+					const target: Uri = await this.resolveLink(document, link);
+					if (target) {
+						results.push(
+							new DocumentLink(
+								new Range(linkStart, linkEnd),
+								target
+							)
+						);
+					}
+				}
+				catch (e) {
+					// noop
+					console.error(e);
+				}
+			}
+		}
 
-    let match: RegExpExecArray | null;
+		return results;
+	}
 
-    for (const element of this.linkPatterns) {
-      const pattern: RegExp = element.pattern;
-      while ((match = pattern.exec(documentText))) {
-        const link: string = match[element.linkIndex];
-        const preLen: number = match[0].indexOf(link);
-        const offset: number = (match.index || 0) + preLen;
-        const linkStart: Position = document.positionAt(offset);
-        const linkEnd: Position = document.positionAt(offset + link.length);
-        try {
-          const target: Uri = await this.resolveLink(document, link);
-          if (target) {
-            results.push(
-              new DocumentLink(
-                new Range(linkStart, linkEnd),
-                target
-              )
-            );
-          }
-        } catch (e) {
-          // noop
-          console.error(e);
-        }
-      }
-    }
+	/**
+	 * Resolves given link text within a given document to a URI
+	 * @param document The document containing link text
+	 * @param link The link text to resolve
+	 * @returns
+	 */
+	private async resolveLink(document: TextDocument, link: string): Promise<Uri | undefined> {
+		if (link.startsWith("#")) {
+			return undefined;
+		}
 
-    return results;
-  }
+		// Check for URI
+		if (isUri(link)) {
+			try {
+				const uri: Uri = Uri.parse(link);
+				if (uri.scheme) {
+					return uri;
+				}
+			}
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			catch (e) {
+				// noop
+			}
+		}
 
-  /**
-   * Resolves given link text within a given document to a URI
-   * @param document The document containing link text
-   * @param link The link text to resolve
-   * @returns
-   */
-  private async resolveLink(document: TextDocument, link: string): Promise<Uri | undefined> {
-    if (link.startsWith("#")) {
-      return undefined;
-    }
+		// Check for relative local file
+		let linkPath: string = link.split(/[?#]/)[0];
+		linkPath = linkPath.replace(/\\/, "/");
+		let resourcePath: Uri;
+		if (linkPath && linkPath[0] === "/") {
+			// Relative to root
+			const root: WorkspaceFolder = workspace.getWorkspaceFolder(document.uri);
+			if (root) {
+				resourcePath = Uri.joinPath(root.uri, linkPath);
+			}
+		}
+		else {
+			// Relative to document location
+			const base: Uri = Utils.dirname(document.uri);
+			resourcePath = Uri.joinPath(base, linkPath);
+		}
 
-    // Check for URI
-    if (isUri(link)) {
-      try {
-        const uri: Uri = Uri.parse(link);
-        if (uri.scheme) {
-          return uri;
-        }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (e) {
-        // noop
-      }
-    }
+		// Check custom virtual directories?
+		if (resourcePath && await uriExists(resourcePath)) {
+			const fileStat: FileStat = await uriStat(resourcePath);
+			if (fileStat.type === FileType.File) {
+				return resourcePath;
+			}
+		}
 
-    // Check for relative local file
-    let linkPath: string = link.split(/[?#]/)[0];
-    linkPath = linkPath.replace(/\\/,'/');
-    let resourcePath: Uri;
-    if (linkPath && linkPath[0] === "/") {
-      // Relative to root
-      const root: WorkspaceFolder = workspace.getWorkspaceFolder(document.uri);
-      if (root) {
-        resourcePath = Uri.joinPath(root.uri, linkPath);
-      }
-    } else {
-      // Relative to document location
-      const base: Uri = Utils.dirname(document.uri);
-      resourcePath = Uri.joinPath(base, linkPath);
-    }
-
-    // Check custom virtual directories?
-    if (resourcePath && await uriExists(resourcePath) ) {
-        const fileStat: FileStat = await uriStat(resourcePath);
-        if ( fileStat.type === FileType.File ) {
-            return resourcePath;
-        }
-    }
-
-    return undefined;
-  }
+		return undefined;
+	}
 }
 
 interface LinkPattern {
-  pattern: RegExp;
-  linkIndex: number;
+	pattern: RegExp;
+	linkIndex: number;
 }

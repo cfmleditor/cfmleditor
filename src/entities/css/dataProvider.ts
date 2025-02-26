@@ -1,10 +1,10 @@
-/*---------------------------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
-'use strict';
+ *-------------------------------------------------------------------------------------------- */
+"use strict";
 
-import { CSSDataV1, ICSSDataProvider, IPropertyData, IAtDirectiveData, IPseudoClassData, IPseudoElementData } from './cssLanguageTypes';
+import { CSSDataV1, ICSSDataProvider, IPropertyData, IAtDirectiveData, IPseudoClassData, IPseudoElementData } from "./cssLanguageTypes";
 
 export class CSSDataProvider implements ICSSDataProvider {
 	private _properties: IPropertyData[] = [];
@@ -25,12 +25,15 @@ export class CSSDataProvider implements ICSSDataProvider {
 	provideProperties() {
 		return this._properties;
 	}
+
 	provideAtDirectives() {
 		return this._atDirectives;
 	}
+
 	providePseudoClasses() {
 		return this._pseudoClasses;
 	}
+
 	providePseudoElements() {
 		return this._pseudoElements;
 	}
@@ -68,21 +71,21 @@ export class CSSDataProvider implements ICSSDataProvider {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isPropertyData(d: any) : d is IPropertyData {
-	return typeof d.name === 'string';
+function isPropertyData(d: any): d is IPropertyData {
+	return typeof d.name === "string";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isAtDirective(d: any) : d is IAtDirectiveData {
-	return typeof d.name === 'string';
+function isAtDirective(d: any): d is IAtDirectiveData {
+	return typeof d.name === "string";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isPseudoClassData(d: any) : d is IPseudoClassData {
-	return typeof d.name === 'string';
+function isPseudoClassData(d: any): d is IPseudoClassData {
+	return typeof d.name === "string";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isPseudoElementData(d: any) : d is IPseudoElementData {
-	return typeof d.name === 'string';
+function isPseudoElementData(d: any): d is IPseudoElementData {
+	return typeof d.name === "string";
 }
