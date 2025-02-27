@@ -14,173 +14,173 @@ const cfScriptTagAttributePattern: RegExp = /\b((cf[a-z_]+)\s*\(\s*)([^)]*)$/i;
 const tagPrefixPattern: RegExp = /<\s*(\/)?\s*$/;
 
 export interface Tag {
-    name: string;
-    attributes: Attributes;
-    tagRange: Range;
-    bodyRange?: Range | undefined;
-    isScript: boolean;
+	name: string;
+	attributes: Attributes;
+	tagRange: Range;
+	bodyRange?: Range | undefined;
+	isScript: boolean;
 }
 
 export interface StartTag {
-    name: string;
-    attributes: Attributes;
-    tagRange: Range;
+	name: string;
+	attributes: Attributes;
+	tagRange: Range;
 }
 
 export interface TagContext {
-    inStartTag: boolean;
-    inEndTag: boolean;
-    name: string | undefined;
-    startOffset: number | undefined;
+	inStartTag: boolean;
+	inEndTag: boolean;
+	name: string | undefined;
+	startOffset: number | undefined;
 }
 
 const nonClosingCfmlTags: string[] = [
-    "cfabort",
-    "cfapplication",
-    "cfargument",
-    "cfassociate",
-    "cfbreak",
-    "cfchartdata",
-    "cfcollection",
-    "cfcontent",
-    "cfcontinue",
-    "cfcookie",
-    "cfdirectory",
-    "cfdump",
-    "cfelse",
-    "cfelseif",
-    "cferror",
-    "cfexecute",
-    "cfexit",
-    "cffile",
-    "cfflush",
-    "cfheader",
-    "cfhttpparam",
-    "cfimage",
-    "cfimport",
-    "cfinclude",
-    "cfindex",
-    "cfinput",
-    "cfinvokeargument",
-    "cflocation",
-    "cflog",
-    "cfloginuser",
-    "cflogout",
-    "cfmailparam",
-    "cfobject",
-    "cfobjectcache",
-    "cfparam",
-    "cfpop",
-    "cfprocessingdirective",
-    "cfprocparam",
-    "cfprocresult",
-    "cfproperty",
-    "cfqueryparam",
-    "cfregistry",
-    "cfreportparam",
-    "cfrethrow",
-    "cfreturn",
-    "cfschedule",
-    "cfspreadsheet",
-    "cfsearch",
-    "cfset",
-    "cfsetting",
-    "cfthrow",
-    "cfwddx"
+	"cfabort",
+	"cfapplication",
+	"cfargument",
+	"cfassociate",
+	"cfbreak",
+	"cfchartdata",
+	"cfcollection",
+	"cfcontent",
+	"cfcontinue",
+	"cfcookie",
+	"cfdirectory",
+	"cfdump",
+	"cfelse",
+	"cfelseif",
+	"cferror",
+	"cfexecute",
+	"cfexit",
+	"cffile",
+	"cfflush",
+	"cfheader",
+	"cfhttpparam",
+	"cfimage",
+	"cfimport",
+	"cfinclude",
+	"cfindex",
+	"cfinput",
+	"cfinvokeargument",
+	"cflocation",
+	"cflog",
+	"cfloginuser",
+	"cflogout",
+	"cfmailparam",
+	"cfobject",
+	"cfobjectcache",
+	"cfparam",
+	"cfpop",
+	"cfprocessingdirective",
+	"cfprocparam",
+	"cfprocresult",
+	"cfproperty",
+	"cfqueryparam",
+	"cfregistry",
+	"cfreportparam",
+	"cfrethrow",
+	"cfreturn",
+	"cfschedule",
+	"cfspreadsheet",
+	"cfsearch",
+	"cfset",
+	"cfsetting",
+	"cfthrow",
+	"cfwddx",
 ];
 
 export const nonClosingTags: string[] = nonClosingCfmlTags.concat(HTML_EMPTY_ELEMENTS);
 
 export const nonIndentingTags: string[] = [
-    // HTML
-    "area",
-    "base",
-    "br",
-    "col",
-    "command",
-    "embed",
-    "hr",
-    "img",
-    "input",
-    "keygen",
-    "link",
-    "meta",
-    "param",
-    "source",
-    "track",
-    "wbr",
-    // CFML
-    "cfabort",
-    "cfapplication",
-    "cfargument",
-    "cfassociate",
-    "cfbreak",
-    "cfchartdata",
-    "cfcollection",
-    "cfcontent",
-    "cfcontinue",
-    "cfcookie",
-    "cfdirectory",
-    "cfdump",
-    "cferror",
-    "cfexecute",
-    "cfexit",
-    "cffile",
-    "cfflush",
-    "cfheader",
-    "cfhttpparam",
-    "cfimage",
-    "cfimport",
-    "cfinclude",
-    "cfindex",
-    "cfinput",
-    "cfinvokeargument",
-    "cflocation",
-    "cflog",
-    "cfloginuser",
-    "cflogout",
-    "cfmailparam",
-    "cfobject",
-    "cfobjectcache",
-    "cfparam",
-    "cfpop",
-    "cfprocessingdirective",
-    "cfprocparam",
-    "cfprocresult",
-    "cfproperty",
-    "cfqueryparam",
-    "cfregistry",
-    "cfreportparam",
-    "cfrethrow",
-    "cfreturn",
-    "cfschedule",
-    "cfspreadsheet",
-    "cfsearch",
-    "cfset",
-    "cfsetting",
-    "cfthrow",
-    "cfwddx"
+	// HTML
+	"area",
+	"base",
+	"br",
+	"col",
+	"command",
+	"embed",
+	"hr",
+	"img",
+	"input",
+	"keygen",
+	"link",
+	"meta",
+	"param",
+	"source",
+	"track",
+	"wbr",
+	// CFML
+	"cfabort",
+	"cfapplication",
+	"cfargument",
+	"cfassociate",
+	"cfbreak",
+	"cfchartdata",
+	"cfcollection",
+	"cfcontent",
+	"cfcontinue",
+	"cfcookie",
+	"cfdirectory",
+	"cfdump",
+	"cferror",
+	"cfexecute",
+	"cfexit",
+	"cffile",
+	"cfflush",
+	"cfheader",
+	"cfhttpparam",
+	"cfimage",
+	"cfimport",
+	"cfinclude",
+	"cfindex",
+	"cfinput",
+	"cfinvokeargument",
+	"cflocation",
+	"cflog",
+	"cfloginuser",
+	"cflogout",
+	"cfmailparam",
+	"cfobject",
+	"cfobjectcache",
+	"cfparam",
+	"cfpop",
+	"cfprocessingdirective",
+	"cfprocparam",
+	"cfprocresult",
+	"cfproperty",
+	"cfqueryparam",
+	"cfregistry",
+	"cfreportparam",
+	"cfrethrow",
+	"cfreturn",
+	"cfschedule",
+	"cfspreadsheet",
+	"cfsearch",
+	"cfset",
+	"cfsetting",
+	"cfthrow",
+	"cfwddx",
 ];
 
 export const decreasingIndentingTags: string[] = [
-    "cfelse",
-    "cfelseif"
+	"cfelse",
+	"cfelseif",
 ];
 
 // These tags contain an expression instead of attributes
 export const expressionCfmlTags: string[] = ["cfset", "cfif", "cfelseif", "cfreturn"];
 
 export interface VariableAttribute {
-    attributeName: string;
-    dataType: DataType;
+	attributeName: string;
+	dataType: DataType;
 }
 
 export interface OutputVariableTags {
-    [name: string]: VariableAttribute[];
+	[name: string]: VariableAttribute[];
 }
 
 export interface InputVariableTags {
-    [name: string]: VariableAttribute[];
+	[name: string]: VariableAttribute[];
 }
 
 /*
@@ -433,20 +433,20 @@ export function getOutputVariableTags(): OutputVariableTags {
  * Key is tag name. Value is array of attribute names. Both all lowercased.
  */
 export interface ComponentPathAttributes {
-    [name: string]: string[];
+	[name: string]: string[];
 }
 
 const componentPathAttributes: ComponentPathAttributes = {
-    "cfargument": [
-        "type"
-    ],
-    // Handling cfcomponent extends/implements elsewhere
-    "cffunction": [
-        "returntype"
-    ],
-    "cfproperty": [
-        "type"
-    ],
+	cfargument: [
+		"type",
+	],
+	// Handling cfcomponent extends/implements elsewhere
+	cffunction: [
+		"returntype",
+	],
+	cfproperty: [
+		"type",
+	],
 };
 
 /**
@@ -454,7 +454,7 @@ const componentPathAttributes: ComponentPathAttributes = {
  * @returns
  */
 export function getComponentPathAttributes(): ComponentPathAttributes {
-    return componentPathAttributes;
+	return componentPathAttributes;
 }
 
 /**
@@ -462,7 +462,7 @@ export function getComponentPathAttributes(): ComponentPathAttributes {
  * @returns
  */
 export function getTagAttributePattern(): RegExp {
-    return tagAttributePattern;
+	return tagAttributePattern;
 }
 
 /**
@@ -470,7 +470,7 @@ export function getTagAttributePattern(): RegExp {
  * @returns
  */
 export function getCfTagAttributePattern(): RegExp {
-    return cfTagAttributePattern;
+	return cfTagAttributePattern;
 }
 
 /**
@@ -478,7 +478,7 @@ export function getCfTagAttributePattern(): RegExp {
  * @returns
  */
 export function getCfScriptTagAttributePattern(): RegExp {
-    return cfScriptTagAttributePattern;
+	return cfScriptTagAttributePattern;
 }
 
 /**
@@ -488,7 +488,7 @@ export function getCfScriptTagAttributePattern(): RegExp {
  * @returns
  */
 export function getTagPrefixPattern(): RegExp {
-    return tagPrefixPattern;
+	return tagPrefixPattern;
 }
 
 /**
@@ -501,8 +501,8 @@ export function getTagPrefixPattern(): RegExp {
  * @returns
  */
 export function getTagPattern(tagName: string): RegExp {
-    // Attributes capture fails if an attribute value contains >
-    return new RegExp(`(<${tagName}\\b\\s*)([^>]*?)(?:>([\\s\\S]*?)<\\/${tagName}>|\\/?>)`, "gi");
+	// Attributes capture fails if an attribute value contains >
+	return new RegExp(`(<${tagName}\\b\\s*)([^>]*?)(?:>([\\s\\S]*?)<\\/${tagName}>|\\/?>)`, "gi");
 }
 
 /**
@@ -515,7 +515,7 @@ export function getTagPattern(tagName: string): RegExp {
  * @returns
  */
 export function getStartTagPattern(tagName: string): RegExp {
-    return new RegExp(`(<${tagName}\\b\\s*)([^>]*?)(\\/)?>`, "gi");
+	return new RegExp(`(<${tagName}\\b\\s*)([^>]*?)(\\/)?>`, "gi");
 }
 
 /**
@@ -528,7 +528,7 @@ export function getStartTagPattern(tagName: string): RegExp {
  * @returns
  */
 export function getStartScriptTagPattern(tagName: string): RegExp {
-    return new RegExp(`\\b(${tagName}\\s*\\(\\s*)([^)]*)\\)(;)?`, "gi");
+	return new RegExp(`\\b(${tagName}\\s*\\(\\s*)([^)]*)\\)(;)?`, "gi");
 }
 
 /**
@@ -541,7 +541,7 @@ export function getStartScriptTagPattern(tagName: string): RegExp {
  * @returns
  */
 export function getCfTagPattern(): RegExp {
-    return /(<(cf[a-z_]+)\s*)([^>]*?)(?:>([\s\S]*?)<\/\2>|\/?>)/gi;
+	return /(<(cf[a-z_]+)\s*)([^>]*?)(?:>([\s\S]*?)<\/\2>|\/?>)/gi;
 }
 
 /**
@@ -553,7 +553,7 @@ export function getCfTagPattern(): RegExp {
  * @returns
  */
 export function getCfStartTagPattern(): RegExp {
-    return /(<(cf[a-z_]+)\s*)([^>]*?)>/gi;
+	return /(<(cf[a-z_]+)\s*)([^>]*?)>/gi;
 }
 
 /**
@@ -566,7 +566,7 @@ export function getCfStartTagPattern(): RegExp {
  * @returns
  */
 export function getCfScriptTagPattern(): RegExp {
-    return /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)(?:\s*{([^}]*?)})?/gi;
+	return /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)(?:\s*{([^}]*?)})?/gi;
 }
 
 /**
@@ -578,16 +578,15 @@ export function getCfScriptTagPattern(): RegExp {
  * @returns
  */
 export function getCfScriptTagPatternIgnoreBody(): RegExp {
-    return /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)/gi;
+	return /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)/gi;
 }
-
 
 /**
  * Gets the names of all nonclosing CFML tags
  * @returns
  */
 export function getNonClosingCfmlTags(): string[] {
-    return nonClosingCfmlTags;
+	return nonClosingCfmlTags;
 }
 
 /**
@@ -601,53 +600,52 @@ export function getNonClosingCfmlTags(): string[] {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function parseTags(documentStateContext: DocumentStateContext, tagName: string, range: Range | undefined, _token: CancellationToken | undefined): Tag[] {
-    const tags: Tag[] = [];
-    const document: TextDocument = documentStateContext.document;
-    let textOffset: number = 0;
-    let documentText: string = documentStateContext.sanitizedDocumentText;
-    if (range && document.validateRange(range)) {
-        textOffset = document.offsetAt(range.start);
-        documentText = documentText.slice(textOffset, document.offsetAt(range.end));
-    }
+	const tags: Tag[] = [];
+	const document: TextDocument = documentStateContext.document;
+	let textOffset: number = 0;
+	let documentText: string = documentStateContext.sanitizedDocumentText;
+	if (range && document.validateRange(range)) {
+		textOffset = document.offsetAt(range.start);
+		documentText = documentText.slice(textOffset, document.offsetAt(range.end));
+	}
 
-    const thisTagPattern: RegExp = getTagPattern(tagName);
-    let thisTagMatch: RegExpExecArray | null = null;
-    // eslint-disable-next-line no-cond-assign
-    while (thisTagMatch = thisTagPattern.exec(documentText)) {
-        const tagStart: string = thisTagMatch[1];
-        const tagAttributes: string = thisTagMatch[2];
-        const tagBodyText: string = thisTagMatch[3];
+	const thisTagPattern: RegExp = getTagPattern(tagName);
+	let thisTagMatch: RegExpExecArray | null = null;
+	// eslint-disable-next-line no-cond-assign
+	while (thisTagMatch = thisTagPattern.exec(documentText)) {
+		const tagStart: string = thisTagMatch[1];
+		const tagAttributes: string = thisTagMatch[2];
+		const tagBodyText: string = thisTagMatch[3];
 
-        const attributeStartOffset: number = textOffset + thisTagMatch.index + tagStart.length;
-        const attributeRange: Range = new Range(
-            document.positionAt(attributeStartOffset),
-            document.positionAt(attributeStartOffset + tagAttributes.length)
-        );
+		const attributeStartOffset: number = textOffset + thisTagMatch.index + tagStart.length;
+		const attributeRange: Range = new Range(
+			document.positionAt(attributeStartOffset),
+			document.positionAt(attributeStartOffset + tagAttributes.length)
+		);
 
-        let tagBodyRange: Range | undefined;
-        if (tagBodyText !== undefined) {
-            const thisBodyStartOffset: number = attributeStartOffset + tagAttributes.length + 1;
-            tagBodyRange = new Range(
-                document.positionAt(thisBodyStartOffset),
-                document.positionAt(thisBodyStartOffset + tagBodyText.length)
-            );
-        }
+		let tagBodyRange: Range | undefined;
+		if (tagBodyText !== undefined) {
+			const thisBodyStartOffset: number = attributeStartOffset + tagAttributes.length + 1;
+			tagBodyRange = new Range(
+				document.positionAt(thisBodyStartOffset),
+				document.positionAt(thisBodyStartOffset + tagBodyText.length)
+			);
+		}
 
-        tags.push({
-            name: tagName,
-            attributes: parseAttributes(document, attributeRange),
-            tagRange: new Range(
-                document.positionAt(thisTagMatch.index),
-                document.positionAt(thisTagMatch.index + thisTagMatch[0].length)
-            ),
-            bodyRange: tagBodyRange,
-            isScript: false
-        });
-    }
+		tags.push({
+			name: tagName,
+			attributes: parseAttributes(document, attributeRange),
+			tagRange: new Range(
+				document.positionAt(thisTagMatch.index),
+				document.positionAt(thisTagMatch.index + thisTagMatch[0].length)
+			),
+			bodyRange: tagBodyRange,
+			isScript: false,
+		});
+	}
 
-    return tags;
+	return tags;
 }
-
 
 /**
  * Returns the start tag information for the given tag name in the given document, optionally within a given range.
@@ -660,43 +658,43 @@ export function parseTags(documentStateContext: DocumentStateContext, tagName: s
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function parseStartTags(documentStateContext: DocumentStateContext, tagName: string, isScript: boolean, range: Range | undefined, _token: CancellationToken | undefined): StartTag[] {
-    const startTags: StartTag[] = [];
-    const document: TextDocument = documentStateContext.document;
-    let textOffset: number = 0;
-    let documentText: string = documentStateContext.sanitizedDocumentText;
-    if (range && document.validateRange(range)) {
-        textOffset = document.offsetAt(range.start);
-        documentText = documentText.slice(textOffset, document.offsetAt(range.end));
-    }
+	const startTags: StartTag[] = [];
+	const document: TextDocument = documentStateContext.document;
+	let textOffset: number = 0;
+	let documentText: string = documentStateContext.sanitizedDocumentText;
+	if (range && document.validateRange(range)) {
+		textOffset = document.offsetAt(range.start);
+		documentText = documentText.slice(textOffset, document.offsetAt(range.end));
+	}
 
-    const thisTagPattern: RegExp = isScript ? getStartScriptTagPattern(tagName) : getStartTagPattern(tagName);
-    let thisTagMatch: RegExpExecArray | null = null;
-    // eslint-disable-next-line no-cond-assign
-    while (thisTagMatch = thisTagPattern.exec(documentText)) {
-        const fullMatch: string = thisTagMatch[0];
-        const tagStart: string = thisTagMatch[1];
-        const tagAttributes: string = thisTagMatch[2];
+	const thisTagPattern: RegExp = isScript ? getStartScriptTagPattern(tagName) : getStartTagPattern(tagName);
+	let thisTagMatch: RegExpExecArray | null = null;
+	// eslint-disable-next-line no-cond-assign
+	while (thisTagMatch = thisTagPattern.exec(documentText)) {
+		const fullMatch: string = thisTagMatch[0];
+		const tagStart: string = thisTagMatch[1];
+		const tagAttributes: string = thisTagMatch[2];
 
-        const thisTagStartOffset: number = textOffset + thisTagMatch.index;
-        const startTagRange: Range = new Range(
-            document.positionAt(thisTagStartOffset),
-            document.positionAt(thisTagStartOffset + fullMatch.length)
-        );
+		const thisTagStartOffset: number = textOffset + thisTagMatch.index;
+		const startTagRange: Range = new Range(
+			document.positionAt(thisTagStartOffset),
+			document.positionAt(thisTagStartOffset + fullMatch.length)
+		);
 
-        const attributeStartOffset: number = thisTagStartOffset + tagStart.length;
-        const attributeRange: Range = new Range(
-            document.positionAt(attributeStartOffset),
-            document.positionAt(attributeStartOffset + tagAttributes.length)
-        );
+		const attributeStartOffset: number = thisTagStartOffset + tagStart.length;
+		const attributeRange: Range = new Range(
+			document.positionAt(attributeStartOffset),
+			document.positionAt(attributeStartOffset + tagAttributes.length)
+		);
 
-        startTags.push({
-            name: tagName,
-            attributes: parseAttributes(document, attributeRange),
-            tagRange: startTagRange
-        });
-    }
+		startTags.push({
+			name: tagName,
+			attributes: parseAttributes(document, attributeRange),
+			tagRange: startTagRange,
+		});
+	}
 
-    return startTags;
+	return startTags;
 }
 
 /**
@@ -707,169 +705,175 @@ export function parseStartTags(documentStateContext: DocumentStateContext, tagNa
  * @returns
  */
 export function getCfTags(documentStateContext: DocumentStateContext, isScript: boolean = false, docRange?: Range): Tag[] {
-    const tags: Tag[] = [];
-    const unclosedTags: StartTag[] = [];
-    const document: TextDocument = documentStateContext.document;
-    const documentText: string = documentStateContext.sanitizedDocumentText;
-    let textOffsetStart: number = 0;
-    let textOffsetEnd = documentText.length;
+	const tags: Tag[] = [];
+	const unclosedTags: StartTag[] = [];
+	const document: TextDocument = documentStateContext.document;
+	const documentText: string = documentStateContext.sanitizedDocumentText;
+	let textOffsetStart: number = 0;
+	let textOffsetEnd = documentText.length;
 
-    if (docRange && document.validateRange(docRange)) {
-        textOffsetStart = document.offsetAt(docRange.start);
-        textOffsetEnd = document.offsetAt(docRange.end);
-    }
+	if (docRange && document.validateRange(docRange)) {
+		textOffsetStart = document.offsetAt(docRange.start);
+		textOffsetEnd = document.offsetAt(docRange.end);
+	}
 
-    let tagContext: TagContext = {
-        inStartTag: false,
-        inEndTag: false,
-        name: undefined,
-        startOffset: undefined
-    };
+	let tagContext: TagContext = {
+		inStartTag: false,
+		inEndTag: false,
+		name: undefined,
+		startOffset: undefined,
+	};
 
-    let stringContext: StringContext = {
-        inString: false,
-        activeStringDelimiter: undefined,
-        start: undefined,
-        embeddedCFML: false
-    };
+	let stringContext: StringContext = {
+		inString: false,
+		activeStringDelimiter: undefined,
+		start: undefined,
+		embeddedCFML: false,
+	};
 
-    const nonClosingCfmlTags: string[] = getNonClosingCfmlTags();
+	const nonClosingCfmlTags: string[] = getNonClosingCfmlTags();
 
-    const tagOpeningChar: string = "<";
-    const tagClosingChar: string = ">";
-    const embeddedCFMLDelimiter: string = "#";
+	const tagOpeningChar: string = "<";
+	const tagClosingChar: string = ">";
+	const embeddedCFMLDelimiter: string = "#";
 
-    // TODO: Account for script tags
+	// TODO: Account for script tags
 
-    let characterAtPreviousPosition: string | undefined;
-    for (let offset = textOffsetStart; offset < textOffsetEnd; offset++) {
-        const characterAtPosition: string = documentText.charAt(offset);
+	let characterAtPreviousPosition: string | undefined;
+	for (let offset = textOffsetStart; offset < textOffsetEnd; offset++) {
+		const characterAtPosition: string = documentText.charAt(offset);
 
-        if (stringContext.inString) {
-            if (characterAtPosition === embeddedCFMLDelimiter) {
-                stringContext.embeddedCFML = !stringContext.embeddedCFML;
-            } else if (!stringContext.embeddedCFML && characterAtPosition === stringContext.activeStringDelimiter) {
-                stringContext = {
-                    inString: false,
-                    activeStringDelimiter: undefined,
-                    start: undefined,
-                    embeddedCFML: false
-                };
-            }
-        } else if (tagContext.inStartTag) {
-            if (characterAtPosition === tagClosingChar) {
-                const globalTag: GlobalTag | undefined = getGlobalTag(tagContext.name);
-                let attributes: Attributes | undefined;
-                if (!globalTag || (globalTag.signatures.length > 0 && globalTag.signatures[0].parameters.length > 0)) {
-                    if ( tagContext.startOffset && tagContext.name ) {
-                        const attributeRange: Range = new Range(
-                            document.positionAt(tagContext.startOffset + tagContext.name.length + 1),
-                            document.positionAt(offset)
-                        );
-                        attributes = parseAttributes(document, attributeRange);
-                    }
-                }
-                if ( tagContext && attributes && tagContext.startOffset && tagContext.name ) {
-                    const tagRange: Range = new Range(document.positionAt(tagContext.startOffset), document.positionAt(offset + 1));
-                    if (nonClosingCfmlTags.includes(tagContext.name) || characterAtPreviousPosition === "/") {
-                        tags.push({
-                            name: tagContext.name,
-                            attributes: attributes,
-                            tagRange: tagRange,
-                            isScript: false
-                        });
-                    } else {
-                        unclosedTags.push({
-                            name: tagContext.name,
-                            attributes: attributes,
-                            tagRange: tagRange
-                        });
-                    }
-                }
-                tagContext = {
-                    inStartTag: false,
-                    inEndTag: false,
-                    name: undefined,
-                    startOffset: undefined
-                };
-            } else if (isStringDelimiter(characterAtPosition)) {
-                stringContext = {
-                    inString: true,
-                    activeStringDelimiter: characterAtPosition,
-                    start: document.positionAt(offset),
-                    embeddedCFML: false
-                };
-            }
-        } else if (tagContext.inEndTag) {
-            if (characterAtPosition === tagClosingChar) {
-                const unclosedTag: StartTag | undefined = unclosedTags.pop();
+		if (stringContext.inString) {
+			if (characterAtPosition === embeddedCFMLDelimiter) {
+				stringContext.embeddedCFML = !stringContext.embeddedCFML;
+			}
+			else if (!stringContext.embeddedCFML && characterAtPosition === stringContext.activeStringDelimiter) {
+				stringContext = {
+					inString: false,
+					activeStringDelimiter: undefined,
+					start: undefined,
+					embeddedCFML: false,
+				};
+			}
+		}
+		else if (tagContext.inStartTag) {
+			if (characterAtPosition === tagClosingChar) {
+				const globalTag: GlobalTag | undefined = getGlobalTag(tagContext.name);
+				let attributes: Attributes | undefined;
+				if (!globalTag || (globalTag.signatures.length > 0 && globalTag.signatures[0].parameters.length > 0)) {
+					if (tagContext.startOffset && tagContext.name) {
+						const attributeRange: Range = new Range(
+							document.positionAt(tagContext.startOffset + tagContext.name.length + 1),
+							document.positionAt(offset)
+						);
+						attributes = parseAttributes(document, attributeRange);
+					}
+				}
+				if (tagContext && attributes && tagContext.startOffset && tagContext.name) {
+					const tagRange: Range = new Range(document.positionAt(tagContext.startOffset), document.positionAt(offset + 1));
+					if (nonClosingCfmlTags.includes(tagContext.name) || characterAtPreviousPosition === "/") {
+						tags.push({
+							name: tagContext.name,
+							attributes: attributes,
+							tagRange: tagRange,
+							isScript: false,
+						});
+					}
+					else {
+						unclosedTags.push({
+							name: tagContext.name,
+							attributes: attributes,
+							tagRange: tagRange,
+						});
+					}
+				}
+				tagContext = {
+					inStartTag: false,
+					inEndTag: false,
+					name: undefined,
+					startOffset: undefined,
+				};
+			}
+			else if (isStringDelimiter(characterAtPosition)) {
+				stringContext = {
+					inString: true,
+					activeStringDelimiter: characterAtPosition,
+					start: document.positionAt(offset),
+					embeddedCFML: false,
+				};
+			}
+		}
+		else if (tagContext.inEndTag) {
+			if (characterAtPosition === tagClosingChar) {
+				const unclosedTag: StartTag | undefined = unclosedTags.pop();
 
-                if ( unclosedTag && tagContext.startOffset ) {
+				if (unclosedTag && tagContext.startOffset) {
+					const bodyRange = new Range(unclosedTag.tagRange.end.translate(0, 1), document.positionAt(tagContext.startOffset));
 
-                    const bodyRange = new Range(unclosedTag.tagRange.end.translate(0, 1), document.positionAt(tagContext.startOffset));
+					tags.push({
+						name: unclosedTag.name,
+						attributes: unclosedTag.attributes,
+						tagRange: new Range(unclosedTag.tagRange.start, document.positionAt(offset + 1)),
+						bodyRange: bodyRange,
+						isScript: false,
+					});
+				}
 
-                    tags.push({
-                        name: unclosedTag.name,
-                        attributes: unclosedTag.attributes,
-                        tagRange: new Range(unclosedTag.tagRange.start, document.positionAt(offset + 1)),
-                        bodyRange: bodyRange,
-                        isScript: false
-                    });
+				tagContext = {
+					inStartTag: false,
+					inEndTag: false,
+					name: undefined,
+					startOffset: undefined,
+				};
+			}
+		}
+		else if (isScript) {
+			if (isStringDelimiter(characterAtPosition)) {
+				const currentPosition: Position = document.positionAt(offset);
+				stringContext = {
+					inString: true,
+					activeStringDelimiter: characterAtPosition,
+					start: currentPosition,
+					embeddedCFML: false,
+				};
+			}
+		}
+		else if (characterAtPreviousPosition === "c" && characterAtPosition === "f") {
+			const currentPosition: Position = document.positionAt(offset);
+			const prefixStartPosition: Position = document.positionAt(offset - 2);
+			const prefixEndPosition: Position = document.positionAt(offset - 1);
+			let prefixText: string = document.getText(new Range(prefixStartPosition, prefixEndPosition));
+			if (prefixText === tagOpeningChar) {
+				const tagName = document.getText(document.getWordRangeAtPosition(currentPosition));
+				tagContext = {
+					inStartTag: true,
+					inEndTag: false,
+					name: tagName,
+					startOffset: offset - 2,
+				};
+			}
+			else {
+				const beforePrefixPosition: Position = document.positionAt(offset - 3);
+				prefixText = document.getText(new Range(beforePrefixPosition, prefixEndPosition));
+				if (prefixText === "</") {
+					const tagName = document.getText(document.getWordRangeAtPosition(currentPosition));
+					const lastUnclosedTag: StartTag = unclosedTags.slice(-1)[0];
+					if (lastUnclosedTag && lastUnclosedTag.name === tagName) {
+						tagContext = {
+							inStartTag: false,
+							inEndTag: true,
+							name: tagName,
+							startOffset: offset - 3,
+						};
+					}
+				}
+			}
+		}
 
-                }
+		characterAtPreviousPosition = characterAtPosition;
+	}
 
-                tagContext = {
-                    inStartTag: false,
-                    inEndTag: false,
-                    name: undefined,
-                    startOffset: undefined
-                };
-            }
-        } else if (isScript) {
-            if (isStringDelimiter(characterAtPosition)) {
-                const currentPosition: Position = document.positionAt(offset);
-                stringContext = {
-                    inString: true,
-                    activeStringDelimiter: characterAtPosition,
-                    start: currentPosition,
-                    embeddedCFML: false
-                };
-            }
-        } else if (characterAtPreviousPosition === "c" && characterAtPosition === "f") {
-            const currentPosition: Position = document.positionAt(offset);
-            const prefixStartPosition: Position = document.positionAt(offset - 2);
-            const prefixEndPosition: Position = document.positionAt(offset - 1);
-            let prefixText: string = document.getText(new Range(prefixStartPosition, prefixEndPosition));
-            if (prefixText === tagOpeningChar) {
-                const tagName = document.getText(document.getWordRangeAtPosition(currentPosition));
-                tagContext = {
-                    inStartTag: true,
-                    inEndTag: false,
-                    name: tagName,
-                    startOffset: offset - 2
-                };
-            } else {
-                const beforePrefixPosition: Position = document.positionAt(offset - 3);
-                prefixText = document.getText(new Range(beforePrefixPosition, prefixEndPosition));
-                if (prefixText === "</") {
-                    const tagName = document.getText(document.getWordRangeAtPosition(currentPosition));
-                    const lastUnclosedTag: StartTag = unclosedTags.slice(-1)[0];
-                    if (lastUnclosedTag && lastUnclosedTag.name === tagName) {
-                        tagContext = {
-                            inStartTag: false,
-                            inEndTag: true,
-                            name: tagName,
-                            startOffset: offset - 3
-                        };
-                    }
-                }
-            }
-        }
-
-        characterAtPreviousPosition = characterAtPosition;
-    }
-
-    /*
+	/*
     if (!isScript) {
       let cfScriptRanges: Range[] = getCfScriptRanges(document, docRange);
       cfScriptRanges.forEach((range: Range) => {
@@ -879,7 +883,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
     }
     */
 
-    return tags;
+	return tags;
 }
 
 /**
@@ -889,48 +893,48 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
  * @param _token
  */
 export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken | undefined): void {
+	const position: Position = editor.selection.active;
+	const documentUri: Uri = editor.document.uri;
 
-    const position: Position = editor.selection.active;
-    const documentUri: Uri = editor.document.uri;
+	const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
+	const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
-    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments, _token, false);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments, _token, false);
+	const currentWord: string = documentPositionStateContext.currentWord;
+	let globalTag: GlobalTag | undefined = getGlobalTag(currentWord);
+	if (!globalTag) {
+		const cfTagAttributePattern: RegExp = documentPositionStateContext.positionIsScript ? getCfScriptTagAttributePattern() : getCfTagAttributePattern();
+		const cfTagAttributeMatch: RegExpExecArray | null = cfTagAttributePattern.exec(documentPositionStateContext.docPrefix);
+		if (cfTagAttributeMatch) {
+			const tagName: string = cfTagAttributeMatch[2];
+			globalTag = getGlobalTag(tagName);
+		}
+	}
 
-    const currentWord: string = documentPositionStateContext.currentWord;
-    let globalTag: GlobalTag | undefined = getGlobalTag(currentWord);
-    if (!globalTag) {
-        const cfTagAttributePattern: RegExp = documentPositionStateContext.positionIsScript ? getCfScriptTagAttributePattern() : getCfTagAttributePattern();
-        const cfTagAttributeMatch: RegExpExecArray | null = cfTagAttributePattern.exec(documentPositionStateContext.docPrefix);
-        if (cfTagAttributeMatch) {
-            const tagName: string = cfTagAttributeMatch[2];
-            globalTag = getGlobalTag(tagName);
-        }
-    }
+	if (globalTag) {
+		const nonClosingCfmlTags: string[] = getNonClosingCfmlTags();
+		if (globalTag.name && !nonClosingCfmlTags.includes(globalTag.name)) {
+			const tags: Tag[] = getCfTags(documentPositionStateContext, documentPositionStateContext.docIsScript);
+			const foundTag: Tag | undefined = tags.find((tag: Tag) => {
+				return (tag.bodyRange && !tag.bodyRange.contains(position) && tag.tagRange.contains(position));
+			});
 
-    if (globalTag) {
-        const nonClosingCfmlTags: string[] = getNonClosingCfmlTags();
-        if (globalTag.name && !nonClosingCfmlTags.includes(globalTag.name)) {
-            const tags: Tag[] = getCfTags(documentPositionStateContext, documentPositionStateContext.docIsScript);
-            const foundTag: Tag | undefined = tags.find((tag: Tag) => {
-                return (tag.bodyRange && !tag.bodyRange.contains(position) && tag.tagRange.contains(position));
-            });
+			if (foundTag && foundTag.bodyRange) {
+				let newPosition: Position;
+				if (position.isBeforeOrEqual(foundTag.bodyRange.start)) {
+					newPosition = foundTag.bodyRange.end.translate(0, 2);
+				}
+				else {
+					newPosition = foundTag.tagRange.start.translate(0, 1);
+				}
 
-            if (foundTag && foundTag.bodyRange) {
-                let newPosition: Position;
-                if (position.isBeforeOrEqual(foundTag.bodyRange.start)) {
-                    newPosition = foundTag.bodyRange.end.translate(0, 2);
-                } else {
-                    newPosition = foundTag.tagRange.start.translate(0, 1);
-                }
+				editor.selection = new Selection(newPosition, newPosition);
+				editor.revealRange(editor.selection);
+				return;
+			}
+		}
+	}
 
-                editor.selection = new Selection(newPosition, newPosition);
-                editor.revealRange(editor.selection);
-                return;
-            }
-        }
-    }
-
-    window.showInformationMessage("No matching tag was found");
+	window.showInformationMessage("No matching tag was found");
 }

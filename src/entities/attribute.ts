@@ -5,27 +5,27 @@ export const ATTRIBUTES_PATTERN = /\b([\w:-]+)\b(?:(\s*(?:=|:)\s*)(?:(['"])(.*?)
 export const VALUE_PATTERN = /\b([\w:-]+)\s*(?:=|:)\s*(?:(['"])?((?:(?!\2).)*)|([\S]*))$/;
 
 export interface Attribute {
-  name: string; // lowercased
-  value: string;
-  // range: Range;
-  valueRange: Range | undefined;
+	name: string; // lowercased
+	value: string;
+	// range: Range;
+	valueRange: Range | undefined;
 }
 
 export enum IncludeAttributesSetType {
-  None = "none",
-  Required = "required",
-  All = "all"
+	None = "none",
+	Required = "required",
+	All = "all",
 }
 
 // Extends Quote from textUtils.ts
 export enum AttributeQuoteType {
-  None = "none",
-  Double = "double",
-  Single = "single"
+	None = "none",
+	Double = "double",
+	Single = "single",
 }
 
 export interface IncludeAttributesCustom {
-  [name: string]: NameWithOptionalValue<string>[]; // lowercased name
+	[name: string]: NameWithOptionalValue<string>[]; // lowercased name
 }
 
 // Collection of attributes. Key is attribute name lowercased
@@ -37,7 +37,7 @@ export class Attributes extends MyMap<string, Attribute> { }
  * @returns
  */
 export function getAttributePattern(attributeName: string): RegExp {
-  return new RegExp(`\\b${attributeName}\\s*=\\s*(?:['"])?`, "i");
+	return new RegExp(`\\b${attributeName}\\s*=\\s*(?:['"])?`, "i");
 }
 
 /**
@@ -48,37 +48,37 @@ export function getAttributePattern(attributeName: string): RegExp {
  * @returns
  */
 export function parseAttributes(document: TextDocument, attributeRange: Range, validAttributeNames?: MySet<string>): Attributes {
-  const attributeStr: string = document.getText(attributeRange);
-  const attributes: Attributes = new Attributes();
-  let attributeMatch: RegExpExecArray | null = null;
-  // eslint-disable-next-line no-cond-assign
-  while (attributeMatch = ATTRIBUTES_PATTERN.exec(attributeStr)) {
-    const attributeName = attributeMatch[1];
-    if (validAttributeNames && !validAttributeNames.has(attributeName.toLowerCase())) {
-      continue;
-    }
-    const separator: string = attributeMatch[2];
-    const quotedValue: string = attributeMatch[4];
-    const unquotedValue:string = attributeMatch[5];
-    const attributeValue: string = quotedValue !== undefined ? quotedValue : unquotedValue;
+	const attributeStr: string = document.getText(attributeRange);
+	const attributes: Attributes = new Attributes();
+	let attributeMatch: RegExpExecArray | null = null;
+	// eslint-disable-next-line no-cond-assign
+	while (attributeMatch = ATTRIBUTES_PATTERN.exec(attributeStr)) {
+		const attributeName = attributeMatch[1];
+		if (validAttributeNames && !validAttributeNames.has(attributeName.toLowerCase())) {
+			continue;
+		}
+		const separator: string = attributeMatch[2];
+		const quotedValue: string = attributeMatch[4];
+		const unquotedValue: string = attributeMatch[5];
+		const attributeValue: string = quotedValue !== undefined ? quotedValue : unquotedValue;
 
-    let attributeValueOffset: number;
-    let attributeValueRange: Range | undefined;
-    if (attributeValue) {
-      attributeValueOffset = document.offsetAt(attributeRange.start) + attributeMatch.index + attributeName.length
-        + separator.length + (quotedValue !== undefined ? 1 : 0);
-      attributeValueRange = new Range(
-        document.positionAt(attributeValueOffset),
-        document.positionAt(attributeValueOffset + attributeValue.length)
-      );
-    }
+		let attributeValueOffset: number;
+		let attributeValueRange: Range | undefined;
+		if (attributeValue) {
+			attributeValueOffset = document.offsetAt(attributeRange.start) + attributeMatch.index + attributeName.length
+				+ separator.length + (quotedValue !== undefined ? 1 : 0);
+			attributeValueRange = new Range(
+				document.positionAt(attributeValueOffset),
+				document.positionAt(attributeValueOffset + attributeValue.length)
+			);
+		}
 
-    attributes.set(attributeName.toLowerCase(), {
-      name: attributeName,
-      value: attributeValue,
-      valueRange: attributeValueRange
-    });
-  }
+		attributes.set(attributeName.toLowerCase(), {
+			name: attributeName,
+			value: attributeValue,
+			valueRange: attributeValueRange,
+		});
+	}
 
-  return attributes;
+	return attributes;
 }

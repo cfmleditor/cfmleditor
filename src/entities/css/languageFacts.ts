@@ -14,16 +14,16 @@ export const cssDataManager: ICSSDataManager = new CSSDataManager({
 export const cssColors: { [name: string]: string } = colors;
 
 function getEntryStatus(status: EntryStatus): string {
-  switch (status) {
-    case "experimental":
-      return "⚠️ Property is experimental. Be cautious when using it.\n\n";
-    case "nonstandard":
-      return "🚨️ Property is nonstandard. Avoid using it.\n\n";
-    case "obsolete":
-      return "🚨️️️ Property is obsolete. Avoid using it.\n\n";
-    default:
-      return "";
-  }
+	switch (status) {
+		case "experimental":
+			return "⚠️ Property is experimental. Be cautious when using it.\n\n";
+		case "nonstandard":
+			return "🚨️ Property is nonstandard. Avoid using it.\n\n";
+		case "obsolete":
+			return "🚨️️️ Property is obsolete. Avoid using it.\n\n";
+		default:
+			return "";
+	}
 }
 
 /**
@@ -32,36 +32,38 @@ function getEntryStatus(status: EntryStatus): string {
  * @returns
  */
 export function getEntryDescription(entry: IEntry): string | undefined {
-  if (!entry.description || entry.description === "") {
-    return undefined;
-  }
+	if (!entry.description || entry.description === "") {
+		return undefined;
+	}
 
-  let result: string = "";
+	let result: string = "";
 
-  if (entry.status) {
-    result += getEntryStatus(entry.status);
-  }
+	if (entry.status) {
+		result += getEntryStatus(entry.status);
+	}
 
-  if (typeof entry.description === "string") {
-    result += entry.description;
-  } else if (entry.description.kind === "plaintext") {
-    result += entry.description.value;
-  } else if (entry.description.kind === "markdown") {
-    result += entry.description.value;
-  }
+	if (typeof entry.description === "string") {
+		result += entry.description;
+	}
+	else if (entry.description.kind === "plaintext") {
+		result += entry.description.value;
+	}
+	else if (entry.description.kind === "markdown") {
+		result += entry.description.value;
+	}
 
-  const browserLabel = getBrowserLabel(entry.browsers);
-  if (browserLabel) {
-    result += `\n(${browserLabel})`;
-  }
+	const browserLabel = getBrowserLabel(entry.browsers);
+	if (browserLabel) {
+		result += `\n(${browserLabel})`;
+	}
 
-  /*
+	/*
   if ("syntax" in entry) {
     result += `\n\nSyntax: ${entry.syntax}`;
   }
   */
 
-  return result;
+	return result;
 }
 
 export interface Browsers {
@@ -77,12 +79,12 @@ export interface Browsers {
 }
 
 export const browserNames = {
-	E: 'Edge',
-	FF: 'Firefox',
-	S: 'Safari',
-	C: 'Chrome',
-	IE: 'IE',
-	O: 'Opera'
+	E: "Edge",
+	FF: "Firefox",
+	S: "Safari",
+	C: "Chrome",
+	IE: "IE",
+	O: "Opera",
 };
 
 /**
@@ -96,8 +98,8 @@ export function getBrowserLabel(browsers: string[] = []): string | null {
 	}
 
 	return browsers
-		.map(b => {
-			let result = '';
+		.map((b) => {
+			let result = "";
 			const matches = b.match(/([A-Z]+)(\d+)?/);
 
 			const name = matches ? matches[1] : undefined;
@@ -107,9 +109,9 @@ export function getBrowserLabel(browsers: string[] = []): string | null {
 				result += browserNames[name as keyof typeof browserNames];
 			}
 			if (version) {
-				result += ' ' + version;
+				result += " " + version;
 			}
 			return result;
 		})
-		.join(', ');
+		.join(", ");
 }

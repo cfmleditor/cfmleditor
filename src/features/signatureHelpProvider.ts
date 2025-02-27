@@ -15,192 +15,191 @@ import { getGlobalFunction } from "./cachedEntities";
 import { cachedComponentPathToUri, getComponent } from "./cachedEntities";
 
 export default class CFMLSignatureHelpProvider implements SignatureHelpProvider {
-  /**
-   * Provide help for the signature at the given position and document.
-   * @param document The document in which the command was invoked.
-   * @param position The position at which the command was invoked.
-   * @param _token A cancellation token.
-   * @param _context Information about how signature help was triggered.
-   * @returns
-   */
-  public async provideSignatureHelp(document: TextDocument, position: Position, _token: CancellationToken, _context: SignatureHelpContext): Promise<SignatureHelp | null> {
-    // console.log("provideSignatureHelp:CFMLSignatureHelpProvider:" + _token?.isCancellationRequested);
+	/**
+	 * Provide help for the signature at the given position and document.
+	 * @param document The document in which the command was invoked.
+	 * @param position The position at which the command was invoked.
+	 * @param _token A cancellation token.
+	 * @param _context Information about how signature help was triggered.
+	 * @returns
+	 */
+	public async provideSignatureHelp(document: TextDocument, position: Position, _token: CancellationToken, _context: SignatureHelpContext): Promise<SignatureHelp | null> {
+		// console.log("provideSignatureHelp:CFMLSignatureHelpProvider:" + _token?.isCancellationRequested);
 
-    const cfmlSignatureSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.signature", document.uri);
-    if (!cfmlSignatureSettings.get<boolean>("enable", true)) {
-      return null;
-    }
+		const cfmlSignatureSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.signature", document.uri);
+		if (!cfmlSignatureSettings.get<boolean>("enable", true)) {
+			return null;
+		}
 
-    const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
-    const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
-    if (documentPositionStateContext.positionInComment) {
-      return null;
-    }
+		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
+		if (documentPositionStateContext.positionInComment) {
+			return null;
+		}
 
-    const sanitizedDocumentText: string = documentPositionStateContext.sanitizedDocumentText;
+		const sanitizedDocumentText: string = documentPositionStateContext.sanitizedDocumentText;
 
-    const backwardIterator: BackwardIterator = new BackwardIterator(documentPositionStateContext, position, _token);
+		const backwardIterator: BackwardIterator = new BackwardIterator(documentPositionStateContext, position, _token);
 
-    backwardIterator.next(_token);
-    const iteratedSigPosition: Position | undefined = findStartSigPosition(backwardIterator, _token);
-    if (!iteratedSigPosition) {
-      return null;
-    }
+		backwardIterator.next(_token);
+		const iteratedSigPosition: Position | undefined = findStartSigPosition(backwardIterator, _token);
+		if (!iteratedSigPosition) {
+			return null;
+		}
 
-    const startSigPosition: Position = document.positionAt(document.offsetAt(iteratedSigPosition) + 2);
-    const endSigPosition: Position = getClosingPosition(documentPositionStateContext, document.offsetAt(startSigPosition), ")", _token).translate(0, -1);
-    const functionArgRanges: Range[] = getScriptFunctionArgRanges(documentPositionStateContext, new Range(startSigPosition, endSigPosition), ",", _token);
+		const startSigPosition: Position = document.positionAt(document.offsetAt(iteratedSigPosition) + 2);
+		const endSigPosition: Position = getClosingPosition(documentPositionStateContext, document.offsetAt(startSigPosition), ")", _token).translate(0, -1);
+		const functionArgRanges: Range[] = getScriptFunctionArgRanges(documentPositionStateContext, new Range(startSigPosition, endSigPosition), ",", _token);
 
-    let paramIndex: number = 0;
-    paramIndex = functionArgRanges.findIndex((range: Range) => {
-      return range.contains(position);
-    });
-    if (paramIndex === -1) {
-      return null;
-    }
-    const paramText: string = sanitizedDocumentText.slice(document.offsetAt(functionArgRanges[paramIndex].start), document.offsetAt(functionArgRanges[paramIndex].end));
+		let paramIndex: number = 0;
+		paramIndex = functionArgRanges.findIndex((range: Range) => {
+			return range.contains(position);
+		});
+		if (paramIndex === -1) {
+			return null;
+		}
+		const paramText: string = sanitizedDocumentText.slice(document.offsetAt(functionArgRanges[paramIndex].start), document.offsetAt(functionArgRanges[paramIndex].end));
 
-    const startSigPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(startSigPosition));
+		const startSigPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(startSigPosition));
 
-    let entry: Function | undefined;
+		let entry: Function | undefined;
 
-    // Check if initializing via "new" operator
-    const objectNewInstanceInitPrefixMatch: RegExpExecArray | null = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
-    if (objectNewInstanceInitPrefixMatch) {
-      const componentDotPath: string = objectNewInstanceInitPrefixMatch[2];
-      const componentUri: Uri | undefined = cachedComponentPathToUri(componentDotPath, document.uri, _token);
-      if (componentUri) {
-        const initComponent: Component | undefined = getComponent(componentUri, _token);
-        if (initComponent) {
-          const initMethod: string = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
-          if (initComponent.functions.has(initMethod)) {
-            entry = initComponent.functions.get(initMethod);
-          }
-        }
-      }
-    }
+		// Check if initializing via "new" operator
+		const objectNewInstanceInitPrefixMatch: RegExpExecArray | null = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
+		if (objectNewInstanceInitPrefixMatch) {
+			const componentDotPath: string = objectNewInstanceInitPrefixMatch[2];
+			const componentUri: Uri | undefined = cachedComponentPathToUri(componentDotPath, document.uri, _token);
+			if (componentUri) {
+				const initComponent: Component | undefined = getComponent(componentUri, _token);
+				if (initComponent) {
+					const initMethod: string = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
+					if (initComponent.functions.has(initMethod)) {
+						entry = initComponent.functions.get(initMethod);
+					}
+				}
+			}
+		}
 
-    if (!entry) {
-      const identWordRange: Range | undefined = backwardIterator ? getPrecedingIdentifierRange(documentPositionStateContext, backwardIterator.getPosition(), _token) : undefined;
-      if (!identWordRange) {
-        return null;
-      }
+		if (!entry) {
+			const identWordRange: Range | undefined = backwardIterator ? getPrecedingIdentifierRange(documentPositionStateContext, backwardIterator.getPosition(), _token) : undefined;
+			if (!identWordRange) {
+				return null;
+			}
 
-      const ident: string = document.getText(identWordRange);
-      const lowerIdent: string = ident.toLowerCase();
+			const ident: string = document.getText(identWordRange);
+			const lowerIdent: string = ident.toLowerCase();
 
-      const startIdentPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(identWordRange.start));
+			const startIdentPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(identWordRange.start));
 
-      // Global function
-      if (!isContinuingExpression(startIdentPositionPrefix, _token)) {
-        entry = getGlobalFunction(lowerIdent);
-      }
+			// Global function
+			if (!isContinuingExpression(startIdentPositionPrefix, _token)) {
+				entry = getGlobalFunction(lowerIdent);
+			}
 
-      // Check user functions
-      if (!entry) {
-        const userFun: UserFunction | undefined = await getFunctionFromPrefix(documentPositionStateContext, lowerIdent, startIdentPositionPrefix, _token);
+			// Check user functions
+			if (!entry) {
+				const userFun: UserFunction | undefined = await getFunctionFromPrefix(documentPositionStateContext, lowerIdent, startIdentPositionPrefix, _token);
 
-        // Ensure this does not trigger on script function definition
-        if (userFun && userFun.location && userFun.location.uri === document.uri && userFun.location.range.contains(position) && (!userFun.bodyRange || !userFun.bodyRange.contains(position))) {
-          return null;
-        }
+				// Ensure this does not trigger on script function definition
+				if (userFun && userFun.location && userFun.location.uri === document.uri && userFun.location.range.contains(position) && (!userFun.bodyRange || !userFun.bodyRange.contains(position))) {
+					return null;
+				}
 
-        entry = userFun;
-      }
+				entry = userFun;
+			}
 
-      // Check variables
-      if (!entry) {
-        const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
-        const variableScopePrefixMatch: RegExpExecArray | null = variableScopePrefixPattern.exec(startIdentPositionPrefix);
-        if (variableScopePrefixMatch) {
-          const scopePrefix: string = variableScopePrefixMatch[1];
-          let prefixScope: Scope;
-          if (scopePrefix) {
-            prefixScope = Scope.valueOf(scopePrefix);
-          }
-          const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext, _token);
-          const userFunctionVariables: UserFunctionVariable[] = allDocumentVariableAssignments.filter((variable: Variable) => {
-            if (variable.dataType !== DataType.Function || !isUserFunctionVariable(variable) || !equalsIgnoreCase(variable.identifier, lowerIdent)) {
-              return false;
-            }
+			// Check variables
+			if (!entry) {
+				const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
+				const variableScopePrefixMatch: RegExpExecArray | null = variableScopePrefixPattern.exec(startIdentPositionPrefix);
+				if (variableScopePrefixMatch) {
+					const scopePrefix: string = variableScopePrefixMatch[1];
+					let prefixScope: Scope;
+					if (scopePrefix) {
+						prefixScope = Scope.valueOf(scopePrefix);
+					}
+					const allDocumentVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext, _token);
+					const userFunctionVariables: UserFunctionVariable[] = allDocumentVariableAssignments.filter((variable: Variable) => {
+						if (variable.dataType !== DataType.Function || !isUserFunctionVariable(variable) || !equalsIgnoreCase(variable.identifier, lowerIdent)) {
+							return false;
+						}
 
-            if (prefixScope) {
-              return (variable.scope === prefixScope || (variable.scope === Scope.Unknown && unscopedPrecedence.includes(prefixScope)));
-            }
+						if (prefixScope) {
+							return (variable.scope === prefixScope || (variable.scope === Scope.Unknown && unscopedPrecedence.includes(prefixScope)));
+						}
 
-            return (unscopedPrecedence.includes(variable.scope) || variable.scope === Scope.Unknown);
-          }).map((variable: Variable) => {
-            return variable as UserFunctionVariable;
-          });
-          const userFunctions: UserFunction[] = variablesToUserFunctions(userFunctionVariables);
-          if (userFunctions.length > 0) {
-            entry = userFunctions[0];
-          }
-        }
-      }
-    }
+						return (unscopedPrecedence.includes(variable.scope) || variable.scope === Scope.Unknown);
+					}).map((variable: Variable) => {
+						return variable as UserFunctionVariable;
+					});
+					const userFunctions: UserFunction[] = variablesToUserFunctions(userFunctionVariables);
+					if (userFunctions.length > 0) {
+						entry = userFunctions[0];
+					}
+				}
+			}
+		}
 
-    if (!entry) {
-      return null;
-    }
+		if (!entry) {
+			return null;
+		}
 
-    const sigHelp = new SignatureHelp();
+		const sigHelp = new SignatureHelp();
 
-    entry.signatures.forEach((signature: Signature, sigIndex: number) => {
-      const sigDesc: string | undefined = signature.description ? signature.description : entry.description;
-      if (!sigDesc) {
-        return;
-      }
-      const sigLabel: string = constructSyntaxString(entry, sigIndex);
-      const signatureInfo = new SignatureInformation(sigLabel, textToMarkdownString(sigDesc));
-      const sigParamsPrefix: string | undefined = constructSignatureLabelParamsPrefix(entry);
-      if (sigParamsPrefix) {
-        const sigParamsPrefixLength: number = sigParamsPrefix.length + 1;
-        const sigParamsLabelOffsetTuples: [number, number][] = getSignatureParamsLabelOffsetTuples(signature.parameters).map((val: [number, number]) => {
-            return [val[0] + sigParamsPrefixLength, val[1] + sigParamsPrefixLength] as [number, number];
-        });
+		entry.signatures.forEach((signature: Signature, sigIndex: number) => {
+			const sigDesc: string | undefined = signature.description ? signature.description : entry.description;
+			if (!sigDesc) {
+				return;
+			}
+			const sigLabel: string = constructSyntaxString(entry, sigIndex);
+			const signatureInfo = new SignatureInformation(sigLabel, textToMarkdownString(sigDesc));
+			const sigParamsPrefix: string | undefined = constructSignatureLabelParamsPrefix(entry);
+			if (sigParamsPrefix) {
+				const sigParamsPrefixLength: number = sigParamsPrefix.length + 1;
+				const sigParamsLabelOffsetTuples: [number, number][] = getSignatureParamsLabelOffsetTuples(signature.parameters).map((val: [number, number]) => {
+					return [val[0] + sigParamsPrefixLength, val[1] + sigParamsPrefixLength] as [number, number];
+				});
 
-        signatureInfo.parameters = signature.parameters.map((param: Parameter, paramIdx: number) => {
-            if ( param.description ) {
-                const paramInfo: ParameterInformation = new ParameterInformation(sigParamsLabelOffsetTuples[paramIdx], textToMarkdownString(param.description));
-                return paramInfo;
-            } else {
-                return undefined
-            }
-        });
-        sigHelp.signatures.push(signatureInfo);
-      }
-    });
+				signatureInfo.parameters = signature.parameters.map((param: Parameter, paramIdx: number) => {
+					if (param.description) {
+						const paramInfo: ParameterInformation = new ParameterInformation(sigParamsLabelOffsetTuples[paramIdx], textToMarkdownString(param.description));
+						return paramInfo;
+					}
+					else {
+						return undefined;
+					}
+				});
+				sigHelp.signatures.push(signatureInfo);
+			}
+		});
 
-    sigHelp.activeSignature = 0;
-    for (let i = 0; i < sigHelp.signatures.length; i++) {
-      const currSig = sigHelp.signatures[i];
-      if (paramIndex < currSig.parameters.length) {
-        sigHelp.activeSignature = i;
-        break;
-      }
-    }
+		sigHelp.activeSignature = 0;
+		for (let i = 0; i < sigHelp.signatures.length; i++) {
+			const currSig = sigHelp.signatures[i];
+			if (paramIndex < currSig.parameters.length) {
+				sigHelp.activeSignature = i;
+				break;
+			}
+		}
 
-    // Consider named parameters
-    let namedParamMatch: RegExpExecArray | null = null;
-    // eslint-disable-next-line no-cond-assign
-    if (namedParamMatch = namedParameterPattern.exec(paramText)) {
-      // TODO: Consider argumentCollection
-      const paramName: string = namedParamMatch[1];
-      const namedParamIndex: number = entry.signatures[sigHelp.activeSignature].parameters.findIndex((param: Parameter) => {
-        return equalsIgnoreCase(paramName, param.name);
-      });
-      if (namedParamIndex !== -1) {
-        paramIndex = namedParamIndex;
-      }
-    }
+		// Consider named parameters
+		let namedParamMatch: RegExpExecArray | null = null;
+		// eslint-disable-next-line no-cond-assign
+		if (namedParamMatch = namedParameterPattern.exec(paramText)) {
+			// TODO: Consider argumentCollection
+			const paramName: string = namedParamMatch[1];
+			const namedParamIndex: number = entry.signatures[sigHelp.activeSignature].parameters.findIndex((param: Parameter) => {
+				return equalsIgnoreCase(paramName, param.name);
+			});
+			if (namedParamIndex !== -1) {
+				paramIndex = namedParamIndex;
+			}
+		}
 
-    sigHelp.activeParameter = Math.min(paramIndex, sigHelp.signatures[sigHelp.activeSignature].parameters.length - 1);
+		sigHelp.activeParameter = Math.min(paramIndex, sigHelp.signatures[sigHelp.activeSignature].parameters.length - 1);
 
-    return sigHelp;
-  }
+		return sigHelp;
+	}
 }
-
-

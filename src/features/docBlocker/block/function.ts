@@ -11,29 +11,28 @@ import { UserFunction, UserFunctionSignature, Argument } from "../../../entities
  * varied
  */
 export default class FunctionBlock extends Block {
+	protected pattern: RegExp = /^(\s*)(?:\b(?:private|package|public|remote|static|final|abstract|default)\s+)?(?:\b(?:private|package|public|remote|static|final|abstract|default)\s+)?(?:\b(?:[A-Za-z0-9_.$]+)\s+)?function\s+(?:[_$a-zA-Z][$\w]*)\s*(?:\((?:=\s*\{|[^{])*)[{;]/i;
 
-  protected pattern: RegExp = /^(\s*)(?:\b(?:private|package|public|remote|static|final|abstract|default)\s+)?(?:\b(?:private|package|public|remote|static|final|abstract|default)\s+)?(?:\b(?:[A-Za-z0-9_.$]+)\s+)?function\s+(?:[_$a-zA-Z][$\w]*)\s*(?:\((?:=\s*\{|[^{])*)[{;]/i;
+	public constructDoc(): Doc {
+		const doc = new Doc(DocType.Function, this.document.uri);
 
-  public constructDoc(): Doc {
-    const doc = new Doc(DocType.Function, this.document.uri);
+		const positionOffset: number = this.document.offsetAt(this.position);
+		const patternMatch: RegExpExecArray | null = this.suffix ? this.pattern.exec(this.suffix) : null;
+		if (patternMatch) {
+			const declaration: Position = this.document.positionAt(positionOffset + patternMatch[1].length + 1);
+			if (this.component) {
+				this.component.functions.filter((func: UserFunction) => {
+					return func.location ? func.location.range.contains(declaration) : false;
+				}).forEach((func: UserFunction) => {
+					func.signatures.forEach((sig: UserFunctionSignature) => {
+						sig.parameters.forEach((arg: Argument) => {
+							doc.params.push(arg.name);
+						});
+					});
+				});
+			}
+		}
 
-    const positionOffset: number = this.document.offsetAt(this.position);
-    const patternMatch: RegExpExecArray | null = this.suffix ? this.pattern.exec(this.suffix) : null;
-    if (patternMatch) {
-      const declaration: Position = this.document.positionAt(positionOffset + patternMatch[1].length + 1);
-      if ( this.component ) {
-        this.component.functions.filter((func: UserFunction) => {
-            return func.location ? func.location.range.contains(declaration) : false;
-        }).forEach((func: UserFunction) => {
-            func.signatures.forEach((sig: UserFunctionSignature) => {
-            sig.parameters.forEach((arg: Argument) => {
-                doc.params.push(arg.name);
-            });
-            });
-        });
-      }
-    }
-
-    return doc;
-  }
+		return doc;
+	}
 }

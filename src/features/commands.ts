@@ -11,17 +11,17 @@ import { DocumentPositionStateContext, getDocumentPositionStateContext } from ".
  * Refreshes (clears and retrieves) all CFML global definitions
  */
 export async function refreshGlobalDefinitionCache(): Promise<void> {
-    clearAllGlobalFunctions();
-    clearAllGlobalTags();
-    clearAllGlobalEntityDefinitions();
-    clearAllCustomSnippets();
+	clearAllGlobalFunctions();
+	clearAllGlobalTags();
+	clearAllGlobalEntityDefinitions();
+	clearAllCustomSnippets();
 
-    const cfmlGlobalDefinitionsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.globalDefinitions");
-    if (cfmlGlobalDefinitionsSettings.get<string>("source") === "cfdocs") {
-        await CFDocsService.cacheAll();
-    }
+	const cfmlGlobalDefinitionsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.globalDefinitions");
+	if (cfmlGlobalDefinitionsSettings.get<string>("source") === "cfdocs") {
+		await CFDocsService.cacheAll();
+	}
 
-    await SnippetService.cacheAllCustomSnippets();
+	await SnippetService.cacheAllCustomSnippets();
 }
 
 /**
@@ -29,10 +29,10 @@ export async function refreshGlobalDefinitionCache(): Promise<void> {
  * @param _token
  */
 export async function refreshWorkspaceDefinitionCache(_token: CancellationToken): Promise<void> {
-    const cfmlIndexComponentsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.indexComponents");
-    if (cfmlIndexComponentsSettings.get<boolean>("enable")) {
-        await cacheAllComponents(_token);
-    }
+	const cfmlIndexComponentsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.indexComponents");
+	if (cfmlIndexComponentsSettings.get<boolean>("enable")) {
+		await cacheAllComponents(_token);
+	}
 }
 
 /**
@@ -40,22 +40,22 @@ export async function refreshWorkspaceDefinitionCache(_token: CancellationToken)
  * @param editor The text editor which represents the document for which to open the file
  */
 export async function showApplicationDocument(editor: TextEditor): Promise<void> {
-    const activeDocumentUri: Uri = editor.document.uri;
+	const activeDocumentUri: Uri = editor.document.uri;
 
-    if (activeDocumentUri.scheme === "untitled") {
-        return;
-    }
+	if (activeDocumentUri.scheme === "untitled") {
+		return;
+	}
 
-    const applicationUri: Uri | undefined = await getApplicationUri(activeDocumentUri);
-    if (applicationUri) {
-        const applicationDocument: TextDocument = await workspace.openTextDocument(applicationUri);
-        if (!applicationDocument) {
-            window.showErrorMessage("No Application found for the currently active document.");
-            return;
-        }
+	const applicationUri: Uri | undefined = await getApplicationUri(activeDocumentUri);
+	if (applicationUri) {
+		const applicationDocument: TextDocument = await workspace.openTextDocument(applicationUri);
+		if (!applicationDocument) {
+			window.showErrorMessage("No Application found for the currently active document.");
+			return;
+		}
 
-        window.showTextDocument(applicationDocument);
-    }
+		window.showTextDocument(applicationDocument);
+	}
 }
 
 /**
@@ -65,27 +65,26 @@ export async function showApplicationDocument(editor: TextEditor): Promise<void>
  * @param _token
  */
 export function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): void {
-    const document: TextDocument = editor.document;
+	const document: TextDocument = editor.document;
 
-    if (isCfcFile(document, _token)) {
-        const thisComponent: Component | undefined = getComponent(document.uri, _token);
-        if (thisComponent) {
-            const functionStartLines: number[] = [];
-            thisComponent.functions.filter((func: UserFunction) => {
-                return !func.isImplicit && func.bodyRange !== undefined;
-            }).forEach((func: UserFunction) => {
-                if ( func.bodyRange ) {
-                    functionStartLines.push(func.bodyRange.start.line);
-                }
-            });
+	if (isCfcFile(document, _token)) {
+		const thisComponent: Component | undefined = getComponent(document.uri, _token);
+		if (thisComponent) {
+			const functionStartLines: number[] = [];
+			thisComponent.functions.filter((func: UserFunction) => {
+				return !func.isImplicit && func.bodyRange !== undefined;
+			}).forEach((func: UserFunction) => {
+				if (func.bodyRange) {
+					functionStartLines.push(func.bodyRange.start.line);
+				}
+			});
 
-            if (functionStartLines.length > 0) {
-                commands.executeCommand("editor.fold", { selectionLines: functionStartLines });
-            }
-        }
-    }
+			if (functionStartLines.length > 0) {
+				commands.executeCommand("editor.fold", { selectionLines: functionStartLines });
+			}
+		}
+	}
 }
-
 
 /**
  * @param editor  The text editor which represents the document for which to fold all function
@@ -94,20 +93,19 @@ export function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit, _toke
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: any): void {
+	const position: Position = editor.selection.start;
+	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, true, undefined, false);
 
-    const position: Position = editor.selection.start;
-    const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, true, undefined, false);
-
-    if (documentPositionStateContext.positionIsScript) {
-        commands.executeCommand("editor.action.insertSnippet", {
-            "langId": "cfml",
-            "snippet": args.script
-        });
-    } else {
-        commands.executeCommand("editor.action.insertSnippet", {
-            "langId": "cfml",
-            "snippet": args.tag
-        });
-    }
-
+	if (documentPositionStateContext.positionIsScript) {
+		commands.executeCommand("editor.action.insertSnippet", {
+			langId: "cfml",
+			snippet: args.script,
+		});
+	}
+	else {
+		commands.executeCommand("editor.action.insertSnippet", {
+			langId: "cfml",
+			snippet: args.tag,
+		});
+	}
 }
