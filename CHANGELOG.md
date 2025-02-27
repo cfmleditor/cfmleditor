@@ -9,7 +9,7 @@ All notable changes to the CFML extension will be documented in this file.
 ## [0.6.33] - 2025-02-18
 
 - Replace trie-prefix-tree with trie-search and simplify search implementation for user defined functions #41 ( fixes issues with $ in function name )
-- Fix Inefficient Regular Expression Complexity in koa - https://github.com/advisories/GHSA-593f-38f6-jp5m
+- Fix Inefficient Regular Expression Complexity in koa - <https://github.com/advisories/GHSA-593f-38f6-jp5m>
 - Add support for cfscript tag islands
 
 ## [0.6.32] - 2025-02-17
@@ -23,7 +23,7 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [0.6.30] - 2024-09-18
 
-- Fix for https://github.com/cfmleditor/cfmleditor/issues/33
+- Fix for <https://github.com/cfmleditor/cfmleditor/issues/33>
 
 ## [0.6.28] - 2024-09-18
 
@@ -50,7 +50,7 @@ All notable changes to the CFML extension will be documented in this file.
 ## [0.6.22] - 2024-06-11
 
 - Update cfml slack link
-- Update dependencies 
+- Update dependencies
 
 ## [0.6.21] - 2024-04-23
 
@@ -84,7 +84,7 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [0.6.14] - 2024-02-02
 
-- Pruned some packages 
+- Pruned some packages
 - Fixed some cfscript function parsing and highlighting
 
 ## [0.6.12] - 2024-01-12

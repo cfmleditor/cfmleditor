@@ -99,7 +99,7 @@ export function replaceRangeWithSpaces(document: TextDocument, ranges: Range[]):
  * @param _token
  * @returns string
  */
-export function getSanitizedDocumentText(document: TextDocument, commentRanges: Range[], replaceComments: boolean = false, _token: CancellationToken): string {
+export function getSanitizedDocumentText(document: TextDocument, commentRanges: Range[] | undefined, replaceComments: boolean = false, _token: CancellationToken | undefined): string {
 	if (replaceComments !== true) {
 		return document.getText();
 	}
@@ -108,7 +108,7 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges: 
 		documentCommentRanges = commentRanges;
 	}
 	else {
-		const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (getComponent(document.uri, _token)).isScript);
+		const docIsScript: boolean | undefined = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (getComponent(document.uri, _token))?.isScript);
 		documentCommentRanges = getDocumentContextRanges(document, docIsScript, undefined, false, _token).commentRanges;
 	}
 
@@ -141,5 +141,5 @@ const schemePattern = /^[a-zA-Z][a-zA-Z0-9+\-.]+:/;
  * @returns boolean
  */
 export function isUri(str: string): boolean {
-	return str && schemePattern.test(str);
+	return str ? schemePattern.test(str) : false;
 }

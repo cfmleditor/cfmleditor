@@ -49,7 +49,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 	 */
 	private static async getComponentSymbols(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<DocumentSymbol[]> {
 		const document: TextDocument = documentStateContext.document;
-		const component: Component = getComponent(document.uri, _token);
+		const component: Component | undefined = getComponent(document.uri, _token);
 
 		if (!component) {
 			return [];
@@ -68,13 +68,15 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 		const propertySymbols: DocumentSymbol[] = [];
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		component.properties.forEach((property: Property, propertyKey: string) => {
-			propertySymbols.push(new DocumentSymbol(
-				property.name,
-				"",
-				SymbolKind.Property,
-				property.propertyRange,
-				property.nameRange
-			));
+			if (property.nameRange) {
+				propertySymbols.push(new DocumentSymbol(
+					property.name,
+					"",
+					SymbolKind.Property,
+					property.propertyRange,
+					property.nameRange
+				));
+			}
 		});
 		componentSymbol.children = componentSymbol.children.concat(propertySymbols);
 
@@ -85,13 +87,15 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 			if (variable.scope !== Scope.Unknown) {
 				detail = `${variable.scope}.${variable.identifier}`;
 			}
-			variableSymbols.push(new DocumentSymbol(
-				variable.identifier,
-				detail,
-				usesConstantConvention(variable.identifier) || variable.final ? SymbolKind.Constant : SymbolKind.Variable,
-				variable.declarationLocation.range,
-				variable.declarationLocation.range
-			));
+			if (variable.declarationLocation) {
+				variableSymbols.push(new DocumentSymbol(
+					variable.identifier,
+					detail,
+					usesConstantConvention(variable.identifier) || variable.final ? SymbolKind.Constant : SymbolKind.Variable,
+					variable.declarationLocation.range,
+					variable.declarationLocation.range
+				));
+			}
 		});
 		componentSymbol.children = componentSymbol.children.concat(variableSymbols);
 
@@ -99,37 +103,41 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 		const functionSymbols: DocumentSymbol[] = [];
 
 		for (const [functionKey, userFunction] of component.functions) {
-			const currFuncSymbol: DocumentSymbol = new DocumentSymbol(
-				userFunction.name,
-				"",
-				functionKey === "init" ? SymbolKind.Constructor : SymbolKind.Method,
-				userFunction.location.range,
-				userFunction.nameRange
-			);
-			currFuncSymbol.children = [];
+			if (userFunction.name && userFunction.location && userFunction.nameRange) {
+				const currFuncSymbol: DocumentSymbol = new DocumentSymbol(
+					userFunction.name,
+					"",
+					functionKey === "init" ? SymbolKind.Constructor : SymbolKind.Method,
+					userFunction.location.range,
+					userFunction.nameRange
+				);
+				currFuncSymbol.children = [];
 
-			if (!userFunction.isImplicit) {
-				// Component function local variables
-				const localVarSymbols: DocumentSymbol[] = [];
-				// TODO: Improve performance
-				const localVariables: Variable[] = await getLocalVariables(userFunction, documentStateContext, component.isScript, _token);
-				localVariables.forEach((variable: Variable) => {
-					let detail = "";
-					if (variable.scope !== Scope.Unknown) {
-						detail = `${variable.scope}.${variable.identifier}`;
-					}
-					localVarSymbols.push(new DocumentSymbol(
-						variable.identifier,
-						detail,
-						usesConstantConvention(variable.identifier) || variable.final ? SymbolKind.Constant : SymbolKind.Variable,
-						variable.declarationLocation.range,
-						variable.declarationLocation.range
-					));
-				});
-				currFuncSymbol.children = currFuncSymbol.children.concat(localVarSymbols);
+				if (!userFunction.isImplicit) {
+					// Component function local variables
+					const localVarSymbols: DocumentSymbol[] = [];
+					// TODO: Improve performance
+					const localVariables: Variable[] = await getLocalVariables(userFunction, documentStateContext, component.isScript, _token);
+					localVariables.forEach((variable: Variable) => {
+						let detail = "";
+						if (variable.scope !== Scope.Unknown) {
+							detail = `${variable.scope}.${variable.identifier}`;
+						}
+						if (variable.declarationLocation) {
+							localVarSymbols.push(new DocumentSymbol(
+								variable.identifier,
+								detail,
+								usesConstantConvention(variable.identifier) || variable.final ? SymbolKind.Constant : SymbolKind.Variable,
+								variable.declarationLocation.range,
+								variable.declarationLocation.range
+							));
+						}
+					});
+					currFuncSymbol.children = currFuncSymbol.children.concat(localVarSymbols);
+				}
+
+				functionSymbols.push(currFuncSymbol);
 			}
-
-			functionSymbols.push(currFuncSymbol);
 		}
 
 		componentSymbol.children = componentSymbol.children.concat(functionSymbols);
@@ -153,13 +161,16 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 			if (variable.scope !== Scope.Unknown) {
 				detail = `${variable.scope}.${variable.identifier}`;
 			}
-			templateSymbols.push(new DocumentSymbol(
-				variable.identifier,
-				detail,
-				kind,
-				variable.declarationLocation.range,
-				variable.declarationLocation.range
-			));
+
+			if (variable.declarationLocation) {
+				templateSymbols.push(new DocumentSymbol(
+					variable.identifier,
+					detail,
+					kind,
+					variable.declarationLocation.range,
+					variable.declarationLocation.range
+				));
+			}
 		});
 
 		// TODO: Include inline functions

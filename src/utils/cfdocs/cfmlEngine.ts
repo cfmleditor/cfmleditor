@@ -18,7 +18,10 @@ export namespace CFMLEngineName {
 	 * @param name The name string to resolve
 	 * @returns
 	 */
-	export function valueOf(name: string): CFMLEngineName {
+	export function valueOf(name: string | undefined): CFMLEngineName {
+		if (!name) {
+			return CFMLEngineName.Unknown;
+		}
 		switch (name.toLowerCase()) {
 			case "coldfusion":
 				return CFMLEngineName.ColdFusion;
@@ -36,7 +39,7 @@ export namespace CFMLEngineName {
 
 export class CFMLEngine {
 	private name: CFMLEngineName;
-	private version: string;
+	private version: string | null | undefined;
 
 	/**
 	 *
@@ -65,7 +68,7 @@ export class CFMLEngine {
 	 * Getter for CFML engine version
 	 * @returns
 	 */
-	public getVersion(): string {
+	public getVersion(): string | null | undefined {
 		return this.version;
 	}
 
@@ -149,9 +152,9 @@ export class CFMLEngine {
 	public supportsScriptTags(): boolean {
 		return (
 			this.name === CFMLEngineName.Unknown
-			|| (this.name === CFMLEngineName.ColdFusion && gte(this.version, "11.0.0"))
+			|| (this.name === CFMLEngineName.ColdFusion && this.version !== undefined && this.version !== null && gte(this.version, "11.0.0"))
 			|| this.name === CFMLEngineName.Lucee
-			|| (this.name === CFMLEngineName.Railo && gte(this.version, "4.2.0"))
+			|| (this.name === CFMLEngineName.Railo && this.version !== undefined && this.version !== null && gte(this.version, "4.2.0"))
 		);
 	}
 
@@ -162,9 +165,9 @@ export class CFMLEngine {
 	public supportsGlobalFunctionNamedParams(): boolean {
 		return (
 			this.name === CFMLEngineName.Unknown
-			|| (this.name === CFMLEngineName.ColdFusion && gte(this.version, "2018.0.0"))
+			|| (this.name === CFMLEngineName.ColdFusion && this.version !== undefined && this.version !== null && gte(this.version, "2018.0.0"))
 			|| this.name === CFMLEngineName.Lucee
-			|| (this.name === CFMLEngineName.Railo && gte(this.version, "3.3.0"))
+			|| (this.name === CFMLEngineName.Railo && this.version !== undefined && this.version !== null && gte(this.version, "3.3.0"))
 		);
 	}
 
@@ -173,11 +176,11 @@ export class CFMLEngine {
 	 * @param versionStr A version string.
 	 * @returns
 	 */
-	public static toSemVer(versionStr: string): string | undefined {
-		if (versionStr !== "" && clean(versionStr, true)) {
+	public static toSemVer(versionStr: string | undefined): string | null | undefined {
+		if (versionStr && versionStr !== "" && clean(versionStr, true)) {
 			return clean(versionStr, true);
 		}
-		else if (DataType.isNumeric(versionStr)) {
+		else if (versionStr && DataType.isNumeric(versionStr)) {
 			const splitVer: string[] = versionStr.split(".");
 			while (splitVer.length < 3) {
 				splitVer.push("0");

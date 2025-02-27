@@ -18,7 +18,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 	 * @returns
 	 */
 
-	public provideDocumentColors(document: TextDocument, _token: CancellationToken): ColorInformation[] {
+	public provideDocumentColors(document: TextDocument, _token: CancellationToken | undefined): ColorInformation[] {
 		// console.log("provideDocumentColors:CFMLDocumentColorProvider:" + _token?.isCancellationRequested);
 
 		const result: ColorInformation[] = [];
@@ -27,103 +27,111 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 		// const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
 		const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, false, _token, true);
-		const cssRanges: Range[] = getCssRanges(documentStateContext, undefined, _token);
+		const cssRanges: (Range | undefined)[] = getCssRanges(documentStateContext, undefined, _token);
 
 		for (const cssRange of cssRanges) {
-			const rangeTextOffset: number = document.offsetAt(cssRange.start);
-			const rangeText: string = documentStateContext.sanitizedDocumentText.slice(rangeTextOffset, document.offsetAt(cssRange.end));
-			let propertyMatch: RegExpExecArray;
-			// eslint-disable-next-line no-cond-assign
-			while (propertyMatch = cssPropertyPattern.exec(rangeText)) {
-				const propertyValuePrefix: string = propertyMatch[1];
-				const propertyName: string = propertyMatch[2];
-				const propertyValue: string = propertyMatch[3];
+			if (cssRange) {
+				const rangeTextOffset: number = document.offsetAt(cssRange.start);
+				const rangeText: string = documentStateContext.sanitizedDocumentText.slice(rangeTextOffset, document.offsetAt(cssRange.end));
+				let propertyMatch: RegExpExecArray | null = null;
+				// eslint-disable-next-line no-cond-assign
+				while (propertyMatch = cssPropertyPattern.exec(rangeText)) {
+					const propertyValuePrefix: string = propertyMatch[1];
+					const propertyName: string = propertyMatch[2];
+					const propertyValue: string = propertyMatch[3];
 
-				if (!cssDataManager.isKnownProperty(propertyName)) {
-					continue;
-				}
-
-				const cssProperty: IPropertyData = cssDataManager.getProperty(propertyName);
-				if (cssProperty.restrictions && cssProperty.restrictions.includes("color")) {
-					let colorMatch: RegExpExecArray;
-
-					// RGB hex
-					// eslint-disable-next-line no-cond-assign
-					while (colorMatch = rgbHexPattern.exec(propertyValue)) {
-						const rgbHexValue: string = colorMatch[1];
-						const colorRange: Range = new Range(
-							document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index),
-							document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + colorMatch[0].length)
-						);
-
-						result.push(new ColorInformation(colorRange, hexToColor(rgbHexValue)));
+					if (!cssDataManager.isKnownProperty(propertyName)) {
+						continue;
 					}
 
-					// RGB function
-					// eslint-disable-next-line no-cond-assign
-					while (colorMatch = rgbFuncPattern.exec(propertyValue)) {
-						const r: string = colorMatch[1];
-						const g: string = colorMatch[2];
-						const b: string = colorMatch[3];
-						const a: string = colorMatch[4];
-						const colorRange: Range = new Range(
-							document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index),
-							document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + colorMatch[0].length)
-						);
+					const cssProperty: IPropertyData | undefined = cssDataManager.getProperty(propertyName);
+					if (cssProperty && cssProperty.restrictions && cssProperty.restrictions.includes("color")) {
+						let colorMatch: RegExpExecArray | null = null;
 
-						const red: number = r.includes("%") ? Number.parseFloat(r) / 100 : Number.parseInt(r) / 255;
-						const green: number = g.includes("%") ? Number.parseInt(g) / 100 : Number.parseFloat(g) / 255;
-						const blue: number = b.includes("%") ? Number.parseInt(b) / 100 : Number.parseFloat(b) / 255;
-						let alpha: number;
-						if (a) {
-							alpha = a.includes("%") ? Number.parseFloat(a) / 100 : Number.parseFloat(a);
-						}
-						else {
-							alpha = 1;
+						// RGB hex
+						// eslint-disable-next-line no-cond-assign
+						while (colorMatch = rgbHexPattern.exec(propertyValue)) {
+							const rgbHexValue: string = colorMatch[1];
+							const colorRange: Range = new Range(
+								document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index),
+								document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + colorMatch[0].length)
+							);
+
+							const color: Color | undefined = hexToColor(rgbHexValue);
+							if (color) {
+								result.push(new ColorInformation(colorRange, color));
+							}
 						}
 
-						result.push(new ColorInformation(colorRange, new Color(red, green, blue, alpha)));
-					}
+						// RGB function
+						// eslint-disable-next-line no-cond-assign
+						while (colorMatch = rgbFuncPattern.exec(propertyValue)) {
+							const r: string = colorMatch[1];
+							const g: string = colorMatch[2];
+							const b: string = colorMatch[3];
+							const a: string = colorMatch[4];
+							const colorRange: Range = new Range(
+								document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index),
+								document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + colorMatch[0].length)
+							);
 
-					// HSL function
-					// eslint-disable-next-line no-cond-assign
-					while (colorMatch = hslFuncPattern.exec(propertyValue)) {
-						const h: string = colorMatch[1];
-						const hUnit: string = colorMatch[2];
-						const s: string = colorMatch[3];
-						const l: string = colorMatch[4];
-						const a: string = colorMatch[5];
-						const colorRange: Range = new Range(
-							document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index),
-							document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + colorMatch[0].length)
-						);
+							const red: number = r.includes("%") ? Number.parseFloat(r) / 100 : Number.parseInt(r) / 255;
+							const green: number = g.includes("%") ? Number.parseInt(g) / 100 : Number.parseFloat(g) / 255;
+							const blue: number = b.includes("%") ? Number.parseInt(b) / 100 : Number.parseFloat(b) / 255;
+							let alpha: number;
+							if (a) {
+								alpha = a.includes("%") ? Number.parseFloat(a) / 100 : Number.parseFloat(a);
+							}
+							else {
+								alpha = 1;
+							}
 
-						const hue: number = Number.parseFloat(h);
-						const sat: number = Number.parseFloat(s);
-						const light: number = Number.parseFloat(l);
-						let alpha: number;
-						if (a) {
-							alpha = a.includes("%") ? Number.parseFloat(a) / 100 : Number.parseFloat(a);
+							result.push(new ColorInformation(colorRange, new Color(red, green, blue, alpha)));
 						}
-						else {
-							alpha = 1;
+
+						// HSL function
+						// eslint-disable-next-line no-cond-assign
+						while (colorMatch = hslFuncPattern.exec(propertyValue)) {
+							const h: string = colorMatch[1];
+							const hUnit: string = colorMatch[2];
+							const s: string = colorMatch[3];
+							const l: string = colorMatch[4];
+							const a: string = colorMatch[5];
+							const colorRange: Range = new Range(
+								document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index),
+								document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + colorMatch[0].length)
+							);
+
+							const hue: number = Number.parseFloat(h);
+							const sat: number = Number.parseFloat(s);
+							const light: number = Number.parseFloat(l);
+							let alpha: number;
+							if (a) {
+								alpha = a.includes("%") ? Number.parseFloat(a) / 100 : Number.parseFloat(a);
+							}
+							else {
+								alpha = 1;
+							}
+							const hueUnit = hUnit ? hUnit as "deg" | "rad" | "grad" | "turn" : "deg";
+
+							result.push(new ColorInformation(colorRange, colorFromHSL({ h: hue, s: sat, l: light, a: alpha }, hueUnit)));
 						}
-						const hueUnit = hUnit ? hUnit as "deg" | "rad" | "grad" | "turn" : "deg";
 
-						result.push(new ColorInformation(colorRange, colorFromHSL({ h: hue, s: sat, l: light, a: alpha }, hueUnit)));
-					}
+						// Color keywords
+						// eslint-disable-next-line no-cond-assign
+						while (colorMatch = colorKeywordPattern.exec(propertyValue)) {
+							const keywordPrefix: string = colorMatch[1];
+							const colorKeyword: string = colorMatch[2].toLowerCase();
+							const colorRange: Range = new Range(
+								document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + keywordPrefix.length),
+								document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + keywordPrefix.length + colorKeyword.length)
+							);
 
-					// Color keywords
-					// eslint-disable-next-line no-cond-assign
-					while (colorMatch = colorKeywordPattern.exec(propertyValue)) {
-						const keywordPrefix: string = colorMatch[1];
-						const colorKeyword: string = colorMatch[2].toLowerCase();
-						const colorRange: Range = new Range(
-							document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + keywordPrefix.length),
-							document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + keywordPrefix.length + colorKeyword.length)
-						);
-
-						result.push(new ColorInformation(colorRange, hexToColor(cssColors[colorKeyword])));
+							const color: Color | undefined = hexToColor(cssColors[colorKeyword]);
+							if (color) {
+								result.push(new ColorInformation(colorRange, color));
+							}
+						}
 					}
 				}
 			}
@@ -190,7 +198,7 @@ function fromTwoDigitHex(hex: string): number {
 	return Number.parseInt(hex, 16);
 }
 
-function hexToColor(rgbHex: string): Color {
+function hexToColor(rgbHex: string): Color | undefined {
 	rgbHex = rgbHex.replace(/#/g, "");
 
 	let red: number;

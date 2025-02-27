@@ -9,9 +9,10 @@ import { getCfStartTagPattern } from "./tag";
 import { equalsIgnoreCase, getQuote } from "../utils/textUtil";
 
 export interface GlobalEntity {
-	name: string;
+	name: string | undefined;
 	syntax: string;
-	description: string;
+	description: string | undefined;
+	returntype: DataType;
 	signatures: Signature[];
 }
 
@@ -28,13 +29,13 @@ export interface GlobalMemberFunctions {
 export interface MemberFunction extends Function {
 	name: string;
 	syntax: string;
-	description: string;
+	description: string | undefined;
 	returntype: DataType;
 	signatures: Signature[];
 }
 // export interface MemberFunctionsByType extends MyMap<DataType, Set<MemberFunction>> { }
 export interface GlobalTag extends GlobalEntity {
-	scriptSyntax?: string;
+	scriptSyntax: string | undefined;
 	hasBody: boolean;
 }
 export interface GlobalTags {
@@ -57,10 +58,12 @@ export interface GlobalTags {
  */
 export function globalTagSyntaxToScript(globalTag: GlobalTag): string {
 	const attributes: string[] = [];
-	const cfStartTagPattern = getCfStartTagPattern();
-	const attributeStr: string = cfStartTagPattern.exec(globalTag.syntax)[3];
+	const cfStartTagPattern: RegExp | null = getCfStartTagPattern();
+	const attributeExec: RegExpExecArray | null = cfStartTagPattern && globalTag && globalTag.syntax ? cfStartTagPattern.exec(globalTag.syntax) : null;
+	const attributeStr: string | null = attributeExec && attributeExec[3] ? attributeExec[3] : null;
+
 	if (attributeStr) {
-		let attributeMatch: RegExpExecArray = null;
+		let attributeMatch: RegExpExecArray | null = null;
 		// eslint-disable-next-line no-cond-assign
 		while (attributeMatch = ATTRIBUTES_PATTERN.exec(attributeStr)) {
 			attributes.push(attributeMatch[0]);
@@ -89,7 +92,7 @@ export function constructTagSnippet(
 	includeDefaultValue: boolean = false,
 	isScript: boolean = false
 ): SnippetString | undefined {
-	let tagSnippet: SnippetString;
+	let tagSnippet: SnippetString | undefined;
 
 	if (includeAttributesSetType !== IncludeAttributesSetType.None || (includeAttributesCustom !== undefined && includeAttributesCustom.length > 0)) {
 		let snippetParamParts: string[] = [];
@@ -102,7 +105,7 @@ export function constructTagSnippet(
 					return sig.parameters.find((param: Parameter) => {
 						return equalsIgnoreCase(param.name, attributeEntry.name);
 					});
-				}).filter((param: Parameter) => {
+				}).filter((param: Parameter | undefined) => {
 					return param !== undefined;
 				});
 			}
@@ -125,7 +128,7 @@ export function constructTagSnippet(
 			if (snippetParamParts.length > 0) {
 				snippetString = `${globalTag.name} ${snippetParamParts.join(" ")}$0`;
 			}
-			else {
+			else if (globalTag.name) {
 				snippetString = globalTag.name;
 			}
 		}
@@ -166,9 +169,9 @@ export function constructAttributeSnippet(
 
 	let placeholder: string = "";
 
-	let customValue: string;
+	let customValue: string | undefined;
 	if (includeAttributesCustom !== undefined) {
-		const customEntry: NameWithOptionalValue<string> = includeAttributesCustom.find((attributeEntry: NameWithOptionalValue<string>) => {
+		const customEntry: NameWithOptionalValue<string> | undefined = includeAttributesCustom.find((attributeEntry: NameWithOptionalValue<string>) => {
 			return equalsIgnoreCase(attributeEntry.name, param.name);
 		});
 

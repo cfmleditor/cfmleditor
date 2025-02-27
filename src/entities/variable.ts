@@ -310,7 +310,7 @@ export function getVariableExpressionPrefixPattern() {
  * @param _token
  * @returns
  */
-export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range, _token: CancellationToken): Promise<Variable[]> {
+export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range | undefined, _token: CancellationToken | undefined): Promise<Variable[]> {
 	let variables: Variable[] = [];
 	const document: TextDocument = documentStateContext.document;
 	const documentUri: Uri = document.uri;
@@ -328,12 +328,12 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	}
 
 	const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
-	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name"));
+	const userEngineName: CFMLEngineName | undefined = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name"));
 	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version"));
 
 	// Add function arguments
 	if (isCfcFile(document, _token)) {
-		const comp: Component = getComponent(document.uri, _token);
+		const comp: Component | undefined = getComponent(document.uri, _token);
 		if (comp) {
 			comp.functions.forEach((func: UserFunction) => {
 				if (!func.isImplicit && (!docRange || (func.bodyRange && func.bodyRange.contains(docRange)))) {
@@ -341,7 +341,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 						func.signatures.forEach((signature: UserFunctionSignature) => {
 							signature.parameters.forEach((param: Argument) => {
 								const argName: string = param.name;
-								if (getMatchingVariables(variables, argName, Scope.Arguments).length === 0) {
+								if (param.nameRange && getMatchingVariables(variables, argName, Scope.Arguments).length === 0) {
 									variables.push({
 										identifier: argName,
 										dataType: param.dataType,
@@ -364,7 +364,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	}
 
 	// params
-	let paramMatch: RegExpExecArray = null;
+	let paramMatch: RegExpExecArray | null = null;
 	const paramPattern: RegExp = isScript ? scriptParamPattern : tagParamPattern;
 	// eslint-disable-next-line no-cond-assign
 	while (paramMatch = paramPattern.exec(documentText)) {
@@ -377,23 +377,23 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		);
 
 		const parsedAttr: Attributes = parseAttributes(document, paramAttributeRange);
-		if (!parsedAttr.has("name") || !parsedAttr.get("name").value) {
+		if (!parsedAttr.has("name") || !parsedAttr.get("name")?.value) {
 			continue;
 		}
 
 		let paramType: DataType = DataType.Any;
-		let paramTypeComponentUri: Uri = undefined;
-		if (parsedAttr.has("type") && !!parsedAttr.get("type").value) {
-			paramType = DataType.paramTypeToDataType(parsedAttr.get("type").value);
+		let paramTypeComponentUri: Uri | undefined;
+		if (parsedAttr.has("type") && !!parsedAttr.get("type")?.value) {
+			paramType = DataType.paramTypeToDataType(parsedAttr.get("type")?.value);
 		}
-		else if (parsedAttr.has("default") && parsedAttr.get("default").value !== undefined) {
-			const [dataType, uri]: [DataType, Uri] = await DataType.inferDataTypeFromValue(parsedAttr.get("default").value, documentUri, _token);
+		else if (parsedAttr.has("default") && parsedAttr.get("default")?.value !== undefined) {
+			const [dataType, uri]: [DataType | undefined, Uri | undefined] = await DataType.inferDataTypeFromValue(parsedAttr.get("default")?.value, documentUri, _token);
 			paramType = dataType;
 			paramTypeComponentUri = uri;
 		}
 
-		const paramName = parsedAttr.get("name").value;
-		const paramNameMatch = variableExpressionPattern.exec(paramName);
+		const paramName: string | undefined = parsedAttr.get("name")?.value;
+		const paramNameMatch: RegExpExecArray | null = variableExpressionPattern && paramName ? variableExpressionPattern.exec(paramName) : null;
 		if (!paramNameMatch) {
 			continue;
 		}
@@ -407,15 +407,17 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 			scopeVal = Scope.valueOf(scope);
 		}
 
-		const varRangeStart = parsedAttr.get("name").valueRange.start.translate(0, varNamePrefixLen);
-		const varRange = new Range(
-			varRangeStart,
-			varRangeStart.translate(0, varName.length)
-		);
+		const varRangeStart: Position | undefined = parsedAttr.get("name")?.valueRange?.start.translate(0, varNamePrefixLen);
+		const varRange: Range | undefined = varRangeStart
+			? new Range(
+				varRangeStart,
+				varRangeStart.translate(0, varName.length)
+			)
+			: undefined;
 
 		const matchingVars = getMatchingVariables(variables, varName, scopeVal);
 		if (matchingVars.length > 0) {
-			if (matchingVars.length > 1 || matchingVars[0].declarationLocation.range.start.isBefore(varRange.start)) {
+			if (!varRange || matchingVars.length > 1 || (matchingVars[0].declarationLocation && matchingVars[0].declarationLocation.range.start.isBefore(varRange.start))) {
 				continue;
 			}
 			else {
@@ -426,7 +428,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 			}
 		}
 
-		const initialValue: string = parsedAttr.has("default") ? parsedAttr.get("default").value : undefined;
+		const initialValue: string | undefined = parsedAttr.has("default") ? parsedAttr.get("default")?.value : undefined;
 
 		variables.push({
 			identifier: varName,
@@ -434,16 +436,18 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 			dataTypeComponentUri: paramTypeComponentUri,
 			scope: scopeVal,
 			final: false,
-			declarationLocation: new Location(
-				document.uri,
-				varRange
-			),
+			declarationLocation: varRange
+				? new Location(
+					document.uri,
+					varRange
+				)
+				: undefined,
 			initialValue: initialValue,
 		});
 	}
 
 	// variable assignments
-	let variableMatch: RegExpExecArray = null;
+	let variableMatch: RegExpExecArray | null = null;
 	const variableAssignmentPattern: RegExp = isScript ? cfscriptVariableAssignmentPattern : tagVariableAssignmentPattern;
 	// eslint-disable-next-line no-cond-assign
 	while (variableMatch = variableAssignmentPattern.exec(documentText)) {
@@ -471,7 +475,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
 		const matchingVars: Variable[] = getMatchingVariables(variables, varName, scopeVal);
 		if (matchingVars.length > 0) {
-			if (matchingVars.length > 1 || matchingVars[0].declarationLocation.range.start.isBefore(varRange.start)) {
+			if (matchingVars.length > 1 || (matchingVars[0].declarationLocation && matchingVars[0].declarationLocation.range.start.isBefore(varRange.start))) {
 				continue;
 			}
 			else {
@@ -485,7 +489,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		if (scopeVal === Scope.Unknown) {
 			scopeVal = Scope.Variables;
 		}
-		const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.inferDataTypeFromValue(initValue, documentUri, _token);
+		const [dataType, dataTypeComponentUri]: [DataType, Uri | undefined] = await DataType.inferDataTypeFromValue(initValue, documentUri, _token);
 
 		let thisVar: Variable = {
 			identifier: varName,
@@ -500,7 +504,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		};
 
 		if (dataType === DataType.Query) {
-			let valueMatch: RegExpExecArray = null;
+			let valueMatch: RegExpExecArray | null = null;
 			// eslint-disable-next-line no-cond-assign
 			if (valueMatch = queryValuePattern.exec(initValue)) {
 				const fullValueMatch: string = valueMatch[0];
@@ -536,7 +540,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		else if (dataType === DataType.Function) {
 			const userFunction: UserFunctionVariable = thisVar as UserFunctionVariable;
 
-			let valueMatch: RegExpExecArray = null;
+			let valueMatch: RegExpExecArray | null = null;
 			// eslint-disable-next-line no-cond-assign
 			if (valueMatch = functionValuePattern.exec(initValue)) {
 				const fullValueMatch: string = valueMatch[0];
@@ -564,7 +568,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	if (!isScript || userEngine.supportsScriptTags()) {
 		// Tags with output attributes
 		const foundOutputVarTags: MySet<string> = new MySet();
-		let cfTagMatch: RegExpExecArray = null;
+		let cfTagMatch: RegExpExecArray | null = null;
 		const cfTagPattern: RegExp = isScript ? getCfScriptTagPatternIgnoreBody() : getCfStartTagPattern();
 		// eslint-disable-next-line no-cond-assign
 		while (cfTagMatch = cfTagPattern.exec(documentText)) {
@@ -584,11 +588,11 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 					return tagAttributes.has(tagOutputAttribute.attributeName);
 				}).forEach((tagOutputAttribute: VariableAttribute) => {
 					const attributeName: string = tagOutputAttribute.attributeName;
-					const attributeVal: string = tagAttributes.get(attributeName).value;
+					const attributeVal: string | undefined = tagAttributes.get(attributeName)?.value;
 					if (!attributeVal) {
 						return;
 					}
-					const varExpressionMatch: RegExpExecArray = variableExpressionPattern.exec(attributeVal);
+					const varExpressionMatch: RegExpExecArray | null = attributeVal ? variableExpressionPattern.exec(attributeVal) : null;
 					if (!varExpressionMatch) {
 						return;
 					}
@@ -602,14 +606,16 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 						scopeVal = Scope.valueOf(scope);
 					}
 
-					const varRangeStart: Position = tagAttributes.get(attributeName).valueRange.start.translate(0, varNamePrefixLen);
-					const varRange = new Range(
-						varRangeStart,
-						varRangeStart.translate(0, varName.length)
-					);
+					const varRangeStart: Position | undefined = tagAttributes.get(attributeName)?.valueRange?.start.translate(0, varNamePrefixLen);
+					const varRange: Range | undefined = varRangeStart
+						? new Range(
+							varRangeStart,
+							varRangeStart.translate(0, varName.length)
+						)
+						: undefined;
 
 					const matchingVars: Variable[] = getMatchingVariables(variables, varName, scopeVal);
-					if (matchingVars.length > 0) {
+					if (matchingVars.length > 0 && matchingVars[0].declarationLocation && varRange) {
 						if (matchingVars.length > 1 || matchingVars[0].declarationLocation.range.start.isBefore(varRange.start)) {
 							return;
 						}
@@ -625,30 +631,32 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 						scopeVal = Scope.Variables;
 					}
 
-					let outputVar: Variable = {
-						identifier: varName,
-						dataType: tagOutputAttribute.dataType,
-						scope: scopeVal,
-						final: false,
-						declarationLocation: new Location(
-							document.uri,
-							varRange
-						),
-					};
+					if (varRange) {
+						let outputVar: Variable = {
+							identifier: varName,
+							dataType: tagOutputAttribute.dataType,
+							scope: scopeVal,
+							final: false,
+							declarationLocation: new Location(
+								document.uri,
+								varRange
+							),
+						};
 
-					if (tagName === "cfquery" && "bodyRange" in tag) {
-						const queryTag = tag as Tag;
-						const bodyText: string = document.getText(queryTag.bodyRange);
-						const columns: QueryColumns = getSelectColumnsFromQueryText(bodyText);
+						if (tagName === "cfquery" && "bodyRange" in tag) {
+							const queryTag = tag as Tag;
+							const bodyText: string = document.getText(queryTag.bodyRange);
+							const columns: QueryColumns = getSelectColumnsFromQueryText(bodyText);
 
-						if (columns.size > 0) {
-							const query: Query = outputVar as Query;
-							query.selectColumnNames = columns;
-							outputVar = query;
+							if (columns.size > 0) {
+								const query: Query = outputVar as Query;
+								query.selectColumnNames = columns;
+								outputVar = query;
+							}
 						}
-					}
 
-					variables.push(outputVar);
+						variables.push(outputVar);
+					}
 				});
 			});
 		});
@@ -665,7 +673,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 				if (matchingVars.length === 0) {
 					variables.push(scriptVar);
 				}
-				else if (matchingVars.length === 1 && scriptVar.declarationLocation.range.start.isBefore(matchingVars[0].declarationLocation.range.start)) {
+				else if (matchingVars.length === 1 && scriptVar.declarationLocation && matchingVars[0].declarationLocation && scriptVar.declarationLocation.range.start.isBefore(matchingVars[0].declarationLocation.range.start)) {
 					// Replace entry
 					const matchingIndex: number = variables.findIndex((value: Variable) => {
 						return value.scope === scriptVar.scope && equalsIgnoreCase(value.identifier, scriptVar.identifier);
@@ -679,7 +687,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	}
 	else {
 		// Check for-in loops
-		let forInVariableMatch: RegExpExecArray = null;
+		let forInVariableMatch: RegExpExecArray | null = null;
 		// eslint-disable-next-line no-cond-assign
 		while (forInVariableMatch = forInVariableAssignmentPattern.exec(documentText)) {
 			const varPrefix: string = forInVariableMatch[1];
@@ -703,7 +711,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
 			const matchingVars = getMatchingVariables(variables, varName, scopeVal);
 			if (matchingVars.length > 0) {
-				if (matchingVars.length > 1 || matchingVars[0].declarationLocation.range.start.isBefore(varRange.start)) {
+				if (matchingVars.length > 1 || (matchingVars[0].declarationLocation && matchingVars[0].declarationLocation.range.start.isBefore(varRange.start))) {
 					continue;
 				}
 				else {
@@ -771,7 +779,7 @@ export function argumentsToVariables(args: Argument[], documentUri: Uri): Variab
 			dataTypeComponentUri: arg.dataTypeComponentUri,
 			scope: Scope.Arguments,
 			final: false,
-			declarationLocation: new Location(documentUri, arg.nameRange),
+			declarationLocation: arg.nameRange ? new Location(documentUri, arg.nameRange) : undefined,
 			description: arg.description,
 		};
 
@@ -787,7 +795,7 @@ export function argumentsToVariables(args: Argument[], documentUri: Uri): Variab
  * @returns
  */
 export function getBestMatchingVariable(variables: Variable[], varName: string, varScope?: Scope): Variable | undefined {
-	let foundVar: Variable;
+	let foundVar: Variable | undefined;
 
 	if (varScope) {
 		foundVar = variables.find((currentVar: Variable) => {
@@ -846,9 +854,9 @@ export function getMatchingVariables(variables: Variable[], varName: string, sco
  */
 export async function getApplicationVariables(baseUri: Uri): Promise<Variable[]> {
 	let applicationVariables: Variable[] = [];
-	const applicationUri: Uri = await getApplicationUri(baseUri);
+	const applicationUri: Uri | undefined = await getApplicationUri(baseUri);
 	if (applicationUri) {
-		const cachedApplicationVariables: Variable[] = getCachedApplicationVariables(applicationUri);
+		const cachedApplicationVariables: Variable[] | undefined = getCachedApplicationVariables(applicationUri);
 		if (cachedApplicationVariables) {
 			applicationVariables = cachedApplicationVariables;
 		}
@@ -866,7 +874,7 @@ export async function getApplicationVariables(baseUri: Uri): Promise<Variable[]>
 export function getServerVariables(baseUri: Uri, _token: CancellationToken): Variable[] {
 	let serverVariables: Variable[] = [];
 
-	const serverUri: Uri = getServerUri(baseUri, _token);
+	const serverUri: Uri | undefined = getServerUri(baseUri, _token);
 	if (serverUri) {
 		serverVariables = getCachedServerVariables(serverUri);
 	}
@@ -880,7 +888,7 @@ export function getServerVariables(baseUri: Uri, _token: CancellationToken): Var
  * @param _token
  * @returns
  */
-export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext, _token: CancellationToken): Promise<Variable[]> {
+export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext, _token: CancellationToken | undefined): Promise<Variable[]> {
 	let allVariableAssignments: Variable[] = [];
 
 	if (documentPositionStateContext.isCfmFile) {
@@ -897,7 +905,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 			allVariableAssignments = allVariableAssignments.concat(propertiesToVariables(componentProperties, documentUri));
 
 			// component variables
-			let currComponent: Component = thisComponent;
+			let currComponent: Component | undefined = thisComponent;
 			let componentVariables: Variable[] = [];
 			while (currComponent) {
 				const currComponentVariables: Variable[] = currComponent.variables.filter((variable: Variable) => {
@@ -910,9 +918,9 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 				// Also check in init function
 				const initMethod: string = currComponent.initmethod ? currComponent.initmethod.toLowerCase() : "init";
 				if (currComponent.functions.has(initMethod)) {
-					const currInitFunc: UserFunction = currComponent.functions.get(initMethod);
+					const currInitFunc: UserFunction | undefined = currComponent.functions.get(initMethod);
 
-					if (currInitFunc.bodyRange) {
+					if (currInitFunc && currInitFunc.bodyRange) {
 						const currInitVariables: Variable[] = (await parseVariableAssignments(documentPositionStateContext, currComponent.isScript, currInitFunc.bodyRange, _token)).filter((variable: Variable) => {
 							return [Scope.Variables, Scope.This].includes(variable.scope) && !componentVariables.some((existingVariable: Variable) => {
 								return existingVariable.scope === variable.scope && equalsIgnoreCase(existingVariable.identifier, variable.identifier);
@@ -935,7 +943,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 			// function arguments
 			let functionArgs: Argument[] = [];
 			thisComponent.functions.filter((func: UserFunction) => {
-				return func.bodyRange && func.bodyRange.contains(documentPositionStateContext.position) && func.signatures && func.signatures.length !== 0;
+				return func.bodyRange ? func.bodyRange.contains(documentPositionStateContext.position) && func.signatures && func.signatures.length !== 0 : false;
 			}).forEach((func: UserFunction) => {
 				func.signatures.forEach((signature: UserFunctionSignature) => {
 					functionArgs = signature.parameters;
@@ -946,7 +954,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 			// function local variables
 			let localVariables: Variable[] = [];
 			const filteredFunctions = thisComponent.functions.filter((func: UserFunction) => {
-				return func.bodyRange && func.bodyRange.contains(documentPositionStateContext.position);
+				return func.bodyRange ? func.bodyRange.contains(documentPositionStateContext.position) : false;
 			});
 
 			for (const [, func] of filteredFunctions) {
@@ -988,7 +996,7 @@ export interface Variable {
 	dataTypeComponentUri?: Uri; // Only when dataType is Component
 	scope: Scope;
 	final: boolean;
-	declarationLocation: Location;
+	declarationLocation: Location | undefined;
 	description?: string;
 	initialValue?: string;
 }

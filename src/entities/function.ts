@@ -10,8 +10,8 @@ import { uriBaseName } from "../utils/fileUtil";
 const functionSuffixPattern: RegExp = /^\s*\(([^)]*)/;
 
 export interface Function {
-	name: string;
-	description: string;
+	name: string | undefined;
+	description: string | undefined;
 	returntype: DataType;
 	signatures: Signature[];
 }
@@ -36,7 +36,7 @@ export enum MemberType {
  */
 export function constructSyntaxString(func: Function, signatureIndex: number = 0): string {
 	const funcSignatureParamsLabel = func.signatures.length !== 0 ? constructSignatureLabelParamsPart(func.signatures[signatureIndex].parameters) : "";
-	const returnType: string = getReturnTypeString(func);
+	const returnType: string | undefined = getReturnTypeString(func);
 
 	return `${constructSignatureLabelParamsPrefix(func)}(${funcSignatureParamsLabel}): ${returnType}`;
 }
@@ -54,8 +54,8 @@ export function getFunctionSuffixPattern(): RegExp {
  * @param func The function for which to get the display return type
  * @returns
  */
-export function getReturnTypeString(func: Function): string {
-	let returnType: string;
+export function getReturnTypeString(func: Function): string | undefined {
+	let returnType: string | undefined;
 	if ("returnTypeUri" in func) {
 		const userFunction: UserFunction = func as UserFunction;
 		if (userFunction.returnTypeUri) {
@@ -78,7 +78,7 @@ export function getReturnTypeString(func: Function): string {
  * @param _token
  * @returns
  */
-export function getScriptFunctionArgRanges(documentStateContext: DocumentStateContext, argsRange: Range, separatorChar: string = ",", _token: CancellationToken): Range[] {
+export function getScriptFunctionArgRanges(documentStateContext: DocumentStateContext, argsRange: Range, separatorChar: string = ",", _token: CancellationToken | undefined): Range[] {
 	const argRanges: Range[] = [];
 	const document: TextDocument = documentStateContext.document;
 	const argsEndOffset: number = document.offsetAt(argsRange.end);

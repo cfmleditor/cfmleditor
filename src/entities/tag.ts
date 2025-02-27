@@ -17,7 +17,7 @@ export interface Tag {
 	name: string;
 	attributes: Attributes;
 	tagRange: Range;
-	bodyRange?: Range;
+	bodyRange?: Range | undefined;
 	isScript: boolean;
 }
 
@@ -30,8 +30,8 @@ export interface StartTag {
 export interface TagContext {
 	inStartTag: boolean;
 	inEndTag: boolean;
-	name: string;
-	startOffset: number;
+	name: string | undefined;
+	startOffset: number | undefined;
 }
 
 const nonClosingCfmlTags: string[] = [
@@ -599,7 +599,7 @@ export function getNonClosingCfmlTags(): string[] {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function parseTags(documentStateContext: DocumentStateContext, tagName: string, range: Range, _token: CancellationToken): Tag[] {
+export function parseTags(documentStateContext: DocumentStateContext, tagName: string, range: Range | undefined, _token: CancellationToken | undefined): Tag[] {
 	const tags: Tag[] = [];
 	const document: TextDocument = documentStateContext.document;
 	let textOffset: number = 0;
@@ -610,7 +610,7 @@ export function parseTags(documentStateContext: DocumentStateContext, tagName: s
 	}
 
 	const thisTagPattern: RegExp = getTagPattern(tagName);
-	let thisTagMatch: RegExpExecArray = null;
+	let thisTagMatch: RegExpExecArray | null = null;
 	// eslint-disable-next-line no-cond-assign
 	while (thisTagMatch = thisTagPattern.exec(documentText)) {
 		const tagStart: string = thisTagMatch[1];
@@ -623,7 +623,7 @@ export function parseTags(documentStateContext: DocumentStateContext, tagName: s
 			document.positionAt(attributeStartOffset + tagAttributes.length)
 		);
 
-		let tagBodyRange: Range;
+		let tagBodyRange: Range | undefined;
 		if (tagBodyText !== undefined) {
 			const thisBodyStartOffset: number = attributeStartOffset + tagAttributes.length + 1;
 			tagBodyRange = new Range(
@@ -657,7 +657,7 @@ export function parseTags(documentStateContext: DocumentStateContext, tagName: s
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function parseStartTags(documentStateContext: DocumentStateContext, tagName: string, isScript: boolean, range: Range, _token: CancellationToken): StartTag[] {
+export function parseStartTags(documentStateContext: DocumentStateContext, tagName: string, isScript: boolean, range: Range | undefined, _token: CancellationToken | undefined): StartTag[] {
 	const startTags: StartTag[] = [];
 	const document: TextDocument = documentStateContext.document;
 	let textOffset: number = 0;
@@ -668,7 +668,7 @@ export function parseStartTags(documentStateContext: DocumentStateContext, tagNa
 	}
 
 	const thisTagPattern: RegExp = isScript ? getStartScriptTagPattern(tagName) : getStartTagPattern(tagName);
-	let thisTagMatch: RegExpExecArray = null;
+	let thisTagMatch: RegExpExecArray | null = null;
 	// eslint-disable-next-line no-cond-assign
 	while (thisTagMatch = thisTagPattern.exec(documentText)) {
 		const fullMatch: string = thisTagMatch[0];
@@ -739,7 +739,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 
 	// TODO: Account for script tags
 
-	let characterAtPreviousPosition: string;
+	let characterAtPreviousPosition: string | undefined;
 	for (let offset = textOffsetStart; offset < textOffsetEnd; offset++) {
 		const characterAtPosition: string = documentText.charAt(offset);
 
@@ -758,32 +758,35 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 		}
 		else if (tagContext.inStartTag) {
 			if (characterAtPosition === tagClosingChar) {
-				const globalTag: GlobalTag = getGlobalTag(tagContext.name);
-				let attributes: Attributes;
+				const globalTag: GlobalTag | undefined = getGlobalTag(tagContext.name);
+				let attributes: Attributes | undefined;
 				if (!globalTag || (globalTag.signatures.length > 0 && globalTag.signatures[0].parameters.length > 0)) {
-					const attributeRange: Range = new Range(
-						document.positionAt(tagContext.startOffset + tagContext.name.length + 1),
-						document.positionAt(offset)
-					);
-					attributes = parseAttributes(document, attributeRange);
+					if (tagContext.startOffset && tagContext.name) {
+						const attributeRange: Range = new Range(
+							document.positionAt(tagContext.startOffset + tagContext.name.length + 1),
+							document.positionAt(offset)
+						);
+						attributes = parseAttributes(document, attributeRange);
+					}
 				}
-				const tagRange: Range = new Range(document.positionAt(tagContext.startOffset), document.positionAt(offset + 1));
-				if (nonClosingCfmlTags.includes(tagContext.name) || characterAtPreviousPosition === "/") {
-					tags.push({
-						name: tagContext.name,
-						attributes: attributes,
-						tagRange: tagRange,
-						isScript: false,
-					});
+				if (tagContext && attributes && tagContext.startOffset && tagContext.name) {
+					const tagRange: Range = new Range(document.positionAt(tagContext.startOffset), document.positionAt(offset + 1));
+					if (nonClosingCfmlTags.includes(tagContext.name) || characterAtPreviousPosition === "/") {
+						tags.push({
+							name: tagContext.name,
+							attributes: attributes,
+							tagRange: tagRange,
+							isScript: false,
+						});
+					}
+					else {
+						unclosedTags.push({
+							name: tagContext.name,
+							attributes: attributes,
+							tagRange: tagRange,
+						});
+					}
 				}
-				else {
-					unclosedTags.push({
-						name: tagContext.name,
-						attributes: attributes,
-						tagRange: tagRange,
-					});
-				}
-
 				tagContext = {
 					inStartTag: false,
 					inEndTag: false,
@@ -802,16 +805,19 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 		}
 		else if (tagContext.inEndTag) {
 			if (characterAtPosition === tagClosingChar) {
-				const unclosedTag: StartTag = unclosedTags.pop();
-				const bodyRange = new Range(unclosedTag.tagRange.end.translate(0, 1), document.positionAt(tagContext.startOffset));
+				const unclosedTag: StartTag | undefined = unclosedTags.pop();
 
-				tags.push({
-					name: unclosedTag.name,
-					attributes: unclosedTag.attributes,
-					tagRange: new Range(unclosedTag.tagRange.start, document.positionAt(offset + 1)),
-					bodyRange: bodyRange,
-					isScript: false,
-				});
+				if (unclosedTag && tagContext.startOffset) {
+					const bodyRange = new Range(unclosedTag.tagRange.end.translate(0, 1), document.positionAt(tagContext.startOffset));
+
+					tags.push({
+						name: unclosedTag.name,
+						attributes: unclosedTag.attributes,
+						tagRange: new Range(unclosedTag.tagRange.start, document.positionAt(offset + 1)),
+						bodyRange: bodyRange,
+						isScript: false,
+					});
+				}
 
 				tagContext = {
 					inStartTag: false,
@@ -886,7 +892,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
  * @param edit
  * @param _token
  */
-export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken = null): void {
+export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken | undefined): void {
 	const position: Position = editor.selection.active;
 	const documentUri: Uri = editor.document.uri;
 
@@ -896,10 +902,10 @@ export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token
 	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments, _token, false);
 
 	const currentWord: string = documentPositionStateContext.currentWord;
-	let globalTag: GlobalTag = getGlobalTag(currentWord);
+	let globalTag: GlobalTag | undefined = getGlobalTag(currentWord);
 	if (!globalTag) {
 		const cfTagAttributePattern: RegExp = documentPositionStateContext.positionIsScript ? getCfScriptTagAttributePattern() : getCfTagAttributePattern();
-		const cfTagAttributeMatch: RegExpExecArray = cfTagAttributePattern.exec(documentPositionStateContext.docPrefix);
+		const cfTagAttributeMatch: RegExpExecArray | null = cfTagAttributePattern.exec(documentPositionStateContext.docPrefix);
 		if (cfTagAttributeMatch) {
 			const tagName: string = cfTagAttributeMatch[2];
 			globalTag = getGlobalTag(tagName);
@@ -908,13 +914,13 @@ export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token
 
 	if (globalTag) {
 		const nonClosingCfmlTags: string[] = getNonClosingCfmlTags();
-		if (!nonClosingCfmlTags.includes(globalTag.name)) {
+		if (globalTag.name && !nonClosingCfmlTags.includes(globalTag.name)) {
 			const tags: Tag[] = getCfTags(documentPositionStateContext, documentPositionStateContext.docIsScript);
-			const foundTag: Tag = tags.find((tag: Tag) => {
+			const foundTag: Tag | undefined = tags.find((tag: Tag) => {
 				return (tag.bodyRange && !tag.bodyRange.contains(position) && tag.tagRange.contains(position));
 			});
 
-			if (foundTag) {
+			if (foundTag && foundTag.bodyRange) {
 				let newPosition: Position;
 				if (position.isBeforeOrEqual(foundTag.bodyRange.start)) {
 					newPosition = foundTag.bodyRange.end.translate(0, 2);

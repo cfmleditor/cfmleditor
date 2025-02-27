@@ -11,7 +11,7 @@ export interface Signature {
  * @param func The function from which to construct the parameter prefix
  * @returns
  */
-export function constructSignatureLabelParamsPrefix(func: Function): string {
+export function constructSignatureLabelParamsPrefix(func: Function): string | undefined {
 	// TODO: If UserFunction, use ComponentName.functionName based on location
 	return func.name;
 }
