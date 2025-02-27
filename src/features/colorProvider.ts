@@ -32,7 +32,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 		for (const cssRange of cssRanges) {
 			const rangeTextOffset: number = document.offsetAt(cssRange.start);
 			const rangeText: string = documentStateContext.sanitizedDocumentText.slice(rangeTextOffset, document.offsetAt(cssRange.end));
-			let propertyMatch: RegExpExecArray;
+			let propertyMatch: RegExpExecArray | null;
 			// eslint-disable-next-line no-cond-assign
 			while (propertyMatch = cssPropertyPattern.exec(rangeText)) {
 				const propertyValuePrefix: string = propertyMatch[1];
@@ -45,7 +45,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 
 				const cssProperty: IPropertyData = cssDataManager.getProperty(propertyName);
 				if (cssProperty.restrictions && cssProperty.restrictions.includes("color")) {
-					let colorMatch: RegExpExecArray;
+					let colorMatch: RegExpExecArray | null;
 
 					// RGB hex
 					// eslint-disable-next-line no-cond-assign

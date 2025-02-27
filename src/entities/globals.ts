@@ -60,7 +60,7 @@ export function globalTagSyntaxToScript(globalTag: GlobalTag): string {
 	const cfStartTagPattern = getCfStartTagPattern();
 	const attributeStr: string = cfStartTagPattern.exec(globalTag.syntax)[3];
 	if (attributeStr) {
-		let attributeMatch: RegExpExecArray = null;
+		let attributeMatch: RegExpExecArray | null;
 		// eslint-disable-next-line no-cond-assign
 		while (attributeMatch = ATTRIBUTES_PATTERN.exec(attributeStr)) {
 			attributes.push(attributeMatch[0]);

@@ -114,7 +114,7 @@ export function parseCatches(documentStateContext: DocumentStateContext, isScrip
 	}
 
 	if (isScript) {
-		let scriptCatchMatch: RegExpExecArray = null;
+		let scriptCatchMatch: RegExpExecArray | null;
 		// eslint-disable-next-line no-cond-assign
 		while (scriptCatchMatch = scriptCatchPattern.exec(documentText)) {
 			const catchType = scriptCatchMatch[1] ? scriptCatchMatch[1] : "any";

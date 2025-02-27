@@ -51,7 +51,7 @@ export async function parseProperties(documentStateContext: DocumentStateContext
 	const properties: Properties = new Properties();
 	const document: TextDocument = documentStateContext.document;
 	const componentText: string = document.getText();
-	let propertyMatch: RegExpExecArray = null;
+	let propertyMatch: RegExpExecArray | null;
 	// eslint-disable-next-line no-cond-assign
 	while (propertyMatch = propertyPattern.exec(componentText)) {
 		const propertyAttributePrefix: string = propertyMatch[1];

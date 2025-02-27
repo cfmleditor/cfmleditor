@@ -175,7 +175,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		}
 
 		// Consider named parameters
-		let namedParamMatch: RegExpExecArray = null;
+		let namedParamMatch: RegExpExecArray | null;
 		// eslint-disable-next-line no-cond-assign
 		if (namedParamMatch = namedParameterPattern.exec(paramText)) {
 			// TODO: Consider argumentCollection

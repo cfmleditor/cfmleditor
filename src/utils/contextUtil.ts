@@ -247,7 +247,7 @@ export function getCfScriptRanges(document: TextDocument, range: Range, _token: 
 	}
 
 	const cfscriptTagPattern: RegExp = getTagPattern("cfscript");
-	let cfscriptTagMatch: RegExpExecArray = null;
+	let cfscriptTagMatch: RegExpExecArray | null;
 	// eslint-disable-next-line no-cond-assign
 	while (cfscriptTagMatch = cfscriptTagPattern.exec(documentText)) {
 		const prefixLen: number = cfscriptTagMatch[1].length + cfscriptTagMatch[2].length + 1;
@@ -311,7 +311,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
 	}
 
 	if (isScript) {
-		let scriptBlockCommentMatch: RegExpExecArray = null;
+		let scriptBlockCommentMatch: RegExpExecArray | null;
 		// eslint-disable-next-line no-cond-assign
 		while (scriptBlockCommentMatch = cfscriptBlockCommentPattern.exec(documentText)) {
 			const scriptBlockCommentText: string = scriptBlockCommentMatch[0];
@@ -322,7 +322,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
 			));
 		}
 
-		let scriptLineCommentMatch: RegExpExecArray = null;
+		let scriptLineCommentMatch: RegExpExecArray | null;
 		// eslint-disable-next-line no-cond-assign
 		while (scriptLineCommentMatch = cfscriptLineCommentPattern.exec(documentText)) {
 			const scriptLineCommentText = scriptLineCommentMatch[0];
@@ -334,7 +334,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
 		}
 	}
 	else {
-		let tagBlockCommentMatch: RegExpExecArray = null;
+		let tagBlockCommentMatch: RegExpExecArray | null;
 		// eslint-disable-next-line no-cond-assign
 		while (tagBlockCommentMatch = tagBlockCommentPattern.exec(documentText)) {
 			const tagBlockCommentText = tagBlockCommentMatch[0];

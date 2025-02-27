@@ -180,7 +180,7 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 	const documentText: string = document.getText();
 	const componentIsScript: boolean = documentStateContext.docIsScript;
 
-	let componentMatch: RegExpExecArray;
+	let componentMatch: RegExpExecArray | null;
 	let head: string;
 	let attributePrefix: string;
 	let fullPrefix: string | undefined;
