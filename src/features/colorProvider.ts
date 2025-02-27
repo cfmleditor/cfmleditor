@@ -33,8 +33,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 			const rangeTextOffset: number = document.offsetAt(cssRange.start);
 			const rangeText: string = documentStateContext.sanitizedDocumentText.slice(rangeTextOffset, document.offsetAt(cssRange.end));
 			let propertyMatch: RegExpExecArray | null;
-			// eslint-disable-next-line no-cond-assign
-			while (propertyMatch = cssPropertyPattern.exec(rangeText)) {
+			while ((propertyMatch = cssPropertyPattern.exec(rangeText))) {
 				const propertyValuePrefix: string = propertyMatch[1];
 				const propertyName: string = propertyMatch[2];
 				const propertyValue: string = propertyMatch[3];
@@ -48,8 +47,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 					let colorMatch: RegExpExecArray | null;
 
 					// RGB hex
-					// eslint-disable-next-line no-cond-assign
-					while (colorMatch = rgbHexPattern.exec(propertyValue)) {
+					while ((colorMatch = rgbHexPattern.exec(propertyValue))) {
 						const rgbHexValue: string = colorMatch[1];
 						const colorRange: Range = new Range(
 							document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index),
@@ -60,8 +58,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 					}
 
 					// RGB function
-					// eslint-disable-next-line no-cond-assign
-					while (colorMatch = rgbFuncPattern.exec(propertyValue)) {
+					while ((colorMatch = rgbFuncPattern.exec(propertyValue))) {
 						const r: string = colorMatch[1];
 						const g: string = colorMatch[2];
 						const b: string = colorMatch[3];
@@ -86,8 +83,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 					}
 
 					// HSL function
-					// eslint-disable-next-line no-cond-assign
-					while (colorMatch = hslFuncPattern.exec(propertyValue)) {
+					while ((colorMatch = hslFuncPattern.exec(propertyValue))) {
 						const h: string = colorMatch[1];
 						const hUnit: string = colorMatch[2];
 						const s: string = colorMatch[3];
@@ -114,8 +110,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 					}
 
 					// Color keywords
-					// eslint-disable-next-line no-cond-assign
-					while (colorMatch = colorKeywordPattern.exec(propertyValue)) {
+					while ((colorMatch = colorKeywordPattern.exec(propertyValue))) {
 						const keywordPrefix: string = colorMatch[1];
 						const colorKeyword: string = colorMatch[2].toLowerCase();
 						const colorRange: Range = new Range(

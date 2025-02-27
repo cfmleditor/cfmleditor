@@ -76,8 +76,7 @@ export function getWordAtText(column: number, wordDefinition: RegExp, text: stri
 
 function _findRegexMatchEnclosingPosition(wordDefinition: RegExp, text: string, pos: number, stopPos: number): RegExpExecArray | null {
 	let match: RegExpExecArray | null;
-	// eslint-disable-next-line no-cond-assign
-	while (match = wordDefinition.exec(text)) {
+	while ((match = wordDefinition.exec(text))) {
 		if (match.index <= pos && wordDefinition.lastIndex >= pos) {
 			break;
 		}
