@@ -10,22 +10,22 @@ import { uriBaseName } from "../utils/fileUtil";
 const functionSuffixPattern: RegExp = /^\s*\(([^)]*)/;
 
 export interface Function {
-  name: string;
-  description: string;
-  returntype: DataType;
-  signatures: Signature[];
+	name: string;
+	description: string;
+	returntype: DataType;
+	signatures: Signature[];
 }
 
 export enum MemberType {
-  Array = "array",
-  Date = "date",
-  Image = "image",
-  List = "list",
-  Query = "query",
-  String = "string",
-  Struct = "struct",
-  Spreadsheet = "spreadsheet",
-  XML = "xml"
+	Array = "array",
+	Date = "date",
+	Image = "image",
+	List = "list",
+	Query = "query",
+	String = "string",
+	Struct = "struct",
+	Spreadsheet = "spreadsheet",
+	XML = "xml",
 }
 
 /**
@@ -35,10 +35,10 @@ export enum MemberType {
  * @returns
  */
 export function constructSyntaxString(func: Function, signatureIndex: number = 0): string {
-  const funcSignatureParamsLabel = func.signatures.length !== 0 ? constructSignatureLabelParamsPart(func.signatures[signatureIndex].parameters) : "";
-  const returnType: string = getReturnTypeString(func);
+	const funcSignatureParamsLabel = func.signatures.length !== 0 ? constructSignatureLabelParamsPart(func.signatures[signatureIndex].parameters) : "";
+	const returnType: string = getReturnTypeString(func);
 
-  return `${constructSignatureLabelParamsPrefix(func)}(${funcSignatureParamsLabel}): ${returnType}`;
+	return `${constructSignatureLabelParamsPrefix(func)}(${funcSignatureParamsLabel}): ${returnType}`;
 }
 
 /**
@@ -46,7 +46,7 @@ export function constructSyntaxString(func: Function, signatureIndex: number = 0
  * @returns
  */
 export function getFunctionSuffixPattern(): RegExp {
-  return functionSuffixPattern;
+	return functionSuffixPattern;
 }
 
 /**
@@ -55,19 +55,19 @@ export function getFunctionSuffixPattern(): RegExp {
  * @returns
  */
 export function getReturnTypeString(func: Function): string {
-  let returnType: string;
-  if ("returnTypeUri" in func) {
-    const userFunction: UserFunction = func as UserFunction;
-    if (userFunction.returnTypeUri) {
-      returnType = uriBaseName(userFunction.returnTypeUri, COMPONENT_EXT);
-    }
-  }
+	let returnType: string;
+	if ("returnTypeUri" in func) {
+		const userFunction: UserFunction = func as UserFunction;
+		if (userFunction.returnTypeUri) {
+			returnType = uriBaseName(userFunction.returnTypeUri, COMPONENT_EXT);
+		}
+	}
 
-  if (!returnType) {
-    returnType = func.returntype ? func.returntype : DataType.Any;
-  }
+	if (!returnType) {
+		returnType = func.returntype ? func.returntype : DataType.Any;
+	}
 
-  return returnType;
+	return returnType;
 }
 
 /**
@@ -79,17 +79,17 @@ export function getReturnTypeString(func: Function): string {
  * @returns
  */
 export function getScriptFunctionArgRanges(documentStateContext: DocumentStateContext, argsRange: Range, separatorChar: string = ",", _token: CancellationToken): Range[] {
-  const argRanges: Range[] = [];
-  const document: TextDocument = documentStateContext.document;
-  const argsEndOffset: number = document.offsetAt(argsRange.end);
+	const argRanges: Range[] = [];
+	const document: TextDocument = documentStateContext.document;
+	const argsEndOffset: number = document.offsetAt(argsRange.end);
 
-  let argStartPosition = argsRange.start;
-  while (argStartPosition.isBeforeOrEqual(argsRange.end)) {
-    const argSeparatorPos: Position = getNextCharacterPosition(documentStateContext, document.offsetAt(argStartPosition), argsEndOffset, separatorChar, false, _token);
-    const argRange: Range = new Range(argStartPosition, argSeparatorPos);
-    argRanges.push(argRange);
-    argStartPosition = argSeparatorPos.translate(0, 1);
-  }
+	let argStartPosition = argsRange.start;
+	while (argStartPosition.isBeforeOrEqual(argsRange.end)) {
+		const argSeparatorPos: Position = getNextCharacterPosition(documentStateContext, document.offsetAt(argStartPosition), argsEndOffset, separatorChar, false, _token);
+		const argRange: Range = new Range(argStartPosition, argSeparatorPos);
+		argRanges.push(argRange);
+		argStartPosition = argSeparatorPos.translate(0, 1);
+	}
 
-  return argRanges;
+	return argRanges;
 }

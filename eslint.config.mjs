@@ -1,4 +1,5 @@
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
+import stylistic from "@stylistic/eslint-plugin";
 import globals from "globals";
 import tsParser from "@typescript-eslint/parser";
 import path from "node:path";
@@ -26,8 +27,17 @@ export default [{
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended-type-checked",
     "plugin:jsdoc/recommended-typescript",
-), {
+),
+stylistic.configs.customize({
+    flat: true,
+    indent: "tab",
+    quotes: "double",
+    semi: true,
+    jsx: true,
+}),
+{
     plugins: {
+        "@stylistic": stylistic,
         "@typescript-eslint": typescriptEslint,
     },
 

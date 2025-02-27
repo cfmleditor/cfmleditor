@@ -1,10 +1,10 @@
-/*---------------------------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
-'use strict';
+ *-------------------------------------------------------------------------------------------- */
+"use strict";
 
-import { ITagData, IAttributeData, IValueData, IHTMLDataProvider, HTMLDataV1 } from './htmlLanguageTypes';
+import { ITagData, IAttributeData, IValueData, IHTMLDataProvider, HTMLDataV1 } from "./htmlLanguageTypes";
 
 export class HTMLDataProvider implements IHTMLDataProvider {
 	isApplicable() {
@@ -28,19 +28,19 @@ export class HTMLDataProvider implements IHTMLDataProvider {
 		this._tags = customData.tags || [];
 		this._globalAttributes = customData.globalAttributes || [];
 
-		this._tags.forEach(t => {
+		this._tags.forEach((t) => {
 			this._tagMap[t.name] = t;
-			t.attributes.forEach(a => {
+			t.attributes.forEach((a) => {
 				this._attributeMap[a.name] = a;
 			});
 		});
 
-		this._globalAttributes.forEach(a => {
+		this._globalAttributes.forEach((a) => {
 			this._attributeMap[a.name] = a;
 		});
 
 		if (customData.valueSets) {
-			customData.valueSets.forEach(vs => {
+			customData.valueSets.forEach((vs) => {
 				this._valueSetMap[vs.name] = vs.values;
 			});
 		}
@@ -60,17 +60,17 @@ export class HTMLDataProvider implements IHTMLDataProvider {
 			attributes.push({
 				name: a.name,
 				description: a.description,
-				valueSet: a.valueSet
+				valueSet: a.valueSet,
 			});
 		};
 
 		if (this._tagMap[tag]) {
-			this._tagMap[tag].attributes.forEach(a => {
+			this._tagMap[tag].attributes.forEach((a) => {
 				processAttribute(a);
 			});
 		}
 
-		this._globalAttributes.forEach(ga => {
+		this._globalAttributes.forEach((ga) => {
 			processAttribute(ga);
 		});
 
@@ -81,17 +81,17 @@ export class HTMLDataProvider implements IHTMLDataProvider {
 		const values: IValueData[] = [];
 
 		const processAttributes = (attributes: IAttributeData[]) => {
-			attributes.forEach(a => {
+			attributes.forEach((a) => {
 				if (a.name === attribute) {
 					if (a.values) {
-						a.values.forEach(v => {
+						a.values.forEach((v) => {
 							values.push(v);
 						});
 					}
 
 					if (a.valueSet) {
 						if (this._valueSetMap[a.valueSet]) {
-							this._valueSetMap[a.valueSet].forEach(v => {
+							this._valueSetMap[a.valueSet].forEach((v) => {
 								values.push(v);
 							});
 						}
