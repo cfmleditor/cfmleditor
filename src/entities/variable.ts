@@ -364,10 +364,9 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	}
 
 	// params
-	let paramMatch: RegExpExecArray = null;
+	let paramMatch: RegExpExecArray | null;
 	const paramPattern: RegExp = isScript ? scriptParamPattern : tagParamPattern;
-	// eslint-disable-next-line no-cond-assign
-	while (paramMatch = paramPattern.exec(documentText)) {
+	while ((paramMatch = paramPattern.exec(documentText))) {
 		const paramPrefix: string = paramMatch[1];
 		const paramAttr: string = paramMatch[2];
 
@@ -443,10 +442,9 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	}
 
 	// variable assignments
-	let variableMatch: RegExpExecArray = null;
+	let variableMatch: RegExpExecArray | null;
 	const variableAssignmentPattern: RegExp = isScript ? cfscriptVariableAssignmentPattern : tagVariableAssignmentPattern;
-	// eslint-disable-next-line no-cond-assign
-	while (variableMatch = variableAssignmentPattern.exec(documentText)) {
+	while ((variableMatch = variableAssignmentPattern.exec(documentText))) {
 		const initValuePrefix: string = variableMatch[1];
 		const varPrefix: string = variableMatch[2];
 		const varScope: string = variableMatch[3];
@@ -500,9 +498,8 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		};
 
 		if (dataType === DataType.Query) {
-			let valueMatch: RegExpExecArray = null;
-			// eslint-disable-next-line no-cond-assign
-			if (valueMatch = queryValuePattern.exec(initValue)) {
+			const valueMatch = queryValuePattern.exec(initValue);
+			if (valueMatch) {
 				const fullValueMatch: string = valueMatch[0];
 				const functionName: string = valueMatch[1];
 
@@ -536,9 +533,8 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		else if (dataType === DataType.Function) {
 			const userFunction: UserFunctionVariable = thisVar as UserFunctionVariable;
 
-			let valueMatch: RegExpExecArray = null;
-			// eslint-disable-next-line no-cond-assign
-			if (valueMatch = functionValuePattern.exec(initValue)) {
+			const valueMatch = functionValuePattern.exec(initValue);
+			if (valueMatch) {
 				const fullValueMatch: string = valueMatch[0];
 
 				const initValueOffset = textOffset + variableMatch.index + initValuePrefix.length;
@@ -564,10 +560,9 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	if (!isScript || userEngine.supportsScriptTags()) {
 		// Tags with output attributes
 		const foundOutputVarTags: MySet<string> = new MySet();
-		let cfTagMatch: RegExpExecArray = null;
+		let cfTagMatch: RegExpExecArray | null;
 		const cfTagPattern: RegExp = isScript ? getCfScriptTagPatternIgnoreBody() : getCfStartTagPattern();
-		// eslint-disable-next-line no-cond-assign
-		while (cfTagMatch = cfTagPattern.exec(documentText)) {
+		while ((cfTagMatch = cfTagPattern.exec(documentText))) {
 			const tagName = cfTagMatch[2].toLowerCase();
 			if (!foundOutputVarTags.has(tagName) && Object.prototype.hasOwnProperty.call(outputVariableTags, tagName)) {
 				foundOutputVarTags.add(tagName);
@@ -679,9 +674,8 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	}
 	else {
 		// Check for-in loops
-		let forInVariableMatch: RegExpExecArray = null;
-		// eslint-disable-next-line no-cond-assign
-		while (forInVariableMatch = forInVariableAssignmentPattern.exec(documentText)) {
+		let forInVariableMatch: RegExpExecArray | null;
+		while ((forInVariableMatch = forInVariableAssignmentPattern.exec(documentText))) {
 			const varPrefix: string = forInVariableMatch[1];
 			const varScope: string = forInVariableMatch[2];
 			const scope: string = forInVariableMatch[3];

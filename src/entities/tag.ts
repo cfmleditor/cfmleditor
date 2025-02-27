@@ -610,9 +610,8 @@ export function parseTags(documentStateContext: DocumentStateContext, tagName: s
 	}
 
 	const thisTagPattern: RegExp = getTagPattern(tagName);
-	let thisTagMatch: RegExpExecArray = null;
-	// eslint-disable-next-line no-cond-assign
-	while (thisTagMatch = thisTagPattern.exec(documentText)) {
+	let thisTagMatch: RegExpExecArray | null;
+	while ((thisTagMatch = thisTagPattern.exec(documentText))) {
 		const tagStart: string = thisTagMatch[1];
 		const tagAttributes: string = thisTagMatch[2];
 		const tagBodyText: string = thisTagMatch[3];
@@ -668,9 +667,8 @@ export function parseStartTags(documentStateContext: DocumentStateContext, tagNa
 	}
 
 	const thisTagPattern: RegExp = isScript ? getStartScriptTagPattern(tagName) : getStartTagPattern(tagName);
-	let thisTagMatch: RegExpExecArray = null;
-	// eslint-disable-next-line no-cond-assign
-	while (thisTagMatch = thisTagPattern.exec(documentText)) {
+	let thisTagMatch: RegExpExecArray | null;
+	while ((thisTagMatch = thisTagPattern.exec(documentText))) {
 		const fullMatch: string = thisTagMatch[0];
 		const tagStart: string = thisTagMatch[1];
 		const tagAttributes: string = thisTagMatch[2];

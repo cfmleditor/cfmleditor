@@ -26,10 +26,9 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 	let activeValue = undefined;
 	let activeValueStartOffset = 0;
 	let activeValueEndOffset = 0;
-	let docBlockMatches: RegExpExecArray = null;
+	let docBlockMatches: RegExpExecArray | null;
 	const docBlockOffset: number = document.offsetAt(docRange.start);
-	// eslint-disable-next-line no-cond-assign
-	while (docBlockMatches = DOC_PATTERN.exec(docBlockStr)) {
+	while ((docBlockMatches = DOC_PATTERN.exec(docBlockStr))) {
 		const valuePrefix: string = docBlockMatches[1];
 		const metadataKey: string = docBlockMatches[2];
 		const metadataSubkey: string = docBlockMatches[3];
