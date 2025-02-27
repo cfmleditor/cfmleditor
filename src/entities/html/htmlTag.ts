@@ -13,7 +13,7 @@ export const HTML_EMPTY_ELEMENTS: string[] = ["area", "base", "br", "col", "embe
  * @returns
  */
 export function constructHTMLAttributeSnippet(tagName: string, attributeName: string, attributeQuoteType: AttributeQuoteType = AttributeQuoteType.Double): string {
-	const attribute: HTMLAttributeData = getAttribute(tagName, attributeName);
+	const attribute: HTMLAttributeData | undefined = getAttribute(tagName, attributeName);
 
 	if (!attribute) {
 		return "";

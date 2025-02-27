@@ -44,7 +44,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		const backwardIterator: BackwardIterator = new BackwardIterator(documentPositionStateContext, position, _token);
 
 		backwardIterator.next(_token);
-		const iteratedSigPosition: Position = findStartSigPosition(backwardIterator, _token);
+		const iteratedSigPosition: Position | undefined = findStartSigPosition(backwardIterator, _token);
 		if (!iteratedSigPosition) {
 			return null;
 		}
@@ -64,15 +64,15 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
 		const startSigPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(startSigPosition));
 
-		let entry: Function;
+		let entry: Function | undefined;
 
 		// Check if initializing via "new" operator
-		const objectNewInstanceInitPrefixMatch: RegExpExecArray = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
+		const objectNewInstanceInitPrefixMatch: RegExpExecArray | null = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
 		if (objectNewInstanceInitPrefixMatch) {
 			const componentDotPath: string = objectNewInstanceInitPrefixMatch[2];
-			const componentUri: Uri = cachedComponentPathToUri(componentDotPath, document.uri, _token);
+			const componentUri: Uri | undefined = cachedComponentPathToUri(componentDotPath, document.uri, _token);
 			if (componentUri) {
-				const initComponent: Component = getComponent(componentUri, _token);
+				const initComponent: Component | undefined = getComponent(componentUri, _token);
 				if (initComponent) {
 					const initMethod: string = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
 					if (initComponent.functions.has(initMethod)) {
@@ -83,7 +83,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		}
 
 		if (!entry) {
-			const identWordRange: Range = getPrecedingIdentifierRange(documentPositionStateContext, backwardIterator.getPosition(), _token);
+			const identWordRange: Range | undefined = backwardIterator ? getPrecedingIdentifierRange(documentPositionStateContext, backwardIterator.getPosition(), _token) : undefined;
 			if (!identWordRange) {
 				return null;
 			}
@@ -100,10 +100,10 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
 			// Check user functions
 			if (!entry) {
-				const userFun: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerIdent, startIdentPositionPrefix, _token);
+				const userFun: UserFunction | undefined = await getFunctionFromPrefix(documentPositionStateContext, lowerIdent, startIdentPositionPrefix, _token);
 
 				// Ensure this does not trigger on script function definition
-				if (userFun && userFun.location.uri === document.uri && userFun.location.range.contains(position) && (!userFun.bodyRange || !userFun.bodyRange.contains(position))) {
+				if (userFun && userFun.location && userFun.location.uri === document.uri && userFun.location.range.contains(position) && (!userFun.bodyRange || !userFun.bodyRange.contains(position))) {
 					return null;
 				}
 
@@ -113,7 +113,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 			// Check variables
 			if (!entry) {
 				const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
-				const variableScopePrefixMatch: RegExpExecArray = variableScopePrefixPattern.exec(startIdentPositionPrefix);
+				const variableScopePrefixMatch: RegExpExecArray | null = variableScopePrefixPattern.exec(startIdentPositionPrefix);
 				if (variableScopePrefixMatch) {
 					const scopePrefix: string = variableScopePrefixMatch[1];
 					let prefixScope: Scope;
@@ -149,20 +149,30 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		const sigHelp = new SignatureHelp();
 
 		entry.signatures.forEach((signature: Signature, sigIndex: number) => {
-			const sigDesc: string = signature.description ? signature.description : entry.description;
+			const sigDesc: string | undefined = signature.description ? signature.description : entry.description;
+			if (!sigDesc) {
+				return;
+			}
 			const sigLabel: string = constructSyntaxString(entry, sigIndex);
 			const signatureInfo = new SignatureInformation(sigLabel, textToMarkdownString(sigDesc));
+			const sigParamsPrefix: string | undefined = constructSignatureLabelParamsPrefix(entry);
+			if (sigParamsPrefix) {
+				const sigParamsPrefixLength: number = sigParamsPrefix.length + 1;
+				const sigParamsLabelOffsetTuples: [number, number][] = getSignatureParamsLabelOffsetTuples(signature.parameters).map((val: [number, number]) => {
+					return [val[0] + sigParamsPrefixLength, val[1] + sigParamsPrefixLength] as [number, number];
+				});
 
-			const sigParamsPrefixLength: number = constructSignatureLabelParamsPrefix(entry).length + 1;
-			const sigParamsLabelOffsetTuples: [number, number][] = getSignatureParamsLabelOffsetTuples(signature.parameters).map((val: [number, number]) => {
-				return [val[0] + sigParamsPrefixLength, val[1] + sigParamsPrefixLength] as [number, number];
-			});
-
-			signatureInfo.parameters = signature.parameters.map((param: Parameter, paramIdx: number) => {
-				const paramInfo: ParameterInformation = new ParameterInformation(sigParamsLabelOffsetTuples[paramIdx], textToMarkdownString(param.description));
-				return paramInfo;
-			});
-			sigHelp.signatures.push(signatureInfo);
+				signatureInfo.parameters = signature.parameters.map((param: Parameter, paramIdx: number) => {
+					if (param.description) {
+						const paramInfo: ParameterInformation = new ParameterInformation(sigParamsLabelOffsetTuples[paramIdx], textToMarkdownString(param.description));
+						return paramInfo;
+					}
+					else {
+						return undefined;
+					}
+				});
+				sigHelp.signatures.push(signatureInfo);
+			}
 		});
 
 		sigHelp.activeSignature = 0;
@@ -175,7 +185,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		}
 
 		// Consider named parameters
-		let namedParamMatch: RegExpExecArray = null;
+		let namedParamMatch: RegExpExecArray | null = null;
 		// eslint-disable-next-line no-cond-assign
 		if (namedParamMatch = namedParameterPattern.exec(paramText)) {
 			// TODO: Consider argumentCollection

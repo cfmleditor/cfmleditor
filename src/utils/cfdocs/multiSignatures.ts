@@ -1,27 +1,27 @@
-// Accommodates for the lack of proper multiple signature support in CFDocs
+//	Accommodates	for	the	lack	of	proper	multiple	signature	support	in	CFDocs
 
 import { MyMap } from "../collections";
 
 export type MinMultiSigs = MyMap<string, string[][]>;
 
-// TODO: Indicate version when signature was added
+//	TODO:	Indicate	version	when	signature	was	added
 export const multiSigGlobalFunctions: MinMultiSigs
-	// Key: Function name. Value: Array of signatures, consisting of array of argument names.
+	//	Key:	Function	name.	Value:	Array	of	signatures,	consisting	of	array	of	argument	names.
 	= new MyMap<string, string[][]>()
-	/*
-	.set("arrayFind",
-	[
-	[
-	"array",
-	"value"
-	],
-	[
-	"array",
-	"callback"
-	]
-	]
-	)
-	*/
+		/*
+		.set("arrayFind",
+		[
+		[
+		"array",
+		"value"
+		],
+		[
+		"array",
+		"callback"
+		]
+		]
+		)
+		*/
 		.set("arraySort",
 			[
 				[
@@ -86,23 +86,23 @@ export const multiSigGlobalFunctions: MinMultiSigs
 				],
 			]
 		)
-	/*
-	.set("listSort",
-	[
-	[
-	"array",
-	"sort_type",
-	"sort_order",
-	"delimiters",
-	"includeEmptyValues"
-	],
-	[
-	"list",
-	"callback"
-	]
-	]
-	)
-	*/
+		/*
+		.set("listSort",
+		[
+		[
+		"array",
+		"sort_type",
+		"sort_order",
+		"delimiters",
+		"includeEmptyValues"
+		],
+		[
+		"list",
+		"callback"
+		]
+		]
+		)
+		*/
 		.set("replaceListNoCase",
 			[
 				[

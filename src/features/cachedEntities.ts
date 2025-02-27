@@ -64,7 +64,9 @@ export function isGlobalEntity(name: string): boolean {
  * @param functionDefinition The global function object to cache
  */
 export function setGlobalFunction(functionDefinition: GlobalFunction): void {
-	allGlobalFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+	if (functionDefinition.name) {
+		allGlobalFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+	}
 }
 
 /**
@@ -96,7 +98,9 @@ export function clearAllGlobalFunctions(): void {
  * @param functionDefinition The global function object to cache
  */
 export function setGlobalMemberFunction(functionDefinition: GlobalMemberFunction): void {
-	allGlobalMemberFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+	if (functionDefinition.name) {
+		allGlobalMemberFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+	}
 }
 
 /**
@@ -128,7 +132,9 @@ export function clearAllGlobalMemberFunctions(): void {
  * @param tagDefinition The global tag object to cache
  */
 export function setGlobalTag(tagDefinition: GlobalTag): void {
-	allGlobalTags[tagDefinition.name.toLowerCase()] = tagDefinition;
+	if (tagDefinition.name) {
+		allGlobalTags[tagDefinition.name.toLowerCase()] = tagDefinition;
+	}
 }
 
 /**
@@ -136,8 +142,13 @@ export function setGlobalTag(tagDefinition: GlobalTag): void {
  * @param tagName The name of the global tag to be retrieved
  * @returns
  */
-export function getGlobalTag(tagName: string): GlobalTag {
-	return allGlobalTags[tagName.toLowerCase()];
+export function getGlobalTag(tagName: string | undefined): GlobalTag | undefined {
+	if (tagName) {
+		return allGlobalTags[tagName.toLowerCase()];
+	}
+	else {
+		return undefined;
+	}
 }
 
 /**
@@ -168,8 +179,13 @@ export function setGlobalEntityDefinition(definition: CFDocsDefinitionInfo): voi
  * @param name The name of the global definition to be retrieved
  * @returns
  */
-export function getGlobalEntityDefinition(name: string): CFDocsDefinitionInfo {
-	return allGlobalEntityDefinitions.get(name.toLowerCase());
+export function getGlobalEntityDefinition(name: string | undefined): CFDocsDefinitionInfo | undefined {
+	if (name) {
+		return allGlobalEntityDefinitions.get(name.toLowerCase());
+	}
+	else {
+		return undefined;
+	}
 }
 
 /**
@@ -216,8 +232,8 @@ function setComponent(comp: Component): void {
  * @param _token
  * @returns
  */
-export function getComponent(uri: Uri, _token: CancellationToken): Component {
-	if (!hasComponent(uri, _token)) {
+export function getComponent(uri: Uri | undefined, _token: CancellationToken | undefined): Component | undefined {
+	if (!uri || !hasComponent(uri, _token)) {
 		/* TODO: If not already cached, attempt to read, parse and cache. Tricky since read is async */
 		return undefined;
 	}
@@ -232,7 +248,7 @@ export function getComponent(uri: Uri, _token: CancellationToken): Component {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
+export function hasComponent(uri: Uri, _token: CancellationToken | undefined): boolean {
 	return Object.prototype.hasOwnProperty.call(allComponentsByUri, uri.toString().toLowerCase());
 }
 
@@ -243,7 +259,7 @@ export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function searchAllComponentNames(query: string, _token: CancellationToken): Component[] {
+export function searchAllComponentNames(query: string, _token: CancellationToken | undefined | null): Component[] {
 	let components: Component[] = [];
 	components = allComponentNames.search(query);
 	return components;
@@ -284,8 +300,8 @@ export function searchAllFunctionNames(query: string, _searchMode: SearchMode = 
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken): Uri | undefined {
-	if (!dotPath) {
+export function cachedComponentPathToUri(dotPath: string, baseUri: Uri | undefined, _token: CancellationToken | undefined): Uri | undefined {
+	if (!dotPath || !baseUri) {
 		return undefined;
 	}
 
@@ -300,7 +316,7 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
 	}
 
 	// relative to web root
-	const rootPath: string = resolveRootPath(baseUri, normalizedPath);
+	const rootPath: string | undefined = resolveRootPath(baseUri, normalizedPath);
 	if (rootPath) {
 		const rootFile: Uri = Uri.file(rootPath);
 		const rootFileKey = rootFile.toString().toLowerCase();
@@ -328,7 +344,7 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
  * @param documentStateContext Contextual information for a given document's state
  * @param _token
  */
-export async function cacheComponent(component: Component, documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<void> {
+export async function cacheComponent(component: Component, documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<void> {
 	clearCachedComponent(component.uri);
 	setComponent(component);
 	component.functions.forEach((funcObj: UserFunction) => {
@@ -426,7 +442,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
  * @param _token
  * @returns
  */
-export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken): Promise<void> {
+export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined): Promise<void> {
 	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token);
 	const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
 	if (!parsedComponent) {
@@ -522,7 +538,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: Cancel
  * @param uri The URI of the application file
  * @returns
  */
-export function getCachedApplicationVariables(uri: Uri): Variable[] {
+export function getCachedApplicationVariables(uri: Uri): Variable[] | undefined {
 	return allApplicationVariables.get(uri.toString());
 }
 
@@ -550,7 +566,7 @@ export function removeApplicationVariables(uri: Uri): boolean {
  * @returns
  */
 export function getCachedServerVariables(uri: Uri): Variable[] {
-	return allServerVariables.get(uri.toString());
+	return allServerVariables.get(uri.toString()) || [];
 }
 
 /**

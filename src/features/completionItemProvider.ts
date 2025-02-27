@@ -115,8 +115,13 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
 		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 
-		const currentWordMatches = (name: string): boolean => {
-			return matches(documentPositionStateContext.currentWord, name);
+		const currentWordMatches = (name: string | undefined): boolean => {
+			if (name) {
+				return matches(documentPositionStateContext.currentWord, name);
+			}
+			else {
+				return false;
+			}
 		};
 
 		const completionState: CompletionState = Object.assign(documentPositionStateContext,
@@ -130,7 +135,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		const userEngine: CFMLEngine = completionState.userEngine;
 		const docIsCfmFile: boolean = completionState.isCfmFile;
 		const docIsCfcFile: boolean = completionState.isCfcFile;
-		const thisComponent: Component = completionState.component;
+		const thisComponent: Component | undefined = completionState.component;
 		const positionIsCfScript: boolean = completionState.positionIsScript;
 		const docPrefix: string = completionState.docPrefix;
 		const isContinuingExpression: boolean = completionState.isContinuingExpression;
@@ -147,16 +152,16 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		if (!positionIsCfScript || userEngine.supportsScriptTags()) {
 			const ignoredTags: string[] = expressionCfmlTags;
 			const cfTagAttributePattern: RegExp = positionIsCfScript ? getCfScriptTagAttributePattern() : getCfTagAttributePattern();
-			const cfTagAttributeMatch: RegExpExecArray = cfTagAttributePattern.exec(docPrefix);
+			const cfTagAttributeMatch: RegExpExecArray | null = cfTagAttributePattern.exec(docPrefix);
 			if (cfTagAttributeMatch) {
 				const cfTagAttributeMatchOffset: number = cfTagAttributeMatch.index;
 				const tagAttributePrefix: string = cfTagAttributeMatch[1];
 				const tagAttributeStartOffset: number = cfTagAttributeMatchOffset + tagAttributePrefix.length;
 				const tagName: string = cfTagAttributeMatch[2];
 				const tagAttributesLength: number = cfTagAttributeMatch[3].length;
-				const globalTag: GlobalTag = getGlobalTag(tagName);
-				if (globalTag && !ignoredTags.includes(globalTag.name)) {
-					const attributeValueMatch: RegExpExecArray = VALUE_PATTERN.exec(docPrefix);
+				const globalTag: GlobalTag | undefined = getGlobalTag(tagName);
+				if (globalTag && globalTag.name && !ignoredTags.includes(globalTag.name)) {
+					const attributeValueMatch: RegExpExecArray | null = VALUE_PATTERN.exec(docPrefix);
 					if (attributeValueMatch) {
 						const attributeName: string = attributeValueMatch[1];
 						const currentValue: string = attributeValueMatch[3] !== undefined ? attributeValueMatch[3] : attributeValueMatch[4];
@@ -189,7 +194,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		// HTML tag attributes
 		if (!positionIsCfScript) {
 			const tagAttributePattern: RegExp = getTagAttributePattern();
-			const tagAttributeMatch: RegExpExecArray = tagAttributePattern.exec(docPrefix);
+			const tagAttributeMatch: RegExpExecArray | null = tagAttributePattern.exec(docPrefix);
 			if (tagAttributeMatch) {
 				const tagAttributeMatchOffset: number = tagAttributeMatch.index;
 				const tagAttributePrefix: string = tagAttributeMatch[1];
@@ -197,7 +202,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 				const tagName: string = tagAttributeMatch[2].toLowerCase();
 				const tagAttributesLength: number = tagAttributeMatch[3].length;
 				if (isKnownHTMLTag(tagName)) {
-					const attributeValueMatch: RegExpExecArray = VALUE_PATTERN.exec(docPrefix);
+					const attributeValueMatch: RegExpExecArray | null = VALUE_PATTERN.exec(docPrefix);
 					if (attributeValueMatch) {
 						const attributeName: string = attributeValueMatch[1].toLowerCase();
 						const currentValue: string = attributeValueMatch[3] !== undefined ? attributeValueMatch[3] : attributeValueMatch[4];
@@ -219,7 +224,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
 		if (docIsCfcFile && isInComponentHead(documentPositionStateContext)) {
 			// extends and implements path completion. does not apply to docblock
-			const componentDottedPathMatch: RegExpExecArray = componentExtendsPathPrefix.exec(docPrefix);
+			const componentDottedPathMatch: RegExpExecArray | null = componentExtendsPathPrefix.exec(docPrefix);
 			if (componentDottedPathMatch) {
 				const componentDottedPath: string = componentDottedPathMatch[3];
 				const parentDottedPath: string = componentDottedPath.split(".").slice(0, -1).join(".");
@@ -291,8 +296,8 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		}
 
 		if (applicableCatches.length > 0) {
-			const closestCatch: CatchInfo = applicableCatches.pop();
-			if (!isContinuingExpression && currentWordMatches(closestCatch.variableName)) {
+			const closestCatch: CatchInfo | undefined = applicableCatches.pop();
+			if (closestCatch && !isContinuingExpression && closestCatch.variableName && currentWordMatches(closestCatch.variableName)) {
 				result.push(createNewProposal(
 					closestCatch.variableName,
 					CompletionItemKind.Struct,
@@ -307,10 +312,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 				return undefined;
 			}
 
-			if (getVariablePrefixPattern(closestCatch.variableName).test(docPrefix)) {
+			if (closestCatch && closestCatch.variableName && getVariablePrefixPattern(closestCatch.variableName).test(docPrefix)) {
 				for (const propName in catchProperties) {
 					const catchProp: CatchPropertyDetails = catchProperties[propName];
-					const catchType: string = closestCatch.type.toLowerCase();
+					const catchType: string = closestCatch.type ? closestCatch.type.toLowerCase() : "any";
 					if (currentWordMatches(propName) && (catchType === "any" || catchProp.appliesToTypes === undefined || catchProp.appliesToTypes.includes(catchType))) {
 						result.push(createNewProposal(propName, CompletionItemKind.Property, catchProp));
 					}
@@ -347,15 +352,25 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 				const tagFunctions: UserFunction[] = await parseTagFunctions(documentPositionStateContext, _token);
 				const scriptFunctions: UserFunction[] = await parseScriptFunctions(documentPositionStateContext, _token);
 				const allTemplateFunctions: UserFunction[] = tagFunctions.concat(scriptFunctions.filter((func: UserFunction) => {
-					return isInRanges(cfscriptRanges, func.location.range.start, false, _token);
+					if (func.location) {
+						return isInRanges(cfscriptRanges, func.location.range.start, false, _token);
+					}
+					else {
+						return false;
+					}
 				}));
 
 				allTemplateFunctions.filter((func: UserFunction) => {
 					return currentWordMatches(func.name);
 				}).forEach((func: UserFunction) => {
-					result.push(createNewProposal(
-						func.name, CompletionItemKind.Function, { detail: `(function) ${constructSyntaxString(func)}`, description: func.description }
-					));
+					const newProposal: CompletionItem | undefined = func.name
+						? createNewProposal(
+								func.name, CompletionItemKind.Function, { detail: `(function) ${constructSyntaxString(func)}`, description: func.description }
+							)
+						: undefined;
+					if (newProposal) {
+						result.push(newProposal);
+					}
 				});
 			}
 		}
@@ -369,7 +384,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		}
 
 		// External user/member functions
-		const varPrefixMatch: RegExpExecArray = getVariableExpressionPrefixPattern().exec(docPrefix);
+		const varPrefixMatch: RegExpExecArray | null = getVariableExpressionPrefixPattern().exec(docPrefix);
 		if (varPrefixMatch) {
 			const varMatchText: string = varPrefixMatch[0];
 			const varScope: string = varPrefixMatch[2];
@@ -385,16 +400,21 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 				// From super keyword
 				if (docIsCfcFile && !varScope && equalsIgnoreCase(varName, "super")) {
 					const addedFunctions: MySet<string> = new MySet();
-					const baseComponent: Component = getComponent(thisComponent.extends, _token);
-					let currComponent: Component = baseComponent;
+					const baseComponent: Component | undefined = thisComponent ? getComponent(thisComponent.extends, _token) : undefined;
+					let currComponent: Component | undefined = baseComponent;
 					while (currComponent) {
 						currComponent.functions.filter((_func: UserFunction, funcKey: string) => {
 							return currentWordMatches(funcKey) && !addedFunctions.has(funcKey);
 						}).forEach((func: UserFunction, funcKey: string) => {
 							addedFunctions.add(funcKey);
-							result.push(createNewProposal(
-								func.name, CompletionItemKind.Function, { detail: `(function) ${currComponent.name}.${constructSyntaxString(func)}`, description: func.description }
-							));
+							const newProposal: CompletionItem | undefined = func.name && currComponent
+								? createNewProposal(
+										func.name, CompletionItemKind.Function, { detail: `(function) ${currComponent.name}.${constructSyntaxString(func)}`, description: func.description }
+									)
+								: undefined;
+							if (newProposal) {
+								result.push(newProposal);
+							}
 						});
 
 						if (currComponent.extends) {
@@ -407,13 +427,13 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 					// From variable
 				}
 				else {
-					const scopeVal: Scope = varScope ? Scope.valueOf(varScope) : undefined;
-					const foundVar: Variable = getBestMatchingVariable(allVariableAssignments, varName, scopeVal);
+					const scopeVal: Scope | undefined = varScope ? Scope.valueOf(varScope) : undefined;
+					const foundVar: Variable | undefined = getBestMatchingVariable(allVariableAssignments, varName, scopeVal);
 
 					if (foundVar) {
 						// From component variable
 						if (foundVar.dataTypeComponentUri) {
-							const initialFoundComp: Component = getComponent(foundVar.dataTypeComponentUri, _token);
+							const initialFoundComp: Component | undefined = getComponent(foundVar.dataTypeComponentUri, _token);
 
 							if (initialFoundComp) {
 								const addedFunctions: MySet<string> = new MySet();
@@ -429,17 +449,24 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 									validFunctionAccess.add(Access.Package);
 								}
 
-								let foundComponent: Component = initialFoundComp;
+								let foundComponent: Component | undefined = initialFoundComp;
 								while (foundComponent) {
 									// component functions
 									foundComponent.functions.filter((func: UserFunction, funcKey: string) => {
-										return currentWordMatches(funcKey)
+										return func.access
+											? currentWordMatches(funcKey)
 											&& validFunctionAccess.has(func.access)
-											&& !addedFunctions.has(funcKey);
+											&& !addedFunctions.has(funcKey)
+											: false;
 									}).forEach((func: UserFunction, funcKey: string) => {
-										result.push(createNewProposal(
-											func.name, CompletionItemKind.Function, { detail: `(function) ${foundComponent.name}.${constructSyntaxString(func)}`, description: func.description }
-										));
+										const newProposal: CompletionItem | undefined = func.name && foundComponent
+											? createNewProposal(
+													func.name, CompletionItemKind.Function, { detail: `(function) ${foundComponent.name}.${constructSyntaxString(func)}`, description: func.description }
+												)
+											: undefined;
+										if (newProposal) {
+											result.push(newProposal);
+										}
 										addedFunctions.add(funcKey);
 									});
 
@@ -547,11 +574,11 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		// CSS
 		const shouldProvideCss: boolean = cfmlCompletionSettings.get<boolean>("css.enable", true);
 		if (shouldProvideCss && docIsCfmFile && isInCss(documentPositionStateContext, position, _token)) {
-			const cssWordRange: Range = document.getWordRangeAtPosition(position, cssWordRegex);
+			const cssWordRange: Range | undefined = document.getWordRangeAtPosition(position, cssWordRegex);
 			const currentCssWord: string = cssWordRange ? document.getText(cssWordRange) : "";
 
 			// Properties
-			if (/[{;]\s*([a-z-]*)$/i.test(docPrefix)) {
+			if (cssWordRange && /[{;]\s*([a-z-]*)$/i.test(docPrefix)) {
 				completionState.wordRange = cssWordRange;
 				completionState.currentWord = currentCssWord;
 				result = result.concat(getCSSPropertyCompletions(completionState));
@@ -560,7 +587,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 			// TODO: Property values
 
 			// At directives
-			if (currentCssWord.startsWith("@")) {
+			if (cssWordRange && currentCssWord.startsWith("@")) {
 				completionState.wordRange = cssWordRange;
 				completionState.currentWord = currentCssWord;
 				result = result.concat(getCSSAtDirectiveCompletions(completionState));
@@ -607,7 +634,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		}
 
 		// Component instantiation
-		const componentDottedPathMatch: RegExpExecArray = componentDottedPathPrefix.exec(docPrefix);
+		const componentDottedPathMatch: RegExpExecArray | null = componentDottedPathPrefix.exec(docPrefix);
 		if (componentDottedPathMatch) {
 			const componentDottedPath: string = componentDottedPathMatch[3];
 			const parentDottedPath: string = componentDottedPath.split(".").slice(0, -1).join(".");
@@ -709,7 +736,7 @@ async function getGlobalTagAttributeValueCompletions(state: CompletionState, glo
 		});
 	});
 
-	const param: Parameter = attributeDocs.get(attributeName);
+	const param: Parameter | undefined = attributeDocs.get(attributeName);
 	if (param) {
 		if (param.dataType === DataType.Boolean) {
 			attrValCompletions.push(createNewProposal("true", CompletionItemKind.Unit, undefined, "!!"));
@@ -730,7 +757,7 @@ async function getGlobalTagAttributeValueCompletions(state: CompletionState, glo
 	}
 
 	const componentPathAttributes: ComponentPathAttributes = getComponentPathAttributes();
-	if (Object.prototype.hasOwnProperty.call(componentPathAttributes, globalTag.name) && componentPathAttributes[globalTag.name].includes(attributeName)) {
+	if (globalTag.name && Object.prototype.hasOwnProperty.call(componentPathAttributes, globalTag.name) && componentPathAttributes[globalTag.name].includes(attributeName)) {
 		const parentDottedPath: string = currentValue.split(".").slice(0, -1).join(".");
 		attrValCompletions = attrValCompletions.concat(await getDottedPathCompletions(state, parentDottedPath));
 	}
@@ -758,7 +785,7 @@ function getHTMLTagAttributeCompletions(state: CompletionState, htmlTagName: str
 	const attributeCompletions: CompletionItem[] = unusedAttributeNames.map((attr: string) => {
 		const htmlTagAttributesQuoteType: AttributeQuoteType = state.cfmlCompletionSettings.get<AttributeQuoteType>("htmlTags.attributes.quoteType", AttributeQuoteType.Double);
 
-		const attribute: HTMLAttributeData = getAttribute(htmlTagName, attr);
+		const attribute: HTMLAttributeData | undefined = getAttribute(htmlTagName, attr);
 
 		const attributeItem = new CompletionItem(attr, CompletionItemKind.Property);
 
@@ -767,7 +794,7 @@ function getHTMLTagAttributeCompletions(state: CompletionState, htmlTagName: str
 			attributeItem.insertText = new SnippetString(constructHTMLAttributeSnippet(htmlTagName.toLowerCase(), attr, htmlTagAttributesQuoteType));
 		}
 		attributeItem.sortText = "!" + attr + "=";
-		attributeItem.documentation = attribute.description;
+		attributeItem.documentation = attribute?.description;
 
 		const attributeValueCompletions: CompletionItem[] = getHTMLTagAttributeValueCompletions(htmlTagName.toLowerCase(), attr, "");
 		if (attributeValueCompletions.length > 0) {
@@ -835,7 +862,7 @@ function getVariableCompletions(state: CompletionState, variables: Variable[]): 
 	let variableCompletions: CompletionItem[] = [];
 
 	const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
-	const variableScopePrefixMatch: RegExpExecArray = variableScopePrefixPattern.exec(state.docPrefix);
+	const variableScopePrefixMatch: RegExpExecArray | null = variableScopePrefixPattern.exec(state.docPrefix);
 	if (variableScopePrefixMatch) {
 		const scopePrefix: string = variableScopePrefixMatch[1];
 		let prefixScope: Scope;
@@ -844,7 +871,7 @@ function getVariableCompletions(state: CompletionState, variables: Variable[]): 
 		}
 
 		variableCompletions = variables.filter((variable: Variable) => {
-			if (!state.currentWordMatches(variable.identifier) || variable.declarationLocation.range.contains(state.position)) {
+			if (!state.currentWordMatches(variable.identifier) || (variable.declarationLocation && variable.declarationLocation.range.contains(state.position))) {
 				return false;
 			}
 
@@ -871,14 +898,14 @@ function getVariableCompletions(state: CompletionState, variables: Variable[]): 
  * @param _token
  * @returns
  */
-function getComponentFunctionCompletions(state: CompletionState, component: Component, _token: CancellationToken): CompletionItem[] {
+function getComponentFunctionCompletions(state: CompletionState, component: Component | undefined, _token: CancellationToken): CompletionItem[] {
 	const componentFunctionCompletions: CompletionItem[] = [];
 	if (component) {
 		const addedFunctions: MySet<string> = new MySet();
 		const privateAccessPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.Variables], true).test(state.docPrefix);
 		const otherAccessPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.Variables, Scope.This], true).test(state.docPrefix);
 		const getterSetterPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.This], true).test(state.docPrefix);
-		let currComponent: Component = component;
+		let currComponent: Component | undefined = component;
 		while (currComponent) {
 			currComponent.functions.filter((func: UserFunction, funcKey: string) => {
 				let hasValidScopes: boolean = false;
@@ -894,9 +921,10 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 				return (hasValidScopes && state.currentWordMatches(funcKey) && !addedFunctions.has(funcKey));
 			}).forEach((func: UserFunction, funcKey: string) => {
 				addedFunctions.add(funcKey);
-				componentFunctionCompletions.push(
-					createNewProposal(func.name, CompletionItemKind.Function, { detail: `(function) ${currComponent.name}.${constructSyntaxString(func)}`, description: func.description })
-				);
+				const newProposal: CompletionItem | undefined = func.name && currComponent ? createNewProposal(func.name, CompletionItemKind.Function, { detail: `(function) ${currComponent.name}.${constructSyntaxString(func)}`, description: func.description }) : undefined;
+				if (newProposal) {
+					componentFunctionCompletions.push(newProposal);
+				}
 			});
 
 			if (currComponent.extends) {
@@ -930,21 +958,23 @@ function getGlobalFunctionCompletions(state: CompletionState): CompletionItem[] 
 					functionDetail = "function " + globalFunction.syntax;
 				}
 
-				let globalFunctionName: string = globalFunction.name;
-				if (cfmlGFFirstLetterCase === "lower") {
+				let globalFunctionName: string | undefined = globalFunction.name;
+				if (globalFunctionName && cfmlGFFirstLetterCase === "lower") {
 					globalFunctionName = `${globalFunctionName.charAt(0).toLowerCase()}${globalFunctionName.substr(1)}`;
 				}
-				else if (cfmlGFFirstLetterCase === "upper") {
+				else if (globalFunctionName && cfmlGFFirstLetterCase === "upper") {
 					globalFunctionName = `${globalFunctionName.charAt(0).toUpperCase()}${globalFunctionName.substr(1)}`;
 				}
 
-				globalFunctionCompletions.push(
-					createNewProposal(
-						globalFunctionName,
-						CompletionItemKind.Function,
-						{ detail: globalFunction.syntax, description: globalFunction.description }
-					)
-				);
+				if (globalFunctionName) {
+					globalFunctionCompletions.push(
+						createNewProposal(
+							globalFunctionName,
+							CompletionItemKind.Function,
+							{ detail: globalFunction.syntax, description: globalFunction.description }
+						)
+					);
+				}
 			}
 		}
 	}
@@ -966,21 +996,23 @@ function getGlobalMemberFunctionCompletions(state: CompletionState): CompletionI
 					functionDetail = "function " + globalMemberFunction.syntax;
 				}
 
-				let globalMemberFunctionName: string = globalMemberFunction.name;
-				if (cfmlGFFirstLetterCase === "lower") {
+				let globalMemberFunctionName: string | undefined = globalMemberFunction.name;
+				if (globalMemberFunctionName && cfmlGFFirstLetterCase === "lower") {
 					globalMemberFunctionName = `${globalMemberFunctionName.charAt(0).toLowerCase()}${globalMemberFunctionName.substr(1)}`;
 				}
-				else if (cfmlGFFirstLetterCase === "upper") {
+				else if (globalMemberFunctionName && cfmlGFFirstLetterCase === "upper") {
 					globalMemberFunctionName = `${globalMemberFunctionName.charAt(0).toUpperCase()}${globalMemberFunctionName.substr(1)}`;
 				}
 
-				globalMemberFunctionCompletions.push(
-					createNewProposal(
-						globalMemberFunctionName,
-						CompletionItemKind.Function,
-						{ detail: globalMemberFunction.syntax, description: globalMemberFunction.description }
-					)
-				);
+				if (globalMemberFunctionName) {
+					globalMemberFunctionCompletions.push(
+						createNewProposal(
+							globalMemberFunctionName,
+							CompletionItemKind.Function,
+							{ detail: globalMemberFunction.syntax, description: globalMemberFunction.description }
+						)
+					);
+				}
 			}
 		}
 	}
@@ -996,7 +1028,7 @@ function getGlobalTagCompletions(state: CompletionState): CompletionItem[] {
 	const globalTagCompletions: CompletionItem[] = [];
 
 	const tagPrefixPattern: RegExp = getTagPrefixPattern();
-	const tagPrefixMatch: RegExpExecArray = tagPrefixPattern.exec(state.docPrefix);
+	const tagPrefixMatch: RegExpExecArray | null = tagPrefixPattern.exec(state.docPrefix);
 	if (tagPrefixMatch) {
 		const closingSlash: string = tagPrefixMatch[1];
 		const cfmlGTAttributesQuoteType: AttributeQuoteType = state.cfmlCompletionSettings.get<AttributeQuoteType>("globalTags.attributes.quoteType", AttributeQuoteType.Double);
@@ -1007,16 +1039,20 @@ function getGlobalTagCompletions(state: CompletionState): CompletionItem[] {
 		for (const tagName in globalTags) {
 			if (state.currentWordMatches(tagName)) {
 				const globalTag: GlobalTag = globalTags[tagName];
-				const thisGlobalTagCompletion: CompletionItem = createNewProposal(
-					globalTag.name,
-					CompletionItemKind.TypeParameter,
-					{ detail: globalTag.syntax, description: globalTag.description }
-				);
-				if (!closingSlash && (cfmlGTAttributesSetType !== IncludeAttributesSetType.None || Object.prototype.hasOwnProperty.call(cfmlGTAttributesCustom, tagName))) {
+				const thisGlobalTagCompletion: CompletionItem | undefined = globalTag.name
+					? createNewProposal(
+							globalTag.name,
+							CompletionItemKind.TypeParameter,
+							{ detail: globalTag.syntax, description: globalTag.description }
+						)
+					: undefined;
+				if (thisGlobalTagCompletion && !closingSlash && (cfmlGTAttributesSetType !== IncludeAttributesSetType.None || Object.prototype.hasOwnProperty.call(cfmlGTAttributesCustom, tagName))) {
 					thisGlobalTagCompletion.insertText = constructTagSnippet(globalTag, cfmlGTAttributesSetType, cfmlGTAttributesQuoteType, cfmlGTAttributesCustom[tagName], cfmlGTAttributesDefault, false);
 				}
 
-				globalTagCompletions.push(thisGlobalTagCompletion);
+				if (thisGlobalTagCompletion) {
+					globalTagCompletions.push(thisGlobalTagCompletion);
+				}
 			}
 		}
 	}
@@ -1040,7 +1076,7 @@ function getGlobalTagScriptCompletions(state: CompletionState): CompletionItem[]
 		const globalTags: GlobalTags = getAllGlobalTags();
 		for (const tagName in globalTags) {
 			const globalTag: GlobalTag = globalTags[tagName];
-			if (globalTag.scriptSyntax && globalTag.scriptSyntax.startsWith(tagName) && state.currentWordMatches(tagName)) {
+			if (globalTag.name && globalTag.scriptSyntax && globalTag.scriptSyntax.startsWith(tagName) && state.currentWordMatches(tagName)) {
 				const thisGlobalTagScriptCompletion: CompletionItem = createNewProposal(
 					globalTag.name,
 					CompletionItemKind.Function,
@@ -1067,7 +1103,7 @@ function getHTMLTagCompletions(state: CompletionState): CompletionItem[] {
 	const htmlTagCompletions: CompletionItem[] = [];
 
 	const tagPrefixPattern: RegExp = getTagPrefixPattern();
-	const tagPrefixMatch: RegExpExecArray = tagPrefixPattern.exec(state.docPrefix);
+	const tagPrefixMatch: RegExpExecArray | null = tagPrefixPattern.exec(state.docPrefix);
 	if (tagPrefixMatch) {
 		for (const htmlTag of htmlDataProvider.provideTags()) {
 			if (state.currentWordMatches(htmlTag.name)) {
@@ -1201,7 +1237,7 @@ async function getDottedPathCompletions(state: CompletionState, parentDottedPath
 		let completionEntry: CompletionEntry;
 		const dottedLogicalPath: string = splitLogicalPath.slice(0, splitParentPath.length + 1).join(".");
 		if (splitLogicalPath.length - splitParentPath.length === 1) {
-			const directoryPath: string = cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath ? cfmlMapping.directoryPath : resolveRootPath(state.document.uri, cfmlMapping.directoryPath);
+			const directoryPath: string | undefined = cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath ? cfmlMapping.directoryPath : resolveRootPath(state.document.uri, cfmlMapping.directoryPath);
 			completionEntry = { detail: `(mapping) ${dottedLogicalPath}` };
 
 			if (directoryPath) {

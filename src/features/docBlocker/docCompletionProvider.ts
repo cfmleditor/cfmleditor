@@ -28,7 +28,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 		// console.log("provideCompletionItems:DocBlockCompletions:" + _token?.isCancellationRequested);
 
 		const result: CompletionItem[] = [];
-		let wordMatchRange: Range;
+		let wordMatchRange: Range | undefined;
 
 		if ((wordMatchRange = document.getWordRangeAtPosition(position, /\/\*\*/)) !== undefined) {
 			const documenter: Documenter = new Documenter(wordMatchRange.end, document);
@@ -42,7 +42,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 			return result;
 		}
 
-		const comp: Component = getComponent(document.uri, _token);
+		const comp: Component | undefined = getComponent(document.uri, _token);
 		if (!comp) {
 			return result;
 		}
@@ -57,7 +57,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 		const tagSuggestions: MyMap<string, string> = new MyMap<string, string>();
 		const subKeySuggestions: MyMap<string, string> = new MyMap<string, string>();
 
-		let wordRange: Range = document.getWordRangeAtPosition(position);
+		let wordRange: Range | undefined = document.getWordRangeAtPosition(position);
 		if (!wordRange) {
 			wordRange = new Range(position, position);
 		}
@@ -76,74 +76,96 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 			return prop.propertyRange.contains(position);
 		});
 		if (foundProperty.size === 1) {
-			const propertyTag: GlobalTag = getGlobalTag("cfproperty");
-			propertyTag.signatures.forEach((sig: Signature) => {
-				sig.parameters.filter((param: Parameter) => {
-					return param.name !== "name";
-				}).forEach((param: Parameter) => {
-					tagSuggestions.set(param.name, param.description);
+			const propertyTag: GlobalTag | undefined = getGlobalTag("cfproperty");
+			if (propertyTag) {
+				propertyTag.signatures.forEach((sig: Signature) => {
+					sig.parameters.filter((param: Parameter) => {
+						return param.name !== "name";
+					}).forEach((param: Parameter | undefined) => {
+						if (param && param.description) {
+							tagSuggestions.set(param.name, param.description);
+						}
+					});
 				});
-			});
+			}
 		}
 		else {
 			const foundFunction: ComponentFunctions = comp.functions.filter((func: UserFunction) => {
-				return func.location.range.contains(position);
+				return func.location ? func.location.range.contains(position) : false;
 			});
 			if (foundFunction.size === 1) {
-				const functionTag: GlobalTag = getGlobalTag("cffunction");
-				functionTag.signatures.forEach((sig: Signature) => {
-					sig.parameters.filter((param: Parameter) => {
-						return param.name !== "name";
-					}).forEach((param: Parameter) => {
-						tagSuggestions.set(param.name, param.description);
+				const functionTag: GlobalTag | undefined = getGlobalTag("cffunction");
+				if (functionTag) {
+					functionTag.signatures.forEach((sig: Signature) => {
+						sig.parameters.filter((param: Parameter) => {
+							return param.name !== "name";
+						}).forEach((param: Parameter) => {
+							if (param.description) {
+								tagSuggestions.set(param.name, param.description);
+							}
+						});
 					});
-				});
+				}
 
 				foundFunction.forEach((func: UserFunction) => {
 					func.signatures.forEach((sig: UserFunctionSignature) => {
 						sig.parameters.forEach((arg: Argument) => {
 							argumentNames.add(arg.name);
-							tagSuggestions.set(arg.name, arg.description);
+							if (arg.description) {
+								tagSuggestions.set(arg.name, arg.description);
+							}
 						});
 					});
 				});
 
-				const argumentTag: GlobalTag = getGlobalTag("cfargument");
-				argumentTag.signatures.forEach((sig: Signature) => {
-					sig.parameters.filter((param: Parameter) => {
-						return param.name !== "name";
-					}).forEach((param: Parameter) => {
-						subKeySuggestions.set(param.name, param.description);
-					});
-				});
-			}
-			else {
-				if (comp.isInterface) {
-					const interfaceTag: GlobalTag = getGlobalTag("cfinterface");
-					interfaceTag.signatures.forEach((sig: Signature) => {
+				const argumentTag: GlobalTag | undefined = getGlobalTag("cfargument");
+				if (argumentTag) {
+					argumentTag.signatures.forEach((sig: Signature) => {
 						sig.parameters.filter((param: Parameter) => {
 							return param.name !== "name";
 						}).forEach((param: Parameter) => {
-							tagSuggestions.set(param.name, param.description);
+							if (param.description) {
+								subKeySuggestions.set(param.name, param.description);
+							}
 						});
 					});
 				}
-				else {
-					const componentTag: GlobalTag = getGlobalTag("cfcomponent");
-					componentTag.signatures.forEach((sig: Signature) => {
-						sig.parameters.filter((param: Parameter) => {
-							return param.name !== "name";
-						}).forEach((param: Parameter) => {
-							tagSuggestions.set(param.name, param.description);
+			}
+			else {
+				if (comp.isInterface) {
+					const interfaceTag: GlobalTag | undefined = getGlobalTag("cfinterface");
+					if (interfaceTag) {
+						interfaceTag.signatures.forEach((sig: Signature) => {
+							sig.parameters.filter((param: Parameter) => {
+								return param.name !== "name";
+							}).forEach((param: Parameter) => {
+								if (param.description) {
+									tagSuggestions.set(param.name, param.description);
+								}
+							});
 						});
-					});
+					}
+				}
+				else {
+					const componentTag: GlobalTag | undefined = getGlobalTag("cfcomponent");
+					if (componentTag) {
+						componentTag.signatures.forEach((sig: Signature) => {
+							sig.parameters.filter((param: Parameter) => {
+								return param.name !== "name";
+							}).forEach((param: Parameter) => {
+								if (param.description) {
+									tagSuggestions.set(param.name, param.description);
+								}
+							});
+						});
+					}
 				}
 			}
 		}
 
-		let suggestions: MyMap<string, string>;
+		let suggestions: MyMap<string, string> | undefined;
 		if (prefixChr === "." && argumentNames.size !== 0) {
-			let prevWordRange: Range = document.getWordRangeAtPosition(wordRange.start.translate(0, -1));
+			let prevWordRange: Range | undefined = document.getWordRangeAtPosition(wordRange.start.translate(0, -1));
 			if (!prevWordRange) {
 				prevWordRange = new Range(position, position);
 			}

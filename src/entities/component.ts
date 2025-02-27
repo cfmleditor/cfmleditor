@@ -160,8 +160,8 @@ export interface ComponentsByName {
  * @param _token
  * @returns
  */
-export function isScriptComponent(document: TextDocument, _token: CancellationToken): boolean {
-	const componentTagMatch: RegExpExecArray = COMPONENT_TAG_PATTERN.exec(document.getText());
+export function isScriptComponent(document: TextDocument, _token: CancellationToken | undefined): boolean {
+	const componentTagMatch: RegExpExecArray | null = COMPONENT_TAG_PATTERN.exec(document.getText());
 	if (componentTagMatch) {
 		return false;
 	}
@@ -175,12 +175,12 @@ export function isScriptComponent(document: TextDocument, _token: CancellationTo
  * @param _token
  * @returns
  */
-export async function parseComponent(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<Component | undefined> {
+export async function parseComponent(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<Component | undefined> {
 	const document: TextDocument = documentStateContext.document;
 	const documentText: string = document.getText();
 	const componentIsScript: boolean = documentStateContext.docIsScript;
 
-	let componentMatch: RegExpExecArray;
+	let componentMatch: RegExpExecArray | null = null;
 	let head: string;
 	let attributePrefix: string;
 	let fullPrefix: string | undefined;
@@ -234,8 +234,8 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 		declarationRange: new Range(document.positionAt(declarationStartOffset), document.positionAt(declarationStartOffset + componentType.length)),
 		displayname: "",
 		hint: "",
-		extends: null,
-		implements: null,
+		extends: undefined,
+		implements: undefined,
 		accessors: false,
 		functions: new ComponentFunctions(),
 		properties: await parseProperties(documentStateContext, _token),
@@ -257,10 +257,12 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 		parsedDocBlock.filter((docAttribute: DocBlockKeyValue) => {
 			return docAttribute.key === "extends" && docAttribute.value;
 		}).forEach((docAttribute: DocBlockKeyValue) => {
-			component.extendsRange = new Range(
-				docAttribute.valueRange.start,
-				docAttribute.valueRange.end
-			);
+			if (docAttribute.valueRange) {
+				component.extendsRange = new Range(
+					docAttribute.valueRange.start,
+					docAttribute.valueRange.end
+				);
+			}
 		});
 
 		const implDocAttr = parsedDocBlock.find((docAttribute: DocBlockKeyValue) => {
@@ -268,13 +270,16 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 		});
 		if (implDocAttr) {
 			component.implementsRanges = [];
-			const implInitialOffset = document.offsetAt(implDocAttr.valueRange.start);
+			const implInitialOffset: number = implDocAttr.valueRange ? document.offsetAt(implDocAttr.valueRange.start) : -1;
 			let implOffset: number = 0;
 			implDocAttr.value.split(",").forEach((element: string) => {
-				const whitespaceMatch: RegExpExecArray = /\s+/.exec(element);
+				const whitespaceMatch: RegExpExecArray | null = /\s+/.exec(element);
 				const whitespaceLen = whitespaceMatch ? whitespaceMatch[0].length : 0;
-				const interfacePathWordRange: Range = document.getWordRangeAtPosition(document.positionAt(implInitialOffset + implOffset + whitespaceLen), /[$\w.]+/);
-				component.implementsRanges.push(interfacePathWordRange);
+				const interfacePathWordRange: Range | undefined = document.getWordRangeAtPosition(document.positionAt(implInitialOffset + implOffset + whitespaceLen), /[$\w.]+/);
+
+				if (component.implementsRanges && interfacePathWordRange) {
+					component.implementsRanges.push(interfacePathWordRange);
+				}
 
 				implOffset += element.length + 1;
 			});
@@ -294,8 +299,8 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 		Object.assign(componentAttributes, tagAttributes);
 
 		if (parsedAttributes.has("extends")) {
-			const extendsAttr: Attribute = parsedAttributes.get("extends");
-			if (extendsAttr.value) {
+			const extendsAttr: Attribute | undefined = parsedAttributes.get("extends");
+			if (extendsAttr && extendsAttr.value && extendsAttr.valueRange) {
 				component.extendsRange = new Range(
 					extendsAttr.valueRange.start,
 					extendsAttr.valueRange.end
@@ -304,16 +309,19 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 		}
 
 		if (parsedAttributes.has("implements")) {
-			const implementsAttr: Attribute = parsedAttributes.get("implements");
-			if (implementsAttr.value) {
+			const implementsAttr: Attribute | undefined = parsedAttributes.get("implements");
+			if (implementsAttr && implementsAttr.value && implementsAttr.valueRange) {
 				component.implementsRanges = [];
-				const implInitialOffset = document.offsetAt(implementsAttr.valueRange.start);
+				const implInitialOffset: number = document.offsetAt(implementsAttr.valueRange.start);
 				let implOffset: number = 0;
 				implementsAttr.value.split(",").forEach((element: string) => {
-					const whitespaceMatch: RegExpExecArray = /\s+/.exec(element);
+					const whitespaceMatch: RegExpExecArray | null = /\s+/.exec(element);
 					const whitespaceLen = whitespaceMatch ? whitespaceMatch[0].length : 0;
-					const interfacePathWordRange: Range = document.getWordRangeAtPosition(document.positionAt(implInitialOffset + implOffset + whitespaceLen), /[$\w.]+/);
-					component.implementsRanges.push(interfacePathWordRange);
+					const interfacePathWordRange: Range | undefined = document.getWordRangeAtPosition(document.positionAt(implInitialOffset + implOffset + whitespaceLen), /[$\w.]+/);
+
+					if (component.implementsRanges && interfacePathWordRange) {
+						component.implementsRanges.push(interfacePathWordRange);
+					}
 
 					implOffset += element.length + 1;
 				});
@@ -330,9 +338,9 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 				component.extends = await componentPathToUri(componentAttributes.extends, document.uri, _token);
 			}
 			else if (propName === "implements") {
-				const componentimplements = componentAttributes.implements.split(",");
+				const componentimplements: string[] = componentAttributes.implements ? componentAttributes.implements.split(",") : [];
 				for (const element of componentimplements) {
-					const implementsUri: Uri = await componentPathToUri(element.trim(), document.uri, _token);
+					const implementsUri: Uri | undefined = await componentPathToUri(element.trim(), document.uri, _token);
 					if (implementsUri) {
 						if (!component.implements) {
 							component.implements = [];
@@ -356,11 +364,15 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 	userFunctions = userFunctions.concat(await parseScriptFunctions(documentStateContext, _token));
 	userFunctions = userFunctions.concat(await parseTagFunctions(documentStateContext, _token));
 	let earliestFunctionRangeStart: Position = document.positionAt(documentText.length);
-	userFunctions.forEach((compFun: UserFunction) => {
-		if (compFun.location.range.start.isBefore(earliestFunctionRangeStart)) {
-			earliestFunctionRangeStart = compFun.location.range.start;
+	userFunctions.forEach((compFun: UserFunction | undefined) => {
+		if (compFun && compFun.location) {
+			if (compFun.location.range.start.isBefore(earliestFunctionRangeStart)) {
+				earliestFunctionRangeStart = compFun.location.range.start;
+			}
+			if (compFun.name) {
+				componentFunctions.set(compFun.name.toLowerCase(), compFun);
+			}
 		}
-		componentFunctions.set(compFun.name.toLowerCase(), compFun);
 	});
 
 	// Implicit functions
@@ -403,7 +415,7 @@ export function isInComponentHead(documentPositionStateContext: DocumentPosition
 	const document: TextDocument = documentPositionStateContext.document;
 	const documentText: string = documentPositionStateContext.sanitizedDocumentText;
 	const componentPattern: RegExp = documentPositionStateContext.docIsScript ? COMPONENT_SCRIPT_PATTERN : COMPONENT_TAG_PATTERN;
-	const componentMatch: RegExpExecArray = componentPattern.exec(documentText);
+	const componentMatch: RegExpExecArray | null = componentPattern.exec(documentText);
 
 	if (!componentMatch) {
 		return false;
@@ -467,12 +479,12 @@ function processAttributes(attributes: Attributes): ComponentAttributes {
  * @param _token
  * @returns
  */
-export async function componentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken): Promise<Uri | undefined> {
-	if (!dotPath) {
+export async function componentPathToUri(dotPath: string | undefined, baseUri: Uri | undefined, _token: CancellationToken | undefined): Promise<Uri | undefined> {
+	if (!dotPath || !baseUri) {
 		return undefined;
 	}
 
-	const cachedResult: Uri = cachedComponentPathToUri(dotPath, baseUri, _token);
+	const cachedResult: Uri | undefined = cachedComponentPathToUri(dotPath, baseUri, _token);
 	if (cachedResult) {
 		return cachedResult;
 	}
@@ -492,7 +504,7 @@ export async function componentPathToUri(dotPath: string, baseUri: Uri, _token: 
 	}
 
 	// relative to web root
-	const rootPath: string = resolveRootPath(baseUri, normalizedPath);
+	const rootPath: string | undefined = resolveRootPath(baseUri, normalizedPath);
 	if (rootPath && await fileExists(rootPath)) {
 		return Uri.file(rootPath);
 	}
@@ -513,7 +525,7 @@ export async function componentPathToUri(dotPath: string, baseUri: Uri, _token: 
  * @param path Dot path to a component
  * @returns
  */
-export function getComponentNameFromDotPath(path: string): string {
+export function getComponentNameFromDotPath(path: string): string | undefined {
 	return path.split(".").pop();
 }
 
@@ -522,12 +534,12 @@ export function getComponentNameFromDotPath(path: string): string {
  * @param baseUri The URI from which the Application file will be searched
  * @returns
  */
-export async function getApplicationUri(baseUri: Uri): Promise<Uri> {
+export async function getApplicationUri(baseUri: Uri): Promise<Uri | undefined> {
 	if (baseUri.scheme !== "file") {
 		return undefined;
 	}
 
-	const applicationFile: Uri = await findUpWorkspaceFile("Application.cfc", baseUri);
+	const applicationFile: Uri | undefined = await findUpWorkspaceFile("Application.cfc", baseUri);
 
 	return applicationFile;
 }
@@ -539,10 +551,10 @@ export async function getApplicationUri(baseUri: Uri): Promise<Uri> {
  * @returns
  */
 export function getServerUri(baseUri: Uri, _token: CancellationToken): Uri | undefined {
-	let componentUri: Uri;
+	let componentUri: Uri | undefined;
 
 	const fileName = "Server.cfc";
-	const rootPath: string = resolveRootPath(baseUri, fileName);
+	const rootPath: string | undefined = resolveRootPath(baseUri, fileName);
 
 	if (rootPath) {
 		const rootUri: Uri = Uri.file(rootPath);
@@ -564,7 +576,7 @@ export function getServerUri(baseUri: Uri, _token: CancellationToken): Uri | und
  * @param _token
  * @returns
  */
-export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component, _token: CancellationToken): boolean {
+export function isSubcomponentOrEqual(checkComponent: Component | undefined, baseComponent: Component, _token: CancellationToken | undefined): boolean {
 	while (checkComponent) {
 		if (checkComponent.uri.toString() === baseComponent.uri.toString()) {
 			return true;
@@ -588,8 +600,8 @@ export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: 
  * @param _token
  * @returns
  */
-export function isSubcomponent(checkComponent: Component, baseComponent: Component, _token: CancellationToken): boolean {
-	if (checkComponent.extends) {
+export function isSubcomponent(checkComponent: Component | undefined, baseComponent: Component, _token: CancellationToken): boolean {
+	if (checkComponent && checkComponent.extends) {
 		checkComponent = getComponent(checkComponent.extends, _token);
 	}
 	else {
