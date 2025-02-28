@@ -186,9 +186,8 @@ export default class CFMLHoverProvider implements HoverProvider {
 
 				const rangeTextOffset: number = document.offsetAt(cssRange.start);
 				const rangeText: string = documentPositionStateContext.sanitizedDocumentText.slice(rangeTextOffset, document.offsetAt(cssRange.end));
-				let propertyMatch: RegExpExecArray;
-				// eslint-disable-next-line no-cond-assign
-				while (propertyMatch = cssPropertyPattern.exec(rangeText)) {
+				let propertyMatch: RegExpExecArray | null;
+				while ((propertyMatch = cssPropertyPattern.exec(rangeText))) {
 					const propertyName: string = propertyMatch[2];
 
 					const propertyRange: Range = new Range(

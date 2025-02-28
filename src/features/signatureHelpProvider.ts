@@ -175,9 +175,8 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		}
 
 		// Consider named parameters
-		let namedParamMatch: RegExpExecArray = null;
-		// eslint-disable-next-line no-cond-assign
-		if (namedParamMatch = namedParameterPattern.exec(paramText)) {
+		const namedParamMatch = namedParameterPattern.exec(paramText);
+		if (namedParamMatch) {
 			// TODO: Consider argumentCollection
 			const paramName: string = namedParamMatch[1];
 			const namedParamIndex: number = entry.signatures[sigHelp.activeSignature].parameters.findIndex((param: Parameter) => {

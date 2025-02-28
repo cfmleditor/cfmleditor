@@ -50,9 +50,8 @@ export function getAttributePattern(attributeName: string): RegExp {
 export function parseAttributes(document: TextDocument, attributeRange: Range, validAttributeNames?: MySet<string>): Attributes {
 	const attributeStr: string = document.getText(attributeRange);
 	const attributes: Attributes = new Attributes();
-	let attributeMatch: RegExpExecArray = null;
-	// eslint-disable-next-line no-cond-assign
-	while (attributeMatch = ATTRIBUTES_PATTERN.exec(attributeStr)) {
+	let attributeMatch: RegExpExecArray | null;
+	while ((attributeMatch = ATTRIBUTES_PATTERN.exec(attributeStr))) {
 		const attributeName = attributeMatch[1];
 		if (validAttributeNames && !validAttributeNames.has(attributeName.toLowerCase())) {
 			continue;

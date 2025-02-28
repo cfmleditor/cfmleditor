@@ -179,9 +179,8 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 	const userFunctions: UserFunction[] = [];
 	// sanitizedDocumentText removes doc blocks
 	const componentBody: string = documentStateContext.sanitizedDocumentText;
-	let scriptFunctionMatch: RegExpExecArray = null;
-	// eslint-disable-next-line no-cond-assign
-	while (scriptFunctionMatch = scriptFunctionPattern.exec(componentBody)) {
+	let scriptFunctionMatch: RegExpExecArray | null;
+	while ((scriptFunctionMatch = scriptFunctionPattern.exec(componentBody))) {
 		const fullMatch: string = scriptFunctionMatch[0];
 		const returnTypePrefix: string = scriptFunctionMatch[1];
 		const fullDocBlock: string = scriptFunctionMatch[2];
