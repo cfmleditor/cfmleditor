@@ -18,8 +18,15 @@
 	"cSpell.words": [
 		"struct"
 	],
-	"editor.formatOnSave": true,
+	"editor.formatOnSave": false,
 	"editor.codeActionsOnSave": {
-		"source.fixAll": "always"
-	}
+		"source.fixAll": "explicit"
+	},
+	"eslint.rules.customizations": [
+		{
+			"rule": "@stylistic/*",
+			"fixable": true,
+			"severity": "off"
+		}
+	]
 }
