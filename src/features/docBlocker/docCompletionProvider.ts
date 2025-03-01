@@ -141,7 +141,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 			}
 		}
 
-		let suggestions: MyMap<string, string>;
+		let suggestions: MyMap<string, string> | undefined;
 		if (prefixChr === "." && argumentNames.size !== 0) {
 			let prevWordRange: Range = document.getWordRangeAtPosition(wordRange.start.translate(0, -1));
 			if (!prevWordRange) {

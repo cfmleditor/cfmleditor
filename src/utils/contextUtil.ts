@@ -367,7 +367,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 	const documentText: string = document.getText();
 	let textOffsetStart: number = 0;
 	let textOffsetEnd: number = documentText.length;
-	let previousPosition: Position;
+	let previousPosition: Position | undefined;
 	if (docRange && document.validateRange(docRange)) {
 		textOffsetStart = document.offsetAt(docRange.start);
 		textOffsetEnd = document.offsetAt(docRange.end);
@@ -1033,7 +1033,7 @@ export function isValidIdentifier(word: string): boolean {
  * @returns
  */
 export function getPrecedingIdentifierRange(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): Range | undefined {
-	let identRange: Range;
+	let identRange: Range | undefined;
 	let charStr = "";
 	const iterator: BackwardIterator = new BackwardIterator(documentStateContext, position, _token);
 	while (iterator.hasNext()) {

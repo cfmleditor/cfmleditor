@@ -88,7 +88,7 @@ export function constructTagSnippet(
 	includeDefaultValue: boolean = false,
 	isScript: boolean = false
 ): SnippetString | undefined {
-	let tagSnippet: SnippetString;
+	let tagSnippet: SnippetString | undefined;
 
 	if (includeAttributesSetType !== IncludeAttributesSetType.None || (includeAttributesCustom !== undefined && includeAttributesCustom.length > 0)) {
 		let snippetParamParts: string[] = [];
@@ -165,7 +165,7 @@ export function constructAttributeSnippet(
 
 	let placeholder: string = "";
 
-	let customValue: string;
+	let customValue: string | undefined;
 	if (includeAttributesCustom !== undefined) {
 		const customEntry: NameWithOptionalValue<string> = includeAttributesCustom.find((attributeEntry: NameWithOptionalValue<string>) => {
 			return equalsIgnoreCase(attributeEntry.name, param.name);

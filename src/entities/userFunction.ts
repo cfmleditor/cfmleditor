@@ -206,7 +206,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 		let functionBodyStartPos: Position;
 		let functionEndPosition: Position;
 		let functionAttributeRange: Range;
-		let functionBodyRange: Range;
+		let functionBodyRange: Range | undefined;
 
 		if ((documentStateContext.component && documentStateContext.component.isInterface && !equalsIgnoreCase(modifier1, "default") && !equalsIgnoreCase(modifier2, "default"))
 			|| equalsIgnoreCase(modifier1, "abstract") || equalsIgnoreCase(modifier2, "abstract")
@@ -391,7 +391,7 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 			if (argDefault) {
 				argDefaultAndAttributesLen += argDefault.length;
 			}
-			let parsedArgAttributes: Attributes;
+			let parsedArgAttributes: Attributes | undefined;
 			if (argAttributes) {
 				argDefaultAndAttributesLen += argAttributes.length;
 
@@ -410,8 +410,8 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 			const argNameOffset = argOffset + removedDefaultAndAttributes.lastIndexOf(argName);
 
 			let convertedArgType: DataType = DataType.Any;
-			let typeUri: Uri;
-			let argTypeRange: Range;
+			let typeUri: Uri | undefined;
+			let argTypeRange: Range | undefined;
 			if (argType) {
 				const [dataType, returnTypeUri]: [DataType, Uri] = await DataType.getDataTypeAndUri(argType, documentUri, _token);
 				if (dataType) {
@@ -619,8 +619,8 @@ async function parseTagFunctionArguments(documentStateContext: DocumentStateCont
 
 		const argType = argumentAttributes.type;
 		let convertedArgType: DataType = DataType.Any;
-		let typeUri: Uri;
-		let argTypeRange: Range;
+		let typeUri: Uri | undefined;
+		let argTypeRange: Range | undefined;
 		if (argType) {
 			const [dataType, uri]: [DataType, Uri] = await DataType.getDataTypeAndUri(argType, documentUri, _token);
 			if (dataType) {
@@ -781,7 +781,7 @@ function parseModifier(modifier: string): string {
  * @returns
  */
 export async function getFunctionFromPrefix(documentPositionStateContext: DocumentPositionStateContext, functionKey: string, docPrefix: string, _token: CancellationToken): Promise<UserFunction | undefined> {
-	let foundFunction: UserFunction;
+	let foundFunction: UserFunction | undefined;
 
 	if (docPrefix === undefined || docPrefix === null) {
 		docPrefix = documentPositionStateContext.docPrefix;
@@ -812,7 +812,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
 			}
 			else if (documentPositionStateContext.isCfcFile && !varScope && (equalsIgnoreCase(varName, Scope.Variables) || equalsIgnoreCase(varName, Scope.This))) {
 				// TODO: Disallow implicit functions if using variables scope
-				let disallowedAccess: Access;
+				let disallowedAccess: Access | undefined;
 				if (equalsIgnoreCase(varName, Scope.This)) {
 					disallowedAccess = Access.Private;
 				}

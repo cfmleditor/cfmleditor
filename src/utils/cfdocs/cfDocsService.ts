@@ -298,7 +298,7 @@ export default class CFDocsService {
 
 		const currentWord: string = documentPositionStateContext.currentWord;
 
-		let globalEntity: GlobalEntity;
+		let globalEntity: GlobalEntity | undefined;
 		const tagPrefixPattern: RegExp = getTagPrefixPattern();
 		const functionSuffixPattern: RegExp = getFunctionSuffixPattern();
 
@@ -348,7 +348,7 @@ export default class CFDocsService {
 
 		const currentWord: string = documentPositionStateContext.currentWord;
 
-		let globalEntity: CFDocsDefinitionInfo;
+		let globalEntity: CFDocsDefinitionInfo | undefined;
 		const tagPrefixPattern: RegExp = getTagPrefixPattern();
 		const functionSuffixPattern: RegExp = getFunctionSuffixPattern();
 

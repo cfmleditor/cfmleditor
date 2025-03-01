@@ -622,7 +622,7 @@ export function parseTags(documentStateContext: DocumentStateContext, tagName: s
 			document.positionAt(attributeStartOffset + tagAttributes.length)
 		);
 
-		let tagBodyRange: Range;
+		let tagBodyRange: Range | undefined;
 		if (tagBodyText !== undefined) {
 			const thisBodyStartOffset: number = attributeStartOffset + tagAttributes.length + 1;
 			tagBodyRange = new Range(
@@ -737,7 +737,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 
 	// TODO: Account for script tags
 
-	let characterAtPreviousPosition: string;
+	let characterAtPreviousPosition: string | undefined;
 	for (let offset = textOffsetStart; offset < textOffsetEnd; offset++) {
 		const characterAtPosition: string = documentText.charAt(offset);
 
@@ -757,7 +757,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 		else if (tagContext.inStartTag) {
 			if (characterAtPosition === tagClosingChar) {
 				const globalTag: GlobalTag = getGlobalTag(tagContext.name);
-				let attributes: Attributes;
+				let attributes: Attributes | undefined;
 				if (!globalTag || (globalTag.signatures.length > 0 && globalTag.signatures[0].parameters.length > 0)) {
 					const attributeRange: Range = new Range(
 						document.positionAt(tagContext.startOffset + tagContext.name.length + 1),
@@ -769,7 +769,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 				if (nonClosingCfmlTags.includes(tagContext.name) || characterAtPreviousPosition === "/") {
 					tags.push({
 						name: tagContext.name,
-						attributes: attributes,
+						attributes: attributes || new Attributes(),
 						tagRange: tagRange,
 						isScript: false,
 					});
@@ -777,7 +777,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 				else {
 					unclosedTags.push({
 						name: tagContext.name,
-						attributes: attributes,
+						attributes: attributes || new Attributes(),
 						tagRange: tagRange,
 					});
 				}

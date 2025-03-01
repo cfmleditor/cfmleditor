@@ -89,7 +89,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
 		// Check for relative local file
 		let linkPath: string = link.split(/[?#]/)[0];
 		linkPath = linkPath.replace(/\\/, "/");
-		let resourcePath: Uri;
+		let resourcePath: Uri | undefined;
 		if (linkPath && linkPath[0] === "/") {
 			// Relative to root
 			const root: WorkspaceFolder = workspace.getWorkspaceFolder(document.uri);

@@ -64,7 +64,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
 		const startSigPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(startSigPosition));
 
-		let entry: Function;
+		let entry: Function | undefined;
 
 		// Check if initializing via "new" operator
 		const objectNewInstanceInitPrefixMatch: RegExpExecArray = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);

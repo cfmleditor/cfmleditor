@@ -55,7 +55,7 @@ export function getFunctionSuffixPattern(): RegExp {
  * @returns
  */
 export function getReturnTypeString(func: Function): string {
-	let returnType: string;
+	let returnType: string | undefined;
 	if ("returnTypeUri" in func) {
 		const userFunction: UserFunction = func as UserFunction;
 		if (userFunction.returnTypeUri) {

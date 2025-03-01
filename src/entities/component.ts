@@ -539,7 +539,7 @@ export async function getApplicationUri(baseUri: Uri): Promise<Uri> {
  * @returns
  */
 export function getServerUri(baseUri: Uri, _token: CancellationToken): Uri | undefined {
-	let componentUri: Uri;
+	let componentUri: Uri | undefined;
 
 	const fileName = "Server.cfc";
 	const rootPath: string = resolveRootPath(baseUri, fileName);
