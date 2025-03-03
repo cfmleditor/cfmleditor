@@ -87,7 +87,6 @@ stylistic.configs.customize({
         "@typescript-eslint/no-unsafe-member-access": "off",
         "@typescript-eslint/prefer-promise-reject-errors": "off",
         "@typescript-eslint/restrict-plus-operands": "off",
-        "@typescript-eslint/restrict-template-expressions": "off",
         "@typescript-eslint/unbound-method": "off",
         //#endregion
     },
