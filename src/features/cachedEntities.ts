@@ -404,7 +404,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
 				}
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
 				catch (ex) {
-					console.warn(`Cannot parse document at ${componentUri}`);
+					console.warn(`Cannot parse document at ${componentUri.fsPath}`);
 				}
 				finally {
 					i++;
@@ -512,7 +512,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: Cancel
 		}
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		catch (ex) {
-			console.warn(`Cannot parse document at ${applicationUri}`);
+			console.warn(`Cannot parse document at ${applicationUri.fsPath}`);
 		}
 	}
 }
