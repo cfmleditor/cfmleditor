@@ -599,7 +599,7 @@
 		"pack": "vsce package",
 		"publish": "vsce publish",
 		"compile:test": "npm run clean && tsc -b ./test/tsconfig.json",
-		"test": "npm run compile:test && node ./out/test/runTests.js"
+		"test": "npm run compile:test && vscode-test"
 	},
 	"dependencies": {
 		"async_hooks": "^1.0.0",
