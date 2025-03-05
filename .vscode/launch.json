@@ -40,6 +40,7 @@
 			  "--extensionDevelopmentPath=${workspaceFolder}",
 			  "--extensionTestsPath=${workspaceFolder}/out/test/"
 			],
+			"sourceMaps": true,
 			"outFiles": ["${workspaceFolder}/out/test/**/*.js"],
             "preLaunchTask": "compile:test"
 		}
