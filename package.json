@@ -598,8 +598,8 @@
 		"package": "npm run check-types && node esbuild.js --production",
 		"pack": "vsce package",
 		"publish": "vsce publish",
-		"compile:test": "tsc -b src/test/tsconfig.json",
-		"test": "npm run clean && npm run compile:test && vscode-test"
+		"compile:test": "pnpm clean && tsc -b ./test/tsconfig.json",
+		"test": "pnpm compile:test && node ./out/test/runTests.js"
 	},
 	"dependencies": {
 		"async_hooks": "^1.0.0",
