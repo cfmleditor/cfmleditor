@@ -35,6 +35,12 @@
           "group": "watch",
           "reveal": "never"
         }
-      }
+      },
+	  {
+		"label": "compile:test",
+		"type": "npm",
+		"script": "compile:test",
+		"problemMatcher": "$tsc"
+	  }
     ]
   }

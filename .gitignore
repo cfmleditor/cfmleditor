@@ -6,4 +6,5 @@ node_modules/
 out/
 dist/
 npm-debug.log
+.vscode-test
 .vscode-test-web

@@ -597,7 +597,9 @@
 		"lint": "eslint src",
 		"package": "npm run check-types && node esbuild.js --production",
 		"pack": "vsce package",
-		"publish": "vsce publish"
+		"publish": "vsce publish",
+		"compile:test": "tsc -b src/test/tsconfig.json",
+		"test": "npm run clean && npm run compile:test && vscode-test"
 	},
 	"dependencies": {
 		"async_hooks": "^1.0.0",
@@ -626,12 +628,14 @@
 		"@types/vscode": "^1.97.0",
 		"@typescript-eslint/eslint-plugin": "^8.25.0",
 		"@typescript-eslint/parser": "^8.25.0",
+		"@vscode/test-cli": "^0.0.10",
 		"@vscode/test-electron": "^2.4.1",
 		"@vscode/test-web": "^0.0.63",
 		"@vscode/vsce": "^3.2.2",
 		"esbuild": "^0.25.0",
 		"eslint": "^9.21.0",
 		"eslint-plugin-jsdoc": "^50.6.3",
+		"mocha": "^11.1.0",
 		"rimraf": "^6.0.1",
 		"ts-loader": "^9.5.2",
 		"typescript": "^5.7.3"
