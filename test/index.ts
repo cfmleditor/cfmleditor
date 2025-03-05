@@ -15,7 +15,6 @@ export function run(testsRoot: string, cb: (error: any, failures?: number) => vo
 	glob("**/suite/**.test.js", { cwd: testsRoot })
 		.then((files) => {
 			for (const f of files) {
-				console.log(f);
 				mocha.addFile(path.resolve(testsRoot, f));
 			}
 
