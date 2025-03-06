@@ -9,7 +9,7 @@ import * as cachedEntity from "../../features/cachedEntities";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../documentUtil";
 import { CFMLEngine, CFMLEngineName } from "./cfmlEngine";
 import { extensionContext } from "../../cfmlMain";
-import { CFDocsDefinitionInfo, EngineCompatibilityDetail } from "./definitionInfo";
+import { CFDocsDefinitionInfo, EngineCompatibilityDetail, EngineInfo, Example, Param } from "./definitionInfo";
 
 enum CFDocsSource {
 	remote = "remote",
@@ -86,12 +86,22 @@ export default class CFDocsService {
 	 * @param jsonDoc A JSON string conforming to the CFDocs definition structure
 	 * @returns
 	 */
-	private static constructDefinitionFromJsonDoc(jsonDoc): CFDocsDefinitionInfo {
-		// const jsonDoc = JSON.parse(jsonTextDoc);
-
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	private static constructDefinitionFromJsonDoc(jsonDoc: any): CFDocsDefinitionInfo {
 		return new CFDocsDefinitionInfo(
-			jsonDoc.name, jsonDoc.type, jsonDoc.syntax, jsonDoc.member, jsonDoc.script, jsonDoc.returns,
-			jsonDoc.related, jsonDoc.description, jsonDoc.discouraged, jsonDoc.params, jsonDoc.engines, jsonDoc.links, jsonDoc.examples
+			jsonDoc.name as string,
+			jsonDoc.type as string,
+			jsonDoc.syntax as string,
+			jsonDoc.member as string,
+			jsonDoc.script as string,
+			jsonDoc.returns as string,
+			jsonDoc.related as string[],
+			jsonDoc.description as string,
+			jsonDoc.discouraged as string,
+			jsonDoc.params as Param[],
+			jsonDoc.engines as EngineInfo,
+			jsonDoc.links as string[],
+			jsonDoc.examples as Example[]
 		);
 	}
 
