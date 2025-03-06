@@ -10,6 +10,7 @@ import { DocumentPositionStateContext, getDocumentPositionStateContext } from ".
 import { CFMLEngine, CFMLEngineName } from "./cfmlEngine";
 import { extensionContext } from "../../cfmlMain";
 import { CFDocsDefinitionInfo, EngineCompatibilityDetail } from "./definitionInfo";
+import { plainToInstance } from "class-transformer";
 
 enum CFDocsSource {
 	remote = "remote",
@@ -86,13 +87,8 @@ export default class CFDocsService {
 	 * @param jsonDoc A JSON string conforming to the CFDocs definition structure
 	 * @returns
 	 */
-	private static constructDefinitionFromJsonDoc(jsonDoc): CFDocsDefinitionInfo {
-		// const jsonDoc = JSON.parse(jsonTextDoc);
-
-		return new CFDocsDefinitionInfo(
-			jsonDoc.name, jsonDoc.type, jsonDoc.syntax, jsonDoc.member, jsonDoc.script, jsonDoc.returns,
-			jsonDoc.related, jsonDoc.description, jsonDoc.discouraged, jsonDoc.params, jsonDoc.engines, jsonDoc.links, jsonDoc.examples
-		);
+	private static constructDefinitionFromJsonDoc(jsonDoc: unknown): CFDocsDefinitionInfo {
+		return plainToInstance(CFDocsDefinitionInfo, jsonDoc);
 	}
 
 	/**

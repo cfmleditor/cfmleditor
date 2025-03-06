@@ -603,6 +603,7 @@
 		"async_hooks": "^1.0.0",
 		"browserify": "^17.0.1",
 		"buffer": "^6.0.3",
+		"class-transformer": "^0.5.1",
 		"html-entities": "~2.5.2",
 		"isomorphic-fetch": "^3.0.0",
 		"micromatch": "~4.0.8",
