@@ -7,3 +7,9 @@ out/
 dist/
 npm-debug.log
 .vscode-test-web
+
+# Downloaded binaries used to run another instance of VS Code for tests
+.vscode-test
+
+# Incremental build file created by `tsc --build`
+tsconfig.tsbuildinfo

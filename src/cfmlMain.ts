@@ -94,12 +94,16 @@ function shouldExcludeDocument(documentUri: Uri): boolean {
 	return some(relativePath, fileExcludeGlobs);
 }
 
+export type api = {
+	isBulkCaching(): boolean;
+};
+
 /**
  * This method is called when the extension is activated.
  * @param context The context object for this extension.
  * @returns
  */
-export function activate(context: ExtensionContext): object {
+export async function activate(context: ExtensionContext): Promise<api> {
 	extensionContext = context;
 
 	const languageConfiguration: LanguageConfiguration = {
@@ -295,10 +299,10 @@ export function activate(context: ExtensionContext): object {
 		});
 	}
 
-	commands.executeCommand("cfml.refreshGlobalDefinitionCache");
-	commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
+	await commands.executeCommand("cfml.refreshGlobalDefinitionCache");
+	await commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
 
-	const api: object = {
+	const api: api = {
 		isBulkCaching(): boolean {
 			return bulkCaching;
 		},
