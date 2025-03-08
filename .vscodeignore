@@ -3,7 +3,6 @@
 .history/**
 .vscode/**
 .vscode-test/**
-out/test/**
 test/**
 src/**
 **/*.map
@@ -18,3 +17,4 @@ typings/**
 **/esbuild.js
 package-lock.json
 **/eslint.config.mjs
+out/**
