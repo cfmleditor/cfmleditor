@@ -76,6 +76,16 @@ export namespace Scope {
 				return Scope.Unknown;
 		}
 	}
+
+	/**
+	 *
+	 * @param scope
+	 * @param value
+	 * @returns
+	 */
+	export function equals(scope: Scope, value: string): boolean {
+		return scope === valueOf(value);
+	}
 }
 
 export const allScopes: Scope[] = [

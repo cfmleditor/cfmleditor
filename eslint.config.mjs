@@ -83,7 +83,6 @@ stylistic.configs.customize({
         //TODO: fix these 1 at a time
         "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/no-unsafe-assignment": "off",
-        "@typescript-eslint/no-unsafe-enum-comparison": "off",
         "@typescript-eslint/no-unsafe-member-access": "off",
         "@typescript-eslint/unbound-method": "off",
         //#endregion
