@@ -241,10 +241,10 @@ export default class CFDocsService {
 		const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
 		const cfdocsSource: CFDocsSource = cfmlCfDocsSettings.get<CFDocsSource>("source", CFDocsSource.remote);
 		const getDefinitionInfo = cfdocsSource === CFDocsSource.local && env.appHost === "desktop"
-			? CFDocsService.getLocalDefinitionInfo
+			? CFDocsService.getLocalDefinitionInfo.bind(CFDocsService)
 			: (cfdocsSource === CFDocsSource.extension
-					? CFDocsService.getExtensionDefinitionInfo
-					: CFDocsService.getRemoteDefinitionInfo);
+					? CFDocsService.getExtensionDefinitionInfo.bind(CFDocsService)
+					: CFDocsService.getRemoteDefinitionInfo.bind(CFDocsService));
 		// const getMemberFunctionDefinition = CFDocsService.getExtensionDefinitionInfo;
 
 		const allFunctionNames: string[] = await CFDocsService.getAllFunctionNames(cfdocsSource);
