@@ -89,8 +89,19 @@ export function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit, _toke
  * @param edit
  * @param args
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: any): void {
+
+interface SnippetArgs {
+	script: string;
+	tag: string;
+}
+
+/**
+ *
+ * @param editor
+ * @param edit
+ * @param args
+ */
+export function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: SnippetArgs): void {
 	const position: Position = editor.selection.start;
 	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, true, null, false);
 

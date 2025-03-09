@@ -34,6 +34,7 @@ export default class CFDocsService {
 			const docFilePath: Uri = Uri.joinPath(cfdocsPath, jsonFileName);
 			const readData = await workspace.fs.readFile(docFilePath);
 			const readStr = Buffer.from(readData).toString("utf8");
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 			const readJson = JSON.parse(readStr);
 			return CFDocsService.constructDefinitionFromJsonDoc(readJson);
 		}
@@ -53,6 +54,7 @@ export default class CFDocsService {
 			const pathUri: Uri = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/en/" + CFDocsService.getJsonFileName(identifier)));
 			const readData = await workspace.fs.readFile(pathUri);
 			const readStr = Buffer.from(readData).toString("utf8");
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 			const readJson = JSON.parse(readStr);
 			return CFDocsService.constructDefinitionFromJsonDoc(readJson);
 		}

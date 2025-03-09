@@ -8,7 +8,16 @@ export const queryValuePattern: RegExp = /^(?:["']\s*#\s*)?(query(?:New|Execute)
 
 const selectQueryPattern: RegExp = /^\s*SELECT\s+([\s\S]+?)\s+FROM\s+[\s\S]+/i;
 
-export const queryObjectProperties = {
+type QueryPropertyDetails = {
+	detail: string;
+	description: string;
+};
+
+type QueryProperties = {
+	[property: string]: QueryPropertyDetails;
+};
+
+export const queryObjectProperties: QueryProperties = {
 	columnList: {
 		detail: "(property) queryName.columnList",
 		description: "Comma-separated list of the query columns.",
@@ -23,7 +32,7 @@ export const queryObjectProperties = {
 	},
 };
 
-export const queryResultProperties = {
+export const queryResultProperties: QueryProperties = {
 	cached: {
 		detail: "(property) resultName.cached",
 		description: "True if the query was cached; False otherwise.",

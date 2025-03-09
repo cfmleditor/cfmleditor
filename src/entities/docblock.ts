@@ -21,9 +21,9 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 	const docBlock: DocBlockKeyValue[] = [];
 	let prevKey = "hint";
 	let activeKey = "hint";
-	let prevSubkey = undefined;
-	let activeSubkey = undefined;
-	let activeValue = undefined;
+	let prevSubkey: string | undefined;
+	let activeSubkey: string | undefined;
+	let activeValue: string | undefined;
 	let activeValueStartOffset = 0;
 	let activeValueEndOffset = 0;
 	let docBlockMatches: RegExpExecArray | null;

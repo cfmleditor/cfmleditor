@@ -29,8 +29,7 @@ import { getAllCustomSnippets, getAllGlobalFunctions, getAllGlobalMemberFunction
 import { Snippet, Snippets } from "../entities/snippet";
 import { Utils } from "vscode-uri";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const snippets: Snippets = require("../../snippets/snippets.json");
+import snippets from "../../snippets/snippets.json";
 
 const triggerCompletionCommand: Command = {
 	title: "Trigger Suggest",
@@ -809,7 +808,7 @@ function getStandardSnippetCompletions(state: CompletionState, excludedSnippetIt
 	const snippetCompletions: CompletionItem[] = [];
 	for (const key in snippets) {
 		if (!excludedSnippetItems.includes(key)) {
-			const snippet: Snippet = snippets[key];
+			const snippet: Snippet = snippets[key] as Snippet;
 			// TODO: This implementation of "context" supports "tag" (which is basically only 'not script') and "script", would be nice to have other contexts
 			if (state.currentWordMatches(snippet.prefix) && snippet.scope === "cfml" && ((snippet.context.indexOf("script") !== -1 && state.positionIsScript) || (snippet.context.indexOf("tag") !== -1 && !state.positionIsScript))) {
 				const standardSnippet = new CompletionItem(snippet.prefix, CompletionItemKind.Snippet);
