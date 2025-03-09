@@ -259,10 +259,11 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		const applicationVariablesPrefixPattern = getValidScopesPrefixPattern([Scope.Application, Scope.Session, Scope.Request], false);
 		const variableScopePrefixMatch: RegExpExecArray = applicationVariablesPrefixPattern.exec(docPrefix);
 		if (variableScopePrefixMatch) {
-			const currentScope: string = variableScopePrefixMatch[1];
+			const currentScope = Scope.valueOf(variableScopePrefixMatch[1]);
+
 			const applicationDocVariables: Variable[] = await getApplicationVariables(document.uri);
 			applicationDocVariables.filter((variable: Variable) => {
-				return Scope.equals(variable.scope, currentScope) && equalsIgnoreCase(variable.identifier, currentWord);
+				return variable.scope === currentScope && equalsIgnoreCase(variable.identifier, currentWord);
 			}).forEach((variable: Variable) => {
 				results.push({
 					targetUri: variable.declarationLocation.uri,
