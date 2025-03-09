@@ -482,13 +482,9 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 								}
 
 								for (const queryPropertyName in queryObjectProperties) {
-									// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 									const queryProperty = queryObjectProperties[queryPropertyName];
 									result.push(createNewProposal(
-										queryPropertyName, CompletionItemKind.Property, {
-											detail: queryProperty.detail as string,
-											description: queryProperty.description as string,
-										}
+										queryPropertyName, CompletionItemKind.Property, { detail: queryProperty.detail, description: queryProperty.description }
 									));
 								}
 							}
