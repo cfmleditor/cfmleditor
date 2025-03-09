@@ -72,20 +72,24 @@ export class CSSDataProvider implements ICSSDataProvider {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isPropertyData(d: any): d is IPropertyData {
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 	return typeof d.name === "string";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isAtDirective(d: any): d is IAtDirectiveData {
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 	return typeof d.name === "string";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isPseudoClassData(d: any): d is IPseudoClassData {
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 	return typeof d.name === "string";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isPseudoElementData(d: any): d is IPseudoElementData {
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 	return typeof d.name === "string";
 }
