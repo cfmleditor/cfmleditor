@@ -540,7 +540,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 	}
 
 	public paramsMarkdownPreview(params: Parameter[], isVerbose: boolean = true): MarkdownString {
-		const paramDocFunction: (param: Parameter) => string = isVerbose ? this.getVerboseParamDocumentation : this.getParamDocumentation;
+		const paramDocFunction: (param: Parameter) => string = isVerbose ? this.getVerboseParamDocumentation.bind(this) : this.getParamDocumentation.bind(this);
 
 		return new MarkdownString(params.map(paramDocFunction).join("  \n\n"));
 	}
