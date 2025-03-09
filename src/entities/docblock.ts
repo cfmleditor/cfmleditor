@@ -22,7 +22,7 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 	let prevKey = "hint";
 	let activeKey = "hint";
 	let prevSubkey = undefined;
-	let activeSubkey = undefined;
+	let activeSubkey: string | undefined = undefined;
 	let activeValue = undefined;
 	let activeValueStartOffset = 0;
 	let activeValueEndOffset = 0;
@@ -51,8 +51,8 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 		if ((activeKey !== prevKey || activeSubkey !== prevSubkey) && activeValue) {
 			docBlock.push({
 				key: prevKey,
-				subkey: prevSubkey,
-				value: activeValue,
+				subkey: prevSubkey as string,
+				value: activeValue as string,
 				valueRange: new Range(document.positionAt(activeValueStartOffset), document.positionAt(activeValueEndOffset)),
 			});
 			prevKey = activeKey;
@@ -74,7 +74,7 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 		docBlock.push({
 			key: activeKey,
 			subkey: activeSubkey,
-			value: activeValue,
+			value: activeValue as string,
 			valueRange: new Range(document.positionAt(activeValueStartOffset), document.positionAt(activeValueEndOffset)),
 		});
 	}

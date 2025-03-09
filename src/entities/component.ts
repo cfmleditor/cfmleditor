@@ -345,6 +345,7 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 				component.accessors = true;
 			}
 			else {
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 				component[propName] = componentAttributes[propName];
 			}
 		}
