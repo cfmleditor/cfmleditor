@@ -38,7 +38,7 @@ export interface DocumentPositionStateContext extends DocumentStateContext {
  * @param exclDocumentRanges
  * @returns DocumentStateContext
  */
-export function getDocumentStateContext(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken, exclDocumentRanges: boolean = false): DocumentStateContext {
+export function getDocumentStateContext(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentStateContext {
 	const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
 	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name"));
 	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version"));
@@ -79,7 +79,7 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
  * @param exclDocumentRanges
  * @returns DocumentPositionStateContext
  */
-export function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken, exclDocumentRanges: boolean = false): DocumentPositionStateContext {
+export function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentPositionStateContext {
 	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token, exclDocumentRanges);
 
 	const docIsScript: boolean = documentStateContext.docIsScript;

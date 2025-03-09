@@ -63,7 +63,7 @@ export class BackwardIterator {
 	 * @param position position
 	 * @param _token
 	 */
-	constructor(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken) {
+	constructor(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken | undefined) {
 		this.documentStateContext = documentStateContext;
 		this.lineNumber = position.line;
 		this.lineCharacterOffset = position.character;
@@ -83,7 +83,7 @@ export class BackwardIterator {
 	 * @param _token
 	 * @returns
 	 */
-	public next(_token: CancellationToken): number {
+	public next(_token: CancellationToken | undefined): number {
 		if (this.lineCharacterOffset < 0) {
 			this.lineNumber--;
 			if (this.lineNumber >= 0) {
@@ -132,7 +132,7 @@ export class BackwardIterator {
 	 * @param newPosition Sets a new position for the iterator
 	 * @param _token
 	 */
-	public setPosition(newPosition: Position, _token: CancellationToken): void {
+	public setPosition(newPosition: Position, _token: CancellationToken | undefined): void {
 		if (this.lineNumber !== newPosition.line) {
 			this.lineNumber = newPosition.line;
 			this.lineText = this.getLineText(_token);
@@ -162,7 +162,7 @@ export class BackwardIterator {
 	 * @returns
 	 */
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	private getLineText(_token: CancellationToken): string {
+	private getLineText(_token: CancellationToken | undefined): string {
 		const document: TextDocument = this.getDocument();
 		const lineRange: Range = document.lineAt(this.lineNumber).range;
 		return this.documentStateContext.sanitizedDocumentText.slice(document.offsetAt(lineRange.start), document.offsetAt(lineRange.end));
@@ -176,7 +176,7 @@ export class BackwardIterator {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function isCfmFile(document: TextDocument, _token: CancellationToken): boolean {
+export function isCfmFile(document: TextDocument, _token: CancellationToken | undefined): boolean {
 	const extensionName: string = Utils.extname(Uri.parse(document.fileName));
 	for (const currExt of CFM_FILE_EXTS) {
 		if (equalsIgnoreCase(extensionName, currExt)) {
@@ -209,7 +209,7 @@ export function isCfsFile(document: TextDocument, _token: CancellationToken): bo
  * @param _token
  * @returns
  */
-export function isCfcFile(document: TextDocument, _token: CancellationToken): boolean {
+export function isCfcFile(document: TextDocument, _token: CancellationToken | undefined): boolean {
 	return isCfcUri(document.uri, _token);
 }
 
@@ -220,7 +220,7 @@ export function isCfcFile(document: TextDocument, _token: CancellationToken): bo
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function isCfcUri(uri: Uri, _token: CancellationToken): boolean {
+export function isCfcUri(uri: Uri, _token: CancellationToken | undefined): boolean {
 	const extensionName = Utils.extname(uri);
 	return equalsIgnoreCase(extensionName, COMPONENT_EXT);
 }
@@ -233,7 +233,7 @@ export function isCfcUri(uri: Uri, _token: CancellationToken): boolean {
  * @param commentRanges
  * @returns
  */
-export function getCfScriptRanges(document: TextDocument, range: Range, _token: CancellationToken, commentRanges: Range[] = []): Range[] {
+export function getCfScriptRanges(document: TextDocument, range: Range, _token: CancellationToken | undefined, commentRanges: Range[] = []): Range[] {
 	const ranges: Range[] = [];
 	let documentText: string;
 	let textOffset: number;
@@ -276,7 +276,7 @@ export function getCfScriptRanges(document: TextDocument, range: Range, _token: 
  * @param exclDocumentRanges
  * @returns
  */
-export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range, fast: boolean = false, _token: CancellationToken, exclDocumentRanges: boolean = false): DocumentContextRanges {
+export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range, fast: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentContextRanges {
 	if (fast) {
 		return { commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token) };
 	}
@@ -296,7 +296,7 @@ export function getDocumentContextRanges(document: TextDocument, isScript: boole
  * @param _token
  * @returns
  */
-function getCommentRangesByRegex(document: TextDocument, isScript: boolean = false, docRange: Range, _token: CancellationToken): Range[] {
+function getCommentRangesByRegex(document: TextDocument, isScript: boolean = false, docRange: Range, _token: CancellationToken | undefined): Range[] {
 	let commentRanges: Range[] = [];
 	let documentText: string;
 	let textOffset: number;
@@ -359,7 +359,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
  * @param _token
  * @returns
  */
-function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange: Range, _token: CancellationToken): DocumentContextRanges {
+function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange: Range, _token: CancellationToken | undefined): DocumentContextRanges {
 	// console.log("getCommentAndStringRangesIterated:" + _token?.isCancellationRequested);
 
 	let commentRanges: Range[] = [];
@@ -619,7 +619,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
  * @param _token
  * @returns
  */
-export function getJavaScriptRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken): Range[] {
+export function getJavaScriptRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken | undefined): Range[] {
 	const scriptTags: Tag[] = parseTags(documentStateContext, "script", range, _token);
 
 	return scriptTags.map((tag: Tag) => {
@@ -634,7 +634,7 @@ export function getJavaScriptRanges(documentStateContext: DocumentStateContext, 
  * @param _token
  * @returns
  */
-export function getCssRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken): Range[] {
+export function getCssRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken | undefined): Range[] {
 	const styleTags: Tag[] = parseTags(documentStateContext, "style", range, _token);
 
 	return styleTags.map((tag: Tag) => {
@@ -649,7 +649,7 @@ export function getCssRanges(documentStateContext: DocumentStateContext, range: 
  * @param _token
  * @returns
  */
-export function getCfOutputRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken): Range[] {
+export function getCfOutputRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken | undefined): Range[] {
 	const cfoutputTags: Tag[] = parseTags(documentStateContext, "cfoutput", range, _token);
 
 	return cfoutputTags.map((tag: Tag) => {
@@ -664,7 +664,7 @@ export function getCfOutputRanges(documentStateContext: DocumentStateContext, ra
  * @param _token
  * @returns
  */
-export function isInCfOutput(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): boolean {
+export function isInCfOutput(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken | undefined): boolean {
 	return isInRanges(getCfOutputRanges(documentStateContext, undefined, _token), position, false, _token);
 }
 
@@ -675,7 +675,7 @@ export function isInCfOutput(documentStateContext: DocumentStateContext, positio
  * @param _token
  * @returns
  */
-export function isInCfScript(document: TextDocument, position: Position, _token: CancellationToken): boolean {
+export function isInCfScript(document: TextDocument, position: Position, _token: CancellationToken | undefined): boolean {
 	return isInRanges(getCfScriptRanges(document, undefined, _token), position, false, _token);
 }
 
@@ -686,7 +686,7 @@ export function isInCfScript(document: TextDocument, position: Position, _token:
  * @param _token
  * @returns
  */
-export function isPositionScript(document: TextDocument, position: Position, _token: CancellationToken): boolean {
+export function isPositionScript(document: TextDocument, position: Position, _token: CancellationToken | undefined): boolean {
 	return (isScriptComponent(document, _token) || isInCfScript(document, position, _token));
 }
 
@@ -697,7 +697,7 @@ export function isPositionScript(document: TextDocument, position: Position, _to
  * @param _token
  * @returns
  */
-export function isInJavaScript(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): boolean {
+export function isInJavaScript(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken | undefined): boolean {
 	return isInRanges(getJavaScriptRanges(documentStateContext, undefined, _token), position, false, _token);
 }
 
@@ -708,7 +708,7 @@ export function isInJavaScript(documentStateContext: DocumentStateContext, posit
  * @param _token
  * @returns
  */
-export function isInCss(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): boolean {
+export function isInCss(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken | undefined): boolean {
 	return isInRanges(getCssRanges(documentStateContext, undefined, _token), position, false, _token);
 }
 
@@ -720,7 +720,7 @@ export function isInCss(documentStateContext: DocumentStateContext, position: Po
  * @param _token
  * @returns
  */
-export function isInComment(document: TextDocument, position: Position, isScript: boolean = false, _token: CancellationToken): boolean {
+export function isInComment(document: TextDocument, position: Position, isScript: boolean = false, _token: CancellationToken | undefined): boolean {
 	return isInRanges(getDocumentContextRanges(document, isScript, undefined, false, _token).commentRanges, position, false, _token);
 }
 
@@ -733,7 +733,7 @@ export function isInComment(document: TextDocument, position: Position, isScript
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function isInRanges(ranges: Range[], positionOrRange: Position | Range, ignoreEnds: boolean = false, _token: CancellationToken): boolean {
+export function isInRanges(ranges: Range[], positionOrRange: Position | Range, ignoreEnds: boolean = false, _token: CancellationToken | undefined): boolean {
 	return ranges.some((range: Range) => {
 		let isContained: boolean = range.contains(positionOrRange);
 		if (ignoreEnds) {
@@ -784,7 +784,7 @@ export function invertRanges(document: TextDocument, ranges: Range[]): Range[] {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function isContinuingExpression(prefix: string, _token: CancellationToken): boolean {
+export function isContinuingExpression(prefix: string, _token: CancellationToken | undefined): boolean {
 	return continuingExpressionPattern.test(prefix);
 }
 
@@ -850,7 +850,7 @@ export function isStringDelimiter(char: string): boolean {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function getNextCharacterPosition(documentStateContext: DocumentStateContext, startOffset: number, endOffset: number, char: string | string[], includeChar: boolean = true, _token: CancellationToken): Position {
+export function getNextCharacterPosition(documentStateContext: DocumentStateContext, startOffset: number, endOffset: number, char: string | string[], includeChar: boolean = true, _token: CancellationToken | undefined): Position {
 	const document: TextDocument = documentStateContext.document;
 	const documentText: string = documentStateContext.sanitizedDocumentText;
 	let stringContext: StringContext = {
@@ -954,7 +954,7 @@ export function getNextCharacterPosition(documentStateContext: DocumentStateCont
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function getClosingPosition(documentStateContext: DocumentStateContext, initialOffset: number, closingChar: string, _token: CancellationToken): Position {
+export function getClosingPosition(documentStateContext: DocumentStateContext, initialOffset: number, closingChar: string, _token: CancellationToken | undefined): Position {
 	const openingChar = getOpeningChar(closingChar);
 	const document: TextDocument = documentStateContext.document;
 	const documentText: string = documentStateContext.sanitizedDocumentText;
@@ -1032,7 +1032,7 @@ export function isValidIdentifier(word: string): boolean {
  * @param _token
  * @returns
  */
-export function getPrecedingIdentifierRange(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken): Range | undefined {
+export function getPrecedingIdentifierRange(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken | undefined): Range | undefined {
 	let identRange: Range | undefined;
 	let charStr = "";
 	const iterator: BackwardIterator = new BackwardIterator(documentStateContext, position, _token);
@@ -1061,7 +1061,7 @@ export function getPrecedingIdentifierRange(documentStateContext: DocumentStateC
  * @param _token
  * @returns
  */
-export function getStartSigPosition(iterator: BackwardIterator, _token: CancellationToken): Position | undefined {
+export function getStartSigPosition(iterator: BackwardIterator, _token: CancellationToken | undefined): Position | undefined {
 	let parenNesting = 0;
 
 	const document: TextDocument = iterator.getDocumentStateContext().document;

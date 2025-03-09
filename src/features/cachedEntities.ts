@@ -216,7 +216,7 @@ function setComponent(comp: Component): void {
  * @param _token
  * @returns
  */
-export function getComponent(uri: Uri, _token: CancellationToken): Component {
+export function getComponent(uri: Uri, _token: CancellationToken | undefined): Component {
 	if (!hasComponent(uri, _token)) {
 		/* TODO: If not already cached, attempt to read, parse and cache. Tricky since read is async */
 		return undefined;
@@ -232,7 +232,7 @@ export function getComponent(uri: Uri, _token: CancellationToken): Component {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
+export function hasComponent(uri: Uri, _token: CancellationToken | undefined): boolean {
 	return Object.prototype.hasOwnProperty.call(allComponentsByUri, uri.toString().toLowerCase());
 }
 
@@ -243,7 +243,7 @@ export function hasComponent(uri: Uri, _token: CancellationToken): boolean {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function searchAllComponentNames(query: string, _token: CancellationToken): Component[] {
+export function searchAllComponentNames(query: string, _token: CancellationToken | undefined): Component[] {
 	let components: Component[] = [];
 	components = allComponentNames.search(query);
 	return components;
@@ -284,7 +284,7 @@ export function searchAllFunctionNames(query: string, _searchMode: SearchMode = 
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken): Uri | undefined {
+export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken | undefined): Uri | undefined {
 	if (!dotPath) {
 		return undefined;
 	}
@@ -328,7 +328,7 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
  * @param documentStateContext Contextual information for a given document's state
  * @param _token
  */
-export async function cacheComponent(component: Component, documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<void> {
+export async function cacheComponent(component: Component, documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<void> {
 	clearCachedComponent(component.uri);
 	setComponent(component);
 	component.functions.forEach((funcObj: UserFunction) => {
@@ -358,7 +358,7 @@ export async function cacheComponent(component: Component, documentStateContext:
  * @param _token
  * @returns
  */
-export async function cacheAllComponents(_token: CancellationToken): Promise<void> {
+export async function cacheAllComponents(_token: CancellationToken | undefined): Promise<void> {
 	setBulkCaching(true);
 
 	clearAllCachedComponents();
@@ -380,7 +380,7 @@ export async function cacheAllComponents(_token: CancellationToken): Promise<voi
  * @param componentUris List of URIs to read, parse, and cache
  * @param _token
  */
-async function cacheGivenComponents(componentUris: Uri[], _token: CancellationToken): Promise<void> {
+async function cacheGivenComponents(componentUris: Uri[], _token: CancellationToken | undefined): Promise<void> {
 	await window.withProgress(
 		{
 			location: ProgressLocation.Notification,
@@ -426,7 +426,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
  * @param _token
  * @returns
  */
-export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken): Promise<void> {
+export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined): Promise<void> {
 	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token);
 	const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
 	if (!parsedComponent) {

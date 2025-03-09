@@ -160,7 +160,7 @@ export interface ComponentsByName {
  * @param _token
  * @returns
  */
-export function isScriptComponent(document: TextDocument, _token: CancellationToken): boolean {
+export function isScriptComponent(document: TextDocument, _token: CancellationToken | undefined): boolean {
 	const componentTagMatch: RegExpExecArray = COMPONENT_TAG_PATTERN.exec(document.getText());
 	if (componentTagMatch) {
 		return false;
@@ -175,7 +175,7 @@ export function isScriptComponent(document: TextDocument, _token: CancellationTo
  * @param _token
  * @returns
  */
-export async function parseComponent(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<Component | undefined> {
+export async function parseComponent(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<Component | undefined> {
 	const document: TextDocument = documentStateContext.document;
 	const documentText: string = document.getText();
 	const componentIsScript: boolean = documentStateContext.docIsScript;
@@ -468,7 +468,7 @@ function processAttributes(attributes: Attributes): ComponentAttributes {
  * @param _token
  * @returns
  */
-export async function componentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken): Promise<Uri | undefined> {
+export async function componentPathToUri(dotPath: string, baseUri: Uri, _token: CancellationToken | undefined): Promise<Uri | undefined> {
 	if (!dotPath) {
 		return undefined;
 	}
@@ -539,7 +539,7 @@ export async function getApplicationUri(baseUri: Uri): Promise<Uri> {
  * @param _token
  * @returns
  */
-export function getServerUri(baseUri: Uri, _token: CancellationToken): Uri | undefined {
+export function getServerUri(baseUri: Uri, _token: CancellationToken | undefined): Uri | undefined {
 	let componentUri: Uri | undefined;
 
 	const fileName = "Server.cfc";
@@ -565,7 +565,7 @@ export function getServerUri(baseUri: Uri, _token: CancellationToken): Uri | und
  * @param _token
  * @returns
  */
-export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component, _token: CancellationToken): boolean {
+export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component, _token: CancellationToken | undefined): boolean {
 	while (checkComponent) {
 		if (checkComponent.uri.toString() === baseComponent.uri.toString()) {
 			return true;
@@ -589,7 +589,7 @@ export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: 
  * @param _token
  * @returns
  */
-export function isSubcomponent(checkComponent: Component, baseComponent: Component, _token: CancellationToken): boolean {
+export function isSubcomponent(checkComponent: Component, baseComponent: Component, _token: CancellationToken | undefined): boolean {
 	if (checkComponent.extends) {
 		checkComponent = getComponent(checkComponent.extends, _token);
 	}

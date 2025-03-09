@@ -18,7 +18,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 	 * @param _token A cancellation token.
 	 * @returns
 	 */
-	public async provideDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<DefinitionLink[]> {
+	public async provideDefinition(document: TextDocument, position: Position, _token: CancellationToken | undefined): Promise<DefinitionLink[]> {
 		// console.log("provideDefinition:CFMLDefinitionProvider:" + _token?.isCancellationRequested);
 
 		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);

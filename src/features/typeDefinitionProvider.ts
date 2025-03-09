@@ -17,7 +17,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 	 * @returns
 	 */
 
-	public async provideTypeDefinition(document: TextDocument, position: Position, _token: CancellationToken): Promise<Definition> {
+	public async provideTypeDefinition(document: TextDocument, position: Position, _token: CancellationToken | undefined): Promise<Definition> {
 		// console.log("provideTypeDefinition:CFMLTypeDefinitionProvider:" + _token?.isCancellationRequested);
 
 		const results: Definition = [];

@@ -47,7 +47,7 @@ export class Properties extends MyMap<string, Property> { }
  * @param _token
  * @returns
  */
-export async function parseProperties(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<Properties> {
+export async function parseProperties(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<Properties> {
 	const properties: Properties = new Properties();
 	const document: TextDocument = documentStateContext.document;
 	const componentText: string = document.getText();

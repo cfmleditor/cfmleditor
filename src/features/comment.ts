@@ -35,7 +35,7 @@ export const cfmlCommentRules: CFMLCommentRules = {
  * @param _token
  * @returns
  */
-function isTagComment(document: TextDocument, startPosition: Position, _token: CancellationToken): boolean {
+function isTagComment(document: TextDocument, startPosition: Position, _token: CancellationToken | undefined): boolean {
 	const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (getComponent(document.uri, _token)).isScript);
 
 	return !docIsScript && !isInCfScript(document, startPosition, _token);
@@ -64,7 +64,7 @@ function getCommentCommand(commentType: CommentType): string {
  * @param _token
  * @returns
  */
-export function toggleComment(commentType: CommentType, _token: CancellationToken): (editor: TextEditor) => void {
+export function toggleComment(commentType: CommentType, _token: CancellationToken | undefined): (editor: TextEditor) => void {
 	return (editor: TextEditor) => {
 		if (editor) {
 			// default comment config

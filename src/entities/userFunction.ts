@@ -174,7 +174,7 @@ export interface UserFunctionsByName {
  * @param _token
  * @returns
  */
-export async function parseScriptFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<UserFunction[]> {
+export async function parseScriptFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<UserFunction[]> {
 	const document: TextDocument = documentStateContext.document;
 	const userFunctions: UserFunction[] = [];
 	// sanitizedDocumentText removes doc blocks
@@ -362,7 +362,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
  * @param _token
  * @returns
  */
-export async function parseScriptFunctionArgs(documentStateContext: DocumentStateContext, argsRange: Range, docBlock: DocBlockKeyValue[], _token: CancellationToken): Promise<Argument[]> {
+export async function parseScriptFunctionArgs(documentStateContext: DocumentStateContext, argsRange: Range, docBlock: DocBlockKeyValue[], _token: CancellationToken | undefined): Promise<Argument[]> {
 	const args: Argument[] = [];
 	const document: TextDocument = documentStateContext.document;
 	const documentUri: Uri = document.uri;
@@ -538,7 +538,7 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
  * @param _token
  * @returns
  */
-export async function parseTagFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<UserFunction[]> {
+export async function parseTagFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<UserFunction[]> {
 	const userFunctions: UserFunction[] = [];
 	const documentUri: Uri = documentStateContext.document.uri;
 
@@ -588,7 +588,7 @@ export async function parseTagFunctions(documentStateContext: DocumentStateConte
  * @param _token
  * @returns
  */
-async function parseTagFunctionArguments(documentStateContext: DocumentStateContext, functionBodyRange: Range | undefined, _token: CancellationToken): Promise<Argument[]> {
+async function parseTagFunctionArguments(documentStateContext: DocumentStateContext, functionBodyRange: Range | undefined, _token: CancellationToken | undefined): Promise<Argument[]> {
 	const args: Argument[] = [];
 	const documentUri: Uri = documentStateContext.document.uri;
 
@@ -678,7 +678,7 @@ async function parseTagFunctionArguments(documentStateContext: DocumentStateCont
  * @param _token
  * @returns
  */
-async function assignFunctionAttributes(userFunction: UserFunction, functionAttributes: Attributes, _token: CancellationToken): Promise<UserFunction> {
+async function assignFunctionAttributes(userFunction: UserFunction, functionAttributes: Attributes, _token: CancellationToken | undefined): Promise<UserFunction> {
 	// Bit of a hack because I can't work this out right now
 	const attributes: Attribute[] = [];
 	functionAttributes.forEach((attribute: Attribute) => {
@@ -747,7 +747,7 @@ function processArgumentAttributes(attributes: Attributes): ArgumentAttributes {
  * @param _token
  * @returns
  */
-export async function getLocalVariables(func: UserFunction, documentStateContext: DocumentStateContext, isScript: boolean, _token: CancellationToken): Promise<Variable[]> {
+export async function getLocalVariables(func: UserFunction, documentStateContext: DocumentStateContext, isScript: boolean, _token: CancellationToken | undefined): Promise<Variable[]> {
 	if (!func || !func.bodyRange) {
 		return [];
 	}
@@ -780,7 +780,7 @@ function parseModifier(modifier: string): string {
  * @param _token
  * @returns
  */
-export async function getFunctionFromPrefix(documentPositionStateContext: DocumentPositionStateContext, functionKey: string, docPrefix: string, _token: CancellationToken): Promise<UserFunction | undefined> {
+export async function getFunctionFromPrefix(documentPositionStateContext: DocumentPositionStateContext, functionKey: string, docPrefix: string, _token: CancellationToken | undefined): Promise<UserFunction | undefined> {
 	let foundFunction: UserFunction | undefined;
 
 	if (docPrefix === undefined || docPrefix === null) {
@@ -866,7 +866,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
  * @param _token
  * @returns
  */
-export function getFunctionFromComponent(component: Component, lowerFunctionName: string, callerUri: Uri, disallowedAccess: Access, disallowImplicit: boolean = false, _token: CancellationToken): UserFunction | undefined {
+export function getFunctionFromComponent(component: Component, lowerFunctionName: string, callerUri: Uri, disallowedAccess: Access, disallowImplicit: boolean = false, _token: CancellationToken | undefined): UserFunction | undefined {
 	const validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
 	if (hasComponent(callerUri, _token)) {
 		const callerComponent: Component = getComponent(callerUri, _token);
@@ -911,7 +911,7 @@ export function getFunctionFromComponent(component: Component, lowerFunctionName
  * @param _token
  * @returns
  */
-export async function getFunctionFromTemplate(documentStateContext: DocumentStateContext, lowerFunctionName: string, _token: CancellationToken): Promise<UserFunction | undefined> {
+export async function getFunctionFromTemplate(documentStateContext: DocumentStateContext, lowerFunctionName: string, _token: CancellationToken | undefined): Promise<UserFunction | undefined> {
 	const tagFunctions: UserFunction[] = await parseTagFunctions(documentStateContext, _token);
 	const cfscriptRanges: Range[] = getCfScriptRanges(documentStateContext.document, undefined, _token);
 	const scriptFunctions: UserFunction[] = await parseScriptFunctions(documentStateContext, _token);

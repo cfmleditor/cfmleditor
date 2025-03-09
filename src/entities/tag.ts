@@ -599,7 +599,7 @@ export function getNonClosingCfmlTags(): string[] {
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function parseTags(documentStateContext: DocumentStateContext, tagName: string, range: Range, _token: CancellationToken): Tag[] {
+export function parseTags(documentStateContext: DocumentStateContext, tagName: string, range: Range, _token: CancellationToken | undefined): Tag[] {
 	const tags: Tag[] = [];
 	const document: TextDocument = documentStateContext.document;
 	let textOffset: number = 0;
@@ -656,7 +656,7 @@ export function parseTags(documentStateContext: DocumentStateContext, tagName: s
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function parseStartTags(documentStateContext: DocumentStateContext, tagName: string, isScript: boolean, range: Range, _token: CancellationToken): StartTag[] {
+export function parseStartTags(documentStateContext: DocumentStateContext, tagName: string, isScript: boolean, range: Range, _token: CancellationToken | undefined): StartTag[] {
 	const startTags: StartTag[] = [];
 	const document: TextDocument = documentStateContext.document;
 	let textOffset: number = 0;
@@ -884,7 +884,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
  * @param edit
  * @param _token
  */
-export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken = null): void {
+export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken | undefined): void {
 	const position: Position = editor.selection.active;
 	const documentUri: Uri = editor.document.uri;
 

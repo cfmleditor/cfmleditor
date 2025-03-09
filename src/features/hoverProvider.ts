@@ -47,7 +47,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 	 * @param _token A cancellation token.
 	 * @returns
 	 */
-	public async provideHover(document: TextDocument, position: Position, _token: CancellationToken): Promise<Hover | undefined> {
+	public async provideHover(document: TextDocument, position: Position, _token: CancellationToken | undefined): Promise<Hover | undefined> {
 		const cfmlHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover", document.uri);
 		if (!cfmlHoverSettings.get<boolean>("enable", true)) {
 			return undefined;
@@ -68,7 +68,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 	 * @param _token
 	 * @returns
 	 */
-	public async getHover(document: TextDocument, position: Position, _token: CancellationToken): Promise<Hover | undefined> {
+	public async getHover(document: TextDocument, position: Position, _token: CancellationToken | undefined): Promise<Hover | undefined> {
 		const wordRange: Range = document.getWordRangeAtPosition(position);
 
 		if (!wordRange) {

@@ -200,7 +200,7 @@ export namespace DataType {
 	 * @param _token
 	 * @returns
 	 */
-	export async function getDataTypeAndUri(dataType: string, documentUri: Uri, _token: CancellationToken): Promise<[DataType, Uri]> {
+	export async function getDataTypeAndUri(dataType: string, documentUri: Uri, _token: CancellationToken | undefined): Promise<[DataType, Uri]> {
 		if (!dataType) {
 			return [null, null];
 		}
@@ -225,7 +225,7 @@ export namespace DataType {
 	 * @param _token
 	 * @returns
 	 */
-	export async function inferDataTypeFromValue(value: string, documentUri: Uri, _token: CancellationToken): Promise<[DataType, Uri]> {
+	export async function inferDataTypeFromValue(value: string, documentUri: Uri, _token: CancellationToken | undefined): Promise<[DataType, Uri]> {
 		if (value.length === 0) {
 			return [DataType.String, null];
 		}
