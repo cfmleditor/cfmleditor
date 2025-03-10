@@ -14,7 +14,7 @@ export abstract class Block {
 	/**
 	 * Regex pattern for the block declaration match
 	 */
-	protected pattern: RegExp;
+	protected pattern: RegExp | undefined;
 
 	/**
 	 * The position of the starting signature
@@ -30,12 +30,12 @@ export abstract class Block {
 	/**
 	 * The whole signature string ready for parsing
 	 */
-	protected suffix: string;
+	protected suffix: string = "";
 
 	/**
 	 * The component object
 	 */
-	protected component: Component;
+	protected component: Component | undefined;
 
 	/**
 	 * Creates an instance of Block.
@@ -69,7 +69,12 @@ export abstract class Block {
 	 * @returns regex / pattern test result
 	 */
 	public test(): boolean {
-		return this.pattern.test(this.suffix);
+		if (this.pattern) {
+			return this.pattern.test(this.suffix);
+		}
+		else {
+			return false;
+		}
 	}
 
 	/**

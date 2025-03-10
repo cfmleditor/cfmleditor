@@ -40,19 +40,19 @@ export interface DocumentPositionStateContext extends DocumentStateContext {
  */
 export function getDocumentStateContext(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentStateContext {
 	const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
-	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name"));
-	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version"));
+	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
+	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
 
 	const docIsCfcFile: boolean = isCfcFile(document, _token);
 	const docIsCfmFile: boolean = isCfmFile(document, _token);
 	const docIsCfsFile: boolean = isCfsFile(document, _token);
-	const thisComponent: Component = getComponent(document.uri, _token);
+	const thisComponent: Component | undefined = getComponent(document.uri, _token);
 	const docIsScript: boolean = (docIsCfcFile && isScriptComponent(document, _token)) || docIsCfsFile;
 
 	const documentRanges: DocumentContextRanges = getDocumentContextRanges(document, docIsScript, undefined, fast, _token, exclDocumentRanges);
 	const commentRanges: Range[] = documentRanges.commentRanges;
-	const stringRanges: Range[] = documentRanges.stringRanges;
-	const stringEmbeddedCfmlRanges: Range[] = documentRanges.stringEmbeddedCfmlRanges;
+	const stringRanges: Range[] | undefined = documentRanges.stringRanges;
+	const stringEmbeddedCfmlRanges: Range[] | undefined = documentRanges.stringEmbeddedCfmlRanges;
 	const sanitizedDocumentText: string = getSanitizedDocumentText(document, commentRanges, replaceComments, _token);
 
 	return {
@@ -84,10 +84,10 @@ export function getDocumentPositionStateContext(document: TextDocument, position
 
 	const docIsScript: boolean = documentStateContext.docIsScript;
 	const positionInComment: boolean = isInRanges(documentStateContext.commentRanges, position, false, _token);
-	const cfscriptRanges: Range[] = getCfScriptRanges(document, null, _token);
+	const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token);
 	const positionIsScript: boolean = docIsScript || isInRanges(cfscriptRanges, position, false, _token);
 
-	let wordRange: Range = document.getWordRangeAtPosition(position);
+	let wordRange: Range | undefined = document.getWordRangeAtPosition(position);
 	const currentWord: string = wordRange ? document.getText(wordRange) : "";
 	if (!wordRange) {
 		wordRange = new Range(position, position);

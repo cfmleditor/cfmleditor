@@ -102,7 +102,7 @@ export interface CatchInfo {
  * @param _token
  * @returns
  */
-export function parseCatches(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range, _token: CancellationToken | undefined): CatchInfo[] {
+export function parseCatches(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range | undefined, _token: CancellationToken | undefined): CatchInfo[] {
 	let catchInfoArr: CatchInfo[] = [];
 	const document: TextDocument = documentStateContext.document;
 	let textOffset: number = 0;
@@ -149,11 +149,17 @@ export function parseCatches(documentStateContext: DocumentStateContext, isScrip
 			let catchVariable: string = tagName;
 
 			if (tag.attributes.has("type")) {
-				catchType = tag.attributes.get("type").value;
+				const typeAttr = tag.attributes.get("type");
+				if (typeAttr) {
+					catchType = typeAttr.value;
+				}
 			}
 
 			if (tag.attributes.has("name")) {
-				catchVariable = tag.attributes.get("name").value;
+				const nameAttr = tag.attributes.get("name");
+				if (nameAttr) {
+					catchVariable = nameAttr.value;
+				}
 			}
 
 			const catchInfo: CatchInfo = {

@@ -69,7 +69,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 	 * @returns
 	 */
 	public async getHover(document: TextDocument, position: Position, _token: CancellationToken | undefined): Promise<Hover | undefined> {
-		const wordRange: Range = document.getWordRangeAtPosition(position);
+		const wordRange: Range | undefined = document.getWordRangeAtPosition(position);
 
 		if (!wordRange) {
 			return undefined;
@@ -77,7 +77,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 
 		// console.log("getHover:CFMLHoverProvider:" + _token?.isCancellationRequested);
 
-		let definition: HoverProviderItem;
+		let definition: HoverProviderItem | undefined;
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, true);
@@ -90,7 +90,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 		const docPrefix: string = documentPositionStateContext.docPrefix;
 		const positionIsCfScript: boolean = documentPositionStateContext.positionIsScript;
 
-		let userFunc: UserFunction;
+		let userFunc: UserFunction | undefined;
 
 		const tagPrefixPattern: RegExp = getTagPrefixPattern();
 		const functionSuffixPattern: RegExp = getFunctionSuffixPattern();
@@ -113,21 +113,27 @@ export default class CFMLHoverProvider implements HoverProvider {
 		}
 
 		// Check if instantiating via "new" operator
-		const componentPathWordRange: Range = document.getWordRangeAtPosition(position, /[$\w.]+/);
-		const componentPathWord: string = document.getText(componentPathWordRange);
-		const componentPathWordPrefix: string = documentPositionStateContext.sanitizedDocumentText.slice(0, document.offsetAt(componentPathWordRange.start));
-		const startSigPositionPrefix = `${componentPathWordPrefix}${componentPathWord}(`;
-		const objectNewInstanceInitPrefixMatch: RegExpExecArray | null = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
-		if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
-			const componentUri: Uri = cachedComponentPathToUri(componentPathWord, document.uri, _token);
-			if (componentUri) {
-				const initComponent: Component = getComponent(componentUri, _token);
-				if (initComponent) {
-					const initMethod = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
-					if (initComponent.functions.has(initMethod)) {
-						userFunc = initComponent.functions.get(initMethod);
-						definition = this.functionToHoverProviderItem(userFunc);
-						return this.createHover(definition, componentPathWordRange);
+		const componentPathWordRange: Range | undefined = document.getWordRangeAtPosition(position, /[$\w.]+/);
+		if (componentPathWordRange) {
+			const componentPathWord: string = document.getText(componentPathWordRange);
+			const componentPathWordPrefix: string = documentPositionStateContext.sanitizedDocumentText.slice(0, document.offsetAt(componentPathWordRange.start));
+			const startSigPositionPrefix = `${componentPathWordPrefix}${componentPathWord}(`;
+			const objectNewInstanceInitPrefixMatch: RegExpExecArray | null = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
+			if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
+				const componentUri: Uri | undefined = cachedComponentPathToUri(componentPathWord, document.uri, _token);
+				if (componentUri) {
+					const initComponent: Component | undefined = getComponent(componentUri, _token);
+					if (initComponent) {
+						const initMethod = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
+						if (initComponent.functions.has(initMethod)) {
+							userFunc = initComponent.functions.get(initMethod);
+							if (userFunc) {
+								definition = this.functionToHoverProviderItem(userFunc);
+								if (definition) {
+									return this.createHover(definition, componentPathWordRange);
+								}
+							}
+						}
 					}
 				}
 			}
@@ -161,7 +167,9 @@ export default class CFMLHoverProvider implements HoverProvider {
 				if (globalTag && !ignoredTags.includes(globalTag.name) && !attributeValueMatch) {
 					// TODO: Check valid attribute before calling createHover
 					definition = this.attributeToHoverProviderItem(globalTag, currentWord);
-					return this.createHover(definition);
+					if (definition) {
+						return this.createHover(definition);
+					}
 				}
 			}
 		}
@@ -171,8 +179,13 @@ export default class CFMLHoverProvider implements HoverProvider {
 		// HTML tags
 		const htmlHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover.html", document.uri);
 		if (isCfmFile(document, _token) && htmlHoverSettings.get<boolean>("enable", true) && tagPrefixPattern.test(docPrefix) && isKnownHTMLTag(lowerCurrentWord)) {
-			definition = this.htmlTagToHoverProviderItem(getHTMLTag(lowerCurrentWord));
-			return this.createHover(definition);
+			const htmlTag: HTMLTagData | undefined = getHTMLTag(lowerCurrentWord);
+			if (htmlTag) {
+				definition = this.htmlTagToHoverProviderItem(htmlTag);
+				if (definition) {
+					return this.createHover(definition);
+				}
+			}
 		}
 
 		// CSS
@@ -196,16 +209,19 @@ export default class CFMLHoverProvider implements HoverProvider {
 					);
 
 					if (propertyRange.contains(position) && cssDataManager.isKnownProperty(propertyName)) {
-						definition = this.cssPropertyToHoverProviderItem(cssDataManager.getProperty(propertyName));
-						return this.createHover(definition, propertyRange);
+						const cssProperty: IPropertyData | undefined = cssDataManager.getProperty(propertyName);
+						if (cssProperty) {
+							definition = this.cssPropertyToHoverProviderItem(cssProperty);
+							return this.createHover(definition, propertyRange);
+						}
 					}
 				}
 
-				const cssWordRange: Range = document.getWordRangeAtPosition(position, cssWordRegex);
+				const cssWordRange: Range | undefined = document.getWordRangeAtPosition(position, cssWordRegex);
 				const currentCssWord: string = cssWordRange ? document.getText(cssWordRange) : "";
 
 				if (currentCssWord.startsWith("@")) {
-					const cssAtDir: IAtDirectiveData = cssDataManager.getAtDirective(currentCssWord);
+					const cssAtDir: IAtDirectiveData | undefined = cssDataManager.getAtDirective(currentCssWord);
 					if (cssAtDir) {
 						definition = this.cssAtDirectiveToHoverProviderItem(cssAtDir);
 						return this.createHover(definition, cssWordRange);
@@ -248,7 +264,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 			language: LANGUAGE_ID,
 		};
 
-		const globalEntity: CFDocsDefinitionInfo = getGlobalEntityDefinition(tag.name);
+		const globalEntity: CFDocsDefinitionInfo | undefined = getGlobalEntityDefinition(tag.name);
 		if (globalEntity && globalEntity.engines) {
 			hoverItem.engineLinks = new MyMap();
 			const cfmlEngineNames: CFMLEngineName[] = [
@@ -324,7 +340,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 			hoverItem.syntax = globalFunc.syntax + ": " + returnType;
 			hoverItem.genericDocLink = cfDocsLinkPrefix + globalFunc.name;
 
-			const globalEntity: CFDocsDefinitionInfo = getGlobalEntityDefinition(globalFunc.name);
+			const globalEntity: CFDocsDefinitionInfo | undefined = getGlobalEntityDefinition(globalFunc.name);
 			if (globalEntity && globalEntity.engines) {
 				hoverItem.engineLinks = new MyMap();
 				const cfmlEngineNames: CFMLEngineName[] = [
@@ -359,8 +375,8 @@ export default class CFMLHoverProvider implements HoverProvider {
 	 * @param attributeName Global tag attribute name to convert
 	 * @returns
 	 */
-	public attributeToHoverProviderItem(tag: GlobalTag, attributeName: string): HoverProviderItem {
-		let attribute: Parameter;
+	public attributeToHoverProviderItem(tag: GlobalTag, attributeName: string): HoverProviderItem | undefined {
+		let attribute: Parameter | undefined;
 
 		tag.signatures.forEach((sig: Signature) => {
 			attribute = sig.parameters.find((param: Parameter) => {
@@ -392,7 +408,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 			name: htmlTag.name,
 			syntax: `<${htmlTag.name}>`,
 			symbolType: "tag",
-			description: htmlTag.description,
+			description: htmlTag.description || "",
 			params: [],
 			returnType: undefined,
 			genericDocLink: `${mdnLinkPrefix}HTML/Element/${htmlTag.name}`,
@@ -412,7 +428,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 			name: cssProperty.name,
 			syntax: `${cssProperty.name}: value`,
 			symbolType: "property",
-			description: getCSSEntryDescription(cssProperty),
+			description: getCSSEntryDescription(cssProperty) || "",
 			params: [],
 			returnType: undefined,
 			genericDocLink: `${mdnLinkPrefix}CSS/${cssProperty.name}`,
@@ -435,7 +451,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 			name: cssAtDir.name,
 			syntax: cssAtDir.name,
 			symbolType: "property",
-			description: getCSSEntryDescription(cssAtDir),
+			description: getCSSEntryDescription(cssAtDir) || "",
 			params: [],
 			returnType: undefined,
 			genericDocLink: `${mdnLinkPrefix}CSS/${cssAtDir.name.replace(/-[a-z]+-/, "")}`,
@@ -451,7 +467,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 	 * @param range An optional range to which this hover applies
 	 * @returns
 	 */
-	public createHover(definition: HoverProviderItem, range?: Range): Hover {
+	public createHover(definition: HoverProviderItem, range?: Range): Hover | undefined {
 		if (!definition) {
 			throw new Error("Definition not found");
 		}
@@ -460,7 +476,13 @@ export default class CFMLHoverProvider implements HoverProvider {
 			throw new Error("Invalid definition format");
 		}
 
-		return new Hover(this.createHoverText(definition), range);
+		const hoverText: MarkdownString[] | undefined = this.createHoverText(definition);
+		if (hoverText) {
+			return new Hover(hoverText, range);
+		}
+		else {
+			return undefined;
+		}
 	}
 
 	/**
@@ -468,7 +490,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 	 * @param definition The symbol definition information
 	 * @returns
 	 */
-	public createHoverText(definition: HoverProviderItem): MarkdownString[] {
+	public createHoverText(definition: HoverProviderItem): MarkdownString[] | undefined {
 		const cfdocsIconUri: Uri = Uri.file(extensionContext.asAbsolutePath("images/cfdocs.png"));
 		const mdnIconUri: Uri = Uri.file(extensionContext.asAbsolutePath("images/mdn.png"));
 
@@ -531,7 +553,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 			hoverTexts.push(new MarkdownString(docLinks));
 		}
 
-		const paramList: Parameter[] = definition.params;
+		const paramList: Parameter[] | undefined = definition.params;
 		if (paramList && paramList.length > 0) {
 			hoverTexts.push(this.paramsMarkdownPreview(paramList));
 		}

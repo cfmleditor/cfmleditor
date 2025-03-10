@@ -1,16 +1,19 @@
 import * as assert from "assert/strict";
-import { DefinitionLink, workspace, commands, extensions } from "vscode";
+import { DefinitionLink, workspace, commands, extensions, Extension } from "vscode";
 import { findPosition } from "./testUtils";
 
 describe("provideDefinition", function () {
 	/** Workspace root, does not end with a "/" */
-	const root = workspace.workspaceFolders[0].uri.fsPath;
+	const root = workspace.workspaceFolders ? workspace.workspaceFolders[0].uri.fsPath : "";
 
 	before(async function () {
 		// Wait for the extension to activate
 		this.timeout(10_000);
-		const extension = extensions.getExtension("cfmleditor.cfmleditor");
-		await extension.activate();
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const extension: Extension<any> | undefined = extensions.getExtension("cfmleditor.cfmleditor");
+		if (extension) {
+			await extension.activate();
+		}
 	});
 
 	describe("component definitions", function () {

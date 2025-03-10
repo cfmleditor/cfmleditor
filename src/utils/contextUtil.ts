@@ -39,8 +39,8 @@ const identPartPattern = /[$\w]/;
 
 export interface StringContext {
 	inString: boolean;
-	activeStringDelimiter: string;
-	start: Position;
+	activeStringDelimiter?: string;
+	start?: Position;
 	embeddedCFML: boolean;
 	embeddedCFMLStartPosition?: Position;
 }
@@ -104,7 +104,7 @@ export class BackwardIterator {
 	 * Gets current position in iterator
 	 * @returns Position
 	 */
-	public getPosition(): Position {
+	public getPosition(): Position | undefined {
 		let lineNumber = this.lineNumber;
 		let lineCharacterOffset = this.lineCharacterOffset;
 		if (lineCharacterOffset < 0) {
@@ -193,7 +193,7 @@ export function isCfmFile(document: TextDocument, _token: CancellationToken | un
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function isCfsFile(document: TextDocument, _token: CancellationToken): boolean {
+export function isCfsFile(document: TextDocument, _token: CancellationToken | undefined): boolean {
 	const extensionName: string = Utils.extname(Uri.parse(document.fileName));
 	for (const currExt of CFS_FILE_EXTS) {
 		if (equalsIgnoreCase(extensionName, currExt)) {
@@ -233,7 +233,7 @@ export function isCfcUri(uri: Uri, _token: CancellationToken | undefined): boole
  * @param commentRanges
  * @returns
  */
-export function getCfScriptRanges(document: TextDocument, range: Range, _token: CancellationToken | undefined, commentRanges: Range[] = []): Range[] {
+export function getCfScriptRanges(document: TextDocument, range: Range | undefined, _token: CancellationToken | undefined, commentRanges: Range[] = []): Range[] {
 	const ranges: Range[] = [];
 	let documentText: string;
 	let textOffset: number;
@@ -276,7 +276,7 @@ export function getCfScriptRanges(document: TextDocument, range: Range, _token: 
  * @param exclDocumentRanges
  * @returns
  */
-export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range, fast: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentContextRanges {
+export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, fast: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentContextRanges {
 	if (fast) {
 		return { commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token) };
 	}
@@ -296,7 +296,7 @@ export function getDocumentContextRanges(document: TextDocument, isScript: boole
  * @param _token
  * @returns
  */
-function getCommentRangesByRegex(document: TextDocument, isScript: boolean = false, docRange: Range, _token: CancellationToken | undefined): Range[] {
+function getCommentRangesByRegex(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
 	let commentRanges: Range[] = [];
 	let documentText: string;
 	let textOffset: number;
@@ -359,7 +359,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
  * @param _token
  * @returns
  */
-function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange: Range, _token: CancellationToken | undefined): DocumentContextRanges {
+function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, _token: CancellationToken | undefined): DocumentContextRanges {
 	// console.log("getCommentAndStringRangesIterated:" + _token?.isCancellationRequested);
 
 	let commentRanges: Range[] = [];
@@ -418,7 +418,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 
 		if (commentContext.inComment) {
 			// Check for end of comment
-			if (commentContext.commentType === CommentType.Line && position.line !== previousPosition.line) {
+			if (previousPosition && commentContext.start && commentContext.commentType === CommentType.Line && position.line !== previousPosition.line) {
 				commentRanges.push(new Range(commentContext.start, previousPosition));
 				commentContext = {
 					inComment: false,
@@ -428,20 +428,22 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 					depth: 0,
 				};
 			}
-			else if (commentContext.commentType === CommentType.Block && lineText.endsWith(commentContext.activeComment[1])) {
+			else if (commentContext.commentType === CommentType.Block && commentContext.activeComment && lineText.endsWith(commentContext.activeComment[1])) {
 				if (commentContext.depth > 1) {
 					commentDepth = commentContext.depth - 1;
 					commentContext.depth = commentDepth;
 				}
 				else {
-					commentRanges.push(new Range(commentContext.start, document.positionAt(offset + 1)));
-					commentContext = {
-						inComment: false,
-						activeComment: undefined,
-						commentType: undefined,
-						start: undefined,
-						depth: 0,
-					};
+					if (commentContext.start) {
+						commentRanges.push(new Range(commentContext.start, document.positionAt(offset + 1)));
+						commentContext = {
+							inComment: false,
+							activeComment: undefined,
+							commentType: undefined,
+							start: undefined,
+							depth: 0,
+						};
+					}
 				}
 			}
 		}
@@ -449,12 +451,14 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 			if (characterAtPosition === stringEmbeddedCFMLDelimiter) {
 				if (stringContext.embeddedCFML) {
 					stringContext.embeddedCFML = false;
-					stringEmbeddedCFMLRanges.push(new Range(stringContext.embeddedCFMLStartPosition, document.positionAt(offset + 1)));
+					if (stringContext.embeddedCFMLStartPosition) {
+						stringEmbeddedCFMLRanges.push(new Range(stringContext.embeddedCFMLStartPosition, document.positionAt(offset + 1)));
+					}
 					stringContext.embeddedCFMLStartPosition = undefined;
 				}
 				else {
 					let hashEscaped = false;
-					let characterAtNextPosition: string;
+					let characterAtNextPosition: string = "";
 					try {
 						characterAtNextPosition = documentText.charAt(offset + 1);
 						hashEscaped = characterAtNextPosition === stringEmbeddedCFMLDelimiter;
@@ -477,7 +481,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 			}
 			else if (!stringContext.embeddedCFML && characterAtPosition === stringContext.activeStringDelimiter) {
 				let quoteEscaped = false;
-				let characterAtNextPosition: string;
+				let characterAtNextPosition: string = "";
 				try {
 					characterAtNextPosition = documentText.charAt(offset + 1);
 					quoteEscaped = characterAtNextPosition === stringContext.activeStringDelimiter;
@@ -493,13 +497,15 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 					position = document.positionAt(offset);
 				}
 				else {
-					stringRanges.push(new Range(stringContext.start, document.positionAt(offset + 1)));
-					stringContext = {
-						inString: false,
-						activeStringDelimiter: undefined,
-						start: undefined,
-						embeddedCFML: false,
-					};
+					if (stringContext.start) {
+						stringRanges.push(new Range(stringContext.start, document.positionAt(offset + 1)));
+						stringContext = {
+							inString: false,
+							activeStringDelimiter: undefined,
+							start: undefined,
+							embeddedCFML: false,
+						};
+					}
 				}
 			}
 		}
@@ -619,12 +625,10 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
  * @param _token
  * @returns
  */
-export function getJavaScriptRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken | undefined): Range[] {
+export function getJavaScriptRanges(documentStateContext: DocumentStateContext, range: Range | undefined, _token: CancellationToken | undefined): Range[] {
 	const scriptTags: Tag[] = parseTags(documentStateContext, "script", range, _token);
 
-	return scriptTags.map((tag: Tag) => {
-		return tag.bodyRange;
-	});
+	return scriptTags.map((tag: Tag) => tag.bodyRange).filter((range): range is Range => range !== undefined);
 }
 
 /**
@@ -634,12 +638,10 @@ export function getJavaScriptRanges(documentStateContext: DocumentStateContext, 
  * @param _token
  * @returns
  */
-export function getCssRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken | undefined): Range[] {
+export function getCssRanges(documentStateContext: DocumentStateContext, range: Range | undefined, _token: CancellationToken | undefined): Range[] {
 	const styleTags: Tag[] = parseTags(documentStateContext, "style", range, _token);
 
-	return styleTags.map((tag: Tag) => {
-		return tag.bodyRange;
-	});
+	return styleTags.map((tag: Tag) => tag.bodyRange).filter((range): range is Range => range !== undefined);
 }
 
 /**
@@ -649,12 +651,10 @@ export function getCssRanges(documentStateContext: DocumentStateContext, range: 
  * @param _token
  * @returns
  */
-export function getCfOutputRanges(documentStateContext: DocumentStateContext, range: Range, _token: CancellationToken | undefined): Range[] {
+export function getCfOutputRanges(documentStateContext: DocumentStateContext, range: Range | undefined, _token: CancellationToken | undefined): Range[] {
 	const cfoutputTags: Tag[] = parseTags(documentStateContext, "cfoutput", range, _token);
 
-	return cfoutputTags.map((tag: Tag) => {
-		return tag.bodyRange;
-	});
+	return cfoutputTags.map((tag: Tag) => tag.bodyRange).filter((range): range is Range => range !== undefined);
 }
 
 /**
@@ -814,7 +814,7 @@ function getCharacterPair(character: string): CharacterPair | undefined {
  * @returns
  */
 function getOpeningChar(closingChar: string): string {
-	const characterPair: CharacterPair = getCharacterPair(closingChar);
+	const characterPair: CharacterPair | undefined = getCharacterPair(closingChar);
 
 	if (!characterPair) {
 		return "";
@@ -1045,10 +1045,15 @@ export function getPrecedingIdentifierRange(documentStateContext: DocumentStateC
 	}
 
 	if (isValidIdentifierPart(charStr)) {
-		const currentWordRange: Range = documentStateContext.document.getWordRangeAtPosition(iterator.getPosition());
-		const currentWord: string = documentStateContext.document.getText(currentWordRange);
-		if (isValidIdentifier(currentWord)) {
-			identRange = currentWordRange;
+		const iterPosition: Position | undefined = iterator.getPosition();
+		if (iterPosition) {
+			const currentWordRange: Range | undefined = documentStateContext.document.getWordRangeAtPosition(iterPosition);
+			if (currentWordRange) {
+				const currentWord: string = documentStateContext.document.getText(currentWordRange);
+				if (isValidIdentifier(currentWord)) {
+					identRange = currentWordRange;
+				}
+			}
 		}
 	}
 
@@ -1065,18 +1070,18 @@ export function getStartSigPosition(iterator: BackwardIterator, _token: Cancella
 	let parenNesting = 0;
 
 	const document: TextDocument = iterator.getDocumentStateContext().document;
-	const stringRanges: Range[] = iterator.getDocumentStateContext().stringRanges;
-	const stringEmbeddedCfmlRanges: Range[] = iterator.getDocumentStateContext().stringEmbeddedCfmlRanges;
+	const stringRanges: Range[] | undefined = iterator.getDocumentStateContext().stringRanges;
+	const stringEmbeddedCfmlRanges: Range[] | undefined = iterator.getDocumentStateContext().stringEmbeddedCfmlRanges;
 	while (iterator.hasNext()) {
 		const ch: number = iterator.next(_token);
 
 		if (stringRanges) {
-			const position: Position = iterator.getPosition();
+			const position: Position | undefined = iterator.getPosition();
 			if (position === undefined) {
 				break;
 			}
 			const position_translated: Position = position.translate(0, 1);
-			const stringRange: Range = stringRanges.find((range: Range) => {
+			const stringRange: Range | undefined = stringRanges.find((range: Range) => {
 				return range.contains(position_translated) && !range.end.isEqual(position_translated);
 			});
 			if (stringRange && !(stringEmbeddedCfmlRanges && isInRanges(stringEmbeddedCfmlRanges, position_translated, true, _token))) {
@@ -1089,20 +1094,22 @@ export function getStartSigPosition(iterator: BackwardIterator, _token: Cancella
 			case LEFT_PAREN:
 				parenNesting--;
 				if (parenNesting < 0) {
-					const candidatePosition: Position = iterator.getPosition();
+					const candidatePosition: Position | undefined = iterator.getPosition();
 					while (iterator.hasNext()) {
 						const nch: number = iterator.next(_token);
 						const charStr = String.fromCharCode(nch);
 						if (/\S/.test(charStr)) {
-							const iterPos: Position = iterator.getPosition();
-							if (isValidIdentifierPart(charStr)) {
-								const nameRange = document.getWordRangeAtPosition(iterPos);
-								const name = document.getText(nameRange);
-								if (isValidIdentifier(name) && !stringArrayIncludesIgnoreCase(["function", "if", "for", "while", "switch", "catch"], name)) {
-									return candidatePosition;
+							const iterPos: Position | undefined = iterator.getPosition();
+							if (iterPos) {
+								if (isValidIdentifierPart(charStr)) {
+									const nameRange = document.getWordRangeAtPosition(iterPos);
+									const name = document.getText(nameRange);
+									if (isValidIdentifier(name) && !stringArrayIncludesIgnoreCase(["function", "if", "for", "while", "switch", "catch"], name)) {
+										return candidatePosition;
+									}
 								}
+								iterator.setPosition(iterPos.translate(0, 1), _token);
 							}
-							iterator.setPosition(iterPos.translate(0, 1), _token);
 							parenNesting++;
 							break;
 						}

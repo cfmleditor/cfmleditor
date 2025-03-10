@@ -46,7 +46,7 @@ export async function showApplicationDocument(editor: TextEditor): Promise<void>
 		return;
 	}
 
-	const applicationUri: Uri = await getApplicationUri(activeDocumentUri);
+	const applicationUri: Uri | undefined = await getApplicationUri(activeDocumentUri);
 	if (applicationUri) {
 		const applicationDocument: TextDocument = await workspace.openTextDocument(applicationUri);
 		if (!applicationDocument) {
@@ -68,13 +68,15 @@ export function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit, _toke
 	const document: TextDocument = editor.document;
 
 	if (isCfcFile(document, _token)) {
-		const thisComponent: Component = getComponent(document.uri, _token);
+		const thisComponent: Component | undefined = getComponent(document.uri, _token);
 		if (thisComponent) {
 			const functionStartLines: number[] = [];
 			thisComponent.functions.filter((func: UserFunction) => {
 				return !func.isImplicit && func.bodyRange !== undefined;
 			}).forEach((func: UserFunction) => {
-				functionStartLines.push(func.bodyRange.start.line);
+				if (func.bodyRange) {
+					functionStartLines.push(func.bodyRange.start.line);
+				}
 			});
 
 			if (functionStartLines.length > 0) {
@@ -103,7 +105,7 @@ interface SnippetArgs {
  */
 export function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: SnippetArgs): void {
 	const position: Position = editor.selection.start;
-	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, true, null, false);
+	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, true, undefined, false);
 
 	if (documentPositionStateContext.positionIsScript) {
 		commands.executeCommand("editor.action.insertSnippet", {
