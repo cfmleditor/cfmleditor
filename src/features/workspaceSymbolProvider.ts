@@ -14,7 +14,7 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
 	 * @returns
 	 */
 
-	public provideWorkspaceSymbols(query: string, _token: CancellationToken): SymbolInformation[] {
+	public provideWorkspaceSymbols(query: string, _token: CancellationToken | undefined): SymbolInformation[] {
 		// console.log("provideWorkspaceSymbols:CFMLWorkspaceSymbolProvider:" + _token?.isCancellationRequested);
 
 		let workspaceSymbols: SymbolInformation[] = [];

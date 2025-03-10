@@ -99,7 +99,7 @@ export function replaceRangeWithSpaces(document: TextDocument, ranges: Range[]):
  * @param _token
  * @returns string
  */
-export function getSanitizedDocumentText(document: TextDocument, commentRanges: Range[], replaceComments: boolean = false, _token: CancellationToken): string {
+export function getSanitizedDocumentText(document: TextDocument, commentRanges: Range[], replaceComments: boolean = false, _token: CancellationToken | undefined): string {
 	if (replaceComments !== true) {
 		return document.getText();
 	}
@@ -123,7 +123,7 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges: 
  * @param _token
  * @returns string
  */
-export function getPrefixText(document: TextDocument, position: Position, replaceComments: boolean = false, _token: CancellationToken): string {
+export function getPrefixText(document: TextDocument, position: Position, replaceComments: boolean = false, _token: CancellationToken | undefined): string {
 	let documentText: string = document.getText();
 	if (replaceComments) {
 		documentText = getSanitizedDocumentText(document, undefined, false, _token);

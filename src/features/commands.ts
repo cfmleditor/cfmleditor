@@ -28,7 +28,7 @@ export async function refreshGlobalDefinitionCache(): Promise<void> {
  * Refreshes (clears and retrieves) all CFML workspace definitions
  * @param _token
  */
-export async function refreshWorkspaceDefinitionCache(_token: CancellationToken): Promise<void> {
+export async function refreshWorkspaceDefinitionCache(_token: CancellationToken | undefined): Promise<void> {
 	const cfmlIndexComponentsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.indexComponents");
 	if (cfmlIndexComponentsSettings.get<boolean>("enable")) {
 		await cacheAllComponents(_token);
@@ -64,7 +64,7 @@ export async function showApplicationDocument(editor: TextEditor): Promise<void>
  * @param edit
  * @param _token
  */
-export function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): void {
+export function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken | undefined): void {
 	const document: TextDocument = editor.document;
 
 	if (isCfcFile(document, _token)) {

@@ -24,7 +24,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 	 * @returns
 	 */
 
-	public provideCompletionItems(document: TextDocument, position: Position, _token: CancellationToken): CompletionItem[] {
+	public provideCompletionItems(document: TextDocument, position: Position, _token: CancellationToken | undefined): CompletionItem[] {
 		// console.log("provideCompletionItems:DocBlockCompletions:" + _token?.isCancellationRequested);
 
 		const result: CompletionItem[] = [];

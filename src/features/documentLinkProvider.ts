@@ -24,7 +24,7 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
 	 * @returns
 	 */
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	public async provideDocumentLinks(document: TextDocument, _token: CancellationToken): Promise<DocumentLink[]> {
+	public async provideDocumentLinks(document: TextDocument, _token: CancellationToken | undefined): Promise<DocumentLink[]> {
 		// console.log("provideDocumentLinks:CFMLDocumentLinkProvider:" + _token?.isCancellationRequested);
 
 		const results: DocumentLink[] = [];

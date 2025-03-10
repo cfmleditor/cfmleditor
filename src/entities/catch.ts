@@ -102,7 +102,7 @@ export interface CatchInfo {
  * @param _token
  * @returns
  */
-export function parseCatches(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range, _token: CancellationToken): CatchInfo[] {
+export function parseCatches(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range, _token: CancellationToken | undefined): CatchInfo[] {
 	let catchInfoArr: CatchInfo[] = [];
 	const document: TextDocument = documentStateContext.document;
 	let textOffset: number = 0;

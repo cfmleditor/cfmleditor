@@ -15,7 +15,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 	 * @returns
 	 */
 
-	public async provideDocumentSymbols(document: TextDocument, _token: CancellationToken): Promise<DocumentSymbol[]> {
+	public async provideDocumentSymbols(document: TextDocument, _token: CancellationToken | undefined): Promise<DocumentSymbol[]> {
 		let documentSymbols: DocumentSymbol[] = [];
 
 		if (!document.fileName) {
@@ -47,7 +47,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 	 * @param _token
 	 * @returns
 	 */
-	private static async getComponentSymbols(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<DocumentSymbol[]> {
+	private static async getComponentSymbols(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<DocumentSymbol[]> {
 		const document: TextDocument = documentStateContext.document;
 		const component: Component = getComponent(document.uri, _token);
 
@@ -143,7 +143,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 	 * @param _token
 	 * @returns
 	 */
-	private static async getTemplateSymbols(documentStateContext: DocumentStateContext, _token: CancellationToken): Promise<DocumentSymbol[]> {
+	private static async getTemplateSymbols(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<DocumentSymbol[]> {
 		const templateSymbols: DocumentSymbol[] = [];
 		// TODO: Cache template variables?
 		const allVariables: Variable[] = await parseVariableAssignments(documentStateContext, false, undefined, _token);

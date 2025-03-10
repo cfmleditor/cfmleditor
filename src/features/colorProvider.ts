@@ -18,7 +18,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 	 * @returns
 	 */
 
-	public provideDocumentColors(document: TextDocument, _token: CancellationToken): ColorInformation[] {
+	public provideDocumentColors(document: TextDocument, _token: CancellationToken | undefined): ColorInformation[] {
 		// console.log("provideDocumentColors:CFMLDocumentColorProvider:" + _token?.isCancellationRequested);
 
 		const result: ColorInformation[] = [];
@@ -137,7 +137,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 	 * @returns
 	 */
 
-	public provideColorPresentations(color: Color, context: { document: TextDocument; range: Range }, _token: CancellationToken): ColorPresentation[] {
+	public provideColorPresentations(color: Color, context: { document: TextDocument; range: Range }, _token: CancellationToken | undefined): ColorPresentation[] {
 		const result: ColorPresentation[] = [];
 		const red256 = Math.round(color.red * 255), green256 = Math.round(color.green * 255), blue256 = Math.round(color.blue * 255);
 

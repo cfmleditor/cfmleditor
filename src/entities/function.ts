@@ -78,7 +78,7 @@ export function getReturnTypeString(func: Function): string {
  * @param _token
  * @returns
  */
-export function getScriptFunctionArgRanges(documentStateContext: DocumentStateContext, argsRange: Range, separatorChar: string = ",", _token: CancellationToken): Range[] {
+export function getScriptFunctionArgRanges(documentStateContext: DocumentStateContext, argsRange: Range, separatorChar: string = ",", _token: CancellationToken | undefined): Range[] {
 	const argRanges: Range[] = [];
 	const document: TextDocument = documentStateContext.document;
 	const argsEndOffset: number = document.offsetAt(argsRange.end);

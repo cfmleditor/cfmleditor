@@ -310,7 +310,7 @@ export function getVariableExpressionPrefixPattern() {
  * @param _token
  * @returns
  */
-export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range, _token: CancellationToken): Promise<Variable[]> {
+export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range, _token: CancellationToken | undefined): Promise<Variable[]> {
 	let variables: Variable[] = [];
 	const document: TextDocument = documentStateContext.document;
 	const documentUri: Uri = document.uri;
@@ -857,7 +857,7 @@ export async function getApplicationVariables(baseUri: Uri): Promise<Variable[]>
  * @param _token
  * @returns
  */
-export function getServerVariables(baseUri: Uri, _token: CancellationToken): Variable[] {
+export function getServerVariables(baseUri: Uri, _token: CancellationToken | undefined): Variable[] {
 	let serverVariables: Variable[] = [];
 
 	const serverUri: Uri = getServerUri(baseUri, _token);
@@ -874,7 +874,7 @@ export function getServerVariables(baseUri: Uri, _token: CancellationToken): Var
  * @param _token
  * @returns
  */
-export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext, _token: CancellationToken): Promise<Variable[]> {
+export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext, _token: CancellationToken | undefined): Promise<Variable[]> {
 	let allVariableAssignments: Variable[] = [];
 
 	if (documentPositionStateContext.isCfmFile) {

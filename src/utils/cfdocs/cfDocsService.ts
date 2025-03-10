@@ -279,7 +279,7 @@ export default class CFDocsService {
 	 * @param editor
 	 * @editor The text editor which represents the document for which to check the word
 	 */
-	public static openCfDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): void {
+	public static openCfDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken | undefined): void {
 		const document: TextDocument = editor.document;
 		const position: Position = editor.selection.start;
 
@@ -323,7 +323,7 @@ export default class CFDocsService {
 	 * Opens the documentation web page of the currently set CF engine for the word at the current cursor position
 	 * @editor The text editor which represents the document for which to check the word
 	 */
-	public static openEngineDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken): void {
+	public static openEngineDocsForCurrentWord(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken | undefined): void {
 		const document: TextDocument = editor.document;
 		const position: Position = editor.selection.start;
 
