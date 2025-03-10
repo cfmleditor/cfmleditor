@@ -22,8 +22,8 @@ export async function handleContentChanges(event: TextDocumentChangeEvent): Prom
 	}
 
 	const languageId = editor.document.languageId;
-	const languages = ["cfml"];
-	const disableOnLanguage = [];
+	const languages: string[] = ["cfml"];
+	const disableOnLanguage: string[] = [];
 
 	if ((languages.indexOf("*") === -1 && languages.indexOf(languageId) === -1) || disableOnLanguage.indexOf(languageId) !== -1) {
 		return;
@@ -66,14 +66,16 @@ async function closeTag(contentChange: TextDocumentContentChangeEvent, editor: T
 	if (isForwardSlash) {
 		const [last2chars, linePreceding] = getPrecedingCharacters(originalPosition, editor);
 		if (last2chars === "</") {
-			let closeTag = getCloseTag(linePreceding, nonClosingTags);
+			let closeTag: string | undefined = getCloseTag(linePreceding, nonClosingTags);
 			if (closeTag) {
 				const nextChar = getNextChar(editor, originalPosition);
 				if (nextChar === ">") {
-					closeTag = closeTag.substr(0, closeTag.length - 1);
+					closeTag = closeTag.substring(0, closeTag.length - 1);
 				}
 				await editor.edit((editBuilder: TextEditorEdit) => {
-					editBuilder.insert(originalPosition, closeTag);
+					if (closeTag) {
+						editBuilder.insert(originalPosition, closeTag);
+					}
 				}).then(() => {
 					if (nextChar === ">") {
 						editor.selection = moveSelectionRight(editor.selection, 1);
@@ -168,7 +170,7 @@ const TAG_RE = /<(\/?[a-zA-Z][a-zA-Z0-9:_.-]*)(?![\s\S]*<\/?[a-zA-Z])/;
  * @description Gets the closing tag for the given text.
  * @returns
  */
-function getCloseTag(text: string, excludedTags: string[]): string {
+function getCloseTag(text: string, excludedTags: string[]): string | undefined {
 	const s = text[text.length - 1] === "/" && text[text.length - 2] === "<" ? text.slice(0, -2) : text[text.length - 1] === "<" ? text.slice(0, -1) : text;
 	let m = s.match(TAG_RE);
 	// while we catch a closing tag, we jump directly to the matching opening tag
@@ -188,7 +190,7 @@ function getCloseTag(text: string, excludedTags: string[]): string {
 		}
 	}
 	if (!m) {
-		return null;
+		return undefined;
 	}
 	return (text[text.length - 1] === "/" && text[text.length - 2] === "<" ? m[1] : text[text.length - 1] === "<" ? "/" + m[1] : "</" + m[1]) + ">";
 }
