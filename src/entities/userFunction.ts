@@ -318,7 +318,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 					if (dataType) {
 						userFunction.returntype = dataType;
 
-						const returnTypeKeyMatch: RegExpExecArray = getKeyPattern("returnType").exec(fullDocBlock);
+						const returnTypeKeyMatch: RegExpExecArray | null = getKeyPattern("returnType").exec(fullDocBlock);
 						if (returnTypeKeyMatch) {
 							const returnTypePath: string = returnTypeKeyMatch[1];
 							const returnTypeOffset: number = scriptFunctionMatch.index + returnTypeKeyMatch.index;
@@ -372,7 +372,7 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 	await Promise.all(scriptArgRanges.map(async (argRange: Range) => {
 		const argText: string = documentStateContext.sanitizedDocumentText.slice(document.offsetAt(argRange.start), document.offsetAt(argRange.end));
 		const argStartOffset = document.offsetAt(argRange.start);
-		const scriptFunctionArgMatch: RegExpExecArray = scriptFunctionArgPattern.exec(argText);
+		const scriptFunctionArgMatch: RegExpExecArray | null = scriptFunctionArgPattern.exec(argText);
 		if (scriptFunctionArgMatch) {
 			const fullArg = scriptFunctionArgMatch[0];
 			const attributePrefix = scriptFunctionArgMatch[1];
@@ -789,7 +789,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
 
 	// TODO: Replace regex check with variable references range check
 	// TODO: Check for function variables?
-	const varPrefixMatch: RegExpExecArray = getVariableExpressionPrefixPattern().exec(docPrefix);
+	const varPrefixMatch: RegExpExecArray | null = getVariableExpressionPrefixPattern().exec(docPrefix);
 	if (varPrefixMatch) {
 		const varMatchText: string = varPrefixMatch[0];
 		const varScope: string = varPrefixMatch[2];

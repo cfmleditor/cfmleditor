@@ -583,7 +583,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 					if (!attributeVal) {
 						return;
 					}
-					const varExpressionMatch: RegExpExecArray = variableExpressionPattern.exec(attributeVal);
+					const varExpressionMatch: RegExpExecArray | null = variableExpressionPattern.exec(attributeVal);
 					if (!varExpressionMatch) {
 						return;
 					}

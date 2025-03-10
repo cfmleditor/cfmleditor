@@ -146,7 +146,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		if (!positionIsCfScript || userEngine.supportsScriptTags()) {
 			const ignoredTags: string[] = expressionCfmlTags;
 			const cfTagAttributePattern: RegExp = positionIsCfScript ? getCfScriptTagAttributePattern() : getCfTagAttributePattern();
-			const cfTagAttributeMatch: RegExpExecArray = cfTagAttributePattern.exec(docPrefix);
+			const cfTagAttributeMatch: RegExpExecArray | null = cfTagAttributePattern.exec(docPrefix);
 			if (cfTagAttributeMatch) {
 				const cfTagAttributeMatchOffset: number = cfTagAttributeMatch.index;
 				const tagAttributePrefix: string = cfTagAttributeMatch[1];
@@ -155,7 +155,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 				const tagAttributesLength: number = cfTagAttributeMatch[3].length;
 				const globalTag: GlobalTag = getGlobalTag(tagName);
 				if (globalTag && !ignoredTags.includes(globalTag.name)) {
-					const attributeValueMatch: RegExpExecArray = VALUE_PATTERN.exec(docPrefix);
+					const attributeValueMatch: RegExpExecArray | null = VALUE_PATTERN.exec(docPrefix);
 					if (attributeValueMatch) {
 						const attributeName: string = attributeValueMatch[1];
 						const currentValue: string = attributeValueMatch[3] !== undefined ? attributeValueMatch[3] : attributeValueMatch[4];
@@ -188,7 +188,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		// HTML tag attributes
 		if (!positionIsCfScript) {
 			const tagAttributePattern: RegExp = getTagAttributePattern();
-			const tagAttributeMatch: RegExpExecArray = tagAttributePattern.exec(docPrefix);
+			const tagAttributeMatch: RegExpExecArray | null = tagAttributePattern.exec(docPrefix);
 			if (tagAttributeMatch) {
 				const tagAttributeMatchOffset: number = tagAttributeMatch.index;
 				const tagAttributePrefix: string = tagAttributeMatch[1];
@@ -196,7 +196,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 				const tagName: string = tagAttributeMatch[2].toLowerCase();
 				const tagAttributesLength: number = tagAttributeMatch[3].length;
 				if (isKnownHTMLTag(tagName)) {
-					const attributeValueMatch: RegExpExecArray = VALUE_PATTERN.exec(docPrefix);
+					const attributeValueMatch: RegExpExecArray | null = VALUE_PATTERN.exec(docPrefix);
 					if (attributeValueMatch) {
 						const attributeName: string = attributeValueMatch[1].toLowerCase();
 						const currentValue: string = attributeValueMatch[3] !== undefined ? attributeValueMatch[3] : attributeValueMatch[4];
@@ -218,7 +218,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
 		if (docIsCfcFile && isInComponentHead(documentPositionStateContext)) {
 			// extends and implements path completion. does not apply to docblock
-			const componentDottedPathMatch: RegExpExecArray = componentExtendsPathPrefix.exec(docPrefix);
+			const componentDottedPathMatch: RegExpExecArray | null = componentExtendsPathPrefix.exec(docPrefix);
 			if (componentDottedPathMatch) {
 				const componentDottedPath: string = componentDottedPathMatch[3];
 				const parentDottedPath: string = componentDottedPath.split(".").slice(0, -1).join(".");
@@ -368,7 +368,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		}
 
 		// External user/member functions
-		const varPrefixMatch: RegExpExecArray = getVariableExpressionPrefixPattern().exec(docPrefix);
+		const varPrefixMatch: RegExpExecArray | null = getVariableExpressionPrefixPattern().exec(docPrefix);
 		if (varPrefixMatch) {
 			const varMatchText: string = varPrefixMatch[0];
 			const varScope: string = varPrefixMatch[2];
@@ -606,7 +606,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		}
 
 		// Component instantiation
-		const componentDottedPathMatch: RegExpExecArray = componentDottedPathPrefix.exec(docPrefix);
+		const componentDottedPathMatch: RegExpExecArray | null = componentDottedPathPrefix.exec(docPrefix);
 		if (componentDottedPathMatch) {
 			const componentDottedPath: string = componentDottedPathMatch[3];
 			const parentDottedPath: string = componentDottedPath.split(".").slice(0, -1).join(".");
@@ -834,7 +834,7 @@ function getVariableCompletions(state: CompletionState, variables: Variable[]): 
 	let variableCompletions: CompletionItem[] = [];
 
 	const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
-	const variableScopePrefixMatch: RegExpExecArray = variableScopePrefixPattern.exec(state.docPrefix);
+	const variableScopePrefixMatch: RegExpExecArray | null = variableScopePrefixPattern.exec(state.docPrefix);
 	if (variableScopePrefixMatch) {
 		const scopePrefix: string = variableScopePrefixMatch[1];
 		let prefixScope: Scope;
@@ -995,7 +995,7 @@ function getGlobalTagCompletions(state: CompletionState): CompletionItem[] {
 	const globalTagCompletions: CompletionItem[] = [];
 
 	const tagPrefixPattern: RegExp = getTagPrefixPattern();
-	const tagPrefixMatch: RegExpExecArray = tagPrefixPattern.exec(state.docPrefix);
+	const tagPrefixMatch: RegExpExecArray | null = tagPrefixPattern.exec(state.docPrefix);
 	if (tagPrefixMatch) {
 		const closingSlash: string = tagPrefixMatch[1];
 		const cfmlGTAttributesQuoteType: AttributeQuoteType = state.cfmlCompletionSettings.get<AttributeQuoteType>("globalTags.attributes.quoteType", AttributeQuoteType.Double);
@@ -1066,7 +1066,7 @@ function getHTMLTagCompletions(state: CompletionState): CompletionItem[] {
 	const htmlTagCompletions: CompletionItem[] = [];
 
 	const tagPrefixPattern: RegExp = getTagPrefixPattern();
-	const tagPrefixMatch: RegExpExecArray = tagPrefixPattern.exec(state.docPrefix);
+	const tagPrefixMatch: RegExpExecArray | null = tagPrefixPattern.exec(state.docPrefix);
 	if (tagPrefixMatch) {
 		for (const htmlTag of htmlDataProvider.provideTags()) {
 			if (state.currentWordMatches(htmlTag.name)) {

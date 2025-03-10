@@ -897,7 +897,7 @@ export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token
 	let globalTag: GlobalTag = getGlobalTag(currentWord);
 	if (!globalTag) {
 		const cfTagAttributePattern: RegExp = documentPositionStateContext.positionIsScript ? getCfScriptTagAttributePattern() : getCfTagAttributePattern();
-		const cfTagAttributeMatch: RegExpExecArray = cfTagAttributePattern.exec(documentPositionStateContext.docPrefix);
+		const cfTagAttributeMatch: RegExpExecArray | null = cfTagAttributePattern.exec(documentPositionStateContext.docPrefix);
 		if (cfTagAttributeMatch) {
 			const tagName: string = cfTagAttributeMatch[2];
 			globalTag = getGlobalTag(tagName);

@@ -67,7 +67,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		let entry: Function | undefined;
 
 		// Check if initializing via "new" operator
-		const objectNewInstanceInitPrefixMatch: RegExpExecArray = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
+		const objectNewInstanceInitPrefixMatch: RegExpExecArray | null = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
 		if (objectNewInstanceInitPrefixMatch) {
 			const componentDotPath: string = objectNewInstanceInitPrefixMatch[2];
 			const componentUri: Uri = cachedComponentPathToUri(componentDotPath, document.uri, _token);
@@ -113,7 +113,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 			// Check variables
 			if (!entry) {
 				const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
-				const variableScopePrefixMatch: RegExpExecArray = variableScopePrefixPattern.exec(startIdentPositionPrefix);
+				const variableScopePrefixMatch: RegExpExecArray | null = variableScopePrefixPattern.exec(startIdentPositionPrefix);
 				if (variableScopePrefixMatch) {
 					const scopePrefix: string = variableScopePrefixMatch[1];
 					let prefixScope: Scope;

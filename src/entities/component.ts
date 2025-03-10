@@ -161,7 +161,7 @@ export interface ComponentsByName {
  * @returns
  */
 export function isScriptComponent(document: TextDocument, _token: CancellationToken | undefined): boolean {
-	const componentTagMatch: RegExpExecArray = COMPONENT_TAG_PATTERN.exec(document.getText());
+	const componentTagMatch: RegExpExecArray | null = COMPONENT_TAG_PATTERN.exec(document.getText());
 	if (componentTagMatch) {
 		return false;
 	}
@@ -271,7 +271,7 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 			const implInitialOffset = document.offsetAt(implDocAttr.valueRange.start);
 			let implOffset: number = 0;
 			implDocAttr.value.split(",").forEach((element: string) => {
-				const whitespaceMatch: RegExpExecArray = /\s+/.exec(element);
+				const whitespaceMatch: RegExpExecArray | null = /\s+/.exec(element);
 				const whitespaceLen = whitespaceMatch ? whitespaceMatch[0].length : 0;
 				const interfacePathWordRange: Range = document.getWordRangeAtPosition(document.positionAt(implInitialOffset + implOffset + whitespaceLen), /[$\w.]+/);
 				component.implementsRanges.push(interfacePathWordRange);
@@ -310,7 +310,7 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 				const implInitialOffset = document.offsetAt(implementsAttr.valueRange.start);
 				let implOffset: number = 0;
 				implementsAttr.value.split(",").forEach((element: string) => {
-					const whitespaceMatch: RegExpExecArray = /\s+/.exec(element);
+					const whitespaceMatch: RegExpExecArray | null = /\s+/.exec(element);
 					const whitespaceLen = whitespaceMatch ? whitespaceMatch[0].length : 0;
 					const interfacePathWordRange: Range = document.getWordRangeAtPosition(document.positionAt(implInitialOffset + implOffset + whitespaceLen), /[$\w.]+/);
 					component.implementsRanges.push(interfacePathWordRange);
@@ -404,7 +404,7 @@ export function isInComponentHead(documentPositionStateContext: DocumentPosition
 	const document: TextDocument = documentPositionStateContext.document;
 	const documentText: string = documentPositionStateContext.sanitizedDocumentText;
 	const componentPattern: RegExp = documentPositionStateContext.docIsScript ? COMPONENT_SCRIPT_PATTERN : COMPONENT_TAG_PATTERN;
-	const componentMatch: RegExpExecArray = componentPattern.exec(documentText);
+	const componentMatch: RegExpExecArray | null = componentPattern.exec(documentText);
 
 	if (!componentMatch) {
 		return false;

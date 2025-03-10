@@ -17,7 +17,7 @@ export default class FunctionBlock extends Block {
 		const doc = new Doc(DocType.Function, this.document.uri);
 
 		const positionOffset: number = this.document.offsetAt(this.position);
-		const patternMatch: RegExpExecArray = this.pattern.exec(this.suffix);
+		const patternMatch: RegExpExecArray | null = this.pattern.exec(this.suffix);
 		if (patternMatch) {
 			const declaration: Position = this.document.positionAt(positionOffset + patternMatch[1].length + 1);
 			this.component.functions.filter((func: UserFunction) => {

@@ -217,7 +217,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		else if (docIsCfmFile) {
 			const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, undefined, _token);
 			const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
-			const variableScopePrefixMatch: RegExpExecArray = variableScopePrefixPattern.exec(docPrefix);
+			const variableScopePrefixMatch: RegExpExecArray | null = variableScopePrefixPattern.exec(docPrefix);
 			if (variableScopePrefixMatch) {
 				const validScope: string = variableScopePrefixMatch[1];
 				let currentScope: Scope;
@@ -257,7 +257,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
 		// Application variables
 		const applicationVariablesPrefixPattern = getValidScopesPrefixPattern([Scope.Application, Scope.Session, Scope.Request], false);
-		const variableScopePrefixMatch: RegExpExecArray = applicationVariablesPrefixPattern.exec(docPrefix);
+		const variableScopePrefixMatch: RegExpExecArray | null = applicationVariablesPrefixPattern.exec(docPrefix);
 		if (variableScopePrefixMatch) {
 			const currentScope = Scope.valueOf(variableScopePrefixMatch[1]);
 

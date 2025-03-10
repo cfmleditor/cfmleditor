@@ -143,7 +143,7 @@ export async function parseProperties(documentStateContext: DocumentStateContext
 			}
 		}
 		else {
-			const parsedPropertyAttributes: RegExpExecArray = /\s*(\S+)\s+([\w$]+)\s*$/.exec(propertyAttrs);
+			const parsedPropertyAttributes: RegExpExecArray | null = /\s*(\S+)\s+([\w$]+)\s*$/.exec(propertyAttrs);
 			if (!parsedPropertyAttributes) {
 				continue;
 			}

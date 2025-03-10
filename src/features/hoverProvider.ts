@@ -117,7 +117,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 		const componentPathWord: string = document.getText(componentPathWordRange);
 		const componentPathWordPrefix: string = documentPositionStateContext.sanitizedDocumentText.slice(0, document.offsetAt(componentPathWordRange.start));
 		const startSigPositionPrefix = `${componentPathWordPrefix}${componentPathWord}(`;
-		const objectNewInstanceInitPrefixMatch: RegExpExecArray = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
+		const objectNewInstanceInitPrefixMatch: RegExpExecArray | null = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
 		if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
 			const componentUri: Uri = cachedComponentPathToUri(componentPathWord, document.uri, _token);
 			if (componentUri) {
@@ -152,12 +152,12 @@ export default class CFMLHoverProvider implements HoverProvider {
 		// Global tag attributes
 		if (!positionIsCfScript || userEngine.supportsScriptTags()) {
 			const cfTagAttributePattern: RegExp = positionIsCfScript ? getCfScriptTagAttributePattern() : getCfTagAttributePattern();
-			const cfTagAttributeMatch: RegExpExecArray = cfTagAttributePattern.exec(docPrefix);
+			const cfTagAttributeMatch: RegExpExecArray | null = cfTagAttributePattern.exec(docPrefix);
 			if (cfTagAttributeMatch) {
 				const ignoredTags: string[] = expressionCfmlTags;
 				const tagName: string = cfTagAttributeMatch[2];
 				const globalTag: GlobalTag = getGlobalTag(tagName);
-				const attributeValueMatch: RegExpExecArray = VALUE_PATTERN.exec(docPrefix);
+				const attributeValueMatch: RegExpExecArray | null = VALUE_PATTERN.exec(docPrefix);
 				if (globalTag && !ignoredTags.includes(globalTag.name) && !attributeValueMatch) {
 					// TODO: Check valid attribute before calling createHover
 					definition = this.attributeToHoverProviderItem(globalTag, currentWord);
