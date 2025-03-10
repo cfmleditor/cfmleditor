@@ -490,7 +490,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		}
 		const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.inferDataTypeFromValue(initValue, documentUri, _token);
 
-		let thisVar: Variable | undefined = dataType && dataTypeComponentUri
+		let thisVar: Variable | undefined = dataType
 			? {
 					identifier: varName,
 					dataType: dataType,
@@ -650,9 +650,11 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 						const columns: QueryColumns = getSelectColumnsFromQueryText(bodyText);
 
 						if (columns.size > 0) {
-							const query: Query = outputVar as Query;
-							query.selectColumnNames = columns;
-							outputVar = query;
+							const query: Query | undefined = outputVar as Query;
+							if (query) {
+								query.selectColumnNames = columns;
+								outputVar = query;
+							}
 						}
 					}
 
