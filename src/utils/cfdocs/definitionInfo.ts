@@ -199,68 +199,74 @@ export class CFDocsDefinitionInfo {
 	public toGlobalFunction(): GlobalFunction {
 		const signatures: Signature[] = [];
 		if (multiSigGlobalFunctions.has(this.name)) {
-			const thisMultiSigs: string[][] = multiSigGlobalFunctions.get(this.name);
-			thisMultiSigs.forEach((thisMultiSig: string[]) => {
-				const parameters: Parameter[] = [];
-				thisMultiSig.forEach((multiSigParam: string) => {
-					let paramFound = false;
-					for (const param of this.params) {
-						const multiSigParamParsed: string = multiSigParam.split("=")[0];
-						if (param.name === multiSigParamParsed) {
+			const thisMultiSigs: string[][] | undefined = multiSigGlobalFunctions.get(this.name);
+			if (thisMultiSigs) {
+				thisMultiSigs.forEach((thisMultiSig: string[]) => {
+					const parameters: Parameter[] = [];
+					thisMultiSig.forEach((multiSigParam: string) => {
+						let paramFound = false;
+						if (this.params) {
+							for (const param of this.params) {
+								const multiSigParamParsed: string = multiSigParam.split("=")[0];
+								if (param.name === multiSigParamParsed) {
+									const parameter: Parameter = {
+										name: multiSigParam,
+										type: param.type,
+										dataType: getParamDataType(param.type.toLowerCase()),
+										required: param.required,
+										description: param.description ? param.description : "",
+										default: param.default,
+										enumeratedValues: param.values,
+									};
+									parameters.push(parameter);
+									paramFound = true;
+									break;
+								}
+							}
+						}
+						if (!paramFound) {
 							const parameter: Parameter = {
 								name: multiSigParam,
-								type: param.type,
-								dataType: getParamDataType(param.type.toLowerCase()),
-								required: param.required,
-								description: param.description,
-								default: param.default,
-								enumeratedValues: param.values,
+								type: "any",
+								dataType: DataType.Any,
+								required: false,
+								description: "",
 							};
 							parameters.push(parameter);
-							paramFound = true;
-							break;
 						}
-					}
-					if (!paramFound) {
-						const parameter: Parameter = {
-							name: multiSigParam,
-							type: "any",
-							dataType: DataType.Any,
-							required: false,
-							description: "",
-						};
-						parameters.push(parameter);
-					}
+					});
+					const signatureInfo: Signature = {
+						parameters: parameters,
+					};
+					signatures.push(signatureInfo);
+				});
+			}
+		}
+		else {
+			if (this.params) {
+				const parameters: Parameter[] = this.params.map((param: Param) => {
+					return {
+						name: param.name,
+						type: param.type,
+						dataType: getParamDataType(param.type.toLowerCase()),
+						required: param.required,
+						description: decode(param.description),
+						default: param.default,
+						enumeratedValues: param.values,
+					};
 				});
 				const signatureInfo: Signature = {
 					parameters: parameters,
 				};
 				signatures.push(signatureInfo);
-			});
-		}
-		else {
-			const parameters: Parameter[] = this.params.map((param: Param) => {
-				return {
-					name: param.name,
-					type: param.type,
-					dataType: getParamDataType(param.type.toLowerCase()),
-					required: param.required,
-					description: decode(param.description),
-					default: param.default,
-					enumeratedValues: param.values,
-				};
-			});
-			const signatureInfo: Signature = {
-				parameters: parameters,
-			};
-			signatures.push(signatureInfo);
+			}
 		}
 
 		return {
 			name: this.name,
 			syntax: this.syntax,
 			description: (this.description ? decode(this.description) : ""),
-			returntype: getReturnDataType(this.returns.toLowerCase()),
+			returntype: getReturnDataType(this.returns ? this.returns.toLowerCase() : "any"),
 			signatures: signatures,
 		};
 	}
@@ -270,17 +276,19 @@ export class CFDocsDefinitionInfo {
 	 * @returns
 	 */
 	public toGlobalTag(): GlobalTag {
-		const parameters: Parameter[] = this.params.map((param: Param) => {
-			return {
-				name: param.name,
-				type: param.type,
-				dataType: getParamDataType(param.type.toLowerCase()),
-				required: param.required,
-				description: decode(param.description),
-				default: param.default,
-				enumeratedValues: param.values,
-			};
-		});
+		const parameters: Parameter[] = this.params
+			? this.params.map((param: Param) => {
+					return {
+						name: param.name,
+						type: param.type,
+						dataType: getParamDataType(param.type.toLowerCase()),
+						required: param.required,
+						description: decode(param.description),
+						default: param.default,
+						enumeratedValues: param.values,
+					};
+				})
+			: [];
 
 		const signatureInfo: Signature = {
 			parameters: parameters,
