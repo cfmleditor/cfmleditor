@@ -529,16 +529,18 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 							columns = getSelectColumnsFromQueryText(firstParamVal);
 						}
 						if (columns.size > 0) {
-							const query: Query = thisVar as Query;
-							query.selectColumnNames = columns;
-							thisVar = query;
+							const query: Query | undefined = thisVar as Query;
+							if (query) {
+								query.selectColumnNames = columns;
+								thisVar = query;
+							}
 						}
 					}
 				}
 			}
 		}
 		else if (dataType === DataType.Function) {
-			const userFunction: UserFunctionVariable = thisVar as UserFunctionVariable;
+			const userFunction: UserFunctionVariable | undefined = thisVar as UserFunctionVariable;
 
 			const valueMatch = functionValuePattern.exec(initValue);
 			if (valueMatch) {
@@ -552,10 +554,12 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 					paramsEndPosition.translate(0, -1)
 				);
 
-				userFunction.signature = {
-					parameters: await parseScriptFunctionArgs(documentStateContext, paramsRange, [], _token),
-				};
-				thisVar = userFunction;
+				if (userFunction) {
+					userFunction.signature = {
+						parameters: await parseScriptFunctionArgs(documentStateContext, paramsRange, [], _token),
+					};
+					thisVar = userFunction;
+				}
 			}
 		}
 
