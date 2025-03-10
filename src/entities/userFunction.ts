@@ -558,7 +558,7 @@ export async function parseTagFunctions(documentStateContext: DocumentStateConte
 			return;
 		}
 
-		if (!parsedAttributes.has("name") || nameAttr.value) {
+		if (!parsedAttributes.has("name") || !nameAttr.value) {
 			return;
 		}
 
