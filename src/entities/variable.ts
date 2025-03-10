@@ -310,7 +310,7 @@ export function getVariableExpressionPrefixPattern() {
  * @param _token
  * @returns
  */
-export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range, _token: CancellationToken | undefined): Promise<Variable[]> {
+export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range | undefined, _token: CancellationToken | undefined): Promise<Variable[]> {
 	let variables: Variable[] = [];
 	const document: TextDocument = documentStateContext.document;
 	const documentUri: Uri = document.uri;
@@ -328,12 +328,12 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	}
 
 	const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
-	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name"));
-	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version"));
+	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
+	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
 
 	// Add function arguments
 	if (isCfcFile(document, _token)) {
-		const comp: Component = getComponent(document.uri, _token);
+		const comp: Component | undefined = getComponent(document.uri, _token);
 		if (comp) {
 			comp.functions.forEach((func: UserFunction) => {
 				if (!func.isImplicit && (!docRange || (func.bodyRange && func.bodyRange.contains(docRange)))) {
@@ -376,22 +376,27 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		);
 
 		const parsedAttr: Attributes = parseAttributes(document, paramAttributeRange);
-		if (!parsedAttr.has("name") || !parsedAttr.get("name").value) {
+		const nameAttr = parsedAttr.get("name");
+		if (!parsedAttr.has("name") || !nameAttr || !nameAttr.value) {
 			continue;
 		}
 
 		let paramType: DataType = DataType.Any;
-		let paramTypeComponentUri: Uri = undefined;
-		if (parsedAttr.has("type") && !!parsedAttr.get("type").value) {
-			paramType = DataType.paramTypeToDataType(parsedAttr.get("type").value);
+		let paramTypeComponentUri: Uri | undefined;
+		const typeAttr = parsedAttr.get("type");
+		const defaultAttr = parsedAttr.get("default");
+		if (parsedAttr.has("type") && typeAttr && !!typeAttr.value) {
+			paramType = DataType.paramTypeToDataType(typeAttr.value);
 		}
-		else if (parsedAttr.has("default") && parsedAttr.get("default").value !== undefined) {
-			const [dataType, uri]: [DataType, Uri] = await DataType.inferDataTypeFromValue(parsedAttr.get("default").value, documentUri, _token);
-			paramType = dataType;
-			paramTypeComponentUri = uri;
+		else if (parsedAttr.has("default") && defaultAttr && defaultAttr.value !== undefined) {
+			const [dataType, uri]: [DataType | undefined, Uri | undefined] = await DataType.inferDataTypeFromValue(defaultAttr.value, documentUri, _token);
+			if (dataType && uri) {
+				paramType = dataType;
+				paramTypeComponentUri = uri;
+			}
 		}
 
-		const paramName = parsedAttr.get("name").value;
+		const paramName = nameAttr.value;
 		const paramNameMatch = variableExpressionPattern.exec(paramName);
 		if (!paramNameMatch) {
 			continue;
@@ -406,7 +411,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 			scopeVal = Scope.valueOf(scope);
 		}
 
-		const varRangeStart = parsedAttr.get("name").valueRange.start.translate(0, varNamePrefixLen);
+		const varRangeStart = nameAttr.valueRange.start.translate(0, varNamePrefixLen);
 		const varRange = new Range(
 			varRangeStart,
 			varRangeStart.translate(0, varName.length)
@@ -425,7 +430,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 			}
 		}
 
-		const initialValue: string = parsedAttr.has("default") ? parsedAttr.get("default").value : undefined;
+		const initialValue: string | undefined = parsedAttr.has("default") && defaultAttr ? defaultAttr.value : undefined;
 
 		variables.push({
 			identifier: varName,
@@ -483,19 +488,21 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		if (scopeVal === Scope.Unknown) {
 			scopeVal = Scope.Variables;
 		}
-		const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.inferDataTypeFromValue(initValue, documentUri, _token);
+		const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.inferDataTypeFromValue(initValue, documentUri, _token);
 
-		let thisVar: Variable = {
-			identifier: varName,
-			dataType: dataType,
-			dataTypeComponentUri: dataTypeComponentUri,
-			scope: scopeVal,
-			final: false,
-			declarationLocation: new Location(
-				document.uri,
-				varRange
-			),
-		};
+		let thisVar: Variable | undefined = dataType && dataTypeComponentUri
+			? {
+					identifier: varName,
+					dataType: dataType,
+					dataTypeComponentUri: dataTypeComponentUri,
+					scope: scopeVal,
+					final: false,
+					declarationLocation: new Location(
+						document.uri,
+						varRange
+					),
+				}
+			: undefined;
 
 		if (dataType === DataType.Query) {
 			const valueMatch = queryValuePattern.exec(initValue);
@@ -552,9 +559,10 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 			}
 		}
 
-		thisVar.initialValue = initValue;
-
-		variables.push(thisVar);
+		if (thisVar) {
+			thisVar.initialValue = initValue;
+			variables.push(thisVar);
+		}
 	}
 
 	if (!isScript || userEngine.supportsScriptTags()) {
@@ -579,8 +587,9 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 					return tagAttributes.has(tagOutputAttribute.attributeName);
 				}).forEach((tagOutputAttribute: VariableAttribute) => {
 					const attributeName: string = tagOutputAttribute.attributeName;
-					const attributeVal: string = tagAttributes.get(attributeName).value;
-					if (!attributeVal) {
+					const tagAttr = tagAttributes.get(attributeName);
+					const attributeVal: string | undefined = tagAttr ? tagAttr.value : undefined;
+					if (!tagAttr || !attributeVal) {
 						return;
 					}
 					const varExpressionMatch: RegExpExecArray | null = variableExpressionPattern.exec(attributeVal);
@@ -597,7 +606,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 						scopeVal = Scope.valueOf(scope);
 					}
 
-					const varRangeStart: Position = tagAttributes.get(attributeName).valueRange.start.translate(0, varNamePrefixLen);
+					const varRangeStart: Position = tagAttr.valueRange.start.translate(0, varNamePrefixLen);
 					const varRange = new Range(
 						varRangeStart,
 						varRangeStart.translate(0, varName.length)
@@ -781,7 +790,7 @@ export function argumentsToVariables(args: Argument[], documentUri: Uri): Variab
  * @returns
  */
 export function getBestMatchingVariable(variables: Variable[], varName: string, varScope?: Scope): Variable | undefined {
-	let foundVar: Variable;
+	let foundVar: Variable | undefined;
 
 	if (varScope) {
 		foundVar = variables.find((currentVar: Variable) => {
@@ -840,9 +849,9 @@ export function getMatchingVariables(variables: Variable[], varName: string, sco
  */
 export async function getApplicationVariables(baseUri: Uri): Promise<Variable[]> {
 	let applicationVariables: Variable[] = [];
-	const applicationUri: Uri = await getApplicationUri(baseUri);
+	const applicationUri: Uri | undefined = await getApplicationUri(baseUri);
 	if (applicationUri) {
-		const cachedApplicationVariables: Variable[] = getCachedApplicationVariables(applicationUri);
+		const cachedApplicationVariables: Variable[] | undefined = getCachedApplicationVariables(applicationUri);
 		if (cachedApplicationVariables) {
 			applicationVariables = cachedApplicationVariables;
 		}
@@ -860,9 +869,9 @@ export async function getApplicationVariables(baseUri: Uri): Promise<Variable[]>
 export function getServerVariables(baseUri: Uri, _token: CancellationToken | undefined): Variable[] {
 	let serverVariables: Variable[] = [];
 
-	const serverUri: Uri = getServerUri(baseUri, _token);
+	const serverUri: Uri | undefined = getServerUri(baseUri, _token);
 	if (serverUri) {
-		serverVariables = getCachedServerVariables(serverUri);
+		serverVariables = getCachedServerVariables(serverUri) || [];
 	}
 
 	return serverVariables;
@@ -891,7 +900,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 			allVariableAssignments = allVariableAssignments.concat(propertiesToVariables(componentProperties, documentUri));
 
 			// component variables
-			let currComponent: Component = thisComponent;
+			let currComponent: Component | undefined = thisComponent;
 			let componentVariables: Variable[] = [];
 			while (currComponent) {
 				const currComponentVariables: Variable[] = currComponent.variables.filter((variable: Variable) => {
@@ -904,9 +913,9 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 				// Also check in init function
 				const initMethod: string = currComponent.initmethod ? currComponent.initmethod.toLowerCase() : "init";
 				if (currComponent.functions.has(initMethod)) {
-					const currInitFunc: UserFunction = currComponent.functions.get(initMethod);
+					const currInitFunc: UserFunction | undefined = currComponent.functions.get(initMethod);
 
-					if (currInitFunc.bodyRange) {
+					if (currInitFunc && currInitFunc.bodyRange) {
 						const currInitVariables: Variable[] = (await parseVariableAssignments(documentPositionStateContext, currComponent.isScript, currInitFunc.bodyRange, _token)).filter((variable: Variable) => {
 							return [Scope.Variables, Scope.This].includes(variable.scope) && !componentVariables.some((existingVariable: Variable) => {
 								return existingVariable.scope === variable.scope && equalsIgnoreCase(existingVariable.identifier, variable.identifier);
@@ -929,7 +938,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 			// function arguments
 			let functionArgs: Argument[] = [];
 			thisComponent.functions.filter((func: UserFunction) => {
-				return func.bodyRange && func.bodyRange.contains(documentPositionStateContext.position) && func.signatures && func.signatures.length !== 0;
+				return func.bodyRange && func.bodyRange.contains(documentPositionStateContext.position) && func.signatures && func.signatures.length !== 0 ? true : false; ;
 			}).forEach((func: UserFunction) => {
 				func.signatures.forEach((signature: UserFunctionSignature) => {
 					functionArgs = signature.parameters;
@@ -940,7 +949,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 			// function local variables
 			let localVariables: Variable[] = [];
 			const filteredFunctions = thisComponent.functions.filter((func: UserFunction) => {
-				return func.bodyRange && func.bodyRange.contains(documentPositionStateContext.position);
+				return (func.bodyRange && func.bodyRange.contains(documentPositionStateContext.position)) ? true : false;
 			});
 
 			for (const [, func] of filteredFunctions) {

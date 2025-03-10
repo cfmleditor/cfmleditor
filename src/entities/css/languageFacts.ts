@@ -102,14 +102,16 @@ export function getBrowserLabel(browsers: string[] = []): string | null {
 			let result = "";
 			const matches = b.match(/([A-Z]+)(\d+)?/);
 
-			const name = matches[1];
-			const version = matches[2];
+			if (matches) {
+				const name = matches[1];
+				const version = matches[2];
 
-			if (name in browserNames) {
-				result += browserNames[name as keyof typeof browserNames];
-			}
-			if (version) {
-				result += " " + version;
+				if (name in browserNames) {
+					result += browserNames[name as keyof typeof browserNames];
+				}
+				if (version) {
+					result += " " + version;
+				}
 			}
 			return result;
 		})

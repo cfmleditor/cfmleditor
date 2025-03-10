@@ -11,7 +11,6 @@ import { constructAttributeSnippet, constructTagSnippet, GlobalFunction, GlobalF
 import { IAttributeData as HTMLAttributeData, IValueData as HTMLValueData } from "../entities/html/htmlLanguageTypes";
 import { constructHTMLAttributeSnippet } from "../entities/html/htmlTag";
 import { getAttribute, htmlDataProvider, isKnownTag as isKnownHTMLTag } from "../entities/html/languageFacts";
-import { KeywordDetails, keywords } from "../entities/keyword";
 import { Parameter } from "../entities/parameter";
 import { isQuery, queryObjectProperties } from "../entities/query";
 import { getValidScopesPrefixPattern, getVariableScopePrefixPattern, Scope, scopes, unscopedPrecedence } from "../entities/scope";
@@ -129,7 +128,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		const userEngine: CFMLEngine = completionState.userEngine;
 		const docIsCfmFile: boolean = completionState.isCfmFile;
 		const docIsCfcFile: boolean = completionState.isCfcFile;
-		const thisComponent: Component = completionState.component;
+		const thisComponent: Component | undefined = completionState.component;
 		const positionIsCfScript: boolean = completionState.positionIsScript;
 		const docPrefix: string = completionState.docPrefix;
 		const isContinuingExpression: boolean = completionState.isContinuingExpression;
@@ -290,8 +289,8 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		}
 
 		if (applicableCatches.length > 0) {
-			const closestCatch: CatchInfo = applicableCatches.pop();
-			if (!isContinuingExpression && currentWordMatches(closestCatch.variableName)) {
+			const closestCatch: CatchInfo | undefined = applicableCatches.pop();
+			if (closestCatch && !isContinuingExpression && currentWordMatches(closestCatch.variableName)) {
 				result.push(createNewProposal(
 					closestCatch.variableName,
 					CompletionItemKind.Struct,
@@ -306,7 +305,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 				return undefined;
 			}
 
-			if (getVariablePrefixPattern(closestCatch.variableName).test(docPrefix)) {
+			if (closestCatch && getVariablePrefixPattern(closestCatch.variableName).test(docPrefix)) {
 				for (const propName in catchProperties) {
 					const catchProp: CatchPropertyDetails = catchProperties[propName];
 					const catchType: string = closestCatch.type.toLowerCase();
@@ -359,8 +358,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 			}
 		}
 		else if (docIsCfcFile) {
-			const componentFunctionCompletions: CompletionItem[] = getComponentFunctionCompletions(completionState, thisComponent, _token);
-			result = result.concat(componentFunctionCompletions);
+			if (thisComponent) {
+				const componentFunctionCompletions: CompletionItem[] = getComponentFunctionCompletions(completionState, thisComponent, _token);
+				result = result.concat(componentFunctionCompletions);
+			}
 		}
 
 		if (_token && _token.isCancellationRequested) {
@@ -384,35 +385,39 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 				// From super keyword
 				if (docIsCfcFile && !varScope && equalsIgnoreCase(varName, "super")) {
 					const addedFunctions: MySet<string> = new MySet();
-					const baseComponent: Component = getComponent(thisComponent.extends, _token);
-					let currComponent: Component = baseComponent;
-					while (currComponent) {
-						currComponent.functions.filter((_func: UserFunction, funcKey: string) => {
-							return currentWordMatches(funcKey) && !addedFunctions.has(funcKey);
-						}).forEach((func: UserFunction, funcKey: string) => {
-							addedFunctions.add(funcKey);
-							result.push(createNewProposal(
-								func.name, CompletionItemKind.Function, { detail: `(function) ${currComponent.name}.${constructSyntaxString(func)}`, description: func.description }
-							));
-						});
+					if (thisComponent && thisComponent.extends) {
+						const baseComponent: Component | undefined = getComponent(thisComponent.extends, _token);
+						let currComponent: Component | undefined = baseComponent;
+						while (currComponent) {
+							currComponent.functions.filter((_func: UserFunction, funcKey: string) => {
+								return currentWordMatches(funcKey) && !addedFunctions.has(funcKey);
+							}).forEach((func: UserFunction, funcKey: string) => {
+								addedFunctions.add(funcKey);
+								if (currComponent) {
+									result.push(createNewProposal(
+										func.name, CompletionItemKind.Function, { detail: `(function) ${currComponent.name}.${constructSyntaxString(func)}`, description: func.description }
+									));
+								}
+							});
 
-						if (currComponent.extends) {
-							currComponent = getComponent(currComponent.extends, _token);
-						}
-						else {
-							currComponent = undefined;
+							if (currComponent.extends) {
+								currComponent = getComponent(currComponent.extends, _token);
+							}
+							else {
+								currComponent = undefined;
+							}
 						}
 					}
 					// From variable
 				}
 				else {
-					const scopeVal: Scope = varScope ? Scope.valueOf(varScope) : undefined;
-					const foundVar: Variable = getBestMatchingVariable(allVariableAssignments, varName, scopeVal);
+					const scopeVal: Scope | undefined = varScope ? Scope.valueOf(varScope) : undefined;
+					const foundVar: Variable | undefined = getBestMatchingVariable(allVariableAssignments, varName, scopeVal);
 
 					if (foundVar) {
 						// From component variable
 						if (foundVar.dataTypeComponentUri) {
-							const initialFoundComp: Component = getComponent(foundVar.dataTypeComponentUri, _token);
+							const initialFoundComp: Component | undefined = getComponent(foundVar.dataTypeComponentUri, _token);
 
 							if (initialFoundComp) {
 								const addedFunctions: MySet<string> = new MySet();
@@ -428,7 +433,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 									validFunctionAccess.add(Access.Package);
 								}
 
-								let foundComponent: Component = initialFoundComp;
+								let foundComponent: Component | undefined = initialFoundComp;
 								while (foundComponent) {
 									// component functions
 									foundComponent.functions.filter((func: UserFunction, funcKey: string) => {
@@ -436,9 +441,11 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 											&& validFunctionAccess.has(func.access)
 											&& !addedFunctions.has(funcKey);
 									}).forEach((func: UserFunction, funcKey: string) => {
-										result.push(createNewProposal(
-											func.name, CompletionItemKind.Function, { detail: `(function) ${foundComponent.name}.${constructSyntaxString(func)}`, description: func.description }
-										));
+										if (foundComponent) {
+											result.push(createNewProposal(
+												func.name, CompletionItemKind.Function, { detail: `(function) ${foundComponent.name}.${constructSyntaxString(func)}`, description: func.description }
+											));
+										}
 										addedFunctions.add(funcKey);
 									});
 
@@ -546,41 +553,30 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		// CSS
 		const shouldProvideCss: boolean = cfmlCompletionSettings.get<boolean>("css.enable", true);
 		if (shouldProvideCss && docIsCfmFile && isInCss(documentPositionStateContext, position, _token)) {
-			const cssWordRange: Range = document.getWordRangeAtPosition(position, cssWordRegex);
-			const currentCssWord: string = cssWordRange ? document.getText(cssWordRange) : "";
+			const cssWordRange: Range | undefined = document.getWordRangeAtPosition(position, cssWordRegex);
 
-			// Properties
-			if (/[{;]\s*([a-z-]*)$/i.test(docPrefix)) {
-				completionState.wordRange = cssWordRange;
-				completionState.currentWord = currentCssWord;
-				result = result.concat(getCSSPropertyCompletions(completionState));
-			}
+			if (cssWordRange) {
+				const currentCssWord: string = cssWordRange ? document.getText(cssWordRange) : "";
+				// Properties
+				if (/[{;]\s*([a-z-]*)$/i.test(docPrefix)) {
+					completionState.wordRange = cssWordRange;
+					completionState.currentWord = currentCssWord;
+					result = result.concat(getCSSPropertyCompletions(completionState));
+				}
 
-			// TODO: Property values
+				// TODO: Property values
 
-			// At directives
-			if (currentCssWord.startsWith("@")) {
-				completionState.wordRange = cssWordRange;
-				completionState.currentWord = currentCssWord;
-				result = result.concat(getCSSAtDirectiveCompletions(completionState));
+				// At directives
+				if (currentCssWord.startsWith("@")) {
+					completionState.wordRange = cssWordRange;
+					completionState.currentWord = currentCssWord;
+					result = result.concat(getCSSAtDirectiveCompletions(completionState));
+				}
 			}
 		}
 
 		if (_token && _token.isCancellationRequested) {
 			return undefined;
-		}
-
-		// Keywords
-		if (!isContinuingExpression) {
-			for (const name in keywords) {
-				const keyword: KeywordDetails = keywords[name];
-				if (currentWordMatches(name) && (!keyword.onlyScript || positionIsCfScript)) {
-					result.push(createNewProposal(name, CompletionItemKind.Keyword, keyword));
-				}
-			}
-			if (thisComponent && thisComponent.extends) {
-				result.push(createNewProposal("super", CompletionItemKind.Keyword, { description: "Reference to the base component" }));
-			}
 		}
 
 		if (_token && _token.isCancellationRequested) {
@@ -708,7 +704,7 @@ async function getGlobalTagAttributeValueCompletions(state: CompletionState, glo
 		});
 	});
 
-	const param: Parameter = attributeDocs.get(attributeName);
+	const param: Parameter | undefined = attributeDocs.get(attributeName);
 	if (param) {
 		if (param.dataType === DataType.Boolean) {
 			attrValCompletions.push(createNewProposal("true", CompletionItemKind.Unit, undefined, "!!"));
@@ -757,7 +753,7 @@ function getHTMLTagAttributeCompletions(state: CompletionState, htmlTagName: str
 	const attributeCompletions: CompletionItem[] = unusedAttributeNames.map((attr: string) => {
 		const htmlTagAttributesQuoteType: AttributeQuoteType = state.cfmlCompletionSettings.get<AttributeQuoteType>("htmlTags.attributes.quoteType", AttributeQuoteType.Double);
 
-		const attribute: HTMLAttributeData = getAttribute(htmlTagName, attr);
+		const attribute: HTMLAttributeData | undefined = getAttribute(htmlTagName, attr);
 
 		const attributeItem = new CompletionItem(attr, CompletionItemKind.Property);
 
@@ -766,7 +762,7 @@ function getHTMLTagAttributeCompletions(state: CompletionState, htmlTagName: str
 			attributeItem.insertText = new SnippetString(constructHTMLAttributeSnippet(htmlTagName.toLowerCase(), attr, htmlTagAttributesQuoteType));
 		}
 		attributeItem.sortText = "!" + attr + "=";
-		attributeItem.documentation = attribute.description;
+		attributeItem.documentation = attribute ? attribute.description : "";
 
 		const attributeValueCompletions: CompletionItem[] = getHTMLTagAttributeValueCompletions(htmlTagName.toLowerCase(), attr, "");
 		if (attributeValueCompletions.length > 0) {
@@ -877,7 +873,7 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 		const privateAccessPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.Variables], true).test(state.docPrefix);
 		const otherAccessPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.Variables, Scope.This], true).test(state.docPrefix);
 		const getterSetterPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.This], true).test(state.docPrefix);
-		let currComponent: Component = component;
+		let currComponent: Component | undefined = component;
 		while (currComponent) {
 			currComponent.functions.filter((func: UserFunction, funcKey: string) => {
 				let hasValidScopes: boolean = false;
@@ -893,9 +889,11 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 				return (hasValidScopes && state.currentWordMatches(funcKey) && !addedFunctions.has(funcKey));
 			}).forEach((func: UserFunction, funcKey: string) => {
 				addedFunctions.add(funcKey);
-				componentFunctionCompletions.push(
-					createNewProposal(func.name, CompletionItemKind.Function, { detail: `(function) ${currComponent.name}.${constructSyntaxString(func)}`, description: func.description })
-				);
+				if (currComponent) {
+					componentFunctionCompletions.push(
+						createNewProposal(func.name, CompletionItemKind.Function, { detail: `(function) ${currComponent.name}.${constructSyntaxString(func)}`, description: func.description })
+					);
+				}
 			});
 
 			if (currComponent.extends) {
@@ -1096,7 +1094,8 @@ function getCSSPropertyCompletions(state: CompletionState): CompletionItem[] {
 	cssProperties.filter((prop: IPropertyData) => {
 		return state.currentWordMatches(prop.name);
 	}).forEach((prop: IPropertyData) => {
-		const entry: CompletionEntry = { detail: prop.name, description: getCSSEntryDescription(prop) };
+		const cssEntryDescription: string | null = getCSSEntryDescription(prop);
+		const entry: CompletionEntry = { detail: prop.name, description: cssEntryDescription || "" };
 		if (prop.syntax) {
 			entry.detail = `${prop.name}: ${prop.syntax}`;
 		}
@@ -1125,7 +1124,8 @@ function getCSSAtDirectiveCompletions(state: CompletionState): CompletionItem[] 
 	cssAtDirectives.filter((atDir: IAtDirectiveData) => {
 		return state.currentWordMatches(atDir.name);
 	}).forEach((atDir: IAtDirectiveData) => {
-		const entry: CompletionEntry = { detail: atDir.name, description: getCSSEntryDescription(atDir) };
+		const cssEntryDescription: string | null = getCSSEntryDescription(atDir);
+		const entry: CompletionEntry = { detail: atDir.name, description: cssEntryDescription || "" };
 		const thisCssPropertyCompletion: CompletionItem = createNewProposal(
 			atDir.name,
 			CompletionItemKind.Keyword,
@@ -1200,7 +1200,7 @@ async function getDottedPathCompletions(state: CompletionState, parentDottedPath
 		let completionEntry: CompletionEntry;
 		const dottedLogicalPath: string = splitLogicalPath.slice(0, splitParentPath.length + 1).join(".");
 		if (splitLogicalPath.length - splitParentPath.length === 1) {
-			const directoryPath: string = cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath ? cfmlMapping.directoryPath : resolveRootPath(state.document.uri, cfmlMapping.directoryPath);
+			const directoryPath: string | undefined = cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath ? cfmlMapping.directoryPath : resolveRootPath(state.document.uri, cfmlMapping.directoryPath);
 			completionEntry = { detail: `(mapping) ${dottedLogicalPath}` };
 
 			if (directoryPath) {

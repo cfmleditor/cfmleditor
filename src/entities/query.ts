@@ -78,15 +78,15 @@ export function getSelectColumnsFromQueryText(sql: string): QueryColumns {
 	const selectColumnNames: QueryColumns = new MySet();
 
 	if (sql) {
-		const selectQueryMatch: RegExpMatchArray = sql.match(selectQueryPattern);
+		const selectQueryMatch: RegExpMatchArray | null = sql.match(selectQueryPattern);
 
 		if (selectQueryMatch) {
 			const columns: string = selectQueryMatch[1];
 			columns.replace(/[[\]"`]/g, "").split(",").forEach((column: string) => {
 				const splitColumn: string[] = column.trim().split(/[\s.]+/);
 				if (splitColumn.length > 0) {
-					const columnName = splitColumn.pop();
-					if (columnName !== "*") {
+					const columnName: string | undefined = splitColumn.pop();
+					if (columnName && columnName !== "*") {
 						selectColumnNames.add(columnName);
 					}
 				}

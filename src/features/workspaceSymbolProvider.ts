@@ -23,7 +23,7 @@ export default class CFMLWorkspaceSymbolProvider implements WorkspaceSymbolProvi
 		}
 
 		let uri: Uri | undefined = undefined;
-		const editor: TextEditor = window.activeTextEditor;
+		const editor: TextEditor | undefined = window.activeTextEditor;
 		if (editor) {
 			const document: TextDocument = editor.document;
 			if (document && (document.languageId === LANGUAGE_ID || document.languageId === LANGUAGE_CFS_ID)) {

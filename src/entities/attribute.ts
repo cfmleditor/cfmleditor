@@ -62,7 +62,7 @@ export function parseAttributes(document: TextDocument, attributeRange: Range, v
 		const attributeValue: string = quotedValue !== undefined ? quotedValue : unquotedValue;
 
 		let attributeValueOffset: number;
-		let attributeValueRange: Range;
+		let attributeValueRange: Range | undefined;
 		if (attributeValue) {
 			attributeValueOffset = document.offsetAt(attributeRange.start) + attributeMatch.index + attributeName.length
 				+ separator.length + (quotedValue !== undefined ? 1 : 0);
@@ -72,11 +72,13 @@ export function parseAttributes(document: TextDocument, attributeRange: Range, v
 			);
 		}
 
-		attributes.set(attributeName.toLowerCase(), {
-			name: attributeName,
-			value: attributeValue,
-			valueRange: attributeValueRange,
-		});
+		if (attributeValueRange) {
+			attributes.set(attributeName.toLowerCase(), {
+				name: attributeName,
+				value: attributeValue,
+				valueRange: attributeValueRange,
+			});
+		}
 	}
 
 	return attributes;

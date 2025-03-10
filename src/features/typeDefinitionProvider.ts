@@ -17,7 +17,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 	 * @returns
 	 */
 
-	public async provideTypeDefinition(document: TextDocument, position: Position, _token: CancellationToken | undefined): Promise<Definition> {
+	public async provideTypeDefinition(document: TextDocument, position: Position, _token: CancellationToken | undefined): Promise<Definition | undefined> {
 		// console.log("provideTypeDefinition:CFMLTypeDefinitionProvider:" + _token?.isCancellationRequested);
 
 		const results: Definition = [];
@@ -28,12 +28,12 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 
 		if (documentPositionStateContext.positionInComment) {
-			return null;
+			return undefined;
 		}
 
 		const docIsCfcFile: boolean = documentPositionStateContext.isCfcFile;
 		const docIsCfmFile: boolean = documentPositionStateContext.isCfmFile;
-		let wordRange: Range = document.getWordRangeAtPosition(position);
+		let wordRange: Range | undefined = document.getWordRangeAtPosition(position);
 		const currentWord: string = documentPositionStateContext.currentWord;
 		const lowerCurrentWord: string = currentWord.toLowerCase();
 		if (!wordRange) {
@@ -43,7 +43,7 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 		const docPrefix: string = documentPositionStateContext.docPrefix;
 
 		if (docIsCfcFile) {
-			const thisComponent: Component = documentPositionStateContext.component;
+			const thisComponent: Component | undefined = documentPositionStateContext.component;
 			if (thisComponent) {
 				// Component functions (related)
 				for (const [, func] of thisComponent.functions) {
@@ -54,12 +54,14 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 						});
 
 						signatureparameters.map((arg: Argument) => {
-							const argTypeComp: Component = getComponent(arg.dataTypeComponentUri, _token);
-							if (argTypeComp) {
-								results.push(new Location(
-									argTypeComp.uri,
-									argTypeComp.declarationRange
-								));
+							if (arg.dataTypeComponentUri) {
+								const argTypeComp: Component | undefined = getComponent(arg.dataTypeComponentUri, _token);
+								if (argTypeComp) {
+									results.push(new Location(
+										argTypeComp.uri,
+										argTypeComp.declarationRange
+									));
+								}
 							}
 						});
 					});
@@ -73,12 +75,14 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 								return position.isAfterOrEqual(localVar.declarationLocation.range.start) && equalsIgnoreCase(localVar.identifier, currentWord) && localVar.dataTypeComponentUri;
 							});
 							localVariablesfiltered.map((localVar: Variable) => {
-								const localVarTypeComp: Component = getComponent(localVar.dataTypeComponentUri, _token);
-								if (localVarTypeComp) {
-									results.push(new Location(
-										localVarTypeComp.uri,
-										localVarTypeComp.declarationRange
-									));
+								if (localVar.dataTypeComponentUri) {
+									const localVarTypeComp: Component | undefined = getComponent(localVar.dataTypeComponentUri, _token);
+									if (localVarTypeComp) {
+										results.push(new Location(
+											localVarTypeComp.uri,
+											localVarTypeComp.declarationRange
+										));
+									}
 								}
 							});
 						}
@@ -92,12 +96,14 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 										return equalsIgnoreCase(arg.name, currentWord) && arg.dataTypeComponentUri;
 									});
 									signatureparameters.map((arg: Argument) => {
-										const argTypeComp: Component = getComponent(arg.dataTypeComponentUri, _token);
-										if (argTypeComp) {
-											results.push(new Location(
-												argTypeComp.uri,
-												argTypeComp.declarationRange
-											));
+										if (arg.dataTypeComponentUri) {
+											const argTypeComp: Component | undefined = getComponent(arg.dataTypeComponentUri, _token);
+											if (argTypeComp) {
+												results.push(new Location(
+													argTypeComp.uri,
+													argTypeComp.declarationRange
+												));
+											}
 										}
 									});
 								});
@@ -112,12 +118,14 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 				});
 
 				for (const [, prop] of thisComponentproperties) {
-					const propTypeComp: Component = getComponent(prop.dataTypeComponentUri, _token);
-					if (propTypeComp) {
-						results.push(new Location(
-							propTypeComp.uri,
-							propTypeComp.declarationRange
-						));
+					if (prop.dataTypeComponentUri) {
+						const propTypeComp: Component | undefined = getComponent(prop.dataTypeComponentUri, _token);
+						if (propTypeComp) {
+							results.push(new Location(
+								propTypeComp.uri,
+								propTypeComp.declarationRange
+							));
+						}
 					}
 				}
 
@@ -128,12 +136,14 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 						return equalsIgnoreCase(variable.identifier, currentWord) && variable.dataTypeComponentUri;
 					});
 					thisComponentvariables.map((variable: Variable) => {
-						const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
-						if (varTypeComp) {
-							results.push(new Location(
-								varTypeComp.uri,
-								varTypeComp.declarationRange
-							));
+						if (variable.dataTypeComponentUri) {
+							const varTypeComp: Component | undefined = getComponent(variable.dataTypeComponentUri, _token);
+							if (varTypeComp) {
+								results.push(new Location(
+									varTypeComp.uri,
+									varTypeComp.declarationRange
+								));
+							}
 						}
 					});
 				}
@@ -163,21 +173,23 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 				});
 
 				docVariableAssignmentsfiltered.map((variable: Variable) => {
-					const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
-					if (varTypeComp) {
-						results.push(new Location(
-							varTypeComp.uri,
-							varTypeComp.declarationRange
-						));
+					if (variable.dataTypeComponentUri) {
+						const varTypeComp: Component | undefined = getComponent(variable.dataTypeComponentUri, _token);
+						if (varTypeComp) {
+							results.push(new Location(
+								varTypeComp.uri,
+								varTypeComp.declarationRange
+							));
+						}
 					}
 				});
 			}
 		}
 
 		// User functions
-		const externalUserFunc: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
+		const externalUserFunc: UserFunction | undefined = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
 		if (externalUserFunc && externalUserFunc.returnTypeUri) {
-			const returnTypeComponent: Component = getComponent(externalUserFunc.returnTypeUri, _token);
+			const returnTypeComponent: Component | undefined = getComponent(externalUserFunc.returnTypeUri, _token);
 			if (returnTypeComponent) {
 				results.push(new Location(
 					returnTypeComponent.uri,
@@ -198,12 +210,14 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 			});
 
 			applicationDocVariablesfiltered.map((variable: Variable) => {
-				const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
-				if (varTypeComp) {
-					results.push(new Location(
-						varTypeComp.uri,
-						varTypeComp.declarationRange
-					));
+				if (variable.dataTypeComponentUri) {
+					const varTypeComp: Component | undefined = getComponent(variable.dataTypeComponentUri, _token);
+					if (varTypeComp) {
+						results.push(new Location(
+							varTypeComp.uri,
+							varTypeComp.declarationRange
+						));
+					}
 				}
 			});
 		}
@@ -217,12 +231,14 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 			});
 
 			serverDocVariablesfiltered.map((variable: Variable) => {
-				const varTypeComp: Component = getComponent(variable.dataTypeComponentUri, _token);
-				if (varTypeComp) {
-					results.push(new Location(
-						varTypeComp.uri,
-						varTypeComp.declarationRange
-					));
+				if (variable.dataTypeComponentUri) {
+					const varTypeComp: Component | undefined = getComponent(variable.dataTypeComponentUri, _token);
+					if (varTypeComp) {
+						results.push(new Location(
+							varTypeComp.uri,
+							varTypeComp.declarationRange
+						));
+					}
 				}
 			});
 		}

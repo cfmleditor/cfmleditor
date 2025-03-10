@@ -234,8 +234,8 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 		declarationRange: new Range(document.positionAt(declarationStartOffset), document.positionAt(declarationStartOffset + componentType.length)),
 		displayname: "",
 		hint: "",
-		extends: null,
-		implements: null,
+		extends: undefined,
+		implements: undefined,
 		accessors: false,
 		functions: new ComponentFunctions(),
 		properties: await parseProperties(documentStateContext, _token),
@@ -257,24 +257,28 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 		parsedDocBlock.filter((docAttribute: DocBlockKeyValue) => {
 			return docAttribute.key === "extends" && docAttribute.value;
 		}).forEach((docAttribute: DocBlockKeyValue) => {
-			component.extendsRange = new Range(
-				docAttribute.valueRange.start,
-				docAttribute.valueRange.end
-			);
+			if (docAttribute.valueRange) {
+				component.extendsRange = new Range(
+					docAttribute.valueRange.start,
+					docAttribute.valueRange.end
+				);
+			}
 		});
 
 		const implDocAttr = parsedDocBlock.find((docAttribute: DocBlockKeyValue) => {
 			return docAttribute.key === "implements" && !!docAttribute.value;
 		});
-		if (implDocAttr) {
+		if (implDocAttr && implDocAttr.valueRange) {
 			component.implementsRanges = [];
 			const implInitialOffset = document.offsetAt(implDocAttr.valueRange.start);
 			let implOffset: number = 0;
 			implDocAttr.value.split(",").forEach((element: string) => {
 				const whitespaceMatch: RegExpExecArray | null = /\s+/.exec(element);
 				const whitespaceLen = whitespaceMatch ? whitespaceMatch[0].length : 0;
-				const interfacePathWordRange: Range = document.getWordRangeAtPosition(document.positionAt(implInitialOffset + implOffset + whitespaceLen), /[$\w.]+/);
-				component.implementsRanges.push(interfacePathWordRange);
+				const interfacePathWordRange: Range | undefined = document.getWordRangeAtPosition(document.positionAt(implInitialOffset + implOffset + whitespaceLen), /[$\w.]+/);
+				if (interfacePathWordRange && component.implementsRanges) {
+					component.implementsRanges.push(interfacePathWordRange);
+				}
 
 				implOffset += element.length + 1;
 			});
@@ -294,8 +298,8 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 		Object.assign(componentAttributes, tagAttributes);
 
 		if (parsedAttributes.has("extends")) {
-			const extendsAttr: Attribute = parsedAttributes.get("extends");
-			if (extendsAttr.value) {
+			const extendsAttr: Attribute | undefined = parsedAttributes.get("extends");
+			if (extendsAttr && extendsAttr.value) {
 				component.extendsRange = new Range(
 					extendsAttr.valueRange.start,
 					extendsAttr.valueRange.end
@@ -304,16 +308,18 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 		}
 
 		if (parsedAttributes.has("implements")) {
-			const implementsAttr: Attribute = parsedAttributes.get("implements");
-			if (implementsAttr.value) {
+			const implementsAttr: Attribute | undefined = parsedAttributes.get("implements");
+			if (implementsAttr && implementsAttr.value) {
 				component.implementsRanges = [];
 				const implInitialOffset = document.offsetAt(implementsAttr.valueRange.start);
 				let implOffset: number = 0;
 				implementsAttr.value.split(",").forEach((element: string) => {
 					const whitespaceMatch: RegExpExecArray | null = /\s+/.exec(element);
 					const whitespaceLen = whitespaceMatch ? whitespaceMatch[0].length : 0;
-					const interfacePathWordRange: Range = document.getWordRangeAtPosition(document.positionAt(implInitialOffset + implOffset + whitespaceLen), /[$\w.]+/);
-					component.implementsRanges.push(interfacePathWordRange);
+					const interfacePathWordRange: Range | undefined = document.getWordRangeAtPosition(document.positionAt(implInitialOffset + implOffset + whitespaceLen), /[$\w.]+/);
+					if (component.implementsRanges && interfacePathWordRange) {
+						component.implementsRanges.push(interfacePathWordRange);
+					}
 
 					implOffset += element.length + 1;
 				});
@@ -326,13 +332,13 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 	for (const propName of componentPropertyNames) {
 		// TODO: Is this just supposed to be checking for existence or also value? Because it is ignoring falsy property values too
 		if (componentAttributes[propName]) {
-			if (propName === "extends") {
+			if (propName === "extends" && componentAttributes.extends) {
 				component.extends = await componentPathToUri(componentAttributes.extends, document.uri, _token);
 			}
 			else if (propName === "implements") {
-				const componentimplements = componentAttributes.implements.split(",");
+				const componentimplements = componentAttributes.implements ? componentAttributes.implements.split(",") : [];
 				for (const element of componentimplements) {
-					const implementsUri: Uri = await componentPathToUri(element.trim(), document.uri, _token);
+					const implementsUri: Uri | undefined = await componentPathToUri(element.trim(), document.uri, _token);
 					if (implementsUri) {
 						if (!component.implements) {
 							component.implements = [];
@@ -473,7 +479,7 @@ export async function componentPathToUri(dotPath: string, baseUri: Uri, _token: 
 		return undefined;
 	}
 
-	const cachedResult: Uri = cachedComponentPathToUri(dotPath, baseUri, _token);
+	const cachedResult: Uri | undefined = cachedComponentPathToUri(dotPath, baseUri, _token);
 	if (cachedResult) {
 		return cachedResult;
 	}
@@ -493,7 +499,7 @@ export async function componentPathToUri(dotPath: string, baseUri: Uri, _token: 
 	}
 
 	// relative to web root
-	const rootPath: string = resolveRootPath(baseUri, normalizedPath);
+	const rootPath: string | undefined = resolveRootPath(baseUri, normalizedPath);
 	if (rootPath && await fileExists(rootPath)) {
 		return Uri.file(rootPath);
 	}
@@ -514,7 +520,7 @@ export async function componentPathToUri(dotPath: string, baseUri: Uri, _token: 
  * @param path Dot path to a component
  * @returns
  */
-export function getComponentNameFromDotPath(path: string): string {
+export function getComponentNameFromDotPath(path: string): string | undefined {
 	return path.split(".").pop();
 }
 
@@ -523,12 +529,12 @@ export function getComponentNameFromDotPath(path: string): string {
  * @param baseUri The URI from which the Application file will be searched
  * @returns
  */
-export async function getApplicationUri(baseUri: Uri): Promise<Uri> {
+export async function getApplicationUri(baseUri: Uri): Promise<Uri | undefined> {
 	if (baseUri.scheme !== "file") {
 		return undefined;
 	}
 
-	const applicationFile: Uri = await findUpWorkspaceFile("Application.cfc", baseUri);
+	const applicationFile: Uri | undefined = await findUpWorkspaceFile("Application.cfc", baseUri);
 
 	return applicationFile;
 }
@@ -543,7 +549,7 @@ export function getServerUri(baseUri: Uri, _token: CancellationToken | undefined
 	let componentUri: Uri | undefined;
 
 	const fileName = "Server.cfc";
-	const rootPath: string = resolveRootPath(baseUri, fileName);
+	const rootPath: string | undefined = resolveRootPath(baseUri, fileName);
 
 	if (rootPath) {
 		const rootUri: Uri = Uri.file(rootPath);
@@ -566,16 +572,17 @@ export function getServerUri(baseUri: Uri, _token: CancellationToken | undefined
  * @returns
  */
 export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component, _token: CancellationToken | undefined): boolean {
-	while (checkComponent) {
-		if (checkComponent.uri.toString() === baseComponent.uri.toString()) {
+	let localCheckComponent: Component | undefined = checkComponent;
+	while (localCheckComponent) {
+		if (localCheckComponent.uri.toString() === baseComponent.uri.toString()) {
 			return true;
 		}
 
-		if (checkComponent.extends) {
-			checkComponent = getComponent(checkComponent.extends, _token);
+		if (localCheckComponent.extends) {
+			localCheckComponent = getComponent(localCheckComponent.extends, _token);
 		}
 		else {
-			checkComponent = undefined;
+			localCheckComponent = undefined;
 		}
 	}
 
@@ -590,23 +597,24 @@ export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: 
  * @returns
  */
 export function isSubcomponent(checkComponent: Component, baseComponent: Component, _token: CancellationToken | undefined): boolean {
-	if (checkComponent.extends) {
-		checkComponent = getComponent(checkComponent.extends, _token);
+	let localCheckComponent: Component | undefined = checkComponent;
+	if (localCheckComponent.extends) {
+		localCheckComponent = getComponent(localCheckComponent.extends, _token);
 	}
 	else {
 		return false;
 	}
 
-	while (checkComponent) {
-		if (checkComponent.uri.toString() === baseComponent.uri.toString()) {
+	while (localCheckComponent) {
+		if (localCheckComponent.uri.toString() === baseComponent.uri.toString()) {
 			return true;
 		}
 
-		if (checkComponent.extends) {
-			checkComponent = getComponent(checkComponent.extends, _token);
+		if (localCheckComponent.extends) {
+			localCheckComponent = getComponent(localCheckComponent.extends, _token);
 		}
 		else {
-			checkComponent = undefined;
+			localCheckComponent = undefined;
 		}
 	}
 

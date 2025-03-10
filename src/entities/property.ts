@@ -1,4 +1,4 @@
-import { CancellationToken, Location, Range, TextDocument, Uri } from "vscode";
+import { CancellationToken, Location, Position, Range, TextDocument, Uri } from "vscode";
 import { MyMap, MySet } from "../utils/collections";
 import { Attributes, parseAttributes } from "./attribute";
 import { DataType } from "./dataType";
@@ -82,7 +82,7 @@ export async function parseProperties(documentStateContext: DocumentStateContext
 			for (const docElem of propertyDocBlockParsed) {
 				const activeKey: string = docElem.key;
 				if (activeKey === "type") {
-					const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
+					const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
 					if (dataType) {
 						property.dataType = dataType;
 						if (dataTypeComponentUri) {
@@ -121,7 +121,7 @@ export async function parseProperties(documentStateContext: DocumentStateContext
 					property.nameRange = attr.valueRange;
 				}
 				else if (attrKey === "type") {
-					const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.getDataTypeAndUri(attr.value, document.uri, _token);
+					const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(attr.value, document.uri, _token);
 					if (dataType) {
 						property.dataType = dataType;
 						if (dataTypeComponentUri) {
@@ -149,7 +149,7 @@ export async function parseProperties(documentStateContext: DocumentStateContext
 			}
 
 			const dataTypeString: string = parsedPropertyAttributes[1];
-			const [dataType, dataTypeComponentUri]: [DataType, Uri] = await DataType.getDataTypeAndUri(dataTypeString, document.uri, _token);
+			const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(dataTypeString, document.uri, _token);
 			if (dataType) {
 				property.dataType = dataType;
 				if (dataTypeComponentUri) {
@@ -194,7 +194,7 @@ export function constructGetter(property: Property, componentUri: Uri): UserFunc
 		final: false,
 		bodyRange: undefined,
 		name: "get" + property.name.charAt(0).toUpperCase() + property.name.slice(1),
-		description: property.description,
+		description: property.description || "",
 		returntype: property.dataType,
 		returnTypeUri: property.dataTypeComponentUri,
 		nameRange: property.nameRange,
@@ -216,8 +216,8 @@ export function constructSetter(property: Property, componentUri: Uri): UserFunc
 			{
 				name: property.name,
 				type: property.dataType.toString(),
-				nameRange: undefined,
-				description: property.description,
+				nameRange: new Range(new Position(0, 0), new Position(0, 0)),
+				description: property.description || "",
 				required: true,
 				dataType: property.dataType,
 				dataTypeComponentUri: property.dataTypeComponentUri,
@@ -233,7 +233,7 @@ export function constructSetter(property: Property, componentUri: Uri): UserFunc
 		final: false,
 		bodyRange: undefined,
 		name: "set" + property.name.charAt(0).toUpperCase() + property.name.slice(1),
-		description: property.description,
+		description: property.description || "",
 		returntype: DataType.Component,
 		returnTypeUri: componentUri,
 		nameRange: property.nameRange,

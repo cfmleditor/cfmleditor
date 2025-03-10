@@ -20,7 +20,7 @@ export default class FunctionBlock extends Block {
 		const patternMatch: RegExpExecArray | null = this.pattern.exec(this.suffix);
 		if (patternMatch) {
 			const declaration: Position = this.document.positionAt(positionOffset + patternMatch[1].length + 1);
-			this.component.functions.filter((func: UserFunction) => {
+			this.component?.functions?.filter((func: UserFunction) => {
 				return func.location.range.contains(declaration);
 			}).forEach((func: UserFunction) => {
 				func.signatures.forEach((sig: UserFunctionSignature) => {
