@@ -256,8 +256,8 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	const enableAutoCloseTags: boolean = cfmlSettings.get<boolean>("autoCloseTags.enable", true);
 	if (autoCloseTagExt) {
 		const autoCloseTagsSettings: WorkspaceConfiguration = workspace.getConfiguration("auto-close-tag", null);
-		const autoCloseLanguages: string[] = autoCloseTagsSettings.get<string[]>("activationOnLanguage");
-		const autoCloseExcludedTags: string[] = autoCloseTagsSettings.get<string[]>("excludedTags");
+		const autoCloseLanguages: string[] = autoCloseTagsSettings.get<string[]>("activationOnLanguage", []);
+		const autoCloseExcludedTags: string[] = autoCloseTagsSettings.get<string[]>("excludedTags", []);
 
 		if (enableAutoCloseTags) {
 			if (!autoCloseLanguages.includes(LANGUAGE_ID)) {
@@ -265,7 +265,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 				autoCloseTagsSettings.update(
 					"activationOnLanguage",
 					autoCloseLanguages,
-					getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget"))
+					getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget", "Global"))
 				);
 			}
 
@@ -278,7 +278,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 			autoCloseTagsSettings.update(
 				"excludedTags",
 				autoCloseExcludedTags,
-				getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget"))
+				getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget", "Global"))
 			);
 		}
 		else {
@@ -288,7 +288,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 				autoCloseTagsSettings.update(
 					"activationOnLanguage",
 					autoCloseLanguages,
-					getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget"))
+					getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget", "Global"))
 				);
 			}
 		}
