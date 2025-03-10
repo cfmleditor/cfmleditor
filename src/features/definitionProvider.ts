@@ -114,7 +114,11 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
 				// Component functions (related)
 				for (const [, func] of thisComponent.functions) {
-					// Function return types
+					/*
+						Function return types
+						- ComponentType function foo() {}
+						- <cffunction name="foo" returntype="ComponentType">
+					*/
 					if (func.returnTypeUri && func.returnTypeRange && func.returnTypeRange.contains(position)) {
 						const returnTypeComp: Component = getComponent(func.returnTypeUri, _token);
 						if (returnTypeComp) {
@@ -127,7 +131,11 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 						}
 					}
 
-					// Argument types
+					/*
+						Argument types
+						- function foo(ComponentType arg) {}
+						- <cfargument type="ComponentType">
+					*/
 					func.signatures.map((signature: UserFunctionSignature) => {
 						const parameters = signature.parameters.filter((arg: Argument) => {
 							return arg.dataTypeComponentUri && arg.dataTypeRange && arg.dataTypeRange.contains(position);
