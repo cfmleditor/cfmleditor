@@ -270,7 +270,6 @@ export default class CFMLHoverProvider implements HoverProvider {
 			const cfmlEngineNames: CFMLEngineName[] = [
 				CFMLEngineName.ColdFusion,
 				CFMLEngineName.Lucee,
-				CFMLEngineName.OpenBD,
 			];
 
 			for (const cfmlEngineName of cfmlEngineNames) {
@@ -346,7 +345,6 @@ export default class CFMLHoverProvider implements HoverProvider {
 				const cfmlEngineNames: CFMLEngineName[] = [
 					CFMLEngineName.ColdFusion,
 					CFMLEngineName.Lucee,
-					CFMLEngineName.OpenBD,
 				];
 
 				for (const cfmlEngineName of cfmlEngineNames) {

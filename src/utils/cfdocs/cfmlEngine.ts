@@ -7,7 +7,6 @@ export enum CFMLEngineName {
 	ColdFusion = "coldfusion",
 	Lucee = "lucee",
 	Railo = "railo",
-	OpenBD = "openbd",
 	Unknown = "unknown",
 }
 
@@ -26,8 +25,6 @@ export namespace CFMLEngineName {
 				return CFMLEngineName.Lucee;
 			case "railo":
 				return CFMLEngineName.Railo;
-			case "openbd":
-				return CFMLEngineName.OpenBD;
 			default:
 				return CFMLEngineName.Unknown;
 		}
