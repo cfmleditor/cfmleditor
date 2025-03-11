@@ -100,6 +100,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
 		const shouldProvideCompletions = cfmlCompletionSettings.get<boolean>("enable", true);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+		const shouldProvideGlobalTagCompletions: boolean = cfmlCompletionSettings.get<boolean>("globalTags.enable", true);
 
 		if (!shouldProvideCompletions) {
 			return result;
@@ -108,8 +109,6 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		if (_token && _token.isCancellationRequested) {
 			return undefined;
 		}
-
-		const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token);
 
 		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 
@@ -139,6 +138,27 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 
 		if (_token && _token.isCancellationRequested) {
 			return undefined;
+		}
+
+		// Tag completion
+		const shouldProvideHtmlTags: boolean = cfmlCompletionSettings.get<boolean>("htmlTags.enable", true);
+
+		if ((shouldProvideGlobalTagCompletions || shouldProvideHtmlTags) && !positionIsCfScript) {
+			const tagPrefixPattern: RegExp = getTagPrefixPattern();
+			const tagPrefixMatch: RegExpExecArray | null = tagPrefixPattern.exec(docPrefix);
+			if (tagPrefixMatch) {
+				// Global tags
+				if (shouldProvideGlobalTagCompletions) {
+					result = result.concat(getGlobalTagCompletions(completionState, tagPrefixMatch[1]));
+				}
+
+				// HTML tags
+				if (shouldProvideHtmlTags && docIsCfmFile) {
+					result = result.concat(getHTMLTagCompletions(completionState));
+				}
+			}
+
+			return result;
 		}
 
 		// Global tag attributes
@@ -342,6 +362,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		// Document user functions
 		if (docIsCfmFile) {
 			if (getValidScopesPrefixPattern([Scope.Variables], true).test(docPrefix)) {
+				const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token);
 				const tagFunctions: UserFunction[] = await parseTagFunctions(documentPositionStateContext, _token);
 				const scriptFunctions: UserFunction[] = await parseScriptFunctions(documentPositionStateContext, _token);
 				const allTemplateFunctions: UserFunction[] = tagFunctions.concat(scriptFunctions.filter((func: UserFunction) => {
@@ -529,21 +550,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 			return undefined;
 		}
 
-		// Global tags
-		const shouldProvideGTItems: boolean = cfmlCompletionSettings.get<boolean>("globalTags.enable", true);
-		if (shouldProvideGTItems) {
-			const globalTagCompletions: CompletionItem[] = positionIsCfScript ? getGlobalTagScriptCompletions(completionState) : getGlobalTagCompletions(completionState);
-			result = result.concat(globalTagCompletions);
-		}
-
-		if (_token && _token.isCancellationRequested) {
-			return undefined;
-		}
-
-		// HTML tags
-		const shouldProvideHtmlTags: boolean = cfmlCompletionSettings.get<boolean>("htmlTags.enable", true);
-		if (shouldProvideHtmlTags && docIsCfmFile && !positionIsCfScript) {
-			result = result.concat(getHTMLTagCompletions(completionState));
+		// Global tags in script
+		if (shouldProvideGlobalTagCompletions && positionIsCfScript) {
+			const globalTagScriptCompletions: CompletionItem[] = getGlobalTagScriptCompletions(completionState);
+			result = result.concat(globalTagScriptCompletions);
 		}
 
 		if (_token && _token.isCancellationRequested) {
@@ -987,37 +997,31 @@ function getGlobalMemberFunctionCompletions(state: CompletionState): CompletionI
 /**
  * Gets the global tag completions for the given state
  * @param state An object representing the state of completion
+ * @param closingSlash
  * @returns
  */
-function getGlobalTagCompletions(state: CompletionState): CompletionItem[] {
+function getGlobalTagCompletions(state: CompletionState, closingSlash: string | undefined): CompletionItem[] {
 	const globalTagCompletions: CompletionItem[] = [];
-
-	const tagPrefixPattern: RegExp = getTagPrefixPattern();
-	const tagPrefixMatch: RegExpExecArray | null = tagPrefixPattern.exec(state.docPrefix);
-	if (tagPrefixMatch) {
-		const closingSlash: string = tagPrefixMatch[1];
-		const cfmlGTAttributesQuoteType: AttributeQuoteType = state.cfmlCompletionSettings.get<AttributeQuoteType>("globalTags.attributes.quoteType", AttributeQuoteType.Double);
-		const cfmlGTAttributesDefault: boolean = state.cfmlCompletionSettings.get<boolean>("globalTags.attributes.defaultValue", false);
-		const cfmlGTAttributesSetType: IncludeAttributesSetType = state.cfmlCompletionSettings.get<IncludeAttributesSetType>("globalTags.includeAttributes.setType", IncludeAttributesSetType.None);
-		const cfmlGTAttributesCustom: IncludeAttributesCustom = state.cfmlCompletionSettings.get<IncludeAttributesCustom>("globalTags.includeAttributes.custom", {});
-		const globalTags: GlobalTags = getAllGlobalTags();
-		for (const tagName in globalTags) {
-			if (state.currentWordMatches(tagName)) {
-				const globalTag: GlobalTag = globalTags[tagName];
-				const thisGlobalTagCompletion: CompletionItem = createNewProposal(
-					globalTag.name,
-					CompletionItemKind.TypeParameter,
-					{ detail: globalTag.syntax, description: globalTag.description }
-				);
-				if (!closingSlash && (cfmlGTAttributesSetType !== IncludeAttributesSetType.None || Object.prototype.hasOwnProperty.call(cfmlGTAttributesCustom, tagName))) {
-					thisGlobalTagCompletion.insertText = constructTagSnippet(globalTag, cfmlGTAttributesSetType, cfmlGTAttributesQuoteType, cfmlGTAttributesCustom[tagName], cfmlGTAttributesDefault, false);
-				}
-
-				globalTagCompletions.push(thisGlobalTagCompletion);
+	const cfmlGTAttributesQuoteType: AttributeQuoteType = state.cfmlCompletionSettings.get<AttributeQuoteType>("globalTags.attributes.quoteType", AttributeQuoteType.Double);
+	const cfmlGTAttributesDefault: boolean = state.cfmlCompletionSettings.get<boolean>("globalTags.attributes.defaultValue", false);
+	const cfmlGTAttributesSetType: IncludeAttributesSetType = state.cfmlCompletionSettings.get<IncludeAttributesSetType>("globalTags.includeAttributes.setType", IncludeAttributesSetType.None);
+	const cfmlGTAttributesCustom: IncludeAttributesCustom = state.cfmlCompletionSettings.get<IncludeAttributesCustom>("globalTags.includeAttributes.custom", {});
+	const globalTags: GlobalTags = getAllGlobalTags();
+	for (const tagName in globalTags) {
+		if (state.currentWordMatches(tagName)) {
+			const globalTag: GlobalTag = globalTags[tagName];
+			const thisGlobalTagCompletion: CompletionItem = createNewProposal(
+				globalTag.name,
+				CompletionItemKind.TypeParameter,
+				{ detail: globalTag.syntax, description: globalTag.description }
+			);
+			if (!closingSlash && (cfmlGTAttributesSetType !== IncludeAttributesSetType.None || Object.prototype.hasOwnProperty.call(cfmlGTAttributesCustom, tagName))) {
+				thisGlobalTagCompletion.insertText = constructTagSnippet(globalTag, cfmlGTAttributesSetType, cfmlGTAttributesQuoteType, cfmlGTAttributesCustom[tagName], cfmlGTAttributesDefault, false);
 			}
+
+			globalTagCompletions.push(thisGlobalTagCompletion);
 		}
 	}
-
 	return globalTagCompletions;
 }
 
@@ -1063,19 +1067,15 @@ function getGlobalTagScriptCompletions(state: CompletionState): CompletionItem[]
 function getHTMLTagCompletions(state: CompletionState): CompletionItem[] {
 	const htmlTagCompletions: CompletionItem[] = [];
 
-	const tagPrefixPattern: RegExp = getTagPrefixPattern();
-	const tagPrefixMatch: RegExpExecArray | null = tagPrefixPattern.exec(state.docPrefix);
-	if (tagPrefixMatch) {
-		for (const htmlTag of htmlDataProvider.provideTags()) {
-			if (state.currentWordMatches(htmlTag.name)) {
-				const thisHTMLTagCompletion: CompletionItem = createNewProposal(
-					htmlTag.name,
-					CompletionItemKind.TypeParameter,
-					{ description: htmlTag.description }
-				);
+	for (const htmlTag of htmlDataProvider.provideTags()) {
+		if (state.currentWordMatches(htmlTag.name)) {
+			const thisHTMLTagCompletion: CompletionItem = createNewProposal(
+				htmlTag.name,
+				CompletionItemKind.TypeParameter,
+				{ description: htmlTag.description }
+			);
 
-				htmlTagCompletions.push(thisHTMLTagCompletion);
-			}
+			htmlTagCompletions.push(thisHTMLTagCompletion);
 		}
 	}
 
