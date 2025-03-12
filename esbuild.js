@@ -2,6 +2,7 @@ const esbuild = require('esbuild');
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
 const polyfill = require('@esbuild-plugins/node-globals-polyfill');
+const esbuildPluginTsc = require('esbuild-plugin-tsc');
 
 async function main() {
   const desktop = await esbuild.context({
@@ -18,6 +19,7 @@ async function main() {
     plugins: [
       /* add to the end of plugins array */
       esbuildProblemMatcherPlugin,
+	  esbuildPluginTsc(),
     ]
   });
   if (watch) {
@@ -42,12 +44,13 @@ async function main() {
     },
     logLevel: 'warning',
     plugins: [
-      polyfill.NodeGlobalsPolyfillPlugin({
-        process: true,
-        buffer: true
-      }),
-      replacePath(),
-      esbuildProblemMatcherPlugin
+		polyfill.NodeGlobalsPolyfillPlugin({
+			process: true,
+			buffer: true
+		}),
+		replacePath(),
+		esbuildProblemMatcherPlugin,
+		esbuildPluginTsc(),
     ]
   });
   if (watch) {
