@@ -18,14 +18,14 @@ import { constructParameterLabel } from "./parameter";
 import { uriBaseName } from "../utils/fileUtil";
 
 // FIXME: Erroneously matches implicit struct key assignments using = since '{' can also open a code block. Also matches within string or comment.
-const cfscriptVariableAssignmentPattern = /(((?:^|[;{}]|\bfor\s*\(|\bcase\s+.+?:|\bdefault\s*:|\bfinal)\s*(\bvar\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\.\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\5\s*\]?(?:\s*(?:\.\s*|\[\s*(['"])?)[$\w]+\7(?:\s*\])?)*\s*=\s*)([^=][^;]*)/gi;
-const forInVariableAssignmentPattern = /((?:\bfor\s*\()\s*(\bvar\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\.\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\4\s*\]?(?:\s*(?:\.\s*|\[\s*(['"])?)[$\w]+\6(?:\s*\])?)*(?:\s+in\s+)/gi;
-const tagVariableAssignmentPattern = /((<cfset\s+(?:final\s+)?(var\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\.\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\5\s*\]?(?:\s*(?:\.\s*|\[\s*(['"])?)[$\w]+\7(?:\s*\])?)*\s*=\s*)([^=][^>]*)/gi;
+const cfscriptVariableAssignmentPattern = /(((?:^|[;{}]|\bfor\s*\(|\bcase\s+.+?:|\bdefault\s*:|\bfinal)\s*(\bvar\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\5\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\7(?:\s*\])?)*\s*=\s*)([^=][^;]*)/gi;
+const forInVariableAssignmentPattern = /((?:\bfor\s*\()\s*(\bvar\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\4\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\6(?:\s*\])?)*(?:\s+in\s+)/gi;
+const tagVariableAssignmentPattern = /((<cfset\s+(?:final\s+)?(var\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\5\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\7(?:\s*\])?)*\s*=\s*)([^=][^>]*)/gi;
 const tagParamPattern = getTagPattern("cfparam");
 const scriptParamPattern = /\b(cfparam\s*\(\s*|param\s+)([^;]*);/gi;
 // Does not match when a function is part of the expression
-const variableExpressionPattern = /\b((application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\.\s*|\[\s*(['"])))?([a-zA-Z_$][$\w]*)\3\s*\]?(?:\s*(?:\.\s*|\[\s*(['"])?)[$\w]+\5(?:\s*\])?)*/i;
-const variableExpressionPrefixPattern = /\b((application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\.\s*|\[\s*(['"])))?([a-zA-Z_$][$\w]*)\3\s*\]?(?:\s*(?:\.\s*|\[\s*(['"])?)[$\w]+\5(?:\s*\])?)*\s*(?:\.\s*|\[\s*['"]?)$/i;
+const variableExpressionPattern = /\b((application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?([a-zA-Z_$][$\w]*)\3\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\5(?:\s*\])?)*/i;
+const variableExpressionPrefixPattern = /\b((application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?([a-zA-Z_$][$\w]*)\3\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\5(?:\s*\])?)*\s*(?:\?\.|\.\s*|::\s*|\[\s*['"]?)$/i;
 
 // TODO: Import outputVariableTags from tag.ts when bug is found/resolved
 
@@ -285,7 +285,7 @@ export function usesConstantConvention(ident: string): boolean {
  * @returns
  */
 export function getVariablePrefixPattern(variableName: string) {
-	const pattern: string = `(?:^|[^.\\s])\\s*(?:\\b${variableName}\\s*(?:\\.\\s*|\\[\\s*['"]))$`;
+	const pattern: string = `(?:^|[^.\\s])\\s*(?:\\b${variableName}\\s*(?:\\?\\.\\s*|\\.\\s*|::\\s*|\\[\\s*['"]))$`;
 
 	return new RegExp(pattern, "i");
 }

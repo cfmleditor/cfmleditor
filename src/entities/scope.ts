@@ -238,7 +238,7 @@ export const scopes: Scopes = {
  */
 export function getValidScopesPrefixPattern(scopes: Scope[], optionalScope: boolean = true) {
 	const validScopes: string = scopes.join("|");
-	let pattern: string = `(?:^|[^.\\s])\\s*(?:\\b(${validScopes})\\s*\\.\\s*)`;
+	let pattern: string = `(?:^|[^.\\s])\\s*(?:\\b(${validScopes})(?:\\s*\\?\\.\\s*|\\s*\\.\\s*|\\s*::\\s*))`;
 	if (optionalScope) {
 		pattern += "?";
 	}

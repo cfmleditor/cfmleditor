@@ -135,7 +135,7 @@ export async function uriStat(path: Uri): Promise<FileStat> {
 export async function resolveDottedPaths(dotPath: string, baseUri: Uri): Promise<string[]> {
 	const paths: string[] = [];
 
-	const normalizedPath: string = dotPath.replace(/\./g, "/");
+	const normalizedPath: string = dotPath.replace(/(\?\.|\.|::)/g, "/");
 
 	// TODO: Check imports
 

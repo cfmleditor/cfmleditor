@@ -392,7 +392,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		// External user/member functions
 		const varPrefixMatch: RegExpExecArray | null = getVariableExpressionPrefixPattern().exec(docPrefix);
 		if (varPrefixMatch) {
-			const varMatchText: string = varPrefixMatch[0];
+			const varMatchText: string = varPrefixMatch[0].replace(/(::|\?\.)/g, ".");
 			const varScope: string = varPrefixMatch[2];
 			const varQuote: string = varPrefixMatch[3];
 			const varName: string = varPrefixMatch[4];

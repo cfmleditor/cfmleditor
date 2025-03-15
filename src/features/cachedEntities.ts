@@ -289,7 +289,7 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
 		return undefined;
 	}
 
-	const normalizedPath: string = dotPath.replace(/\./g, "/") + COMPONENT_EXT;
+	const normalizedPath: string = dotPath.replace(/(\?\.|\.|::)/g, "/") + COMPONENT_EXT;
 
 	// relative to local directory
 	const localPath: string = resolveRelativePath(baseUri, normalizedPath);
