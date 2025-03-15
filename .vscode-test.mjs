@@ -4,6 +4,7 @@ export default defineConfig({
 	files: 'out/test/**/*.test.js',
 	workspaceFolder: "src/test/workspace",
 	mocha: {
-		ui: "bdd"
+		ui: "bdd",
+		preload: ['source-map-support/register'],
 	}
 });
