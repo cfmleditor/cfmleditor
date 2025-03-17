@@ -16,7 +16,7 @@ import { isQuery, queryObjectProperties } from "../entities/query";
 import { getValidScopesPrefixPattern, getVariableScopePrefixPattern, Scope, scopes, unscopedPrecedence } from "../entities/scope";
 import { Signature } from "../entities/signature";
 import { ComponentPathAttributes, expressionCfmlTags, getCfScriptTagAttributePattern, getCfTagAttributePattern, getComponentPathAttributes, getTagAttributePattern, getTagPrefixPattern } from "../entities/tag";
-import { Access, parseScriptFunctions, parseTagFunctions, UserFunction } from "../entities/userFunction";
+import { Access, normalizeSplit, parseScriptFunctions, parseTagFunctions, UserFunction } from "../entities/userFunction";
 import { collectDocumentVariableAssignments, getApplicationVariables, getBestMatchingVariable, getMatchingVariables, getServerVariables, getVariableExpressionPrefixPattern, getVariablePrefixPattern, getVariableTypeString, usesConstantConvention, Variable } from "../entities/variable";
 import { CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 import { MyMap, MySet } from "../utils/collections";
@@ -392,7 +392,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		// External user/member functions
 		const varPrefixMatch: RegExpExecArray | null = getVariableExpressionPrefixPattern().exec(docPrefix);
 		if (varPrefixMatch) {
-			const varMatchText: string = varPrefixMatch[0];
+			const varMatchText: string = varPrefixMatch[0].replace(normalizeSplit, ".");
 			const varScope: string = varPrefixMatch[2];
 			const varQuote: string = varPrefixMatch[3];
 			const varName: string = varPrefixMatch[4];
