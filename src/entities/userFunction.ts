@@ -20,6 +20,7 @@ import { uriBaseName } from "../utils/fileUtil";
 const scriptFunctionPattern: RegExp = /((\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?)(?:\b([A-Za-z0-9_.$]+)\s+)?function\s+([_$a-zA-Z][$\w]*)\s*\(/gi;
 const scriptFunctionArgPattern: RegExp = /((?:(required)\s+)?(?:\b([\w.]+)\b\s+)?(\b[_$a-zA-Z][$\w]*\b)(?:\s*=\s*(\{[^}]*\}|\[[^\]]*\]|\([^)]*\)|(?:(?!\b\w+\s*=).)+))?)(.*)?/i;
 export const functionValuePattern: RegExp = /^function\s*\(/i;
+export const normalizeSplit: RegExp = /(::|\?\.)/g;
 
 /*
 const userFunctionAttributeNames: MySet<string> = new MySet([
@@ -814,7 +815,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
 	// TODO: Check for function variables?
 	const varPrefixMatch: RegExpExecArray | null = getVariableExpressionPrefixPattern().exec(docPrefix);
 	if (varPrefixMatch) {
-		const varMatchText: string = varPrefixMatch[0].replace(/(::|\?\.)/g, ".");
+		const varMatchText: string = varPrefixMatch[0].replace(normalizeSplit, ".");
 		const varScope: string = varPrefixMatch[2];
 		const varQuote: string = varPrefixMatch[3];
 		const varName: string = varPrefixMatch[4];
