@@ -50,6 +50,15 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
 		const docPrefix: string = documentPositionStateContext.docPrefix;
 
+		/**
+		 * Object References
+		 * A catch-all for object references using Regular Expressions.
+		 * - new Foo()
+		 * - createObject("component", "Foo")
+		 * - import "Foo"
+		 * - component="Foo'
+		 * - isInstanceOf("Foo")
+		 */
 		// TODO: These references should ideally be in cachedEntities.
 		let referenceMatch: RegExpExecArray | null;
 		objectReferencePatterns.map((element: ReferencePattern) => {
@@ -82,7 +91,11 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		if (docIsCfcFile) {
 			const thisComponent: Component = documentPositionStateContext.component;
 			if (thisComponent) {
-				// Extends
+				/**
+				 * Component Extends
+				 * component extends="Foo" {}
+				 * <cfcomponent extends="Foo">
+				 */
 				if (thisComponent.extendsRange && thisComponent.extendsRange.contains(position)) {
 					const extendsComp: Component = getComponent(thisComponent.extends, _token);
 					if (extendsComp) {
@@ -95,7 +108,11 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 					}
 				}
 
-				// Implements
+				/**
+				 * Component Implements
+				 * component implements="IFoo" {}
+				 * <cfcomponent implements="IFoo">
+				 */
 				if (thisComponent.implementsRanges) {
 					thisComponent.implementsRanges.map((range: Range, idx: number) => {
 						if (range && range.contains(position)) {

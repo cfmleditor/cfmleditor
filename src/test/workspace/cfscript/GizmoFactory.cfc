@@ -1,4 +1,6 @@
-component {
+import "cfscript.Gizmo";
+
+component implements="cfscript.IFactory" {
 
 	public static cfscript.Gizmo function create_with_new(string name="") {
 		var gizmo = new cfscript.Gizmo();
@@ -24,5 +26,10 @@ component {
 	public static string function invoke_call() {
 		return invoke("cfscript.Gizmo", "staticGenerateID");
 	}
+
+	public static boolean function canCreate(any other) {
+		return isInstanceOf(other, "cfscript.Gizmo");
+	}
+
 
 }

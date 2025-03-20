@@ -1,4 +1,4 @@
-<cfcomponent>
+<cfcomponent extends="cfml.Base">
 
 	<cffunction name="init" access="public" returntype="cfml.Widget" output="false">
 		<cfargument name="name" type="string" required="false">

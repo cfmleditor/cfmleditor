@@ -1,4 +1,4 @@
-component {
+component extends="cfscript.Base" {
 
 	public cfscript.Gizmo function init(string name="") {
 		variables.name = arguments.name;

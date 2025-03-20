@@ -1,4 +1,6 @@
-<cfcomponent>
+<cfimport path="cfml.Widget">
+
+<cfcomponent implements="cfml.IFactory">
 
 	<cffunction name="create_with_new" returntype="cfml.Widget" output="false" modifier="static">
 		<cfargument name="name" type="string" required="false">
@@ -34,6 +36,11 @@
 
 	<cffunction name="invoke_call" returntype="cfml.Widget" output="false" modifier="static">
 		<cfinvoke component="cfml.Widget" method="staticGenerateID">
+	</cffunction>
+
+	<cffunction name="canCreate" returntype="boolean">
+		<cfargument name="widget" type="any" required="true">
+		<cfreturn isInstanceOf(widget, "cfml.Widget")>
 	</cffunction>
 
 </cfcomponent>
