@@ -13,3 +13,4 @@ npm-debug.log
 
 # Incremental build file created by `tsc --build`
 tsconfig.tsbuildinfo
+*.vsix
