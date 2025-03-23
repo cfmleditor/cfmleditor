@@ -8,13 +8,22 @@ import { assertDefinitionLinkTarget } from "./testAssertions";
 
 describe("provideDefinition", function () {
 	/** Workspace root, does not end with a "/" */
-	const root = workspace.workspaceFolders[0].uri.fsPath;
+	const root = workspace && workspace.workspaceFolders ? workspace.workspaceFolders[0].uri.fsPath : undefined;
+
+	if (!root) {
+		throw new Error("No workspace folder found.");
+	}
 
 	before(async function () {
 		// Wait for the extension to activate
 		this.timeout(10_000);
 		const extension = extensions.getExtension("cfmleditor.cfmleditor");
-		await extension.activate();
+		if (extension) {
+			await extension.activate();
+		}
+		else {
+			throw new Error("Extension 'cfmleditor.cfmleditor' is not found.");
+		}
 	});
 
 	describe("component definitions (CFML)", function () {
