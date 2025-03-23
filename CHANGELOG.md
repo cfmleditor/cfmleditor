@@ -2,6 +2,11 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.36] - 2025-03-23
+
+- Always return additional definitions where they exist
+- Update SearchMode.EqualTo to filter function names that don't match
+
 ## [0.6.35] - 2025-03-11
 
 - Performance / reliability improvements for tag Completion on `<`
