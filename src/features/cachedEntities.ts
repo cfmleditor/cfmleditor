@@ -269,10 +269,21 @@ function setUserFunction(userFunction: UserFunction): void {
  * @param _searchMode How the query will be searched for
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
+/**
+ *
+ * @param query
+ * @param _searchMode
+ * @returns
+ */
 export function searchAllFunctionNames(query: string, _searchMode: SearchMode = SearchMode.StartsWith): UserFunction[] {
 	let functions: UserFunction[] = [];
 	functions = allFunctionNames.search(query);
+	if (_searchMode === SearchMode.EqualTo) {
+		functions = functions.filter((funcObj: UserFunction) => {
+			return funcObj.name.toLowerCase() === query.toLowerCase();
+		});
+	}
 	return functions;
 }
 
