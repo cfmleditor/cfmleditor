@@ -26,7 +26,11 @@ let allComponentsByName: ComponentsByName = {};
 let allComponentUris: { [key: string]: Uri } = {};
 
 const allComponentNames: TrieSearch<Component> = new TrieSearch<Component>("uri");
-const allFunctionNames: TrieSearch<UserFunction> = new TrieSearch<UserFunction>("name");
+const allFunctionNames: TrieSearch<UserFunction> = new TrieSearch<UserFunction>("name", {
+	idFieldOrFunction: (userFunction: UserFunction) => {
+		return userFunction.name + ":" + userFunction.location.uri.fsPath;
+	},
+});
 
 const allServerVariables: VariablesByUri = new VariablesByUri();
 const allApplicationVariables: VariablesByUri = new VariablesByUri();
