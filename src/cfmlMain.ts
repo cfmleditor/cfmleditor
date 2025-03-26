@@ -33,12 +33,7 @@ export const UNWANTED_EXTENSIONS: string[] = [
 	"formulahendry.auto-close-tag",
 	"KamasamaK.vscode-cflint",
 	"KamasamaK.vscode-cfml",
-	"DomenicC.cfml-component-paths",
-	"scheifele.cfml-open-path",
-	"CarlosGant.cfml-syntax-updates",
 	"ilich8086.ColdFusion",
-	"dalucema.coldfusionsymbols",
-	"rohithkrajan.cfgoto",
 	"Codegyan.auto-closing-tags",
 	"trst.cfml-comment-tags",
 ];
