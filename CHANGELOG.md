@@ -6,6 +6,8 @@ All notable changes to the CFML extension will be documented in this file.
 
 - Always return additional definitions where they exist
 - Update SearchMode.EqualTo to filter function names that don't match
+- Update to Folding Region regExp to include CF tag comments
+- Generate warning alert where conflicting extensions are installed
 
 ## [0.6.35] - 2025-03-11
 
