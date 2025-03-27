@@ -296,7 +296,10 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
 		// Search for function by name
 		if (documentPositionStateContext.isContinuingExpression && cfmlDefinitionSettings.get<boolean>("userFunctions.search.enable", false)) {
-			const wordSuffix: string = documentText.slice(document.offsetAt(wordRange.end), documentText.length);
+			const lookaheadMaxLength: number = cfmlDefinitionSettings.get<number>("lookahead.maxLength", -1);
+			const endOfWordOffset = document.offsetAt(wordRange.end);
+			const searchDocumentOffset = lookaheadMaxLength > -1 ? Math.min((endOfWordOffset + lookaheadMaxLength), documentText.length) : documentText.length;
+			const wordSuffix: string = documentText.slice(endOfWordOffset, searchDocumentOffset);
 			const functionSuffixPattern: RegExp = getFunctionSuffixPattern();
 			if (functionSuffixPattern.test(wordSuffix)) {
 				const functionSearchResults = searchAllFunctionNames(lowerCurrentWord, SearchMode.EqualTo);

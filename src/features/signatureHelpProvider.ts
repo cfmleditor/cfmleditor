@@ -26,6 +26,9 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 	public async provideSignatureHelp(document: TextDocument, position: Position, _token: CancellationToken | undefined, _context: SignatureHelpContext): Promise<SignatureHelp | null> {
 		// console.log("provideSignatureHelp:CFMLSignatureHelpProvider:" + _token?.isCancellationRequested);
 
+		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+		const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
+
 		const cfmlSignatureSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.signature", document.uri);
 		if (!cfmlSignatureSettings.get<boolean>("enable", true)) {
 			return null;
@@ -62,7 +65,9 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		}
 		const paramText: string = sanitizedDocumentText.slice(document.offsetAt(functionArgRanges[paramIndex].start), document.offsetAt(functionArgRanges[paramIndex].end));
 
-		const startSigPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(startSigPosition));
+		const startSigPositionOffset = document.offsetAt(startSigPosition);
+		const documentSliceStart: number = lookbehindMaxLength > -1 ? Math.max(0, startSigPositionOffset - lookbehindMaxLength) : 0;
+		const startSigPositionPrefix: string = sanitizedDocumentText.slice(documentSliceStart, startSigPositionOffset);
 
 		let entry: Function | undefined;
 
@@ -92,7 +97,11 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 			const ident: string = document.getText(identWordRange);
 			const lowerIdent: string = ident.toLowerCase();
 
-			const startIdentPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(identWordRange.start));
+			const identWordRangeDocumentOffset = document.offsetAt(identWordRange.start);
+
+			const indentSliceStart: number = lookbehindMaxLength > -1 ? Math.max(0, identWordRangeDocumentOffset - lookbehindMaxLength) : 0;
+
+			const startIdentPositionPrefix: string = sanitizedDocumentText.slice(indentSliceStart, identWordRangeDocumentOffset);
 
 			// Global function
 			if (!isContinuingExpression(startIdentPositionPrefix, _token)) {

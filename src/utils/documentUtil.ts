@@ -47,7 +47,9 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
 	const docIsCfmFile: boolean = isCfmFile(document, _token);
 	const docIsCfsFile: boolean = isCfsFile(document, _token);
 	const thisComponent: Component | undefined = getComponent(document.uri, _token);
-	const docIsScript: boolean = (docIsCfcFile && isScriptComponent(document, _token)) || docIsCfsFile;
+
+	// If we've already cached the component we already know if it is a script component
+	const docIsScript: boolean = thisComponent ? thisComponent.isScript : ((docIsCfcFile && isScriptComponent(document, _token)) || docIsCfsFile);
 
 	const documentRanges: DocumentContextRanges = getDocumentContextRanges(document, docIsScript, undefined, fast, _token, exclDocumentRanges);
 	const commentRanges: Range[] = documentRanges.commentRanges;
@@ -80,8 +82,9 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
  * @returns DocumentPositionStateContext
  */
 export function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentPositionStateContext {
+	const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+	const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
 	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token, exclDocumentRanges);
-
 	const docIsScript: boolean = documentStateContext.docIsScript;
 	const positionInComment: boolean = isInRanges(documentStateContext.commentRanges, position, false, _token);
 	const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token);
@@ -92,7 +95,9 @@ export function getDocumentPositionStateContext(document: TextDocument, position
 	if (!wordRange) {
 		wordRange = new Range(position, position);
 	}
-	const docPrefix: string = documentStateContext.sanitizedDocumentText.slice(0, document.offsetAt(wordRange.start));
+	const wordRangeStartOffset = document.offsetAt(wordRange.start);
+	const documentSliceStart: number = lookbehindMaxLength > -1 ? Math.max(0, wordRangeStartOffset - lookbehindMaxLength) : 0;
+	const docPrefix: string = documentStateContext.sanitizedDocumentText.slice(documentSliceStart, wordRangeStartOffset);
 
 	const documentPositionStateContext: DocumentPositionStateContext = Object.assign(documentStateContext,
 		{

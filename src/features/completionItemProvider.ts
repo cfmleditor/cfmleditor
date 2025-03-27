@@ -157,8 +157,10 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 					result = result.concat(getHTMLTagCompletions(completionState));
 				}
 			}
+		}
 
-			return result;
+		if (_token && _token.isCancellationRequested) {
+			return undefined;
 		}
 
 		// Global tag attributes
@@ -225,7 +227,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 						}
 					}
 					else {
-						return getHTMLTagAttributeCompletions(completionState, tagName, tagAttributeStartOffset, tagAttributesLength);
+						return getHTMLTagAttributeCompletions(document, completionState, tagName, tagAttributeStartOffset, tagAttributesLength);
 					}
 				}
 			}
@@ -745,13 +747,17 @@ async function getGlobalTagAttributeValueCompletions(state: CompletionState, glo
 
 /**
  * Gets an HTML tag's attribute as completion items
+ * @param document
  * @param state An object representing the state of completion
  * @param htmlTagName The HTML tag that's attributes will be checked
  * @param attributeStartOffset The offset within the document that the tag's attributes start
  * @param attributesLength The length of the tag's attributes string
  * @returns
  */
-function getHTMLTagAttributeCompletions(state: CompletionState, htmlTagName: string, attributeStartOffset: number, attributesLength: number): CompletionItem[] {
+function getHTMLTagAttributeCompletions(document: TextDocument, state: CompletionState, htmlTagName: string, attributeStartOffset: number, attributesLength: number): CompletionItem[] {
+	const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+	const documentLookbehindMax: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
+
 	const attributeNames: string[] = htmlDataProvider.provideAttributes(htmlTagName.toLowerCase()).map(a => a.name);
 	const tagAttributeRange = new Range(state.document.positionAt(attributeStartOffset), state.document.positionAt(attributeStartOffset + attributesLength));
 	const parsedAttributes: Attributes = parseAttributes(state.document, tagAttributeRange, new MySet(attributeNames));
@@ -767,7 +773,10 @@ function getHTMLTagAttributeCompletions(state: CompletionState, htmlTagName: str
 
 		const attributeItem = new CompletionItem(attr, CompletionItemKind.Property);
 
-		const wordSuffix: string = state.sanitizedDocumentText.slice(state.document.offsetAt(state.wordRange.end));
+		const wordRangeEndOffset = state.document.offsetAt(state.wordRange.end);
+		const documentSliceEnd: number = documentLookbehindMax > -1 ? Math.max(0, state.sanitizedDocumentText.length - documentLookbehindMax) : state.sanitizedDocumentText.length;
+
+		const wordSuffix: string = state.sanitizedDocumentText.slice(wordRangeEndOffset, documentSliceEnd);
 		if (!wordSuffix.trim().startsWith("=")) {
 			attributeItem.insertText = new SnippetString(constructHTMLAttributeSnippet(htmlTagName.toLowerCase(), attr, htmlTagAttributesQuoteType));
 		}
