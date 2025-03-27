@@ -75,8 +75,8 @@
 	"wordPattern": "(-?\\d*\\.\\d\\w*)|([^\\-`~!@#%\\^&*()=+[{\\]}\\\\|;:'\",.<>/?\\s]+)",
 	"folding": {
 		"markers": {
-			"start": "^\\s*(?:<!--\\s*#region\\b.*-->|<!---\\s*#region\\b.*--->|//\\s*#?region\\b)",
-			"end": "^\\s*(?:<!--\\s*#endregion\\b.*-->|<!---\\s*#endregion\\b.*--->|//\\s*#?endregion\\b)"
+			"start": "^\\s*(?:<!---\\s*#region\\b.*--->|<!--\\s*#region\\b.*-->|//\\s*#?region\\b)",
+			"end": "^\\s*(?:<!---\\s*#endregion\\b.*--->|<!--\\s*#endregion\\b.*-->|//\\s*#?endregion\\b)"
 		}
 	}
 }
