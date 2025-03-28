@@ -199,10 +199,10 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		if (isCfcFile(document, undefined)) {
 			const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 			const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-			await cacheComponentFromDocument(document, false, replaceComments, undefined);
+			await cacheComponentFromDocument(document, true, replaceComments, undefined);
 		}
 		else if (resolveBaseName(document.fileName) === "Application.cfm") {
-			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true, undefined);
+			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, true, undefined);
 			const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, undefined);
 			const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
 				return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
@@ -220,7 +220,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		workspace.openTextDocument(componentUri).then(async (document: TextDocument) => {
 			const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 			const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-			await cacheComponentFromDocument(document, false, replaceComments, undefined);
+			await cacheComponentFromDocument(document, true, replaceComments, undefined);
 		});
 	});
 	componentWatcher.onDidDelete((componentUri: Uri) => {
@@ -245,7 +245,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		}
 
 		workspace.openTextDocument(applicationUri).then(async (document: TextDocument) => {
-			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, true, undefined);
+			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, true, undefined);
 			const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, undefined);
 			const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
 				return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);

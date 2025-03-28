@@ -15,4 +15,16 @@
         <cfreturn request.WidgetFactory.create_with_new(variables.name)>
     </cffunction>
 
+    <!--- 
+        
+        test
+        
+        <!--- test --->
+
+        <cffunction name="create_with_new" access="public" returntype="string" output="true">
+            <cfreturn "Hello #variables.name#">
+        </cffunction>
+
+    --->
+
 </cfcomponent>

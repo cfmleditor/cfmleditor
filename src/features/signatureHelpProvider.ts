@@ -8,7 +8,7 @@ import { getVariableScopePrefixPattern, Scope, unscopedPrecedence } from "../ent
 import { constructSignatureLabelParamsPrefix, getSignatureParamsLabelOffsetTuples, Signature } from "../entities/signature";
 import { getFunctionFromPrefix, isUserFunctionVariable, UserFunction, UserFunctionVariable, variablesToUserFunctions } from "../entities/userFunction";
 import { collectDocumentVariableAssignments, Variable } from "../entities/variable";
-import { BackwardIterator, getPrecedingIdentifierRange, isContinuingExpression, getStartSigPosition as findStartSigPosition, getClosingPosition } from "../utils/contextUtil";
+import { BackwardIterator, getPrecedingIdentifierRange, isContinuingExpression, getStartSigPosition, getClosingPosition } from "../utils/contextUtil";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { equalsIgnoreCase, textToMarkdownString } from "../utils/textUtil";
 import { getGlobalFunction } from "./cachedEntities";
@@ -37,6 +37,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
+		// Looks like this is the only place where we can't use "fast" parsing
 		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 		if (documentPositionStateContext.positionInComment) {
 			return null;
@@ -47,7 +48,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		const backwardIterator: BackwardIterator = new BackwardIterator(documentPositionStateContext, position, _token);
 
 		backwardIterator.next(_token);
-		const iteratedSigPosition: Position | undefined = findStartSigPosition(backwardIterator, _token);
+		const iteratedSigPosition: Position | undefined = getStartSigPosition(backwardIterator, _token);
 		if (!iteratedSigPosition) {
 			return null;
 		}

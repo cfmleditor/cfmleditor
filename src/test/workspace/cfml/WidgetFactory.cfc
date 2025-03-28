@@ -1,5 +1,18 @@
 <cfcomponent>
 
+    
+    <!--- 
+        
+        test
+        
+        <!--- test --->
+
+        <cffunction name="create_with_new" access="public" returntype="string" output="true">
+            <cfreturn "Hello #variables.name#">
+        </cffunction>
+
+    --->
+    
     <cffunction name="create_with_new" returntype="cfml.Widget" output="false" modifier="static" >
         <cfargument name="name" type="string" required="false">
         <cfset var widget = new cfml.Widget()>

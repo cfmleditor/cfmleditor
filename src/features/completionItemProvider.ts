@@ -110,7 +110,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 			return undefined;
 		}
 
-		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
+		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, false);
 
 		const currentWordMatches = (name: string): boolean => {
 			return matches(documentPositionStateContext.currentWord, name);

@@ -899,7 +899,7 @@ export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token
 	const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
 	const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments, _token, false);
+	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, true, replaceComments, _token, false);
 
 	const currentWord: string = documentPositionStateContext.currentWord;
 	let globalTag: GlobalTag = getGlobalTag(currentWord);
