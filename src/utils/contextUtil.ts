@@ -393,8 +393,6 @@ function getNestedCommentRanges(document: TextDocument, docRange: Range | undefi
  * @returns
  */
 function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, _token: CancellationToken | undefined): DocumentContextRanges {
-	// console.log("getCommentAndStringRangesIterated:" + _token?.isCancellationRequested);
-
 	let commentRanges: Range[] = [];
 	let stringRanges: Range[] = [];
 	const documentText: string = document.getText();
@@ -544,7 +542,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 		}
 		else {
 			if (isScript) {
-				if (isStringDelimiter(characterAtPosition)) {
+				if (characterAtPosition === "'" || characterAtPosition === "\"") {
 					stringContext = {
 						inString: true,
 						activeStringDelimiter: characterAtPosition,
@@ -603,7 +601,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 						startOffset: undefined,
 					};
 				}
-				else if (isStringDelimiter(characterAtPosition)) {
+				else if (characterAtPosition === "'" || characterAtPosition === "\"") {
 					stringContext = {
 						inString: true,
 						activeStringDelimiter: characterAtPosition,
@@ -857,22 +855,6 @@ function getOpeningChar(closingChar: string): string {
 }
 
 /**
- * Gets whether the given character is a string delimiter
- * @param char A character to check against string delimiters
- * @returns
- */
-export function isStringDelimiter(char: string): boolean {
-	switch (char) {
-		case "'":
-			return true;
-		case "\"":
-			return true;
-		default:
-			return false;
-	}
-}
-
-/**
  * Determines the position at which the given opening character occurs after the given position immediately following the opening character
  * @param documentStateContext The context information for the TextDocument to check
  * @param startOffset A numeric offset representing the position in the document from which to start
@@ -951,7 +933,7 @@ export function getNextCharacterPosition(documentStateContext: DocumentStateCont
 				};
 			}
 		}
-		else if (isStringDelimiter(characterAtPosition)) {
+		else if (characterAtPosition === "'" || characterAtPosition === "\"") {
 			stringContext = {
 				inString: true,
 				activeStringDelimiter: characterAtPosition,
@@ -1016,7 +998,7 @@ export function getClosingPosition(documentStateContext: DocumentStateContext, i
 				};
 			}
 		}
-		else if (isStringDelimiter(characterAtPosition)) {
+		else if (characterAtPosition === "'" || characterAtPosition === "\"") {
 			stringContext = {
 				inString: true,
 				activeStringDelimiter: characterAtPosition,
