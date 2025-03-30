@@ -2,6 +2,10 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.38] - 2025-03-31
+
+- Regression / infinite loop trying to resolve Application.cfc when one doesn't exist in a parent directory
+
 ## [0.6.37] - 2025-03-31
 
 - Added experimental `lookbehind.maxLength` and `lookahead.maxLength` settings for performance tuning of various context resolutions based on cursor position
