@@ -15,6 +15,10 @@
 		<cfset var widget.render()>
 	</cffunction>
 
+	<cffunction name="render">
+		<cfreturn "Hello World">
+	</cffunction>
+
 	<cffunction name="invokeMethod">
 		<invoke component="cfml.Widget" method="staticGenerateID">
 	</cffunction>

@@ -9,6 +9,10 @@ component {
 		return "Hello World";
 	}
 
+	function render() {
+		return "Hello World";
+	}
+
 	function callMethod() {
 		var gizmo = new cfscript.Gizmo("foo");
 		gizmo.render();

@@ -36,6 +36,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		}
 
 		const results: DefinitionLink[] = [];
+		let foundDefinitionInSameDocument: boolean = false;
 
 		const docIsCfcFile: boolean = documentPositionStateContext.isCfcFile;
 		const docIsCfmFile: boolean = documentPositionStateContext.isCfmFile;
@@ -303,6 +304,10 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		 */
 		const userFunc: UserFunction | undefined = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
 		if (userFunc) {
+			// If the function is in the same document, set foundDefinitionInSameDocument to true
+			if (userFunc.location.uri.fsPath === document.uri.fsPath) {
+				foundDefinitionInSameDocument = true;
+			}
 			results.push({
 				targetUri: userFunc.location.uri,
 				targetRange: userFunc.nameRange, // TODO: userFunc.location.range
@@ -352,7 +357,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		}
 
 		// Search for function by name
-		if (documentPositionStateContext.isContinuingExpression && cfmlDefinitionSettings.get<boolean>("userFunctions.search.enable", false)) {
+		if ((results.length === 0 || (results.length === 1 && foundDefinitionInSameDocument === true)) && documentPositionStateContext.isContinuingExpression && cfmlDefinitionSettings.get<boolean>("userFunctions.search.enable", false)) {
 			const lookaheadMaxLength: number = cfmlDefinitionSettings.get<number>("lookahead.maxLength", -1);
 			const endOfWordOffset = document.offsetAt(wordRange.end);
 			const searchDocumentOffset = lookaheadMaxLength > -1 ? Math.min((endOfWordOffset + lookaheadMaxLength), documentText.length) : documentText.length;

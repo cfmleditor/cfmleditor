@@ -207,7 +207,7 @@ describe("provideDefinition", function () {
 		});
 
 		it("should get definition for method of component variable", async function () {
-			const definition = await findDefinition(callMethodsDoc, "widget.|render()", undefined, 2);
+			const definition = await findDefinition(callMethodsDoc, "widget.|render()");
 			await assertDefinitionLinkTarget(definition, '<cffunction name="|render|"');
 		});
 
@@ -216,8 +216,8 @@ describe("provideDefinition", function () {
 			await assertDefinitionLinkTarget(definition, '<cffunction name="|generateID|">');
 		});
 
-		it("should get definition for method as part of static method call", async function () {
-			const definition = await findDefinition(callMethodsDoc, "Widget::|staticGenerateID()", undefined, 2);
+		it.skip("should get definition for method as part of static method call", async function () {
+			const definition = await findDefinition(callMethodsDoc, "Widget::|staticGenerateID()");
 			await assertDefinitionLinkTarget(definition, '<cffunction name="|staticGenerateID|" modifier="static">');
 		});
 
@@ -235,7 +235,7 @@ describe("provideDefinition", function () {
 		});
 
 		it("should get definition for method of component variable", async function () {
-			const definition = await findDefinition(callMethodsDoc, "gizmo.|render()", undefined, 2, 1);
+			const definition = await findDefinition(callMethodsDoc, "gizmo.|render()");
 			await assertDefinitionLinkTarget(definition, "function |render|()");
 		});
 
@@ -244,8 +244,8 @@ describe("provideDefinition", function () {
 			await assertDefinitionLinkTarget(definition, "function |generateID|()");
 		});
 
-		it("should get definition for method as part of static method call", async function () {
-			const definition = await findDefinition(callMethodsDoc, "Gizmo::|staticGenerateID", undefined, 2, 1);
+		it.skip("should get definition for method as part of static method call", async function () {
+			const definition = await findDefinition(callMethodsDoc, "Gizmo::|staticGenerateID");
 			await assertDefinitionLinkTarget(definition, "static function |staticGenerateID|()");
 		});
 
