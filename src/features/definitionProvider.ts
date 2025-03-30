@@ -50,7 +50,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
 		const docPrefix: string = documentPositionStateContext.docPrefix;
 
-		/**
+		/*
 		 * Object References
 		 * A catch-all for object references using Regular Expressions.
 		 * - new Foo()
@@ -91,7 +91,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		if (docIsCfcFile) {
 			const thisComponent: Component = documentPositionStateContext.component;
 			if (thisComponent) {
-				/**
+				/*
 				 * Component Extends
 				 * component extends="Foo" {}
 				 * <cfcomponent extends="Foo">
@@ -108,7 +108,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 					}
 				}
 
-				/**
+				/*
 				 * Component Implements
 				 * component implements="IFoo" {}
 				 * <cfcomponent implements="IFoo">
@@ -132,10 +132,10 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 				// Component functions (related)
 				for (const [, func] of thisComponent.functions) {
 					/*
-						Function return types
-						- ComponentType function foo() {}
-						- <cffunction name="foo" returntype="ComponentType">
-					*/
+					 * Function return types
+					 * - ComponentType function foo() {}
+					 * - <cffunction name="foo" returntype="ComponentType">
+					 */
 					if (func.returnTypeUri && func.returnTypeRange && func.returnTypeRange.contains(position)) {
 						const returnTypeComp: Component = getComponent(func.returnTypeUri, _token);
 						if (returnTypeComp) {
@@ -149,10 +149,10 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 					}
 
 					/*
-						Argument types
-						- function foo(ComponentType arg) {}
-						- <cfargument type="ComponentType">
-					*/
+					 * Argument types
+					 * - function foo(ComponentType arg) {}
+					 * - <cfargument type="ComponentType">
+					 */
 					func.signatures.map((signature: UserFunctionSignature) => {
 						const parameters = signature.parameters.filter((arg: Argument) => {
 							return arg.dataTypeComponentUri && arg.dataTypeRange && arg.dataTypeRange.contains(position);
@@ -172,7 +172,11 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 					});
 
 					if (func.bodyRange && func.bodyRange.contains(position)) {
-						// Local variable uses
+						/*
+						 * Local variables defined with:
+						 * - var variableName = value;
+						 * - local.variableName = value;
+						 */
 						const localVariables = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript, _token);
 						const localVarPrefixPattern = getValidScopesPrefixPattern([Scope.Local], true);
 						if (localVarPrefixPattern.test(docPrefix)) {
@@ -187,7 +191,10 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 							});
 						}
 
-						// Argument uses
+						/*
+						 * Argument variables defined with:
+						 * - <cfargument name="argumentName">
+						 */
 						if (results.length === 0) {
 							const argumentPrefixPattern = getValidScopesPrefixPattern([Scope.Arguments], true);
 							if (argumentPrefixPattern.test(docPrefix)) {
@@ -207,7 +214,11 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 					}
 				}
 
-				// Component properties (declarations)
+				/*
+				 * Component properties (declarations)
+				 * - <cfproperty type="Foo" name="Bar">
+				 * - property type="Foo" name="Bar";
+				 */
 				const componentproperties = thisComponent.properties.filter((prop: Property) => {
 					return prop.dataTypeComponentUri !== undefined && prop.dataTypeRange.contains(position);
 				});
@@ -224,9 +235,12 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 					}
 				}
 
-				// Component variables
+				/*
+				 * Component variables
+				 * - variables.foo = "bar";
+				 */
 				const variablesPrefixPattern = getValidScopesPrefixPattern([Scope.Variables], false);
-				if (variablesPrefixPattern.test(docPrefix)) {
+				if (variablesPrefixPattern.test(documentPositionStateContext.docPrefix)) {
 					thisComponent.variables.filter((variable: Variable) => {
 						return equalsIgnoreCase(variable.identifier, currentWord);
 					}).forEach((variable: Variable) => {
@@ -240,9 +254,16 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 			}
 		}
 		else if (docIsCfmFile) {
+			/*
+			 * Assigned variables
+			 * - <cfset foo = "bar">
+			 * - <cfset url.foo = "bar">
+			 * - <cfparam name="url.foo">
+			 * - <cfloop index="foo">
+			 */
 			const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, undefined, _token);
 			const variableScopePrefixPattern: RegExp = getVariableScopePrefixPattern();
-			const variableScopePrefixMatch: RegExpExecArray | null = variableScopePrefixPattern.exec(docPrefix);
+			const variableScopePrefixMatch: RegExpExecArray | null = variableScopePrefixPattern.exec(documentPositionStateContext.docPrefix);
 			if (variableScopePrefixMatch) {
 				const validScope: string = variableScopePrefixMatch[1];
 				let currentScope: Scope;
@@ -270,7 +291,10 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 			}
 		}
 
-		// User function
+		/*
+		 * User function
+		 * - <cffunction name="foo">
+		 */
 		const userFunc: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
 		if (userFunc) {
 			results.push({
@@ -280,9 +304,14 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 			});
 		}
 
-		// Application variables
+		/*
+		 * Application variables in Application.cfc
+		 * - application.foo = "bar";
+		 * - session.foo = "bar";
+		 * - request.foo = "bar";
+		 */
 		const applicationVariablesPrefixPattern = getValidScopesPrefixPattern([Scope.Application, Scope.Session, Scope.Request], false);
-		const variableScopePrefixMatch: RegExpExecArray | null = applicationVariablesPrefixPattern.exec(docPrefix);
+		const variableScopePrefixMatch: RegExpExecArray | null = applicationVariablesPrefixPattern.exec(documentPositionStateContext.docPrefix);
 		if (variableScopePrefixMatch) {
 			const currentScope = Scope.valueOf(variableScopePrefixMatch[1]);
 
@@ -298,9 +327,12 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 			});
 		}
 
-		// Server variables
+		/*
+		 * Server variables in Server.cfc
+		 * - server.foo = "bar";
+		 */
 		const serverVariablesPrefixPattern = getValidScopesPrefixPattern([Scope.Server], false);
-		if (serverVariablesPrefixPattern.test(docPrefix)) {
+		if (serverVariablesPrefixPattern.test(documentPositionStateContext.docPrefix)) {
 			const serverDocVariables: Variable[] = getServerVariables(document.uri, _token);
 			serverDocVariables.filter((variable: Variable) => {
 				return variable.scope === Scope.Server && equalsIgnoreCase(variable.identifier, currentWord);

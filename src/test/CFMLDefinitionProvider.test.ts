@@ -99,6 +99,12 @@ describe("provideDefinition", function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'implements="|cfml.IFactory"');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/IFactory.cfc`);
 		});
+
+		// Skipped due to a bug in the propertyPattern regex
+		it.skip("should get definition for cfproperty", async function () {
+			const definition = await findDefinition(widgetFactoryDoc, 'cfproperty type="|cfml.Widget"');
+			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
+		});
 	});
 
 	describe("component definitions (CFSCRIPT)", function () {
@@ -185,6 +191,12 @@ describe("provideDefinition", function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'implements="|cfscript.IFactory"');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/IFactory.cfc`);
 		});
+
+		// Skipped due to a bug in the propertyPattern regex
+		it.skip("should get definition for cfproperty", async function () {
+			const definition = await findDefinition(gizmoFactoryDoc, 'property type="|cfscript.Gizmo"');
+			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+		});
 	});
 
 	describe("method definitions (CFML)", function () {
@@ -240,6 +252,133 @@ describe("provideDefinition", function () {
 		it.skip("should get definition for cfinvoke", async function () {
 			const definition = await findDefinition(callMethodsDoc, 'return invoke("cfscript.Gizmo", "|staticGenerateID")');
 			await assertDefinitionLinkTarget(definition, "static function |staticGenerateID|()");
+		});
+	});
+
+	describe("variable definitions - cfc (CFML)", function () {
+		let variableDoc: TextDocument;
+
+		this.beforeAll(async function () {
+			variableDoc = await workspace.openTextDocument(`${root}/cfml/VariableDefinitions.cfc`);
+		});
+
+		it("should get definition for argument variable", async function () {
+			const definition = await findDefinition(variableDoc, "ref = |argumentVariable");
+			await assertDefinitionLinkTarget(definition, '<cfargument name="|argumentVariable|"');
+		});
+
+		it("should get definition for local variable", async function () {
+			const definition = await findDefinition(variableDoc, "ref = |localVariable");
+			await assertDefinitionLinkTarget(definition, "local.|localVariable| = ");
+		});
+
+		it("should get definition for var variable", async function () {
+			const definition = await findDefinition(variableDoc, "ref = |varVariable");
+			await assertDefinitionLinkTarget(definition, "var |varVariable| = ");
+		});
+
+		it("should get definition for variables variable", async function () {
+			const definition = await findDefinition(variableDoc, "ref = variables.|variablesVariable");
+			await assertDefinitionLinkTarget(definition, "variables.|variablesVariable| = ");
+		});
+	});
+
+	describe("variable definitions - cfm (CFML)", function () {
+		let variableDoc: TextDocument;
+
+		this.beforeAll(async function () {
+			variableDoc = await workspace.openTextDocument(`${root}/cfml/VariableDefinitions.cfm`);
+		});
+
+		it("should get definition for variables variable (scoped)", async function () {
+			const definition = await findDefinition(variableDoc, "ref = variables.|variablesVariable");
+			await assertDefinitionLinkTarget(definition, 'variables.|variablesVariable| = "foo"');
+		});
+
+		it("should get definition for variables variable (unscoped)", async function () {
+			const definition = await findDefinition(variableDoc, "ref = |variablesVariable");
+			await assertDefinitionLinkTarget(definition, 'variables.|variablesVariable| = "foo"');
+		});
+
+		it("should get definition for url variable (scoped)", async function () {
+			const definition = await findDefinition(variableDoc, "ref = url.|urlVariable");
+			await assertDefinitionLinkTarget(definition, 'url.|urlVariable| = "foo"');
+		});
+
+		it("should get definition for url variable (unscoped)", async function () {
+			const definition = await findDefinition(variableDoc, "ref = |urlVariable");
+			await assertDefinitionLinkTarget(definition, 'url.|urlVariable| = "foo"');
+		});
+
+		it("should get definition for cfparam variable (scoped)", async function () {
+			const definition = await findDefinition(variableDoc, "ref = url.|cfparamUrlVariable");
+			await assertDefinitionLinkTarget(definition, '<cfparam name="url.|cfparamUrlVariable|">');
+		});
+
+		it("should get definition for cfparam variable (unscoped)", async function () {
+			const definition = await findDefinition(variableDoc, "ref = |cfparamUrlVariable");
+			await assertDefinitionLinkTarget(definition, '<cfparam name="url.|cfparamUrlVariable|">');
+		});
+
+		it("should get definition for cfloop index (scoped)", async function () {
+			const definition = await findDefinition(variableDoc, "ref = variables.|loopIndex");
+			await assertDefinitionLinkTarget(definition, '<cfloop index="variables.|loopIndex|"');
+		});
+
+		it("should get definition for cfloop index (unscoped)", async function () {
+			const definition = await findDefinition(variableDoc, "ref = |loopIndex");
+			await assertDefinitionLinkTarget(definition, '<cfloop index="variables.|loopIndex|"');
+		});
+	});
+
+	describe("user functions (CFML)", function () {
+		let variableDoc: TextDocument;
+
+		this.beforeAll(async function () {
+			variableDoc = await workspace.openTextDocument(`${root}/cfml/userFunctions.cfm`);
+
+			// Return definitions for global user functions if nothing else is found
+			const cfmlDefinitionSettings = workspace.getConfiguration("cfml.definition");
+			await cfmlDefinitionSettings.update("userFunctions.search.enable", true, true);
+		});
+
+		it("should get definition for user function", async function () {
+			const definition = await findDefinition(variableDoc, "<cfset |userFunctionFoo()>");
+			await assertDefinitionLinkTarget(definition, '<cffunction name="|userFunctionFoo|"');
+		});
+
+		// TODO: check why this is failing
+		it.skip("should get definition for global user function", async function () {
+			const definition = await findDefinition(variableDoc, "<cfset application|UserFunction()>");
+			await assertDefinitionLinkTarget(definition, '<cffunction name="|applicationUserFunction|"');
+		});
+	});
+
+	describe("global variable definitions (CFML)", function () {
+		let globalDoc: TextDocument;
+
+		this.beforeAll(async function () {
+			globalDoc = await workspace.openTextDocument(`${root}/cfml/GlobalVariables.cfm`);
+		});
+
+		it("should get definition for application variable", async function () {
+			const definition = await findDefinition(globalDoc, "<cfset ref = application.|applicationVariable>");
+			await assertDefinitionLinkTarget(definition, '<cfset application.|applicationVariable| = "foo">');
+		});
+
+		it("should get definition for request variable", async function () {
+			const definition = await findDefinition(globalDoc, "<cfset ref = request.|requestVariable>");
+			await assertDefinitionLinkTarget(definition, '<cfset request.|requestVariable| = "foo">');
+		});
+
+		it("should get definition for session variable", async function () {
+			const definition = await findDefinition(globalDoc, "<cfset ref = session.|sessionVariable>");
+			await assertDefinitionLinkTarget(definition, '<cfset session.|sessionVariable| = "foo">');
+		});
+
+		it("should get definition for server variable", async function () {
+			const definition = await findDefinition(globalDoc, "<cfset ref = server.|serverVariable>");
+			await assertDefinitionLinkTarget(definition, '<cfset server.|serverVariable| = "foo">');
 		});
 	});
 });

@@ -2,6 +2,8 @@ import "cfscript.Gizmo";
 
 component implements="cfscript.IFactory" {
 
+	property type="cfscript.Gizmo" name="GizmoProperty";
+
 	public static cfscript.Gizmo function create_with_new(string name="") {
 		var gizmo = new cfscript.Gizmo();
 		gizmo.init(arguments.name);
