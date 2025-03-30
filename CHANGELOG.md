@@ -2,6 +2,13 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.37] - 2025-03-31
+
+- Added experimental `lookbehind.maxLength` and `lookahead.maxLength` settings for performance tuning of various context resolutions based on cursor position
+- Updated `fast` Comment Ranges function to support nested CFML comments
+- New Tests for Definition provider
+- Update Definition provider to reduce false positives
+
 ## [0.6.36] - 2025-03-23
 
 - Always return additional definitions where they exist
