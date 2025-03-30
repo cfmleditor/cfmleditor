@@ -207,7 +207,7 @@ describe("provideDefinition", function () {
 		});
 
 		it("should get definition for method of component variable", async function () {
-			const definition = await findDefinition(callMethodsDoc, "widget.|render()");
+			const definition = await findDefinition(callMethodsDoc, "widget.|render()", undefined, 2);
 			await assertDefinitionLinkTarget(definition, '<cffunction name="|render|"');
 		});
 
@@ -235,7 +235,7 @@ describe("provideDefinition", function () {
 		});
 
 		it("should get definition for method of component variable", async function () {
-			const definition = await findDefinition(callMethodsDoc, "gizmo.|render()");
+			const definition = await findDefinition(callMethodsDoc, "gizmo.|render()", undefined, 2, 1);
 			await assertDefinitionLinkTarget(definition, "function |render|()");
 		});
 

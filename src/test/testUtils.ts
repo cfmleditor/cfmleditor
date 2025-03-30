@@ -52,13 +52,15 @@ export function findPosition(doc: TextDocument, search: string, cursor: string =
  * @param doc The document to search in
  * @param search The text to search for in the document
  * @param cursor The character representing the cursor in the search text.
+ * @param matches Length of the expected definition array
+ * @param posn position of defitions to return
  * @throws Same as {@link findPosition}, and if no definition is found, or more than one definition is found
  * @returns The position of the cursor in the doc.
  */
-export async function findDefinition(doc: TextDocument, search: string, cursor: string = "|"): Promise<DefinitionLink> {
+export async function findDefinition(doc: TextDocument, search: string, cursor: string = "|", matches: number = 1, posn: number = 0): Promise<DefinitionLink> {
 	const position = findPosition(doc, search, cursor);
 	const definitions = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", doc.uri, position);
 	assert.ok(definitions.length !== 0, "Did not find a definition");
-	assert.strictEqual(definitions.length, 1, "Expected exactly one definition");
-	return definitions[0];
+	assert.strictEqual(definitions.length, matches, "Expected exactly one definition");
+	return definitions[posn];
 }
