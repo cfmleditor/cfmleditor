@@ -4,7 +4,7 @@ import { Function, getScriptFunctionArgRanges } from "./function";
 import { Parameter } from "./parameter";
 import { Signature } from "./signature";
 import { Component, isSubcomponentOrEqual } from "./component";
-import { Variable, parseVariableAssignments, collectDocumentVariableAssignments, getApplicationVariables, getBestMatchingVariable, getVariableExpressionPrefixPattern } from "./variable";
+import { Variable, parseVariableAssignments, collectDocumentVariableAssignments, getApplicationVariables, getBestMatchingVariable, getVariableExpressionPrefixPattern, getVariableCallExpressionPrefixPattern } from "./variable";
 import { Scope } from "./scope";
 import { DocBlockKeyValue, parseDocBlock, getKeyPattern } from "./docblock";
 import { Attributes, Attribute, parseAttributes } from "./attribute";
@@ -874,11 +874,16 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
 			}
 		}
 	}
-	else if (documentPositionStateContext.isCfmFile) {
-		foundFunction = await getFunctionFromTemplate(documentPositionStateContext, functionKey, _token);
-	}
-	else if (documentPositionStateContext.component) {
-		foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, undefined, false, _token);
+	else {
+		const varMatchText2 = getVariableCallExpressionPrefixPattern().exec(docPrefix);
+		if (!varMatchText2) {
+			if (documentPositionStateContext.isCfmFile) {
+				foundFunction = await getFunctionFromTemplate(documentPositionStateContext, functionKey, _token);
+			}
+			else if (documentPositionStateContext.component) {
+				foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, undefined, false, _token);
+			}
+		}
 	}
 
 	return foundFunction;

@@ -26,6 +26,7 @@ const scriptParamPattern = /\b(cfparam\s*\(\s*|param\s+)([^;]*);/gi;
 // Does not match when a function is part of the expression
 const variableExpressionPattern = /\b((application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?([a-zA-Z_$][$\w]*)\3\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\5(?:\s*\])?)*/i;
 const variableExpressionPrefixPattern = /\b((application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?([a-zA-Z_$][$\w]*)\3\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\5(?:\s*\])?)*\s*(?:\?\.|\.\s*|::\s*|\[\s*['"]?)$/i;
+const variableCallExpressionPrefixPattern = /[^\s](?:\s*\)\s*\.\s*)$/i;
 
 // TODO: Import outputVariableTags from tag.ts when bug is found/resolved
 
@@ -300,6 +301,14 @@ export function getVariablePrefixPattern(variableName: string) {
  */
 export function getVariableExpressionPrefixPattern() {
 	return variableExpressionPrefixPattern;
+}
+
+/**
+ *
+ * @returns
+ */
+export function getVariableCallExpressionPrefixPattern() {
+	return variableCallExpressionPrefixPattern;
 }
 
 /**
