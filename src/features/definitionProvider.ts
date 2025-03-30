@@ -296,12 +296,12 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 				});
 			}
 		}
-    
+
 		/*
 		 * User function
 		 * - <cffunction name="foo">
 		 */
-		const userFunc: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
+		const userFunc: UserFunction | undefined = await getFunctionFromPrefix(documentPositionStateContext, lowerCurrentWord, undefined, _token);
 		if (userFunc) {
 			results.push({
 				targetUri: userFunc.location.uri,
