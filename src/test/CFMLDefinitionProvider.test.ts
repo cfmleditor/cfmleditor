@@ -216,8 +216,8 @@ describe("provideDefinition", function () {
 			await assertDefinitionLinkTarget(definition, '<cffunction name="|generateID|">');
 		});
 
-		it.skip("should get definition for method as part of static method call", async function () {
-			const definition = await findDefinition(callMethodsDoc, "Widget::|staticGenerateID()");
+		it("should get definition for method as part of static method call", async function () {
+			const definition = await findDefinition(callMethodsDoc, "Widget::|staticGenerateID()", undefined, 2);
 			await assertDefinitionLinkTarget(definition, '<cffunction name="|staticGenerateID|" modifier="static">');
 		});
 
@@ -244,8 +244,8 @@ describe("provideDefinition", function () {
 			await assertDefinitionLinkTarget(definition, "function |generateID|()");
 		});
 
-		it.skip("should get definition for method as part of static method call", async function () {
-			const definition = await findDefinition(callMethodsDoc, "Gizmo::|staticGenerateID");
+		it("should get definition for method as part of static method call", async function () {
+			const definition = await findDefinition(callMethodsDoc, "Gizmo::|staticGenerateID", undefined, 2, 1);
 			await assertDefinitionLinkTarget(definition, "static function |staticGenerateID|()");
 		});
 
