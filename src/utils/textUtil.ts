@@ -109,7 +109,7 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges: 
 	}
 	else {
 		const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (getComponent(document.uri, _token))?.isScript) ? true : false;
-		documentCommentRanges = getDocumentContextRanges(document, docIsScript, undefined, false, _token).commentRanges;
+		documentCommentRanges = getDocumentContextRanges(document, docIsScript, undefined, true, _token).commentRanges;
 	}
 
 	return replaceRangeWithSpaces(document, documentCommentRanges);

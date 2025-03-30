@@ -415,7 +415,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
 					const document: TextDocument = await LSTextDocument.openTextDocument(componentUri);
 					const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 					const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-					await cacheComponentFromDocument(document, false, replaceComments, _token);
+					await cacheComponentFromDocument(document, true, replaceComments, _token);
 				}
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
 				catch (ex) {
@@ -518,7 +518,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: Cancel
 			const document: TextDocument = await workspace.openTextDocument(applicationUri);
 			const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 			const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token);
+			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, replaceComments, _token);
 			const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
 			const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
 				return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);

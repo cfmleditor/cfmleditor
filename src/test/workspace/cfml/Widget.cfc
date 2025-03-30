@@ -23,4 +23,16 @@
 		<cfreturn "Hello World">
 	</cffunction>
 
+    <!--- 
+        
+        test
+        
+        <!--- test --->
+
+        <cffunction name="create_with_new" access="public" returntype="string" output="true">
+            <cfreturn "Hello #variables.name#">
+        </cffunction>
+
+    --->
+
 </cfcomponent>

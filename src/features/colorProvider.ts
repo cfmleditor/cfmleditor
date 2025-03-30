@@ -26,7 +26,7 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 		// const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		// const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-		const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, false, _token, true);
+		const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, false, _token, true);
 		const cssRanges: Range[] = getCssRanges(documentStateContext, undefined, _token);
 
 		for (const cssRange of cssRanges) {

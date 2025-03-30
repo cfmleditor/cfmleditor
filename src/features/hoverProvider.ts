@@ -80,7 +80,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 		let definition: HoverProviderItem | undefined;
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, true);
+		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, true);
 		const userEngine: CFMLEngine = documentPositionStateContext.userEngine;
 		const textLine: TextLine = document.lineAt(position);
 		const lineText: string = documentPositionStateContext.sanitizedDocumentText.slice(document.offsetAt(textLine.range.start), document.offsetAt(textLine.range.end));

@@ -105,7 +105,7 @@ interface SnippetArgs {
  */
 export function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: SnippetArgs): void {
 	const position: Position = editor.selection.start;
-	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, true, undefined, false);
+	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, true, true, undefined, false);
 
 	if (documentPositionStateContext.positionIsScript) {
 		commands.executeCommand("editor.action.insertSnippet", {

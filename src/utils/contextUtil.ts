@@ -15,7 +15,6 @@ const continuingExpressionPattern: RegExp = /(?:\?\.\s*|\.\s*|::\s*|[\w$])$/;
 const memberExpressionPattern: RegExp = /(?:\?\.|\.|::)$/;
 const cfscriptLineCommentPattern: RegExp = /\/\/[^\r\n]*/g;
 const cfscriptBlockCommentPattern: RegExp = /\/\*[\s\S]*?\*\//g;
-const tagBlockCommentPattern: RegExp = /<!--[\s\S]*?-->/g;
 
 const characterPairs: CharacterPair[] = [
 	["{", "}"],
@@ -278,11 +277,11 @@ export function getCfScriptRanges(document: TextDocument, range: Range | undefin
  */
 export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, fast: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentContextRanges {
 	if (fast) {
-		return { commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token) };
+		return { commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token), stringRanges: undefined, stringEmbeddedCfmlRanges: undefined };
 	}
 
 	if (exclDocumentRanges) {
-		return { commentRanges: [], stringRanges: [], stringEmbeddedCfmlRanges: [] };
+		return { commentRanges: [], stringRanges: undefined, stringEmbeddedCfmlRanges: undefined };
 	}
 
 	return getCommentAndStringRangesIterated(document, isScript, docRange, _token);
@@ -331,21 +330,55 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
 		}
 	}
 	else {
-		let tagBlockCommentMatch: RegExpExecArray | null;
-		while ((tagBlockCommentMatch = tagBlockCommentPattern.exec(documentText))) {
-			const tagBlockCommentText = tagBlockCommentMatch[0];
-			const tagBlockCommentStartOffset = textOffset + tagBlockCommentMatch.index;
-			commentRanges.push(new Range(
-				document.positionAt(tagBlockCommentStartOffset),
-				document.positionAt(tagBlockCommentStartOffset + tagBlockCommentText.length)
-			));
-		}
+		const nestedCommentRanges: Range[] = getNestedCommentRanges(document, docRange, _token);
+		commentRanges = commentRanges.concat(nestedCommentRanges);
 
 		const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token, commentRanges);
 		cfScriptRanges.forEach((range: Range) => {
 			const cfscriptCommentRanges: Range[] = getCommentRangesByRegex(document, true, range, _token);
 			commentRanges = commentRanges.concat(cfscriptCommentRanges);
 		});
+	}
+
+	return commentRanges;
+}
+/**
+ * Returns ranges for nested comments <!--- --->
+ * using regex to find startComment and endComment text.
+ * @param document The document to check
+ * @param docRange Range within which to check
+ * @param _token
+ * @returns
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getNestedCommentRanges(document: TextDocument, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
+	const commentRanges: Range[] = [];
+	const documentText = docRange ? document.getText(docRange) : document.getText();
+	const textOffset = docRange ? document.offsetAt(docRange.start) : 0;
+
+	const commentRegex = /<!---|--->/g; // Matches startComment and endComment
+	let match: RegExpExecArray | null;
+	let depth = 0;
+	let startOffset: number | undefined;
+
+	while ((match = commentRegex.exec(documentText)) !== null) {
+		if (match[0] === "<!---") {
+			if (depth === 0) {
+				startOffset = match.index;
+			}
+			depth++;
+		}
+		else if (match[0] === "--->") {
+			depth--;
+			if (depth === 0 && startOffset !== undefined) {
+				const range = new Range(
+					document.positionAt(textOffset + startOffset),
+					document.positionAt(textOffset + match.index + match[0].length)
+				);
+				commentRanges.push(range);
+				startOffset = undefined;
+			}
+		}
 	}
 
 	return commentRanges;
@@ -360,8 +393,6 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
  * @returns
  */
 function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, _token: CancellationToken | undefined): DocumentContextRanges {
-	// console.log("getCommentAndStringRangesIterated:" + _token?.isCancellationRequested);
-
 	let commentRanges: Range[] = [];
 	let stringRanges: Range[] = [];
 	const documentText: string = document.getText();
@@ -511,7 +542,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 		}
 		else {
 			if (isScript) {
-				if (isStringDelimiter(characterAtPosition)) {
+				if (characterAtPosition === "'" || characterAtPosition === "\"") {
 					stringContext = {
 						inString: true,
 						activeStringDelimiter: characterAtPosition,
@@ -570,7 +601,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 						startOffset: undefined,
 					};
 				}
-				else if (isStringDelimiter(characterAtPosition)) {
+				else if (characterAtPosition === "'" || characterAtPosition === "\"") {
 					stringContext = {
 						inString: true,
 						activeStringDelimiter: characterAtPosition,
@@ -721,7 +752,7 @@ export function isInCss(documentStateContext: DocumentStateContext, position: Po
  * @returns
  */
 export function isInComment(document: TextDocument, position: Position, isScript: boolean = false, _token: CancellationToken | undefined): boolean {
-	return isInRanges(getDocumentContextRanges(document, isScript, undefined, false, _token).commentRanges, position, false, _token);
+	return isInRanges(getDocumentContextRanges(document, isScript, undefined, false, _token).commentRanges, position, true, _token);
 }
 
 /**
@@ -824,22 +855,6 @@ function getOpeningChar(closingChar: string): string {
 }
 
 /**
- * Gets whether the given character is a string delimiter
- * @param char A character to check against string delimiters
- * @returns
- */
-export function isStringDelimiter(char: string): boolean {
-	switch (char) {
-		case "'":
-			return true;
-		case "\"":
-			return true;
-		default:
-			return false;
-	}
-}
-
-/**
  * Determines the position at which the given opening character occurs after the given position immediately following the opening character
  * @param documentStateContext The context information for the TextDocument to check
  * @param startOffset A numeric offset representing the position in the document from which to start
@@ -918,7 +933,7 @@ export function getNextCharacterPosition(documentStateContext: DocumentStateCont
 				};
 			}
 		}
-		else if (isStringDelimiter(characterAtPosition)) {
+		else if (characterAtPosition === "'" || characterAtPosition === "\"") {
 			stringContext = {
 				inString: true,
 				activeStringDelimiter: characterAtPosition,
@@ -983,7 +998,7 @@ export function getClosingPosition(documentStateContext: DocumentStateContext, i
 				};
 			}
 		}
-		else if (isStringDelimiter(characterAtPosition)) {
+		else if (characterAtPosition === "'" || characterAtPosition === "\"") {
 			stringContext = {
 				inString: true,
 				activeStringDelimiter: characterAtPosition,
@@ -1069,9 +1084,14 @@ export function getPrecedingIdentifierRange(documentStateContext: DocumentStateC
 export function getStartSigPosition(iterator: BackwardIterator, _token: CancellationToken | undefined): Position | undefined {
 	let parenNesting = 0;
 
-	const document: TextDocument = iterator.getDocumentStateContext().document;
-	const stringRanges: Range[] | undefined = iterator.getDocumentStateContext().stringRanges;
-	const stringEmbeddedCfmlRanges: Range[] | undefined = iterator.getDocumentStateContext().stringEmbeddedCfmlRanges;
+	const documentStateContext: DocumentStateContext = iterator.getDocumentStateContext();
+	const document: TextDocument = documentStateContext.document;
+	const stringRanges: Range[] | undefined = documentStateContext.stringRanges;
+	const stringEmbeddedCfmlRanges: Range[] | undefined = documentStateContext.stringEmbeddedCfmlRanges;
+
+	if (stringRanges === undefined || stringEmbeddedCfmlRanges === undefined) {
+		return undefined;
+	}
 	while (iterator.hasNext()) {
 		const ch: number = iterator.next(_token);
 

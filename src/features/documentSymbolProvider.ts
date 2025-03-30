@@ -27,7 +27,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-		const documentStateContext: DocumentStateContext = getDocumentStateContext(document, false, replaceComments, _token, true);
+		const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, replaceComments, _token, true);
 
 		if (documentStateContext.isCfcFile) {
 			const componentSymbols = await CFMLDocumentSymbolProvider.getComponentSymbols(documentStateContext, _token);

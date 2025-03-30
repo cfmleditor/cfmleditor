@@ -1,6 +1,6 @@
 import { CancellationToken, Position, Range, Selection, TextDocument, TextEditor, TextEditorEdit, Uri, WorkspaceConfiguration, window, workspace } from "vscode";
 import { getGlobalTag } from "../features/cachedEntities";
-import { StringContext, isStringDelimiter } from "../utils/contextUtil";
+import { StringContext } from "../utils/contextUtil";
 import { DocumentPositionStateContext, DocumentStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { Attributes, parseAttributes } from "./attribute";
 import { DataType } from "./dataType";
@@ -795,7 +795,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 					startOffset: undefined,
 				};
 			}
-			else if (isStringDelimiter(characterAtPosition)) {
+			else if (characterAtPosition === "'" || characterAtPosition === "\"") {
 				stringContext = {
 					inString: true,
 					activeStringDelimiter: characterAtPosition,
@@ -828,7 +828,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 			}
 		}
 		else if (isScript) {
-			if (isStringDelimiter(characterAtPosition)) {
+			if (characterAtPosition === "'" || characterAtPosition === "\"") {
 				const currentPosition: Position = document.positionAt(offset);
 				stringContext = {
 					inString: true,
@@ -899,7 +899,7 @@ export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token
 	const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
 	const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, false, replaceComments, _token, false);
+	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, true, replaceComments, _token, false);
 
 	const currentWord: string = documentPositionStateContext.currentWord;
 	let globalTag: GlobalTag = getGlobalTag(currentWord);
