@@ -26,6 +26,9 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 	public async provideSignatureHelp(document: TextDocument, position: Position, _token: CancellationToken | undefined, _context: SignatureHelpContext): Promise<SignatureHelp | null> {
 		// console.log("provideSignatureHelp:CFMLSignatureHelpProvider:" + _token?.isCancellationRequested);
 
+		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+		const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
+
 		const cfmlSignatureSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.signature", document.uri);
 		if (!cfmlSignatureSettings.get<boolean>("enable", true)) {
 			return null;
@@ -44,7 +47,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		const backwardIterator: BackwardIterator = new BackwardIterator(documentPositionStateContext, position, _token);
 
 		backwardIterator.next(_token);
-		const iteratedSigPosition: Position = findStartSigPosition(backwardIterator, _token);
+		const iteratedSigPosition: Position | undefined = findStartSigPosition(backwardIterator, _token);
 		if (!iteratedSigPosition) {
 			return null;
 		}
@@ -62,7 +65,9 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		}
 		const paramText: string = sanitizedDocumentText.slice(document.offsetAt(functionArgRanges[paramIndex].start), document.offsetAt(functionArgRanges[paramIndex].end));
 
-		const startSigPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(startSigPosition));
+		const startSigPositionOffset = document.offsetAt(startSigPosition);
+		const documentSliceStart: number = lookbehindMaxLength > -1 ? Math.max(0, startSigPositionOffset - lookbehindMaxLength) : 0;
+		const startSigPositionPrefix: string = sanitizedDocumentText.slice(documentSliceStart, startSigPositionOffset);
 
 		let entry: Function | undefined;
 
@@ -70,9 +75,9 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		const objectNewInstanceInitPrefixMatch: RegExpExecArray | null = objectNewInstanceInitPrefix.exec(startSigPositionPrefix);
 		if (objectNewInstanceInitPrefixMatch) {
 			const componentDotPath: string = objectNewInstanceInitPrefixMatch[2];
-			const componentUri: Uri = cachedComponentPathToUri(componentDotPath, document.uri, _token);
+			const componentUri: Uri | undefined = cachedComponentPathToUri(componentDotPath, document.uri, _token);
 			if (componentUri) {
-				const initComponent: Component = getComponent(componentUri, _token);
+				const initComponent: Component | undefined = getComponent(componentUri, _token);
 				if (initComponent) {
 					const initMethod: string = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
 					if (initComponent.functions.has(initMethod)) {
@@ -83,7 +88,8 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		}
 
 		if (!entry) {
-			const identWordRange: Range = getPrecedingIdentifierRange(documentPositionStateContext, backwardIterator.getPosition(), _token);
+			const iteratorPosition: Position | undefined = backwardIterator.getPosition();
+			const identWordRange: Range | undefined = iteratorPosition ? getPrecedingIdentifierRange(documentPositionStateContext, iteratorPosition, _token) : undefined;
 			if (!identWordRange) {
 				return null;
 			}
@@ -91,7 +97,11 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 			const ident: string = document.getText(identWordRange);
 			const lowerIdent: string = ident.toLowerCase();
 
-			const startIdentPositionPrefix: string = sanitizedDocumentText.slice(0, document.offsetAt(identWordRange.start));
+			const identWordRangeDocumentOffset = document.offsetAt(identWordRange.start);
+
+			const indentSliceStart: number = lookbehindMaxLength > -1 ? Math.max(0, identWordRangeDocumentOffset - lookbehindMaxLength) : 0;
+
+			const startIdentPositionPrefix: string = sanitizedDocumentText.slice(indentSliceStart, identWordRangeDocumentOffset);
 
 			// Global function
 			if (!isContinuingExpression(startIdentPositionPrefix, _token)) {
@@ -100,7 +110,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 
 			// Check user functions
 			if (!entry) {
-				const userFun: UserFunction = await getFunctionFromPrefix(documentPositionStateContext, lowerIdent, startIdentPositionPrefix, _token);
+				const userFun: UserFunction | undefined = await getFunctionFromPrefix(documentPositionStateContext, lowerIdent, startIdentPositionPrefix, _token);
 
 				// Ensure this does not trigger on script function definition
 				if (userFun && userFun.location.uri === document.uri && userFun.location.range.contains(position) && (!userFun.bodyRange || !userFun.bodyRange.contains(position))) {

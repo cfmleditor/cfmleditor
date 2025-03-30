@@ -108,7 +108,7 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges: 
 		documentCommentRanges = commentRanges;
 	}
 	else {
-		const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (getComponent(document.uri, _token)).isScript);
+		const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (getComponent(document.uri, _token))?.isScript) ? true : false;
 		documentCommentRanges = getDocumentContextRanges(document, docIsScript, undefined, false, _token).commentRanges;
 	}
 
@@ -126,7 +126,7 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges: 
 export function getPrefixText(document: TextDocument, position: Position, replaceComments: boolean = false, _token: CancellationToken | undefined): string {
 	let documentText: string = document.getText();
 	if (replaceComments) {
-		documentText = getSanitizedDocumentText(document, undefined, false, _token);
+		documentText = getSanitizedDocumentText(document, [], false, _token);
 	}
 
 	return documentText.slice(0, document.offsetAt(position));
@@ -141,5 +141,5 @@ const schemePattern = /^[a-zA-Z][a-zA-Z0-9+\-.]+:/;
  * @returns boolean
  */
 export function isUri(str: string): boolean {
-	return str && schemePattern.test(str);
+	return str && schemePattern.test(str) ? true : false;
 }

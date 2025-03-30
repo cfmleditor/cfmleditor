@@ -58,7 +58,8 @@ export interface GlobalTags {
 export function globalTagSyntaxToScript(globalTag: GlobalTag): string {
 	const attributes: string[] = [];
 	const cfStartTagPattern = getCfStartTagPattern();
-	const attributeStr: string = cfStartTagPattern.exec(globalTag.syntax)[3];
+	const globalTagSyntax: RegExpExecArray | null = cfStartTagPattern.exec(globalTag.syntax);
+	const attributeStr: string | null = globalTagSyntax ? globalTagSyntax[3] : null;
 	if (attributeStr) {
 		let attributeMatch: RegExpExecArray | null;
 		while ((attributeMatch = ATTRIBUTES_PATTERN.exec(attributeStr))) {
@@ -101,7 +102,7 @@ export function constructTagSnippet(
 					return sig.parameters.find((param: Parameter) => {
 						return equalsIgnoreCase(param.name, attributeEntry.name);
 					});
-				}).filter((param: Parameter) => {
+				}).filter((param: Parameter | undefined): param is Parameter => {
 					return param !== undefined;
 				});
 			}
@@ -167,7 +168,7 @@ export function constructAttributeSnippet(
 
 	let customValue: string | undefined;
 	if (includeAttributesCustom !== undefined) {
-		const customEntry: NameWithOptionalValue<string> = includeAttributesCustom.find((attributeEntry: NameWithOptionalValue<string>) => {
+		const customEntry: NameWithOptionalValue<string> | undefined = includeAttributesCustom.find((attributeEntry: NameWithOptionalValue<string>) => {
 			return equalsIgnoreCase(attributeEntry.name, param.name);
 		});
 

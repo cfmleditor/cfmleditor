@@ -18,12 +18,12 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 	 * @param _token A cancellation token.
 	 * @returns
 	 */
-	public async provideDefinition(document: TextDocument, position: Position, _token: CancellationToken | undefined): Promise<DefinitionLink[]> {
+	public async provideDefinition(document: TextDocument, position: Position, _token: CancellationToken | undefined): Promise<DefinitionLink[] | undefined> {
 		// console.log("provideDefinition:CFMLDefinitionProvider:" + _token?.isCancellationRequested);
 
 		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
 		if (!cfmlDefinitionSettings.get<boolean>("enable", true)) {
-			return null;
+			return undefined;
 		}
 
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
@@ -32,7 +32,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 
 		if (documentPositionStateContext.positionInComment) {
-			return null;
+			return undefined;
 		}
 
 		const results: DefinitionLink[] = [];
@@ -40,7 +40,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		const docIsCfcFile: boolean = documentPositionStateContext.isCfcFile;
 		const docIsCfmFile: boolean = documentPositionStateContext.isCfmFile;
 		const documentText: string = documentPositionStateContext.sanitizedDocumentText;
-		let wordRange: Range = document.getWordRangeAtPosition(position);
+		let wordRange: Range | undefined = document.getWordRangeAtPosition(position);
 
 		const currentWord: string = documentPositionStateContext.currentWord;
 		const lowerCurrentWord: string = currentWord.toLowerCase();
@@ -72,9 +72,9 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 				);
 
 				if (pathRange.contains(position)) {
-					const componentUri: Uri = cachedComponentPathToUri(path, document.uri, _token);
+					const componentUri: Uri | undefined = cachedComponentPathToUri(path, document.uri, _token);
 					if (componentUri) {
-						const comp: Component = getComponent(componentUri, _token);
+						const comp: Component | undefined = getComponent(componentUri, _token);
 						if (comp) {
 							results.push({
 								originSelectionRange: pathRange,
@@ -89,7 +89,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		});
 
 		if (docIsCfcFile) {
-			const thisComponent: Component = documentPositionStateContext.component;
+			const thisComponent: Component | undefined = documentPositionStateContext.component;
 			if (thisComponent) {
 				/*
 				 * Component Extends
@@ -97,14 +97,16 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 				 * <cfcomponent extends="Foo">
 				 */
 				if (thisComponent.extendsRange && thisComponent.extendsRange.contains(position)) {
-					const extendsComp: Component = getComponent(thisComponent.extends, _token);
-					if (extendsComp) {
-						results.push({
-							originSelectionRange: thisComponent.extendsRange,
-							targetUri: extendsComp.uri,
-							targetRange: extendsComp.declarationRange,
-							targetSelectionRange: extendsComp.declarationRange,
-						});
+					if (thisComponent.extends) {
+						const extendsComp: Component | undefined = getComponent(thisComponent.extends, _token);
+						if (extendsComp) {
+							results.push({
+								originSelectionRange: thisComponent.extendsRange,
+								targetUri: extendsComp.uri,
+								targetRange: extendsComp.declarationRange,
+								targetSelectionRange: extendsComp.declarationRange,
+							});
+						}
 					}
 				}
 
@@ -115,8 +117,8 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 				 */
 				if (thisComponent.implementsRanges) {
 					thisComponent.implementsRanges.map((range: Range, idx: number) => {
-						if (range && range.contains(position)) {
-							const implComp: Component = getComponent(thisComponent.implements[idx], _token);
+						if (range && range.contains(position) && thisComponent.implements) {
+							const implComp: Component | undefined = getComponent(thisComponent.implements[idx], _token);
 							if (implComp) {
 								results.push({
 									originSelectionRange: range,
@@ -137,7 +139,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 					 * - <cffunction name="foo" returntype="ComponentType">
 					 */
 					if (func.returnTypeUri && func.returnTypeRange && func.returnTypeRange.contains(position)) {
-						const returnTypeComp: Component = getComponent(func.returnTypeUri, _token);
+						const returnTypeComp: Component | undefined = getComponent(func.returnTypeUri, _token);
 						if (returnTypeComp) {
 							results.push({
 								originSelectionRange: func.returnTypeRange,
@@ -159,14 +161,16 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 						});
 
 						parameters.map((arg: Argument) => {
-							const argTypeComp: Component = getComponent(arg.dataTypeComponentUri, _token);
-							if (argTypeComp) {
-								results.push({
-									originSelectionRange: arg.dataTypeRange,
-									targetUri: argTypeComp.uri,
-									targetRange: argTypeComp.declarationRange,
-									targetSelectionRange: argTypeComp.declarationRange,
-								});
+							if (arg.dataTypeComponentUri) {
+								const argTypeComp: Component | undefined = getComponent(arg.dataTypeComponentUri, _token);
+								if (argTypeComp) {
+									results.push({
+										originSelectionRange: arg.dataTypeRange,
+										targetUri: argTypeComp.uri,
+										targetRange: argTypeComp.declarationRange,
+										targetSelectionRange: argTypeComp.declarationRange,
+									});
+								}
 							}
 						});
 					});
@@ -220,18 +224,20 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 				 * - property type="Foo" name="Bar";
 				 */
 				const componentproperties = thisComponent.properties.filter((prop: Property) => {
-					return prop.dataTypeComponentUri !== undefined && prop.dataTypeRange.contains(position);
+					return prop.dataTypeComponentUri !== undefined && prop.dataTypeRange && prop.dataTypeRange.contains(position) ? true : false;
 				});
 
 				for (const [, prop] of componentproperties) {
-					const dataTypeComp: Component = getComponent(prop.dataTypeComponentUri, _token);
-					if (dataTypeComp) {
-						results.push({
-							originSelectionRange: prop.dataTypeRange,
-							targetUri: dataTypeComp.uri,
-							targetRange: dataTypeComp.declarationRange,
-							targetSelectionRange: dataTypeComp.declarationRange,
-						});
+					if (prop.dataTypeComponentUri) {
+						const dataTypeComp: Component | undefined = getComponent(prop.dataTypeComponentUri, _token);
+						if (dataTypeComp) {
+							results.push({
+								originSelectionRange: prop.dataTypeRange,
+								targetUri: dataTypeComp.uri,
+								targetRange: dataTypeComp.declarationRange,
+								targetSelectionRange: dataTypeComp.declarationRange,
+							});
+						}
 					}
 				}
 
@@ -290,7 +296,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 				});
 			}
 		}
-
+    
 		/*
 		 * User function
 		 * - <cffunction name="foo">
@@ -346,8 +352,11 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		}
 
 		// Search for function by name
-		if (results.length === 0 && documentPositionStateContext.isContinuingExpression && cfmlDefinitionSettings.get<boolean>("userFunctions.search.enable", false)) {
-			const wordSuffix: string = documentText.slice(document.offsetAt(wordRange.end), documentText.length);
+		if (documentPositionStateContext.isContinuingExpression && cfmlDefinitionSettings.get<boolean>("userFunctions.search.enable", false)) {
+			const lookaheadMaxLength: number = cfmlDefinitionSettings.get<number>("lookahead.maxLength", -1);
+			const endOfWordOffset = document.offsetAt(wordRange.end);
+			const searchDocumentOffset = lookaheadMaxLength > -1 ? Math.min((endOfWordOffset + lookaheadMaxLength), documentText.length) : documentText.length;
+			const wordSuffix: string = documentText.slice(endOfWordOffset, searchDocumentOffset);
 			const functionSuffixPattern: RegExp = getFunctionSuffixPattern();
 			if (functionSuffixPattern.test(wordSuffix)) {
 				const functionSearchResults = searchAllFunctionNames(lowerCurrentWord, SearchMode.EqualTo);

@@ -16,9 +16,9 @@ export interface CFMLCommentRules {
 
 export interface CommentContext {
 	inComment: boolean;
-	activeComment: string | CharacterPair;
-	commentType: CommentType;
-	start: Position;
+	activeComment?: string | CharacterPair;
+	commentType?: CommentType;
+	start?: Position;
 	depth: number;
 }
 
@@ -36,7 +36,7 @@ export const cfmlCommentRules: CFMLCommentRules = {
  * @returns
  */
 function isTagComment(document: TextDocument, startPosition: Position, _token: CancellationToken | undefined): boolean {
-	const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (getComponent(document.uri, _token)).isScript);
+	const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (getComponent(document.uri, _token))?.isScript) ? true : false;
 
 	return !docIsScript && !isInCfScript(document, startPosition, _token);
 }

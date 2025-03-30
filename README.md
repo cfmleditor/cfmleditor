@@ -65,25 +65,25 @@ The following are configurable Settings (Win/Linux: `Ctrl`+`Comma`; Mac: `Cmd`+`
 
 This extension contributes these settings to Visual Studio Code:
 
-- `cfml.globalDefinitions.source`: The source of the global definitions. Currently only supports CFDocs. [*Default*: `cfdocs`]
+- `cfml.globalDefinitions.source`: The source of the global definitions. Currently only supports CFDocs. [_Default_: `cfdocs`]
 - `cfml.cfDocs.source`: Indicates the source location type to be used for CFDocs.  
 **Values**
-  - `remote`: Retrieve resources remotely from GitHub. [*Default*]
+  - `remote`: Retrieve resources remotely from GitHub. [_Default_]
   - `local`: Retrieve resources locally using `cfml.cfDocs.localPath`.
-- `cfml.cfDocs.localPath`: [*Optional*] Physical path to the data/language directory of CFDocs.
-- `cfml.hover.enable`: Whether hover is enabled for CFML entities. [*Default*: `true`]
-- `cfml.hover.html.enable`: Whether hover is enabled for HTML entities. [*Default*: `true`]
-- `cfml.hover.css.enable`: Whether hover is enabled for CSS entities. [*Default*: `true`]
-- `cfml.signature.enable`: Whether signature help is enabled. [*Default*: `true`]
-- `cfml.suggest.enable`: Whether completion help is enabled. [*Default*: `true`]
-- `cfml.suggest.snippets.enable`: Whether included [snippets](./snippets/snippets.json) are part of completion help. [*Default*: `true`]
-- `cfml.suggest.snippets.exclude`: [*Optional*] Set of snippet keys you would like excluded from suggestions.
-- `cfml.suggest.globalFunctions.enable`: Whether global functions are part of completion help. [*Default*: `true`]
-- `cfml.suggest.globalFunctions.firstLetterCase`: What case should be used for the first letter of global function suggestions. [*Default*: `unchanged`]
-- `cfml.suggest.globalTags.enable`: Whether global tags are part of completion help. [*Default*: `true`]
-- `cfml.suggest.globalTags.attributes.quoteType`: Which quote type to use when completing CFML attribute suggestion. [*Default*: `double`]
-- `cfml.suggest.globalTags.attributes.defaultValue`: Whether to populate the default value for an attribute if it has one. [*Default*: `false`]
-- `cfml.suggest.globalTags.includeAttributes.setType`: What set of attributes to include when global tag suggestion is selected. [*Default*: `none`]
+- `cfml.cfDocs.localPath`: [_Optional_] Physical path to the data/language directory of CFDocs.
+- `cfml.hover.enable`: Whether hover is enabled for CFML entities. [_Default_: `true`]
+- `cfml.hover.html.enable`: Whether hover is enabled for HTML entities. [_Default_: `true`]
+- `cfml.hover.css.enable`: Whether hover is enabled for CSS entities. [_Default_: `true`]
+- `cfml.signature.enable`: Whether signature help is enabled. [_Default_: `true`]
+- `cfml.suggest.enable`: Whether completion help is enabled. [_Default_: `true`]
+- `cfml.suggest.snippets.enable`: Whether included [snippets](./snippets/snippets.json) are part of completion help. [_Default_: `true`]
+- `cfml.suggest.snippets.exclude`: [_Optional_] Set of snippet keys you would like excluded from suggestions.
+- `cfml.suggest.globalFunctions.enable`: Whether global functions are part of completion help. [_Default_: `true`]
+- `cfml.suggest.globalFunctions.firstLetterCase`: What case should be used for the first letter of global function suggestions. [_Default_: `unchanged`]
+- `cfml.suggest.globalTags.enable`: Whether global tags are part of completion help. [_Default_: `true`]
+- `cfml.suggest.globalTags.attributes.quoteType`: Which quote type to use when completing CFML attribute suggestion. [_Default_: `double`]
+- `cfml.suggest.globalTags.attributes.defaultValue`: Whether to populate the default value for an attribute if it has one. [_Default_: `false`]
+- `cfml.suggest.globalTags.includeAttributes.setType`: What set of attributes to include when global tag suggestion is selected. [_Default_: `none`]
 - `cfml.suggest.globalTags.includeAttributes.custom`: A custom set of attributes to include for given tags when suggestion is selected. Tags set here override the set type.  
   **Example**
     ```json
@@ -99,16 +99,16 @@ This extension contributes these settings to Visual Studio Code:
         ]
     }
     ```
-- `cfml.suggest.htmlTags.enable`: Whether HTML tags are part of completion help. [*Default*: `true`]
-- `cfml.suggest.htmlTags.attributes.quoteType`: Which quote type to use when completing HTML attribute suggestion. [*Default*: `double`]
-- `cfml.suggest.css.enable`: Whether CSS properties and values are part of completion help. [*Default*: `true`]
-- `cfml.suggest.scopes.case`: Whether the completed scopes should be uppercase or lowercase. [*Default*: `lowercase`]
-- `cfml.definition.enable`: Whether providing definitions is enabled. [*Default*: `true`]
-- `cfml.definition.userFunctions.search.enable`: Whether to search for matching functions throughout the workspace when a reliable match cannot be determined. Peek Definition will provide a list of all matches. [*Default*: `false`]
-- `cfml.indexComponents.enable`: Whether to index the components in workspace on startup. This is done on each startup and duration depends on number and complexity of components as well as hardware specifications. Editor may be unresponsive during this period. It is currently required for most features involving components to work properly. [*Default*: `true`]
-- `cfml.autoCloseTags.enable`: Whether to enable auto-closing tags for CFML. This uses the third-party extension `auto-close-tag`. This is only checked and set on startup. [*Default*: `true`]
-- `cfml.autoCloseTags.configurationTarget`: Auto-configuration target for auto-closing tags. [*Default*: `Global`]
-- `cfml.docBlock.gap`: Whether there should be a gap between the hint and other tags in a docblock. [*Default*: `true`]
+- `cfml.suggest.htmlTags.enable`: Whether HTML tags are part of completion help. [_Default_: `true`]
+- `cfml.suggest.htmlTags.attributes.quoteType`: Which quote type to use when completing HTML attribute suggestion. [_Default_: `double`]
+- `cfml.suggest.css.enable`: Whether CSS properties and values are part of completion help. [_Default_: `true`]
+- `cfml.suggest.scopes.case`: Whether the completed scopes should be uppercase or lowercase. [_Default_: `lowercase`]
+- `cfml.definition.enable`: Whether providing definitions is enabled. [_Default_: `true`]
+- `cfml.definition.userFunctions.search.enable`: Whether to search for matching functions throughout the workspace when a reliable match cannot be determined. Peek Definition will provide a list of all matches. [_Default_: `false`]
+- `cfml.indexComponents.enable`: Whether to index the components in workspace on startup. This is done on each startup and duration depends on number and complexity of components as well as hardware specifications. Editor may be unresponsive during this period. It is currently required for most features involving components to work properly. [_Default_: `true`]
+- `cfml.autoCloseTags.enable`: Whether to enable auto-closing tags for CFML. This uses the third-party extension `auto-close-tag`. This is only checked and set on startup. [_Default_: `true`]
+- `cfml.autoCloseTags.configurationTarget`: Auto-configuration target for auto-closing tags. [_Default_: `Global`]
+- `cfml.docBlock.gap`: Whether there should be a gap between the hint and other tags in a docblock. [_Default_: `true`]
 - `cfml.docBlock.extra`: Extra tags you would like to include in every docblock  
   **Example**
     ```json

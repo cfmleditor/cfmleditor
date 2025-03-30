@@ -28,7 +28,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 		// console.log("provideCompletionItems:DocBlockCompletions:" + _token?.isCancellationRequested);
 
 		const result: CompletionItem[] = [];
-		let wordMatchRange: Range;
+		let wordMatchRange: Range | undefined;
 
 		if ((wordMatchRange = document.getWordRangeAtPosition(position, /\/\*\*/)) !== undefined) {
 			const documenter: Documenter = new Documenter(wordMatchRange.end, document);
@@ -42,12 +42,12 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 			return result;
 		}
 
-		const comp: Component = getComponent(document.uri, _token);
+		const comp: Component | undefined = getComponent(document.uri, _token);
 		if (!comp) {
 			return result;
 		}
 
-		if ((wordMatchRange = document.getWordRangeAtPosition(position, /@[\w$]*(\.[a-z]*)?/)) === undefined) {
+		if ((wordMatchRange = document.getWordRangeAtPosition(position, /@[\w$]*((?:\?\.|\.|::)[a-z]*)?/)) === undefined) {
 			return result;
 		}
 
@@ -57,7 +57,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 		const tagSuggestions: MyMap<string, string> = new MyMap<string, string>();
 		const subKeySuggestions: MyMap<string, string> = new MyMap<string, string>();
 
-		let wordRange: Range = document.getWordRangeAtPosition(position);
+		let wordRange: Range | undefined = document.getWordRangeAtPosition(position);
 		if (!wordRange) {
 			wordRange = new Range(position, position);
 		}
@@ -143,7 +143,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 
 		let suggestions: MyMap<string, string> | undefined;
 		if (prefixChr === "." && argumentNames.size !== 0) {
-			let prevWordRange: Range = document.getWordRangeAtPosition(wordRange.start.translate(0, -1));
+			let prevWordRange: Range | undefined = document.getWordRangeAtPosition(wordRange.start.translate(0, -1));
 			if (!prevWordRange) {
 				prevWordRange = new Range(position, position);
 			}

@@ -322,7 +322,7 @@ export class CFDocsDefinitionInfo {
 			return false;
 		}
 
-		const engineVersion: string = engine.getVersion();
+		const engineVersion: string | undefined = engine.getVersion();
 		if (!engineVersion) {
 			return true;
 		}

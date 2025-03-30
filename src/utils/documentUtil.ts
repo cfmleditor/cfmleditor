@@ -40,19 +40,21 @@ export interface DocumentPositionStateContext extends DocumentStateContext {
  */
 export function getDocumentStateContext(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentStateContext {
 	const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
-	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name"));
-	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version"));
+	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
+	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
 
 	const docIsCfcFile: boolean = isCfcFile(document, _token);
 	const docIsCfmFile: boolean = isCfmFile(document, _token);
 	const docIsCfsFile: boolean = isCfsFile(document, _token);
-	const thisComponent: Component = getComponent(document.uri, _token);
-	const docIsScript: boolean = (docIsCfcFile && isScriptComponent(document, _token)) || docIsCfsFile;
+	const thisComponent: Component | undefined = getComponent(document.uri, _token);
+
+	// If we've already cached the component we already know if it is a script component
+	const docIsScript: boolean = thisComponent ? thisComponent.isScript : ((docIsCfcFile && isScriptComponent(document, _token)) || docIsCfsFile);
 
 	const documentRanges: DocumentContextRanges = getDocumentContextRanges(document, docIsScript, undefined, fast, _token, exclDocumentRanges);
 	const commentRanges: Range[] = documentRanges.commentRanges;
-	const stringRanges: Range[] = documentRanges.stringRanges;
-	const stringEmbeddedCfmlRanges: Range[] = documentRanges.stringEmbeddedCfmlRanges;
+	const stringRanges: Range[] | undefined = documentRanges.stringRanges;
+	const stringEmbeddedCfmlRanges: Range[] | undefined = documentRanges.stringEmbeddedCfmlRanges;
 	const sanitizedDocumentText: string = getSanitizedDocumentText(document, commentRanges, replaceComments, _token);
 
 	return {
@@ -80,19 +82,22 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
  * @returns DocumentPositionStateContext
  */
 export function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentPositionStateContext {
+	const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+	const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
 	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token, exclDocumentRanges);
-
 	const docIsScript: boolean = documentStateContext.docIsScript;
 	const positionInComment: boolean = isInRanges(documentStateContext.commentRanges, position, false, _token);
-	const cfscriptRanges: Range[] = getCfScriptRanges(document, null, _token);
+	const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token);
 	const positionIsScript: boolean = docIsScript || isInRanges(cfscriptRanges, position, false, _token);
 
-	let wordRange: Range = document.getWordRangeAtPosition(position);
+	let wordRange: Range | undefined = document.getWordRangeAtPosition(position);
 	const currentWord: string = wordRange ? document.getText(wordRange) : "";
 	if (!wordRange) {
 		wordRange = new Range(position, position);
 	}
-	const docPrefix: string = documentStateContext.sanitizedDocumentText.slice(0, document.offsetAt(wordRange.start));
+	const wordRangeStartOffset = document.offsetAt(wordRange.start);
+	const documentSliceStart: number = lookbehindMaxLength > -1 ? Math.max(0, wordRangeStartOffset - lookbehindMaxLength) : 0;
+	const docPrefix: string = documentStateContext.sanitizedDocumentText.slice(documentSliceStart, wordRangeStartOffset);
 
 	const documentPositionStateContext: DocumentPositionStateContext = Object.assign(documentStateContext,
 		{

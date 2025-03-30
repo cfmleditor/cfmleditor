@@ -1,7 +1,7 @@
 import { some } from "micromatch";
 import {
-	commands, ConfigurationChangeEvent, ConfigurationTarget, DocumentSelector, ExtensionContext, extensions,
-	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, workspace, WorkspaceConfiguration,
+	commands, ConfigurationChangeEvent, ConfigurationTarget, DocumentSelector, Extension, ExtensionContext, extensions,
+	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace, WorkspaceConfiguration,
 } from "vscode";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
@@ -28,6 +28,16 @@ import { resolveBaseName, uriBaseName } from "./utils/fileUtil";
 
 export const LANGUAGE_ID: string = "cfml";
 export const LANGUAGE_CFS_ID: string = "cfs";
+
+export const UNWANTED_EXTENSIONS: string[] = [
+	"formulahendry.auto-close-tag",
+	"KamasamaK.vscode-cflint",
+	"KamasamaK.vscode-cfml",
+	"ilich8086.ColdFusion",
+	"Codegyan.auto-closing-tags",
+	"trst.cfml-comment-tags",
+];
+
 const DOCUMENT_SELECTOR: DocumentSelector = [
 	{
 		language: LANGUAGE_ID,
@@ -105,6 +115,13 @@ export type api = {
  */
 export async function activate(context: ExtensionContext): Promise<api> {
 	extensionContext = context;
+
+	UNWANTED_EXTENSIONS.forEach((extId: string) => {
+		const extension: Extension<unknown> | undefined = extensions.getExtension(extId);
+		if (extension) {
+			window.showErrorMessage("Found unwanted extension: " + extId + ". Please uninstall it as it may conflict with CFMLEditor.");
+		}
+	});
 
 	const languageConfiguration: LanguageConfiguration = {
 		indentationRules: {

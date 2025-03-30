@@ -42,8 +42,8 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 					continue;
 				}
 
-				const cssProperty: IPropertyData = cssDataManager.getProperty(propertyName);
-				if (cssProperty.restrictions && cssProperty.restrictions.includes("color")) {
+				const cssProperty: IPropertyData | undefined = cssDataManager.getProperty(propertyName);
+				if (cssProperty && cssProperty.restrictions && cssProperty.restrictions.includes("color")) {
 					let colorMatch: RegExpExecArray | null;
 
 					// RGB hex
@@ -54,7 +54,10 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 							document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + colorMatch[0].length)
 						);
 
-						result.push(new ColorInformation(colorRange, hexToColor(rgbHexValue)));
+						const color = hexToColor(rgbHexValue);
+						if (color) {
+							result.push(new ColorInformation(colorRange, color));
+						}
 					}
 
 					// RGB function
@@ -118,7 +121,10 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 							document.positionAt(rangeTextOffset + propertyMatch.index + propertyValuePrefix.length + colorMatch.index + keywordPrefix.length + colorKeyword.length)
 						);
 
-						result.push(new ColorInformation(colorRange, hexToColor(cssColors[colorKeyword])));
+						const color = hexToColor(cssColors[colorKeyword]);
+						if (color) {
+							result.push(new ColorInformation(colorRange, color));
+						}
 					}
 				}
 			}
@@ -185,7 +191,7 @@ function fromTwoDigitHex(hex: string): number {
 	return Number.parseInt(hex, 16);
 }
 
-function hexToColor(rgbHex: string): Color {
+function hexToColor(rgbHex: string): Color | undefined {
 	rgbHex = rgbHex.replace(/#/g, "");
 
 	let red: number;

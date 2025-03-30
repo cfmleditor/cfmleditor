@@ -7,5 +7,17 @@
         "amodio.tsl-problem-matcher",
         "connor4312.esbuild-problem-matchers",
         "ms-vscode.extension-test-runner"
-    ]
+    ],
+	"unwantedRecommendations": [
+		"formulahendry.auto-close-tag",
+		"DomenicC.cfml-component-paths",
+		"scheifele.cfml-open-path",
+		"CarlosGant.cfml-syntax-updates",
+		"ilich8086.ColdFusion",
+		"KamasamaK.vscode-cflint",
+		"dalucema.coldfusionsymbols",
+		"rohithkrajan.cfgoto",
+		"Codegyan.auto-closing-tags",
+		"trst.cfml-comment-tags"
+	]
 }

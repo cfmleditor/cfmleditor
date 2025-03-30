@@ -7,7 +7,6 @@ export enum CFMLEngineName {
 	ColdFusion = "coldfusion",
 	Lucee = "lucee",
 	Railo = "railo",
-	OpenBD = "openbd",
 	Unknown = "unknown",
 }
 
@@ -26,8 +25,6 @@ export namespace CFMLEngineName {
 				return CFMLEngineName.Lucee;
 			case "railo":
 				return CFMLEngineName.Railo;
-			case "openbd":
-				return CFMLEngineName.OpenBD;
 			default:
 				return CFMLEngineName.Unknown;
 		}
@@ -36,7 +33,7 @@ export namespace CFMLEngineName {
 
 export class CFMLEngine {
 	private name: CFMLEngineName;
-	private version: string;
+	private version: string | undefined;
 
 	/**
 	 *
@@ -46,10 +43,10 @@ export class CFMLEngine {
 	constructor(name: CFMLEngineName, version: string | undefined) {
 		this.name = name;
 		if (version !== undefined && version !== "" && valid(version, true)) {
-			this.version = valid(version, true);
+			this.version = valid(version, true) || undefined;
 		}
 		else {
-			this.version = CFMLEngine.toSemVer(version);
+			this.version = version ? CFMLEngine.toSemVer(version) : undefined;
 		}
 	}
 
@@ -65,7 +62,7 @@ export class CFMLEngine {
 	 * Getter for CFML engine version
 	 * @returns
 	 */
-	public getVersion(): string {
+	public getVersion(): string | undefined {
 		return this.version;
 	}
 
@@ -149,10 +146,12 @@ export class CFMLEngine {
 	public supportsScriptTags(): boolean {
 		return (
 			this.name === CFMLEngineName.Unknown
-			|| (this.name === CFMLEngineName.ColdFusion && gte(this.version, "11.0.0"))
+			|| (this.name === CFMLEngineName.ColdFusion && this.version && gte(this.version, "11.0.0"))
 			|| this.name === CFMLEngineName.Lucee
-			|| (this.name === CFMLEngineName.Railo && gte(this.version, "4.2.0"))
-		);
+			|| (this.name === CFMLEngineName.Railo && this.version && gte(this.version, "4.2.0"))
+		)
+			? true
+			: false;
 	}
 
 	/**
@@ -162,10 +161,12 @@ export class CFMLEngine {
 	public supportsGlobalFunctionNamedParams(): boolean {
 		return (
 			this.name === CFMLEngineName.Unknown
-			|| (this.name === CFMLEngineName.ColdFusion && gte(this.version, "2018.0.0"))
+			|| (this.name === CFMLEngineName.ColdFusion && this.version && gte(this.version, "2018.0.0"))
 			|| this.name === CFMLEngineName.Lucee
-			|| (this.name === CFMLEngineName.Railo && gte(this.version, "3.3.0"))
-		);
+			|| (this.name === CFMLEngineName.Railo && this.version && gte(this.version, "3.3.0"))
+		)
+			? true
+			: false;
 	}
 
 	/**
@@ -175,7 +176,7 @@ export class CFMLEngine {
 	 */
 	public static toSemVer(versionStr: string): string | undefined {
 		if (versionStr !== "" && clean(versionStr, true)) {
-			return clean(versionStr, true);
+			return clean(versionStr, true) || undefined;
 		}
 		else if (DataType.isNumeric(versionStr)) {
 			const splitVer: string[] = versionStr.split(".");
@@ -184,7 +185,7 @@ export class CFMLEngine {
 			}
 			const reconstructedVer = splitVer.join(".");
 			if (valid(reconstructedVer, true)) {
-				return valid(reconstructedVer, true);
+				return valid(reconstructedVer, true) || undefined;
 			}
 		}
 

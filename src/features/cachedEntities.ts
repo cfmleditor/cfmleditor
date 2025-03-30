@@ -26,7 +26,11 @@ let allComponentsByName: ComponentsByName = {};
 let allComponentUris: { [key: string]: Uri } = {};
 
 const allComponentNames: TrieSearch<Component> = new TrieSearch<Component>("uri");
-const allFunctionNames: TrieSearch<UserFunction> = new TrieSearch<UserFunction>("name");
+const allFunctionNames: TrieSearch<UserFunction> = new TrieSearch<UserFunction>("name", {
+	idFieldOrFunction: (userFunction: UserFunction) => {
+		return userFunction.name + ":" + userFunction.location.uri.fsPath;
+	},
+});
 
 const allServerVariables: VariablesByUri = new VariablesByUri();
 const allApplicationVariables: VariablesByUri = new VariablesByUri();
@@ -168,7 +172,7 @@ export function setGlobalEntityDefinition(definition: CFDocsDefinitionInfo): voi
  * @param name The name of the global definition to be retrieved
  * @returns
  */
-export function getGlobalEntityDefinition(name: string): CFDocsDefinitionInfo {
+export function getGlobalEntityDefinition(name: string): CFDocsDefinitionInfo | undefined {
 	return allGlobalEntityDefinitions.get(name.toLowerCase());
 }
 
@@ -216,7 +220,7 @@ function setComponent(comp: Component): void {
  * @param _token
  * @returns
  */
-export function getComponent(uri: Uri, _token: CancellationToken | undefined): Component {
+export function getComponent(uri: Uri, _token: CancellationToken | undefined): Component | undefined {
 	if (!hasComponent(uri, _token)) {
 		/* TODO: If not already cached, attempt to read, parse and cache. Tricky since read is async */
 		return undefined;
@@ -269,10 +273,21 @@ function setUserFunction(userFunction: UserFunction): void {
  * @param _searchMode How the query will be searched for
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
+/**
+ *
+ * @param query
+ * @param _searchMode
+ * @returns
+ */
 export function searchAllFunctionNames(query: string, _searchMode: SearchMode = SearchMode.StartsWith): UserFunction[] {
 	let functions: UserFunction[] = [];
 	functions = allFunctionNames.search(query);
+	if (_searchMode === SearchMode.EqualTo) {
+		functions = functions.filter((funcObj: UserFunction) => {
+			return funcObj.name.toLowerCase() === query.toLowerCase();
+		});
+	}
 	return functions;
 }
 
@@ -289,7 +304,7 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
 		return undefined;
 	}
 
-	const normalizedPath: string = dotPath.replace(/\./g, "/") + COMPONENT_EXT;
+	const normalizedPath: string = dotPath.replace(/(\?\.|\.|::)/g, "/") + COMPONENT_EXT;
 
 	// relative to local directory
 	const localPath: string = resolveRelativePath(baseUri, normalizedPath);
@@ -300,7 +315,7 @@ export function cachedComponentPathToUri(dotPath: string, baseUri: Uri, _token: 
 	}
 
 	// relative to web root
-	const rootPath: string = resolveRootPath(baseUri, normalizedPath);
+	const rootPath: string | undefined = resolveRootPath(baseUri, normalizedPath);
 	if (rootPath) {
 		const rootFile: Uri = Uri.file(rootPath);
 		const rootFileKey = rootFile.toString().toLowerCase();
@@ -522,7 +537,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: Cancel
  * @param uri The URI of the application file
  * @returns
  */
-export function getCachedApplicationVariables(uri: Uri): Variable[] {
+export function getCachedApplicationVariables(uri: Uri): Variable[] | undefined {
 	return allApplicationVariables.get(uri.toString());
 }
 
@@ -549,7 +564,7 @@ export function removeApplicationVariables(uri: Uri): boolean {
  * @param uri The URI of the component to be check
  * @returns
  */
-export function getCachedServerVariables(uri: Uri): Variable[] {
+export function getCachedServerVariables(uri: Uri): Variable[] | undefined {
 	return allServerVariables.get(uri.toString());
 }
 

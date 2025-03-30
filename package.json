@@ -2,13 +2,13 @@
 	"name": "cfmleditor",
 	"displayName": "CFML Editor",
 	"description": "CFML Language Editor",
-	"version": "0.6.34",
+	"version": "0.6.37",
 	"preview": true,
 	"author": "cfmleditor",
 	"publisher": "cfmleditor",
 	"license": "MIT",
 	"engines": {
-		"vscode": "^1.97.0"
+		"vscode": "^1.98.0"
 	},
 	"repository": {
 		"type": "git",
@@ -358,6 +358,18 @@
 					"default": true,
 					"scope": "resource"
 				},
+				"cfml.definition.lookbehind.maxLength": {
+					"type": "number",
+					"default": -1,
+					"description": "Maximum length of the document to look behind from the end of the word to match functions / variables / tags (-1 is the default and will backtrack to the start of the document). (**Experimental**)",
+					"scope": "resource"
+				},
+				"cfml.definition.lookahead.maxLength": {
+					"type": "number",
+					"description": "Maximum length of the document to look ahead from the end of the word to match functions / variables / tags(-1 is the default and will search to the end of the document). (**Experimental**)",
+					"default": -1,
+					"scope": "resource"
+				},
 				"cfml.definition.userFunctions.search.enable": {
 					"type": "boolean",
 					"description": "Whether to search for matching functions throughout the workspace when a reliable match cannot be determined.",
@@ -619,24 +631,25 @@
 	},
 	"devDependencies": {
 		"@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-		"@eslint/eslintrc": "^3.3.0",
+		"@eslint/eslintrc": "^3.3.1",
 		"@eslint/js": "^9.20.0",
 		"@stylistic/eslint-plugin": "^4.2.0",
 		"@types/isomorphic-fetch": "^0.0.39",
 		"@types/micromatch": "^4.0.9",
 		"@types/node": "~20.10.8",
 		"@types/request": "~2.48.7",
-		"@types/semver": "~7.5.8",
-		"@types/vscode": "^1.97.0",
-		"@typescript-eslint/eslint-plugin": "^8.26.0",
-		"@typescript-eslint/parser": "^8.26.0",
+		"@types/semver": "^7.7.0",
+		"@types/vscode": "^1.98.0",
+		"@typescript-eslint/eslint-plugin": "^8.28.0",
+		"@typescript-eslint/parser": "^8.28.0",
 		"@vscode/test-cli": "^0.0.10",
 		"@vscode/test-electron": "^2.4.1",
-		"@vscode/test-web": "^0.0.67",
-		"@vscode/vsce": "^3.2.2",
-		"esbuild": "^0.25.0",
-		"eslint": "^9.22.0",
-		"eslint-plugin-jsdoc": "^50.6.3",
+		"@vscode/test-web": "^0.0.68",
+		"@vscode/vsce": "^3.3.1",
+		"esbuild": "^0.25.1",
+		"esbuild-plugin-tsc": "^0.5.0",
+		"eslint": "^9.23.0",
+		"eslint-plugin-jsdoc": "^50.6.9",
 		"rimraf": "^6.0.1",
 		"ts-loader": "^9.5.2",
 		"typescript": "^5.8.2"
