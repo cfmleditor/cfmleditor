@@ -2,6 +2,10 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.39] - 2025-04-06
+
+- Lower VSCode minimum version to `1.96.0` to support Cursor
+
 ## [0.6.38] - 2025-03-31
 
 - Regression / infinite loop trying to resolve Application.cfc when one doesn't exist in a parent directory
