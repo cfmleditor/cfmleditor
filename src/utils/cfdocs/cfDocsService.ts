@@ -407,7 +407,7 @@ export default class CFDocsService {
 			return;
 		}
 		const docsRoot = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/lucee/"));
-		const zipURL = "https://docs.lucee.org/lucee-docs-json.zip";
+		const zipURL = "https://docs.lucee.org/lucee-docs-json-zipped.zip";
 
 		// Weight of each progress step to smooth out the progress bar
 		const progressWeights = {
