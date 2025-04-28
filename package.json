@@ -123,17 +123,20 @@
 					"enum": [
 						"remote",
 						"local",
-						"extension"
+						"extension",
+						"lucee"
 					],
 					"enumDescriptions": [
 						"Retrieve resources remotely from GitHub.",
 						"Retrieve resources locally using cfml.cfDocs.localPath.",
-						"Retrieve resources built into the extension."
+						"Retrieve resources built into the extension.",
+						"Retrieve resources remotely from docs.lucee.org."
 					],
 					"markdownEnumDescription": [
 						"Retrieve resources remotely from GitHub.",
 						"Retrieve resources locally using `cfml.cfDocs.localPath`.",
-						"Retrieve resources built into the extension."
+						"Retrieve resources built into the extension.",
+						"Retrieve resources remotely from docs.lucee.org."
 					],
 					"default": "extension",
 					"scope": "window"
@@ -621,6 +624,7 @@
 		"buffer": "^6.0.3",
 		"html-entities": "^2.6.0",
 		"isomorphic-fetch": "^3.0.0",
+		"jszip": "^3.10.1",
 		"micromatch": "~4.0.8",
 		"path-browserify": "^1.0.1",
 		"semver": "^7.7.1",
