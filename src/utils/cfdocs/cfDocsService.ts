@@ -19,6 +19,8 @@ enum CFDocsSource {
 	lucee = "lucee",
 }
 
+type getDefinitionInfoFunction = (identifier: string) => Promise<CFDocsDefinitionInfo>;
+
 export default class CFDocsService {
 	private static cfDocsRepoLinkPrefix: string = "https://raw.githubusercontent.com/foundeo/cfdocs/master/data/en/";
 	private static cfDocsLinkPrefix: string = "https://cfdocs.org/";
@@ -200,7 +202,7 @@ export default class CFDocsService {
 	 * @param cfdocsSource The source of the documentation
 	 * @returns
 	 */
-	public static async resolveGetDefinitionInfo(cfdocsSource: CFDocsSource): Promise<(identifier: string) => Promise<CFDocsDefinitionInfo>> {
+	public static async resolveGetDefinitionInfo(cfdocsSource: CFDocsSource): Promise<getDefinitionInfoFunction> {
 		let getDefinitionInfo: ((identifier: string) => Promise<CFDocsDefinitionInfo>) | undefined;
 		if (cfdocsSource === CFDocsSource.remote) {
 			getDefinitionInfo = CFDocsService.getRemoteDefinitionInfo.bind(CFDocsService);
@@ -208,8 +210,20 @@ export default class CFDocsService {
 		if (cfdocsSource === CFDocsSource.local && env.appHost === "desktop") {
 			// Use documentation from a local path specified by the user
 			const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
-			const localPath: string | undefined = cfmlCfDocsSettings.get("localPath", "");
-			if (await this.isValidDocRoot(Uri.file(localPath))) {
+			const localPath: string = cfmlCfDocsSettings.get<string>("localPath", "");
+
+			if (localPath.endsWith(".zip")) {
+				// Allow a local file or a remote URL
+				let zipUri: Uri;
+				try {
+					zipUri = Uri.parse(localPath, true);
+				}
+				catch {
+					zipUri = Uri.file(localPath);
+				}
+				getDefinitionInfo = await this.createDefinitionInfoForZip(zipUri);
+			}
+			else if (await this.isValidDocRoot(Uri.file(localPath))) {
 				getDefinitionInfo = CFDocsService.getLocalDefinitionInfo.bind(CFDocsService, Uri.file(localPath));
 				console.info(`Loading documentation from cfml.cfDocs.localPath: "${localPath}"`);
 			}
@@ -220,21 +234,12 @@ export default class CFDocsService {
 		}
 		else if (cfdocsSource === CFDocsSource.extension) {
 			// Use documentation bundled with the extension
-			const cfDocsPath = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/cfdocs/en/"));
+			const cfDocsPath = Uri.joinPath(extensionContext.extensionUri, "./resources/schemas/cfdocs/en/");
 			getDefinitionInfo = CFDocsService.getLocalDefinitionInfo.bind(CFDocsService, cfDocsPath);
 			console.info(`Loading documentation from extension: "${cfDocsPath.fsPath}"`);
 		}
 		else if (cfdocsSource === CFDocsSource.lucee) {
-			// Use documentation downloaded from the Lucee website and cached in the extension
-			const luceeDocsPath = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/lucee/"));
-			if (await this.isValidDocRoot(luceeDocsPath)) {
-				console.info(`Loading documentation downloaded from Lucee: ${luceeDocsPath.fsPath}`);
-				getDefinitionInfo = CFDocsService.getLocalDefinitionInfo.bind(CFDocsService, luceeDocsPath);
-			}
-			else {
-				console.warn(`Invalid local path for Lucee CFDocs: ${luceeDocsPath.fsPath}`);
-				window.showErrorMessage("Invalid local path for Lucee CFDocs. Did you download the Lucee CFDocs?");
-			}
+			getDefinitionInfo = await this.createDefinitionInfoForZip(Uri.parse("https://docs.lucee.org/lucee-docs-json-zipped.zip"));
 		}
 		if (!getDefinitionInfo) {
 			// Fallback to remote CFDocs
@@ -242,6 +247,64 @@ export default class CFDocsService {
 			getDefinitionInfo = CFDocsService.getRemoteDefinitionInfo.bind(CFDocsService);
 		}
 		return getDefinitionInfo;
+	}
+
+	private static async createDefinitionInfoForZip(zipPath: Uri): Promise<getDefinitionInfoFunction | undefined> {
+		const zipData = await this.fetchFile(zipPath);
+		let zip = new JSZip();
+		await zip.loadAsync(zipData, { base64: false, checkCRC32: false });
+		// If the zip file contains another zip file, extract it
+		const innerZipFile = zip.filter(file => file.endsWith(".zip"))[0];
+		if (innerZipFile) {
+			const innerZipContents = await innerZipFile.async("uint8array");
+			const innerZip = new JSZip();
+			await innerZip.loadAsync(innerZipContents, { base64: false, checkCRC32: true });
+			zip = innerZip;
+		}
+
+		// Validate the zip file
+		const docFiles = zip.filter(file => file.endsWith(".json"));
+		if (docFiles.length === 0) {
+			console.error(`CFDocs: No JSON files found in zip file: ${zipPath.path}`);
+			window.showErrorMessage("Could not load CFDocs from zip file");
+			return;
+		}
+		if (!docFiles.some(file => file.name == "functions.json")) {
+			console.error(`CFDocs: No functions.json file found in zip file: ${zipPath.path}`);
+			window.showErrorMessage("Could not load functions.json from zip file");
+		}
+		if (!docFiles.some(file => file.name == "tags.json")) {
+			console.error(`CFDocs: No tags.json file found in zip file: ${zipPath.path}`);
+			window.showErrorMessage("Could not load tags.json from zip file");
+		}
+
+		const getDefinitionInfo = async (identifier: string): Promise<CFDocsDefinitionInfo> => {
+			const file = zip.file(CFDocsService.getJsonFileName(identifier));
+			if (file) {
+				const contents = await file.async("uint8array");
+				return CFDocsService.constructDefinitionFromJsonDoc(JSON.parse(new TextDecoder().decode(contents)));
+			}
+			// We should only be looking for files listed in functions.json or tags.json, so they should always exist
+			throw new Error(`File not found: ${CFDocsService.getJsonFileName(identifier)}`);
+		};
+		return getDefinitionInfo;
+	}
+
+	private static async fetchFile(filePath: Uri): Promise<Uint8Array> {
+		if (filePath.scheme === "file") {
+			return workspace.fs.readFile(filePath);
+		}
+		else if (filePath.scheme === "http" || filePath.scheme === "https") {
+			// To support VS Code for the Web, the server should set the CORS header "Access-Control-Allow-Origin: *".
+			const response = await fetch(filePath.toString());
+			if (!response.ok) {
+				throw new Error(`Failed to fetch file: ${filePath.path} (${response.status})`);
+			}
+			return new Uint8Array(await response.arrayBuffer());
+		}
+		else {
+			throw new Error(`Unsupported URI scheme: ${filePath.scheme}`);
+		}
 	}
 
 	/**
@@ -253,7 +316,7 @@ export default class CFDocsService {
 		const cfdocsSource: CFDocsSource = cfmlCfDocsSettings.get<CFDocsSource>("source", CFDocsSource.remote);
 
 		const getDefinitionInfo = await this.resolveGetDefinitionInfo(cfdocsSource);
-		const allFunctionNames: string[] = await CFDocsService.getAllFunctionNames(cfdocsSource);
+		const allFunctionNames: string[] = (await getDefinitionInfo("functions")).related || [];
 		const allTagNames: string[] = (await getDefinitionInfo("tags")).related || [];
 		const cfDocsCount = allFunctionNames.length + allTagNames.length;
 
@@ -263,13 +326,12 @@ export default class CFDocsService {
 					const definitionInfo: CFDocsDefinitionInfo = await getDefinitionInfo(functionName);
 					if (definitionInfo) {
 						CFDocsService.setGlobalFunction(definitionInfo);
-						console.log("Downloaded function");
 					}
 				}
 				catch (e) {
 					console.error(`Error with the JSON doc for ${functionName}:`, (<Error>e).message);
 				}
-				progress.report({ increment: 100 / cfDocsCount, message: `${functionName}` });
+				progress.report({ increment: 100 / cfDocsCount });
 			}));
 
 			await Promise.all(allTagNames.map(async (tagName) => {
@@ -277,13 +339,12 @@ export default class CFDocsService {
 					const definitionInfo: CFDocsDefinitionInfo = await getDefinitionInfo(tagName);
 					if (definitionInfo) {
 						CFDocsService.setGlobalTag(definitionInfo);
-						console.log("Downloaded tag");
 					}
 				}
 				catch (e) {
 					console.error(`Error with the JSON doc for ${tagName}:`, (<Error>e).message);
 				}
-				progress.report({ increment: 100 / cfDocsCount, message: `${tagName}` });
+				progress.report({ increment: 100 / cfDocsCount });
 			}));
 		});
 
@@ -390,91 +451,5 @@ export default class CFDocsService {
 		}
 
 		window.showInformationMessage("No matching compatible entity was found");
-	}
-
-	/**
-	 *
-	 */
-	public static async downloadDocs(): Promise<void> {
-		// TODO: Limit how often this is downloaded
-		// TODO: Test the web extension
-		// TODO: Saving the extracted files is slow, see if this can be improved with another library or a script
-		// TODO: Consider validation of the JSON files
-
-		const cfmlCfDocsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.cfDocs");
-		const cfdocsSource: CFDocsSource = cfmlCfDocsSettings.get<CFDocsSource>("source", CFDocsSource.remote);
-		if (cfdocsSource !== CFDocsSource.lucee) {
-			return;
-		}
-		const docsRoot = Uri.file(extensionContext.asAbsolutePath("./resources/schemas/lucee/"));
-		const zipURL = "https://docs.lucee.org/lucee-docs-json-zipped.zip";
-
-		// Weight of each progress step to smooth out the progress bar
-		const progressWeights = {
-			connecting: 5,
-			downloading: 15,
-			extracting: 80, // the bottleneck is saving 800+ files
-		};
-
-		await window.withProgress({ location: ProgressLocation.Notification, title: "Download CFDocs" }, async (progress) => {
-			progress.report({ increment: 0, message: "Connecting" });
-
-			// TODO: test if this will work in VS Code for the Web if the cors issue is fixed
-			// Host the zip file locally
-
-			let zipFile: Response;
-			try {
-				zipFile = await fetch(zipURL);
-			}
-			catch (e) {
-				let message = (e as Error)?.message || "Unknown error";
-				if (env.appHost !== "desktop") {
-					message = message + " (this may be due to a CORS error)";
-				}
-				console.error(`Failed to download CFDocs zip file: "${zipURL}" (${message})`);
-				window.showErrorMessage(`Failed to download CFDocs: ${message}`);
-				return;
-			}
-			if (!zipFile.ok) {
-				console.error(`Failed to download CFDocs zip file: "${zipURL}" (${zipFile.status})`);
-				window.showErrorMessage("Failed to download CFDocs");
-				return;
-			}
-			const zipFileBuffer = await zipFile.arrayBuffer();
-
-			progress.report({ increment: progressWeights.connecting, message: "Downloading" });
-
-			// TODO: handle zip containing another zip file (this compresses better)
-
-			let zip = new JSZip();
-			await zip.loadAsync(zipFileBuffer, { base64: false, checkCRC32: true });
-
-			// If the zip file contains another zip file, extract it
-			const innerZipFile = zip.filter(file => file.endsWith(".zip"))[0];
-			if (innerZipFile) {
-				const innerZipContents = await innerZipFile.async("uint8array");
-				const innerZip = new JSZip();
-				await innerZip.loadAsync(innerZipContents, { base64: false, checkCRC32: true });
-				zip = innerZip;
-			}
-
-			const docFiles = zip.filter(file => file.endsWith(".json"));
-			if (docFiles.length === 0) {
-				window.showErrorMessage("No CFDocs files found");
-				return;
-			}
-
-			workspace.fs.createDirectory(docsRoot);
-
-			progress.report({ increment: progressWeights.downloading, message: "Extracting" });
-
-			for (const file of docFiles) {
-				const filePath = Uri.joinPath(docsRoot, file.name);
-				const contents: Uint8Array = await file.async("uint8array");
-				// writeFile seems to take up the vast majority of the total time
-				await workspace.fs.writeFile(filePath, contents);
-				progress.report({ increment: progressWeights.extracting / docFiles.length, message: `Extracting ${file.name}...` });
-			}
-		});
 	}
 }

@@ -18,7 +18,6 @@ export async function refreshGlobalDefinitionCache(): Promise<void> {
 
 	const cfmlGlobalDefinitionsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.globalDefinitions");
 	if (cfmlGlobalDefinitionsSettings.get<string>("source") === "cfdocs") {
-		await CFDocsService.downloadDocs();
 		await CFDocsService.cacheAll();
 	}
 
