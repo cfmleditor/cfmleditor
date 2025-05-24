@@ -178,8 +178,8 @@ export interface UserFunctionsByName {
 export async function parseScriptFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<UserFunction[]> {
 	const document: TextDocument = documentStateContext.document;
 	const userFunctions: UserFunction[] = [];
-	// sanitizedDocumentText removes doc blocks
-	const componentBody: string = documentStateContext.sanitizedDocumentText;
+	// We need to parse doc blocks from comments here, so we cannot use documentStateContext.sanitizedDocumentText
+	const componentBody: string = document.getText();
 	let scriptFunctionMatch: RegExpExecArray | null;
 	while ((scriptFunctionMatch = scriptFunctionPattern.exec(componentBody))) {
 		const fullMatch: string = scriptFunctionMatch[0];
