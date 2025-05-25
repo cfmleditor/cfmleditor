@@ -518,11 +518,11 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 				}));
 			}
 
-			docBlock = docBlock.filter((docElem: DocBlockKeyValue) => {
+			const matchingDocBlocks = docBlock.filter((docElem: DocBlockKeyValue) => {
 				return equalsIgnoreCase(docElem.key, argument.name);
 			});
 
-			await Promise.all(docBlock.map(async (docElem: DocBlockKeyValue) => {
+			await Promise.all(matchingDocBlocks.map(async (docElem: DocBlockKeyValue) => {
 				if (docElem.subkey === "required") {
 					argument.required = DataType.isTruthy(docElem.value);
 				}
