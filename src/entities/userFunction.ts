@@ -178,14 +178,11 @@ export interface UserFunctionsByName {
 export async function parseScriptFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<UserFunction[]> {
 	const document: TextDocument = documentStateContext.document;
 	const userFunctions: UserFunction[] = [];
-	// We need to parse doc blocks from comments here, so we cannot use documentStateContext.sanitizedDocumentText
-	const componentBody: string = document.getText();
+	const componentBody: string = documentStateContext.sanitizedDocumentText;
 	let scriptFunctionMatch: RegExpExecArray | null;
 	while ((scriptFunctionMatch = scriptFunctionPattern.exec(componentBody))) {
 		const fullMatch: string = scriptFunctionMatch[0];
 		const returnTypePrefix: string = scriptFunctionMatch[1];
-		const fullDocBlock: string = scriptFunctionMatch[2];
-		const scriptDocBlockContent: string = scriptFunctionMatch[3];
 		const modifier1: string = scriptFunctionMatch[4];
 		const modifier2: string = scriptFunctionMatch[5];
 		const returnType: string = scriptFunctionMatch[6];
@@ -302,13 +299,37 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 		const parsedAttributes: Attributes = parseAttributes(document, functionAttributeRange);
 		userFunction = await assignFunctionAttributes(userFunction, parsedAttributes, _token);
 
+		// Walk backwards to find the first comment before the function
+		let precedingCommentRange: Range | undefined;
+		for (let i = documentStateContext.commentRanges.length - 1; i >= 0; i--) {
+			const commentRange: Range = documentStateContext.commentRanges[i];
+			if (commentRange.end.isAfterOrEqual(functionRange.start)) {
+				continue;
+			}
+			precedingCommentRange = commentRange;
+			break;
+		}
+		// Check if we found a docblock for this function
+		let fullDocBlock: string | undefined;
+		let docBlockRange: Range | undefined;
+		if (precedingCommentRange) {
+			const commentText = document.getText(precedingCommentRange);
+			// Check if the comment is a docblock
+			if (commentText.startsWith("/**")) {
+				// Check that the docblock is directly before the function
+				const textBetween = document.getText(new Range(precedingCommentRange.end, functionRange.start));
+				if (textBetween.trim().length == 0) {
+					fullDocBlock = commentText;
+					// Remove the leading "/**" and trailing "*/"
+					docBlockRange = new Range(precedingCommentRange.start.translate(0, 3), precedingCommentRange.end.translate(0, -2));
+				}
+			}
+		}
+
 		let scriptDocBlockParsed: DocBlockKeyValue[] = [];
-		if (fullDocBlock) {
+		if (fullDocBlock && docBlockRange) {
 			scriptDocBlockParsed = parseDocBlock(document,
-				new Range(
-					document.positionAt(scriptFunctionMatch.index + 3),
-					document.positionAt(scriptFunctionMatch.index + 3 + scriptDocBlockContent.length)
-				)
+				docBlockRange
 			);
 			await Promise.all(scriptDocBlockParsed.map(async (docElem: DocBlockKeyValue) => {
 				if (docElem.key === "access") {
