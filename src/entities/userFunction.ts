@@ -387,13 +387,12 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
  * @returns
  */
 export async function parseScriptFunctionArgs(documentStateContext: DocumentStateContext, argsRange: Range, docBlock: DocBlockKeyValue[], _token: CancellationToken | undefined): Promise<Argument[]> {
-	const args: Argument[] = [];
 	const document: TextDocument = documentStateContext.document;
 	const documentUri: Uri = document.uri;
 
 	const scriptArgRanges: Range[] = getScriptFunctionArgRanges(documentStateContext, argsRange, ",", _token);
 
-	await Promise.all(scriptArgRanges.map(async (argRange: Range) => {
+	const promise = Promise.all(scriptArgRanges.map(async (argRange: Range) => {
 		const argText: string = documentStateContext.sanitizedDocumentText.slice(document.offsetAt(argRange.start), document.offsetAt(argRange.end));
 		const argStartOffset = document.offsetAt(argRange.start);
 		const scriptFunctionArgMatch: RegExpExecArray | null = scriptFunctionArgPattern.exec(argText);
@@ -551,9 +550,16 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 				}
 			}));
 
-			args.push(argument);
+			return argument;
+		}
+		else {
+			return undefined;
 		}
 	}));
+
+	const args: Argument[] = (await promise).filter((arg: Argument | undefined) => {
+		return arg !== undefined;
+	});
 
 	return args;
 }
