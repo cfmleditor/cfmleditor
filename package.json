@@ -601,6 +601,7 @@
 		]
 	},
 	"scripts": {
+		"postinstall": "npm run download-docs",
 		"clean": "rimraf out *.vsix",
 		"build": "npm run check-types && node esbuild.js",
 		"rebuild": "npm run clean && npm run build",
