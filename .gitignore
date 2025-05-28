@@ -16,4 +16,6 @@ tsconfig.tsbuildinfo
 *.vsix
 
 # External documentation that is included in the bundled extension
-resources/docs/**
+resources/.docs-download/
+resources/.docs-old/
+resources/docs/
