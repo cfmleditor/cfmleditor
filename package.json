@@ -616,7 +616,8 @@
 		"vscode:prepublish": "npm run package",
 		"lint": "eslint src",
 		"download-docs": "tsx ./src/scripts/download-docs.ts",
-		"package": "npm run check-types && node esbuild.js --production",
+		"validate-docs": "tsx ./src/scripts/validate-docs.ts",
+		"package": "npm run check-types && node esbuild.js --production && download-docs && validate-docs",
 		"pack": "vsce package",
 		"publish": "vsce publish"
 	},
