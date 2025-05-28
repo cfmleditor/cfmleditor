@@ -614,6 +614,7 @@
 		"test": "vscode-test",
 		"vscode:prepublish": "npm run package",
 		"lint": "eslint src",
+		"download-docs": "tsx ./src/scripts/download-docs.ts",
 		"package": "npm run check-types && node esbuild.js --production",
 		"pack": "vsce package",
 		"publish": "vsce publish"

@@ -18,4 +18,5 @@ typings/**
 package-lock.json
 **/eslint.config.mjs
 out/**
-resources/schemas/lucee/**
+resources/docs/**
+!resources/docs/**/*.zip

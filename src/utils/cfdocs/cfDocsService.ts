@@ -234,12 +234,14 @@ export default class CFDocsService {
 		}
 		else if (cfdocsSource === CFDocsSource.extension) {
 			// Use documentation bundled with the extension
-			const cfDocsPath = Uri.joinPath(extensionContext.extensionUri, "./resources/schemas/cfdocs/en/");
-			getDefinitionInfo = CFDocsService.getLocalDefinitionInfo.bind(CFDocsService, cfDocsPath);
-			console.info(`Loading documentation from extension: "${cfDocsPath.fsPath}"`);
+			const cfDocsPath = Uri.joinPath(extensionContext.extensionUri, "./resources/docs/cfdocs.zip");
+			getDefinitionInfo = await this.createDefinitionInfoForZip(cfDocsPath);
+			console.info(`Loading CFDocs documentation from extension: "${cfDocsPath.fsPath}"`);
 		}
 		else if (cfdocsSource === CFDocsSource.lucee) {
-			getDefinitionInfo = await this.createDefinitionInfoForZip(Uri.parse("https://docs.lucee.org/lucee-docs-json-zipped.zip"));
+			const luceeDocsPath = Uri.joinPath(extensionContext.extensionUri, "./resources/docs/lucee-docs.zip");
+			getDefinitionInfo = await this.createDefinitionInfoForZip(luceeDocsPath);
+			console.info(`Loading Lucee documentation from extension: "${luceeDocsPath.fsPath}"`);
 		}
 		if (!getDefinitionInfo) {
 			// Fallback to remote CFDocs

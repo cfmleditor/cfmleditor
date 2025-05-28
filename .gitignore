@@ -15,5 +15,5 @@ npm-debug.log
 tsconfig.tsbuildinfo
 *.vsix
 
-# External documentation that is downloaded during testing (see also .vscodeignore)
-resources/schemas/lucee/
+# External documentation that is included in the bundled extension
+resources/docs/**
