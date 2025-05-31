@@ -21,4 +21,5 @@ out/**
 resources/.docs-download/**
 resources/.docs-old/**
 resources/docs/**
+resources/schemas/cfdocs/**
 !resources/docs/**/*.zip
