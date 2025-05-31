@@ -619,7 +619,7 @@
 		"lint": "eslint src",
 		"download-docs": "tsx ./src/scripts/download-docs.ts",
 		"validate-docs": "tsx ./src/scripts/validate-docs.ts",
-		"package": "npm run check-types && node esbuild.js --production && download-docs && validate-docs",
+		"package": "npm run check-types && node esbuild.js --production && npm run download-docs && npm run validate-docs",
 		"pack": "vsce package",
 		"publish": "vsce publish"
 	},
