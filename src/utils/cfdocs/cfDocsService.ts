@@ -255,9 +255,10 @@ export default class CFDocsService {
 		const zipData = await this.fetchFile(zipPath);
 		let zip = new JSZip();
 		await zip.loadAsync(zipData, { base64: false, checkCRC32: false });
-		// If the zip file contains another zip file, extract it
+		// If this zip file is invalid, but it contains another zip file, extract it
+		const hasIndexFile = zip.file(/functions.json/).length > 0;
 		const innerZipFile = zip.filter(file => file.endsWith(".zip"))[0];
-		if (innerZipFile) {
+		if (!hasIndexFile && innerZipFile) {
 			const innerZipContents = await innerZipFile.async("uint8array");
 			const innerZip = new JSZip();
 			await innerZip.loadAsync(innerZipContents, { base64: false, checkCRC32: true });
@@ -271,17 +272,18 @@ export default class CFDocsService {
 			window.showErrorMessage("Could not load CFDocs from zip file");
 			return;
 		}
-		if (!docFiles.some(file => file.name == "functions.json")) {
+		if (!docFiles.some(file => file.name.split("/").at(-1) == "functions.json")) {
 			console.error(`CFDocs: No functions.json file found in zip file: ${zipPath.path}`);
 			window.showErrorMessage("Could not load functions.json from zip file");
 		}
-		if (!docFiles.some(file => file.name == "tags.json")) {
+		if (!docFiles.some(file => file.name.split("/").at(-1) == "tags.json")) {
 			console.error(`CFDocs: No tags.json file found in zip file: ${zipPath.path}`);
 			window.showErrorMessage("Could not load tags.json from zip file");
 		}
 
 		const getDefinitionInfo = async (identifier: string): Promise<CFDocsDefinitionInfo> => {
-			const file = zip.file(CFDocsService.getJsonFileName(identifier));
+			const jsonFilename = CFDocsService.getJsonFileName(identifier);
+			const file = docFiles.find(file => file.name.split("/").at(-1) == jsonFilename);
 			if (file) {
 				const contents = await file.async("uint8array");
 				return CFDocsService.constructDefinitionFromJsonDoc(JSON.parse(new TextDecoder().decode(contents)));
