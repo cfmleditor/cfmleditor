@@ -123,21 +123,21 @@
 					"markdownDescription": "Indicates the source location type to be used for CFDocs. Remote is GitHub repo. Local is based on `cfml.cfDocs.localPath`.",
 					"enum": [
 						"remote",
-						"local",
 						"extension",
-						"lucee"
+						"lucee",
+						"local"
 					],
 					"enumDescriptions": [
 						"Retrieve resources remotely from GitHub.",
-						"Retrieve resources locally using cfml.cfDocs.localPath.",
 						"Retrieve resources built into the extension.",
-						"Retrieve resources remotely from docs.lucee.org."
+						"Retrieve resources remotely from docs.lucee.org.",
+						"Retrieve resources locally using cfml.cfDocs.localPath."
 					],
 					"markdownEnumDescription": [
 						"Retrieve resources remotely from GitHub.",
-						"Retrieve resources locally using `cfml.cfDocs.localPath`.",
 						"Retrieve resources built into the extension.",
-						"Retrieve resources remotely from docs.lucee.org."
+						"Retrieve resources remotely from docs.lucee.org.",
+						"Retrieve resources locally using `cfml.cfDocs.localPath`."
 					],
 					"default": "extension",
 					"scope": "window"
