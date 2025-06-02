@@ -609,6 +609,8 @@
 		"build-tests": "tsc --build",
 		"pretest": "npm run build-tests && npm run build ",
 		"test": "vscode-test",
+		"test-web": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/extension.test.js",
+		"run-web": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. ./src/test/workspace",
 		"vscode:prepublish": "npm run package",
 		"lint": "eslint src",
 		"package": "npm run check-types && node esbuild.js --production",

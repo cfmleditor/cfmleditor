@@ -3,6 +3,8 @@ const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
 const polyfill = require('@esbuild-plugins/node-globals-polyfill');
 const esbuildPluginTsc = require('esbuild-plugin-tsc');
+const glob = require('glob');
+const path = require('path');
 
 async function main() {
   const desktop = await esbuild.context({
@@ -59,6 +61,38 @@ async function main() {
     await web.rebuild();
     await web.dispose();
   }
+
+  const webTests = await esbuild.context({
+    entryPoints: ['src/test/web/extension.test.ts'],
+    bundle: true,
+    format: 'cjs',
+    minify: production,
+    sourcemap: !production,
+    sourcesContent: false,
+    platform: 'browser',
+    outdir: 'dist/web',
+    external: ['vscode'],
+    define: {
+      global: 'globalThis'
+    },
+    logLevel: 'warning',
+    plugins: [
+		polyfill.NodeGlobalsPolyfillPlugin({
+			process: true,
+			buffer: true
+		}),
+		replacePath(),
+		testBundlePlugin,
+		esbuildProblemMatcherPlugin,
+		esbuildPluginTsc(),
+    ]
+  });
+  if (watch) {
+    await webTests.watch();
+  } else {
+    await webTests.rebuild();
+    await webTests.dispose();
+  }
 }
 
 const replacePath = () => {
@@ -76,6 +110,56 @@ const replacePath = () => {
         },
     };
 }
+
+
+/**
+ * Web Test Bundler Plugin (Only needed for web test build)
+ * @type {import('esbuild').Plugin}
+ */
+const testBundlePlugin = {
+	name: 'testBundlePlugin',
+	setup(build) {
+		build.onResolve({ filter: /[\/\\]extension.test\.ts$/ }, args => {
+			if (args.kind === 'entry-point') {
+				return { path: path.resolve(args.path) };
+			}
+		});
+		build.onLoad({ filter: /[\/\\]extension.test\.ts$/ }, async args => {
+			// Ensure the path construction is robust
+			const testsRoot = path.resolve(__dirname, 'src/test/web');
+			const pattern = '*.test.{ts,tsx}';
+			// Use path.posix.join for consistent glob patterns, especially on Windows
+			const globPattern = path.posix.join(testsRoot.replace(/\\/g, '/'), pattern);
+
+			// Use glob.glob with absolute paths for clarity
+			const files = await glob.glob(globPattern, { absolute: true });
+
+			// Generate relative import paths from the perspective of extensionTests.ts location
+			const importerDir = path.dirname(args.path); // Directory of the virtual extensionTests.ts
+			const relativeImports = files.map(f => {
+				const relativePath = path.relative(importerDir, f).replace(/\\/g, '/');
+				// Ensure it starts with './' if in the same or subdirectory
+				return relativePath.startsWith('.') ? relativePath : `./${relativePath}`;
+			});
+
+			const watchDirs = Array.from(new Set(files.map(f => path.dirname(f)))); // Unique directories
+
+			console.log('[testBundlePlugin] Found test files:', files);
+			console.log('[testBundlePlugin] Generated imports:', relativeImports);
+
+			return {
+				contents:
+					`export { run } from './mochaTestRunner';\n` + // Assuming mochaTestRunner is relative
+					relativeImports.map(f => `import('${f}');`).join('\n'),
+				// Resolve relative to the importer's directory for watchDirs/Files
+				resolveDir: importerDir,
+				watchDirs: watchDirs,
+				watchFiles: files
+			};
+		});
+	}
+};
+
 
 /**
  * @type {import('esbuild').Plugin}
