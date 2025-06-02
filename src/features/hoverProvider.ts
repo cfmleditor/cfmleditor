@@ -489,8 +489,8 @@ export default class CFMLHoverProvider implements HoverProvider {
 	 * @returns
 	 */
 	public createHoverText(definition: HoverProviderItem): MarkdownString[] | undefined {
-		const cfdocsIconUri: Uri = Uri.file(extensionContext.asAbsolutePath("images/cfdocs.png"));
-		const mdnIconUri: Uri = Uri.file(extensionContext.asAbsolutePath("images/mdn.png"));
+		const cfdocsIconUri: Uri = Uri.joinPath(extensionContext.extensionUri, "images/cfdocs.png");
+		const mdnIconUri: Uri = Uri.joinPath(extensionContext.extensionUri, "images/mdn.png");
 
 		const hoverTexts: MarkdownString[] = [];
 		let syntax: string = definition.syntax;
