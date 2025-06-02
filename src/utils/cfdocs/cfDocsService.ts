@@ -352,6 +352,10 @@ export default class CFDocsService {
 			}));
 		});
 
+		const cachedGlobalFunctionsCount = Object.keys(cachedEntity.getAllGlobalFunctions()).length;
+		const cachedGlobalTagsCount = Object.keys(cachedEntity.getAllGlobalTags()).length;
+		console.info(`Cached documentation for ${cachedGlobalFunctionsCount} functions and ${cachedGlobalTagsCount} tags`);
+
 		return true;
 	}
 
