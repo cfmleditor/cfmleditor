@@ -18,3 +18,8 @@ typings/**
 package-lock.json
 **/eslint.config.mjs
 out/**
+resources/.docs-download/**
+resources/.docs-old/**
+resources/docs/**
+resources/schemas/en/**
+!resources/docs/**/*.zip
