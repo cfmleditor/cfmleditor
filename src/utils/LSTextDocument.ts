@@ -27,6 +27,7 @@ export class LSTextDocument implements TextDocument {
 	public readonly uri: Uri;
 	public readonly fileName: string;
 	public readonly eol: EndOfLine;
+	public readonly encoding: string;
 
 	// This is the actual text document
 	private textDocument: FastTextDocument;
@@ -60,6 +61,7 @@ export class LSTextDocument implements TextDocument {
 		this.uri = uri;
 		this.fileName = uri.fsPath;
 		this.eol = lineEnding === "\r\n" ? EndOfLine.CRLF : EndOfLine.LF;
+		this.encoding = "utf-8"; // Default encoding, can be changed if needed
 		// this.textDocument.uri
 		// this.textDocument.version
 	}
