@@ -178,14 +178,11 @@ export interface UserFunctionsByName {
 export async function parseScriptFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<UserFunction[]> {
 	const document: TextDocument = documentStateContext.document;
 	const userFunctions: UserFunction[] = [];
-	// sanitizedDocumentText removes doc blocks
 	const componentBody: string = documentStateContext.sanitizedDocumentText;
 	let scriptFunctionMatch: RegExpExecArray | null;
 	while ((scriptFunctionMatch = scriptFunctionPattern.exec(componentBody))) {
 		const fullMatch: string = scriptFunctionMatch[0];
 		const returnTypePrefix: string = scriptFunctionMatch[1];
-		const fullDocBlock: string = scriptFunctionMatch[2];
-		const scriptDocBlockContent: string = scriptFunctionMatch[3];
 		const modifier1: string = scriptFunctionMatch[4];
 		const modifier2: string = scriptFunctionMatch[5];
 		const returnType: string = scriptFunctionMatch[6];
@@ -302,13 +299,37 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 		const parsedAttributes: Attributes = parseAttributes(document, functionAttributeRange);
 		userFunction = await assignFunctionAttributes(userFunction, parsedAttributes, _token);
 
+		// Walk backwards to find the first comment before the function
+		let precedingCommentRange: Range | undefined;
+		for (let i = documentStateContext.commentRanges.length - 1; i >= 0; i--) {
+			const commentRange: Range = documentStateContext.commentRanges[i];
+			if (commentRange.end.isAfterOrEqual(functionRange.start)) {
+				continue;
+			}
+			precedingCommentRange = commentRange;
+			break;
+		}
+		// Check if we found a docblock for this function
+		let fullDocBlock: string | undefined;
+		let docBlockRange: Range | undefined;
+		if (precedingCommentRange) {
+			const commentText = document.getText(precedingCommentRange);
+			// Check if the comment is a docblock
+			if (commentText.startsWith("/**")) {
+				// Check that the docblock is directly before the function
+				const textBetween = document.getText(new Range(precedingCommentRange.end, functionRange.start));
+				if (textBetween.trim().length == 0) {
+					fullDocBlock = commentText;
+					// Remove the leading "/**" and trailing "*/"
+					docBlockRange = new Range(precedingCommentRange.start.translate(0, 3), precedingCommentRange.end.translate(0, -2));
+				}
+			}
+		}
+
 		let scriptDocBlockParsed: DocBlockKeyValue[] = [];
-		if (fullDocBlock) {
+		if (fullDocBlock && docBlockRange) {
 			scriptDocBlockParsed = parseDocBlock(document,
-				new Range(
-					document.positionAt(scriptFunctionMatch.index + 3),
-					document.positionAt(scriptFunctionMatch.index + 3 + scriptDocBlockContent.length)
-				)
+				docBlockRange
 			);
 			await Promise.all(scriptDocBlockParsed.map(async (docElem: DocBlockKeyValue) => {
 				if (docElem.key === "access") {
@@ -366,13 +387,12 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
  * @returns
  */
 export async function parseScriptFunctionArgs(documentStateContext: DocumentStateContext, argsRange: Range, docBlock: DocBlockKeyValue[], _token: CancellationToken | undefined): Promise<Argument[]> {
-	const args: Argument[] = [];
 	const document: TextDocument = documentStateContext.document;
 	const documentUri: Uri = document.uri;
 
 	const scriptArgRanges: Range[] = getScriptFunctionArgRanges(documentStateContext, argsRange, ",", _token);
 
-	await Promise.all(scriptArgRanges.map(async (argRange: Range) => {
+	const promise = Promise.all(scriptArgRanges.map(async (argRange: Range) => {
 		const argText: string = documentStateContext.sanitizedDocumentText.slice(document.offsetAt(argRange.start), document.offsetAt(argRange.end));
 		const argStartOffset = document.offsetAt(argRange.start);
 		const scriptFunctionArgMatch: RegExpExecArray | null = scriptFunctionArgPattern.exec(argText);
@@ -498,11 +518,11 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 				}));
 			}
 
-			docBlock = docBlock.filter((docElem: DocBlockKeyValue) => {
+			const matchingDocBlocks = docBlock.filter((docElem: DocBlockKeyValue) => {
 				return equalsIgnoreCase(docElem.key, argument.name);
 			});
 
-			await Promise.all(docBlock.map(async (docElem: DocBlockKeyValue) => {
+			await Promise.all(matchingDocBlocks.map(async (docElem: DocBlockKeyValue) => {
 				if (docElem.subkey === "required") {
 					argument.required = DataType.isTruthy(docElem.value);
 				}
@@ -530,9 +550,16 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 				}
 			}));
 
-			args.push(argument);
+			return argument;
+		}
+		else {
+			return undefined;
 		}
 	}));
+
+	const args: Argument[] = (await promise).filter((arg: Argument | undefined) => {
+		return arg !== undefined;
+	});
 
 	return args;
 }
