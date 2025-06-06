@@ -1,667 +1,720 @@
 {
-	"name": "cfmleditor",
-	"displayName": "CFML Editor",
-	"description": "CFML Language Editor",
-	"version": "0.6.39",
-	"preview": true,
-	"author": "cfmleditor",
-	"publisher": "cfmleditor",
-	"license": "MIT",
-	"engines": {
-		"vscode": "^1.96.0"
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/cfmleditor/cfmleditor.git"
-	},
-	"bugs": {
-		"url": "https://github.com/cfmleditor/cfmleditor/issues"
-	},
-	"categories": [
-		"Programming Languages"
-	],
-	"keywords": [
-		"cfml",
-		"coldfusion",
-		"lucee"
-	],
-	"activationEvents": [
-		"workspaceContains:**/*.cfm",
-		"workspaceContains:**/*.cfml",
-		"workspaceContains:**/*.cfc",
-		"workspaceContains:**/*.cfs"
-	],
-	"icon": "images/icon2x.png",
-	"main": "./dist/desktop/extension.js",
-	"browser": "./dist/web/extension.js",
-	"contributes": {
-		"languages": [
-			{
-				"id": "cfml",
-				"aliases": [
-					"CFML",
-					"cfml"
-				],
-				"extensions": [
-					".cfml",
-					".cfm",
-					".cfc"
-				],
-				"configuration": "./language-configuration.json"
-			},
-			{
-				"id": "cfs",
-				"aliases": [
-					"CFS"
-				],
-				"extensions": [
-					".cfs"
-				],
-				"configuration": "./language-configuration.json"
-			}
-		],
-		"grammars": [
-			{
-				"language": "cfml",
-				"scopeName": "embedding.cfml",
-				"path": "./syntaxes/cfml.tmLanguage.json",
-				"embeddedLanguages": {
-					"source.css": "css",
-					"meta.embedded.block.css": "css",
-					"source.js": "javascript",
-					"meta.embedded.block.js": "javascript",
-					"meta.embedded.line.js": "javascript",
-					"source.sql": "sql",
-					"meta.embedded.block.sql": "sql",
-					"meta.tag.cfml": "cfml",
-					"constant.character.escape.hash.cfml": "cfml",
-					"punctuation.definition.template-expression.begin.cfml": "cfml",
-					"meta.embedded.line.cfml": "cfml",
-					"meta.embedded.block.cfml": "cfml",
-					"punctuation.definition.template-expression.end.cfml": "cfml"
-				}
-			},
-			{
-				"language": "cfs",
-				"scopeName": "embedding.cfml.cfs",
-				"path": "./syntaxes/cfml-cfs.tmLanguage.json",
-				"embeddedLanguages": {
-					"source.css": "css",
-					"meta.embedded.block.css": "css",
-					"source.js": "javascript",
-					"meta.embedded.block.js": "javascript",
-					"meta.embedded.line.js": "javascript",
-					"source.sql": "sql",
-					"meta.embedded.block.sql": "sql",
-					"meta.tag.cfml": "cfml",
-					"constant.character.escape.hash.cfml": "cfml",
-					"punctuation.definition.template-expression.begin.cfml": "cfml",
-					"meta.embedded.line.cfml": "cfml",
-					"meta.embedded.block.cfml": "cfml",
-					"punctuation.definition.template-expression.end.cfml": "cfml"
-				}
-			}
-		],
-		"configuration": {
-			"id": "cfml",
-			"type": "object",
-			"title": "CFML Configuration",
-			"properties": {
-				"cfml.globalDefinitions.source": {
-					"type": "string",
-					"description": "The source of the global definitions.",
-					"enum": [
-						"cfdocs"
-					],
-					"default": "cfdocs",
-					"scope": "window"
-				},
-				"cfml.cfDocs.source": {
-					"order": 3,
-					"type": "string",
-					"markdownDescription": "The source for documentation.\n- [CFDocs](https://cfdocs.org/): Community maintained documentation for multiple engines. Can be filtered using `#cfml.engine.name#`.\n- [Lucee](https://docs.lucee.org/): Official documentation.\n- Use `local` to load docs from `#cfml.cfDocs.localPath#`.",
-					"enum": [
-						"remote",
-						"extension",
-						"lucee",
-						"local"
-					],
-					"enumItemLabels": [
-						"CFDocs - remote (GitHub)",
-						"CFDocs - embedded",
-						"Lucee - embedded",
-						"Custom path"
-					],
-					"markdownEnumDescriptions": [
-						"Download the latest CFDocs from GitHub each time the extension is started.",
-						"Use embedded CFDocs.",
-						"Use embedded Lucee documentation.",
-						"Fetch documentation from `cfml.cfDocs.localPath`."
-					],
-					"default": "extension",
-					"scope": "window"
-				},
-				"cfml.cfDocs.localPath": {
-					"order": 4,
-					"type": [
-						"string",
-						"null"
-					],
-					"markdownDescription": "Path to a directory or zip file of CFDocs. Used when `#cfml.cfDocs.source#` is set to `local`.\n- A directory must contain `functions.json`\n- Zips must contain `functions.json` (in any subfolder, or nested zip)\n- Remote URLs are supported (VS Code for the Web needs CORS headers)",
-					"default": null,
-					"scope": "machine-overridable"
-				},
-				"cfml.hover.enable": {
-					"type": "boolean",
-					"description": "Whether hover is enabled for CFML entities.",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.hover.html.enable": {
-					"type": "boolean",
-					"description": "Whether hover is enabled for HTML entities.",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.hover.css.enable": {
-					"type": "boolean",
-					"description": "Whether hover is enabled for CSS entities.",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.signature.enable": {
-					"type": "boolean",
-					"description": "Whether signature help is enabled.",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.suggest.enable": {
-					"type": "boolean",
-					"description": "Whether completion help is enabled.",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.suggest.snippets.enable": {
-					"type": "boolean",
-					"description": "Whether snippets are part of completion help.",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.suggest.snippets.exclude": {
-					"type": "array",
-					"description": "Set of snippet keys you would like excluded from suggestions.",
-					"items": {
-						"description": "A snippet key to exclude from suggestions",
-						"type": "string"
-					},
-					"default": [],
-					"scope": "resource"
-				},
-				"cfml.suggest.snippets.localPath": {
-					"type": [
-						"string",
-						"null"
-					],
-					"description": "Custom snippets path.",
-					"default": null,
-					"scope": "machine-overridable"
-				},
-				"cfml.suggest.scopes.case": {
-					"type": "string",
-					"description": "What case should be used for the scopes in completion suggestions.",
-					"enum": [
-						"lower",
-						"upper"
-					],
-					"enumDescriptions": [
-						"Lowercases the scope",
-						"Uppercases the scope"
-					],
-					"default": "lower",
-					"scope": "resource"
-				},
-				"cfml.suggest.globalFunctions.enable": {
-					"type": "boolean",
-					"description": "Whether global functions are part of completion help.",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.suggest.globalFunctions.firstLetterCase": {
-					"type": "string",
-					"description": "What case should be used for the first letter of global function suggestions.",
-					"enum": [
-						"unchanged",
-						"lower",
-						"upper"
-					],
-					"enumDescriptions": [
-						"Leaves the name unchanged from source",
-						"Lowercases the first letter",
-						"Uppercases the first letter"
-					],
-					"default": "default",
-					"scope": "resource"
-				},
-				"cfml.suggest.globalTags.enable": {
-					"type": "boolean",
-					"description": "Whether global tags are part of completion help.",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.suggest.globalTags.attributes.quoteType": {
-					"type": "string",
-					"enum": [
-						"none",
-						"double",
-						"single"
-					],
-					"enumDescriptions": [
-						"Adds no quotes for attribute value",
-						"Adds two double quotes for attribute value",
-						"Adds two single quotes for attribute value"
-					],
-					"default": "double",
-					"description": "Which quote type to use when completing attribute suggestion.",
-					"scope": "resource"
-				},
-				"cfml.suggest.globalTags.attributes.defaultValue": {
-					"type": "boolean",
-					"description": "Whether to populate the default value for an attribute if it has one.",
-					"default": false,
-					"scope": "resource"
-				},
-				"cfml.suggest.globalTags.includeAttributes.setType": {
-					"type": "string",
-					"description": "What set of attributes to include when global tag suggestion is selected",
-					"default": "none",
-					"enum": [
-						"none",
-						"required",
-						"all"
-					],
-					"enumDescriptions": [
-						"Adds no attributes on completion of global tags",
-						"Adds required attributes on completion of global tags",
-						"Adds all attributes on completion of global tags"
-					],
-					"scope": "resource"
-				},
-				"cfml.suggest.globalTags.includeAttributes.custom": {
-					"type": "object",
-					"description": "A custom set of attributes to include for given tags when suggestion is selected. This setting overrides the set type.",
-					"default": {},
-					"patternProperties": {
-						"^cf[a-z0-9_]+$": {
-							"description": "The tag name and its attribute overrides",
-							"type": "array",
-							"minItems": 0,
-							"items": {
-								"title": "Attribute",
-								"description": "The attribute information",
-								"type": "object",
-								"properties": {
-									"name": {
-										"title": "Attribute name",
-										"description": "The name of the attribute to include",
-										"type": "string"
-									},
-									"value": {
-										"title": "Attribute value",
-										"description": "The default value of the attribute",
-										"type": "string",
-										"default": ""
-									}
-								},
-								"required": [
-									"name"
-								]
-							},
-							"default": []
-						}
-					},
-					"additionalProperties": false,
-					"scope": "resource"
-				},
-				"cfml.suggest.htmlTags.enable": {
-					"type": "boolean",
-					"description": "Whether HTML tags are part of completion help.",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.suggest.htmlTags.attributes.quoteType": {
-					"type": "string",
-					"enum": [
-						"none",
-						"double",
-						"single"
-					],
-					"enumDescriptions": [
-						"Adds no quotes for attribute value",
-						"Adds two double quotes for attribute value",
-						"Adds two single quotes for attribute value"
-					],
-					"default": "double",
-					"description": "Which quote type to use when completing attribute suggestion.",
-					"scope": "resource"
-				},
-				"cfml.suggest.css.enable": {
-					"type": "boolean",
-					"description": "Whether CSS properties and values are part of completion help.",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.suggest.replaceComments": {
-					"type": "boolean",
-					"description": "Whether comments are replaced during parsing (**Disabing this is Experimental**)",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.definition.enable": {
-					"type": "boolean",
-					"description": "Whether providing definitions is enabled.",
-					"default": true,
-					"scope": "resource"
-				},
-				"cfml.definition.lookbehind.maxLength": {
-					"type": "number",
-					"default": -1,
-					"description": "Maximum length of the document to look behind from the end of the word to match functions / variables / tags (-1 is the default and will backtrack to the start of the document). (**Experimental**)",
-					"scope": "resource"
-				},
-				"cfml.definition.lookahead.maxLength": {
-					"type": "number",
-					"description": "Maximum length of the document to look ahead from the end of the word to match functions / variables / tags(-1 is the default and will search to the end of the document). (**Experimental**)",
-					"default": -1,
-					"scope": "resource"
-				},
-				"cfml.definition.userFunctions.search.enable": {
-					"type": "boolean",
-					"description": "Whether to search for matching functions throughout the workspace when a reliable match cannot be determined.",
-					"default": false,
-					"scope": "resource"
-				},
-				"cfml.indexComponents.enable": {
-					"type": "boolean",
-					"description": "Whether to index the components in workspace. This is done on each startup and is required for most features to work properly.",
-					"default": true,
-					"scope": "window"
-				},
-				"cfml.autoCloseTags.enable": {
-					"order": 2,
-					"type": "boolean",
-					"markdownDescription": "Whether to enable auto-closing tags for CFML. This uses the third-party extension `auto-close-tag`. This is only checked and set on startup.",
-					"default": true,
-					"scope": "window"
-				},
-				"cfml.autoCloseTags.configurationTarget": {
-					"order": 1,
-					"type": "string",
-					"description": "Auto-configuration target for auto-closing tags.",
-					"enum": [
-						"Global",
-						"Workspace"
-					],
-					"markdownEnumDescription": [
-						"Targets the global/user settings for CFML configuration of `auto-close-tag`",
-						"Targets the workspace settings for CFML configuration of `auto-close-tag`"
-					],
-					"default": "Global",
-					"scope": "window"
-				},
-				"cfml.docBlock.gap": {
-					"type": "boolean",
-					"default": true,
-					"description": "Whether there should be a gap between the hint and other tags in a docblock",
-					"scope": "resource"
-				},
-				"cfml.docBlock.extra": {
-					"type": "array",
-					"default": [],
-					"items": {
-						"type": "object",
-						"properties": {
-							"name": {
-								"type": "string",
-								"description": "The name of the tag"
-							},
-							"default": {
-								"type": "string",
-								"default": "",
-								"description": "The default value for the tag"
-							},
-							"types": {
-								"type": "array",
-								"description": "The types of structures to which this tag will be applied",
-								"items": {
-									"description": "A type of structure to which this tag will be applied",
-									"type": "string",
-									"enum": [
-										"component",
-										"function",
-										"property",
-										"interface"
-									]
-								}
-							}
-						},
-						"required": [
-							"name"
-						]
-					},
-					"description": "Extra tags you wish to include in every DocBlock",
-					"scope": "resource"
-				},
-				"cfml.engine.name": {
-					"type": "string",
-					"description": "Name of the CFML engine against which to filter.",
-					"enum": [
-						"coldfusion",
-						"lucee",
-						"railo",
-						"openbd"
-					],
-					"scope": "window"
-				},
-				"cfml.engine.version": {
-					"type": "string",
-					"pattern": "^((0|[1-9]\\d*)(\\.(0|[1-9]\\d*)(\\.(0|[1-9]\\d*))?)?)?$",
-					"description": "Version of the CFML engine against which to filter. SemVer format is preferred.",
-					"scope": "window"
-				},
-				"cfml.mappings": {
-					"type": "array",
-					"default": [],
-					"items": {
-						"type": "object",
-						"properties": {
-							"logicalPath": {
-								"type": "string",
-								"default": "",
-								"description": "The logical path to which the directory path is mapped. Must start with a /."
-							},
-							"directoryPath": {
-								"type": "string",
-								"default": "",
-								"description": "The path to the actual directory that will be mapped. Can be a physical path or relative to the workspace root."
-							},
-							"isPhysicalDirectoryPath": {
-								"type": "boolean",
-								"default": true,
-								"description": "Whether directoryPath refers to a physical path or one relative to the workspace root"
-							}
-						},
-						"required": [
-							"logicalPath",
-							"directoryPath"
-						]
-					},
-					"description": "Represents CFML mappings from logicalPath to directoryPath.",
-					"scope": "resource"
-				}
-			}
-		},
-		"configurationDefaults": {
-			"[cfml]": {
-				"editor.suggest.snippetsPreventQuickSuggestions": false
-			}
-		},
-		"commands": [
-			{
-				"command": "cfml.refreshGlobalDefinitionCache",
-				"category": "CFML",
-				"title": "Refresh cache for global definitions"
-			},
-			{
-				"command": "cfml.refreshWorkspaceDefinitionCache",
-				"category": "CFML",
-				"title": "Refresh cache for workspace definitions"
-			},
-			{
-				"command": "cfml.toggleLineComment",
-				"category": "CFML",
-				"title": "Toggle CFML line comment"
-			},
-			{
-				"command": "cfml.toggleBlockComment",
-				"category": "CFML",
-				"title": "Toggle CFML block comment"
-			},
-			{
-				"command": "cfml.openActiveApplicationFile",
-				"category": "CFML",
-				"title": "Open Application file for currently active document"
-			},
-			{
-				"command": "cfml.goToMatchingTag",
-				"category": "CFML",
-				"title": "Go to Matching Tag"
-			},
-			{
-				"command": "cfml.openCfDocs",
-				"category": "CFML",
-				"title": "Open CFDocs page for current word"
-			},
-			{
-				"command": "cfml.openEngineDocs",
-				"category": "CFML",
-				"title": "Open CFML engine docs page for current word"
-			},
-			{
-				"command": "cfml.foldAllFunctions",
-				"category": "CFML",
-				"title": "Fold all functions in active editor"
-			}
-		],
-		"menus": {
-			"commandPalette": [
-				{
-					"command": "cfml.toggleLineComment",
-					"when": "!editorReadonly && editorLangId == cfml"
-				},
-				{
-					"command": "cfml.toggleBlockComment",
-					"when": "!editorReadonly && editorLangId == cfml"
-				},
-				{
-					"command": "cfml.openActiveApplicationFile",
-					"when": "editorLangId == cfml"
-				},
-				{
-					"command": "cfml.goToMatchingTag",
-					"when": "editorLangId == cfml"
-				},
-				{
-					"command": "cfml.openCfDocs",
-					"when": "editorLangId == cfml"
-				},
-				{
-					"command": "cfml.openEngineDocs",
-					"when": "editorLangId == cfml"
-				},
-				{
-					"command": "cfml.foldAllFunctions",
-					"when": "editorLangId == cfml"
-				}
-			]
-		},
-		"keybindings": [
-			{
-				"command": "cfml.toggleLineComment",
-				"key": "ctrl+/",
-				"mac": "cmd+/",
-				"when": "editorTextFocus && !editorReadonly && editorLangId == cfml"
-			},
-			{
-				"command": "cfml.insertSnippet",
-				"key": "ctrl+shift+d",
-				"mac": "ctrl+shift+d",
-				"args": {
-					"tag": "<cfdump var=\"$TM_SELECTED_TEXT\">",
-					"script": "writeDump($TM_SELECTED_TEXT)"
-				}
-			}
-		]
-	},
-	"scripts": {
-		"postinstall": "npm run download-docs",
-		"clean": "rimraf out *.vsix",
-		"build": "npm run check-types && node esbuild.js",
-		"rebuild": "npm run clean && npm run build",
-		"check-types": "tsc --noEmit",
-		"watch": "npm-run-all -p watch:*",
-		"watch:esbuild": "node esbuild.js --watch",
-		"watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
-		"watch:tests": "tsc --build --watch",
-		"build-tests": "tsc --build",
-		"pretest": "npm run build-tests && npm run build ",
-		"test": "vscode-test",
-		"vscode:prepublish": "npm run package",
-		"lint": "eslint src",
-		"download-docs": "tsx ./src/scripts/download-docs.ts",
-		"validate-docs": "tsx ./src/scripts/validate-docs.ts",
-		"package": "npm run check-types && node esbuild.js --production && npm run download-docs && npm run validate-docs",
-		"pack": "vsce package",
-		"publish": "vsce publish"
-	},
-	"dependencies": {
-		"async_hooks": "^1.0.0",
-		"browserify": "^17.0.1",
-		"buffer": "^6.0.3",
-		"html-entities": "^2.6.0",
-		"isomorphic-fetch": "^3.0.0",
-		"jszip": "^3.10.1",
-		"micromatch": "~4.0.8",
-		"path-browserify": "^1.0.1",
-		"semver": "^7.7.2",
-		"trie-search": "^2.2.0",
-		"vscode-languageserver-textdocument": "^1.0.12",
-		"vscode-languageserver-types": "^3.17.5",
-		"vscode-uri": "^3.1.0"
-	},
-	"devDependencies": {
-		"@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-		"@eslint/eslintrc": "^3.3.1",
-		"@eslint/js": "^9.20.0",
-		"@stylistic/eslint-plugin": "^4.4.0",
-		"@types/isomorphic-fetch": "^0.0.39",
-		"@types/micromatch": "^4.0.9",
-		"@types/node": "~20.10.8",
-		"@types/request": "~2.48.7",
-		"@types/semver": "^7.7.0",
-		"@types/vscode": "^1.96.0",
-		"@typescript-eslint/eslint-plugin": "^8.33.1",
-		"@typescript-eslint/parser": "^8.33.1",
-		"@vscode/test-cli": "^0.0.10",
-		"@vscode/test-electron": "^2.5.2",
-		"@vscode/test-web": "^0.0.68",
-		"@vscode/vsce": "^3.4.2",
-		"esbuild": "^0.25.5",
-		"esbuild-plugin-tsc": "^0.5.0",
-		"eslint": "^9.28.0",
-		"eslint-plugin-jsdoc": "^50.7.1",
-		"rimraf": "^6.0.1",
-		"ts-loader": "^9.5.2",
-		"tsx": "^4.19.4",
-		"typescript": "^5.8.3"
-	}
+  "name": "cfmleditor",
+  "displayName": "CFML Editor",
+  "description": "CFML Language Editor",
+  "version": "0.6.39",
+  "preview": true,
+  "author": "cfmleditor",
+  "publisher": "cfmleditor",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cfmleditor/cfmleditor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cfmleditor/cfmleditor/issues"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "cfml",
+    "coldfusion",
+    "lucee"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/*.cfm",
+    "workspaceContains:**/*.cfml",
+    "workspaceContains:**/*.cfc",
+    "workspaceContains:**/*.cfs"
+  ],
+  "icon": "images/icon2x.png",
+  "main": "./dist/desktop/extension.js",
+  "browser": "./dist/web/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "cfml.components",
+          "name": "CFML Components",
+          "when": "resourceLangId == cfml"
+        }
+      ]
+    },
+    "languages": [
+      {
+        "id": "cfml",
+        "aliases": [
+          "CFML",
+          "cfml"
+        ],
+        "extensions": [
+          ".cfml",
+          ".cfm",
+          ".cfc"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "cfs",
+        "aliases": [
+          "CFS"
+        ],
+        "extensions": [
+          ".cfs"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "cfml",
+        "scopeName": "embedding.cfml",
+        "path": "./syntaxes/cfml.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.css": "css",
+          "meta.embedded.block.css": "css",
+          "source.js": "javascript",
+          "meta.embedded.block.js": "javascript",
+          "meta.embedded.line.js": "javascript",
+          "source.sql": "sql",
+          "meta.embedded.block.sql": "sql",
+          "meta.tag.cfml": "cfml",
+          "constant.character.escape.hash.cfml": "cfml",
+          "punctuation.definition.template-expression.begin.cfml": "cfml",
+          "meta.embedded.line.cfml": "cfml",
+          "meta.embedded.block.cfml": "cfml",
+          "punctuation.definition.template-expression.end.cfml": "cfml"
+        }
+      },
+      {
+        "language": "cfs",
+        "scopeName": "embedding.cfml.cfs",
+        "path": "./syntaxes/cfml-cfs.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.css": "css",
+          "meta.embedded.block.css": "css",
+          "source.js": "javascript",
+          "meta.embedded.block.js": "javascript",
+          "meta.embedded.line.js": "javascript",
+          "source.sql": "sql",
+          "meta.embedded.block.sql": "sql",
+          "meta.tag.cfml": "cfml",
+          "constant.character.escape.hash.cfml": "cfml",
+          "punctuation.definition.template-expression.begin.cfml": "cfml",
+          "meta.embedded.line.cfml": "cfml",
+          "meta.embedded.block.cfml": "cfml",
+          "punctuation.definition.template-expression.end.cfml": "cfml"
+        }
+      }
+    ],
+    "configuration": {
+      "id": "cfml",
+      "type": "object",
+      "title": "CFML Configuration",
+      "properties": {
+        "cfml.globalDefinitions.source": {
+          "type": "string",
+          "description": "The source of the global definitions.",
+          "enum": [
+            "cfdocs"
+          ],
+          "default": "cfdocs",
+          "scope": "window"
+        },
+        "cfml.cfDocs.source": {
+          "order": 3,
+          "type": "string",
+          "markdownDescription": "The source for documentation.\n- [CFDocs](https://cfdocs.org/): Community maintained documentation for multiple engines. Can be filtered using `#cfml.engine.name#`.\n- [Lucee](https://docs.lucee.org/): Official documentation.\n- Use `local` to load docs from `#cfml.cfDocs.localPath#`.",
+          "enum": [
+            "remote",
+            "extension",
+            "lucee",
+            "local"
+          ],
+          "enumItemLabels": [
+            "CFDocs - remote (GitHub)",
+            "CFDocs - embedded",
+            "Lucee - embedded",
+            "Custom path"
+          ],
+          "markdownEnumDescriptions": [
+            "Download the latest CFDocs from GitHub each time the extension is started.",
+            "Use embedded CFDocs.",
+            "Use embedded Lucee documentation.",
+            "Fetch documentation from `cfml.cfDocs.localPath`."
+          ],
+          "default": "extension",
+          "scope": "window"
+        },
+        "cfml.cfDocs.localPath": {
+          "order": 4,
+          "type": [
+            "string",
+            "null"
+          ],
+          "markdownDescription": "Path to a directory or zip file of CFDocs. Used when `#cfml.cfDocs.source#` is set to `local`.\n- A directory must contain `functions.json`\n- Zips must contain `functions.json` (in any subfolder, or nested zip)\n- Remote URLs are supported (VS Code for the Web needs CORS headers)",
+          "default": null,
+          "scope": "machine-overridable"
+        },
+        "cfml.hover.enable": {
+          "type": "boolean",
+          "description": "Whether hover is enabled for CFML entities.",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.hover.html.enable": {
+          "type": "boolean",
+          "description": "Whether hover is enabled for HTML entities.",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.hover.css.enable": {
+          "type": "boolean",
+          "description": "Whether hover is enabled for CSS entities.",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.signature.enable": {
+          "type": "boolean",
+          "description": "Whether signature help is enabled.",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.suggest.enable": {
+          "type": "boolean",
+          "description": "Whether completion help is enabled.",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.suggest.snippets.enable": {
+          "type": "boolean",
+          "description": "Whether snippets are part of completion help.",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.suggest.snippets.exclude": {
+          "type": "array",
+          "description": "Set of snippet keys you would like excluded from suggestions.",
+          "items": {
+            "description": "A snippet key to exclude from suggestions",
+            "type": "string"
+          },
+          "default": [],
+          "scope": "resource"
+        },
+        "cfml.suggest.snippets.localPath": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Custom snippets path.",
+          "default": null,
+          "scope": "machine-overridable"
+        },
+        "cfml.suggest.scopes.case": {
+          "type": "string",
+          "description": "What case should be used for the scopes in completion suggestions.",
+          "enum": [
+            "lower",
+            "upper"
+          ],
+          "enumDescriptions": [
+            "Lowercases the scope",
+            "Uppercases the scope"
+          ],
+          "default": "lower",
+          "scope": "resource"
+        },
+        "cfml.suggest.globalFunctions.enable": {
+          "type": "boolean",
+          "description": "Whether global functions are part of completion help.",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.suggest.globalFunctions.firstLetterCase": {
+          "type": "string",
+          "description": "What case should be used for the first letter of global function suggestions.",
+          "enum": [
+            "unchanged",
+            "lower",
+            "upper"
+          ],
+          "enumDescriptions": [
+            "Leaves the name unchanged from source",
+            "Lowercases the first letter",
+            "Uppercases the first letter"
+          ],
+          "default": "default",
+          "scope": "resource"
+        },
+        "cfml.suggest.globalTags.enable": {
+          "type": "boolean",
+          "description": "Whether global tags are part of completion help.",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.suggest.globalTags.attributes.quoteType": {
+          "type": "string",
+          "enum": [
+            "none",
+            "double",
+            "single"
+          ],
+          "enumDescriptions": [
+            "Adds no quotes for attribute value",
+            "Adds two double quotes for attribute value",
+            "Adds two single quotes for attribute value"
+          ],
+          "default": "double",
+          "description": "Which quote type to use when completing attribute suggestion.",
+          "scope": "resource"
+        },
+        "cfml.suggest.globalTags.attributes.defaultValue": {
+          "type": "boolean",
+          "description": "Whether to populate the default value for an attribute if it has one.",
+          "default": false,
+          "scope": "resource"
+        },
+        "cfml.suggest.globalTags.includeAttributes.setType": {
+          "type": "string",
+          "description": "What set of attributes to include when global tag suggestion is selected",
+          "default": "none",
+          "enum": [
+            "none",
+            "required",
+            "all"
+          ],
+          "enumDescriptions": [
+            "Adds no attributes on completion of global tags",
+            "Adds required attributes on completion of global tags",
+            "Adds all attributes on completion of global tags"
+          ],
+          "scope": "resource"
+        },
+        "cfml.suggest.globalTags.includeAttributes.custom": {
+          "type": "object",
+          "description": "A custom set of attributes to include for given tags when suggestion is selected. This setting overrides the set type.",
+          "default": {},
+          "patternProperties": {
+            "^cf[a-z0-9_]+$": {
+              "description": "The tag name and its attribute overrides",
+              "type": "array",
+              "minItems": 0,
+              "items": {
+                "title": "Attribute",
+                "description": "The attribute information",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "title": "Attribute name",
+                    "description": "The name of the attribute to include",
+                    "type": "string"
+                  },
+                  "value": {
+                    "title": "Attribute value",
+                    "description": "The default value of the attribute",
+                    "type": "string",
+                    "default": ""
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              "default": []
+            }
+          },
+          "additionalProperties": false,
+          "scope": "resource"
+        },
+        "cfml.suggest.htmlTags.enable": {
+          "type": "boolean",
+          "description": "Whether HTML tags are part of completion help.",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.suggest.htmlTags.attributes.quoteType": {
+          "type": "string",
+          "enum": [
+            "none",
+            "double",
+            "single"
+          ],
+          "enumDescriptions": [
+            "Adds no quotes for attribute value",
+            "Adds two double quotes for attribute value",
+            "Adds two single quotes for attribute value"
+          ],
+          "default": "double",
+          "description": "Which quote type to use when completing attribute suggestion.",
+          "scope": "resource"
+        },
+        "cfml.suggest.css.enable": {
+          "type": "boolean",
+          "description": "Whether CSS properties and values are part of completion help.",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.suggest.replaceComments": {
+          "type": "boolean",
+          "description": "Whether comments are replaced during parsing (**Disabing this is Experimental**)",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.definition.enable": {
+          "type": "boolean",
+          "description": "Whether providing definitions is enabled.",
+          "default": true,
+          "scope": "resource"
+        },
+        "cfml.definition.lookbehind.maxLength": {
+          "type": "number",
+          "default": -1,
+          "description": "Maximum length of the document to look behind from the end of the word to match functions / variables / tags (-1 is the default and will backtrack to the start of the document). (**Experimental**)",
+          "scope": "resource"
+        },
+        "cfml.definition.lookahead.maxLength": {
+          "type": "number",
+          "description": "Maximum length of the document to look ahead from the end of the word to match functions / variables / tags(-1 is the default and will search to the end of the document). (**Experimental**)",
+          "default": -1,
+          "scope": "resource"
+        },
+        "cfml.definition.userFunctions.search.enable": {
+          "type": "boolean",
+          "description": "Whether to search for matching functions throughout the workspace when a reliable match cannot be determined.",
+          "default": false,
+          "scope": "resource"
+        },
+        "cfml.indexComponents.enable": {
+          "type": "boolean",
+          "description": "Whether to index the components in workspace. This is done on each startup and is required for most features to work properly.",
+          "default": true,
+          "scope": "window"
+        },
+        "cfml.autoCloseTags.enable": {
+          "order": 2,
+          "type": "boolean",
+          "markdownDescription": "Whether to enable auto-closing tags for CFML. This uses the third-party extension `auto-close-tag`. This is only checked and set on startup.",
+          "default": true,
+          "scope": "window"
+        },
+        "cfml.autoCloseTags.configurationTarget": {
+          "order": 1,
+          "type": "string",
+          "description": "Auto-configuration target for auto-closing tags.",
+          "enum": [
+            "Global",
+            "Workspace"
+          ],
+          "markdownEnumDescription": [
+            "Targets the global/user settings for CFML configuration of `auto-close-tag`",
+            "Targets the workspace settings for CFML configuration of `auto-close-tag`"
+          ],
+          "default": "Global",
+          "scope": "window"
+        },
+        "cfml.docBlock.gap": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether there should be a gap between the hint and other tags in a docblock",
+          "scope": "resource"
+        },
+        "cfml.docBlock.extra": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "The name of the tag"
+              },
+              "default": {
+                "type": "string",
+                "default": "",
+                "description": "The default value for the tag"
+              },
+              "types": {
+                "type": "array",
+                "description": "The types of structures to which this tag will be applied",
+                "items": {
+                  "description": "A type of structure to which this tag will be applied",
+                  "type": "string",
+                  "enum": [
+                    "component",
+                    "function",
+                    "property",
+                    "interface"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "description": "Extra tags you wish to include in every DocBlock",
+          "scope": "resource"
+        },
+        "cfml.engine.name": {
+          "type": "string",
+          "description": "Name of the CFML engine against which to filter.",
+          "enum": [
+            "coldfusion",
+            "lucee",
+            "railo",
+            "openbd"
+          ],
+          "scope": "window"
+        },
+        "cfml.engine.version": {
+          "type": "string",
+          "pattern": "^((0|[1-9]\\d*)(\\.(0|[1-9]\\d*)(\\.(0|[1-9]\\d*))?)?)?$",
+          "description": "Version of the CFML engine against which to filter. SemVer format is preferred.",
+          "scope": "window"
+        },
+        "cfml.mappings": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "properties": {
+              "logicalPath": {
+                "type": "string",
+                "default": "",
+                "description": "The logical path to which the directory path is mapped. Must start with a /."
+              },
+              "directoryPath": {
+                "type": "string",
+                "default": "",
+                "description": "The path to the actual directory that will be mapped. Can be a physical path or relative to the workspace root."
+              },
+              "isPhysicalDirectoryPath": {
+                "type": "boolean",
+                "default": true,
+                "description": "Whether directoryPath refers to a physical path or one relative to the workspace root"
+              }
+            },
+            "required": [
+              "logicalPath",
+              "directoryPath"
+            ]
+          },
+          "description": "Represents CFML mappings from logicalPath to directoryPath.",
+          "scope": "resource"
+        }
+      }
+    },
+    "configurationDefaults": {
+      "[cfml]": {
+        "editor.suggest.snippetsPreventQuickSuggestions": false
+      }
+    },
+    "commands": [
+      {
+        "command": "cfml.refreshGlobalDefinitionCache",
+        "category": "CFML",
+        "title": "Refresh cache for global definitions"
+      },
+      {
+        "command": "cfml.refreshWorkspaceDefinitionCache",
+        "category": "CFML",
+        "title": "Refresh cache for workspace definitions"
+      },
+      {
+        "command": "cfml.toggleLineComment",
+        "category": "CFML",
+        "title": "Toggle CFML line comment"
+      },
+      {
+        "command": "cfml.toggleBlockComment",
+        "category": "CFML",
+        "title": "Toggle CFML block comment"
+      },
+      {
+        "command": "cfml.openActiveApplicationFile",
+        "category": "CFML",
+        "title": "Open Application file for currently active document"
+      },
+      {
+        "command": "cfml.goToMatchingTag",
+        "category": "CFML",
+        "title": "Go to Matching Tag"
+      },
+      {
+        "command": "cfml.openCfDocs",
+        "category": "CFML",
+        "title": "Open CFDocs page for current word"
+      },
+      {
+        "command": "cfml.openEngineDocs",
+        "category": "CFML",
+        "title": "Open CFML engine docs page for current word"
+      },
+      {
+        "command": "cfml.foldAllFunctions",
+        "category": "CFML",
+        "title": "Fold all functions in active editor"
+      },
+      {
+        "command": "cfml.filterPackages",
+        "title": "Filter Packages"
+      },
+      {
+        "command": "cfml.clearFilter",
+        "title": "Clear Filter"
+      },
+      {
+        "command": "cfml.openFile",
+        "title": "Open CFML Component"
+      },
+
+      {
+        "command": "cfml.copyPackage",
+        "title": "Copy CFC Package Path"
+      }
+
+    ],
+    "menus": {
+		"editor/title/context": [
+        {
+          "command": "cfml.copyPackage",
+          "group": "1_cutcopypaste",
+          "when": "resourceExtname == .cfc"
+        }
+      ],
+	  "explorer/context": [
+        {
+          "command": "cfml.copyPackage",
+          "group": "6_copypath",
+          "when": "resourceExtname == .cfc"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "cfml.filterPackages",
+          "when": "view == cfml.components",
+          "group": "navigation"
+        },
+		{
+		"command": "cfml.clearFilter",
+		"when": "view == cfml.components",
+		"group": "navigation"
+		}
+      ],
+      "commandPalette": [
+        {
+          "command": "cfml.toggleLineComment",
+          "when": "!editorReadonly && editorLangId == cfml"
+        },
+        {
+          "command": "cfml.toggleBlockComment",
+          "when": "!editorReadonly && editorLangId == cfml"
+        },
+        {
+          "command": "cfml.openActiveApplicationFile",
+          "when": "editorLangId == cfml"
+        },
+        {
+          "command": "cfml.goToMatchingTag",
+          "when": "editorLangId == cfml"
+        },
+        {
+          "command": "cfml.openCfDocs",
+          "when": "editorLangId == cfml"
+        },
+        {
+          "command": "cfml.openEngineDocs",
+          "when": "editorLangId == cfml"
+        },
+        {
+          "command": "cfml.foldAllFunctions",
+          "when": "editorLangId == cfml"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "cfml.toggleLineComment",
+        "key": "ctrl+/",
+        "mac": "cmd+/",
+        "when": "editorTextFocus && !editorReadonly && editorLangId == cfml"
+      },
+      {
+        "command": "cfml.insertSnippet",
+        "key": "ctrl+shift+d",
+        "mac": "ctrl+shift+d",
+        "args": {
+          "tag": "<cfdump var=\"$TM_SELECTED_TEXT\">",
+          "script": "writeDump($TM_SELECTED_TEXT)"
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "postinstall": "npm run download-docs",
+    "clean": "rimraf out *.vsix",
+    "build": "npm run check-types && node esbuild.js",
+    "rebuild": "npm run clean && npm run build",
+    "check-types": "tsc --noEmit",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "watch:tests": "tsc --build --watch",
+    "build-tests": "tsc --build",
+    "pretest": "npm run build-tests && npm run build ",
+    "test": "vscode-test",
+    "vscode:prepublish": "npm run package",
+    "lint": "eslint src",
+    "download-docs": "tsx ./src/scripts/download-docs.ts",
+    "validate-docs": "tsx ./src/scripts/validate-docs.ts",
+    "package": "npm run check-types && node esbuild.js --production && npm run download-docs && npm run validate-docs",
+    "pack": "vsce package",
+    "publish": "vsce publish"
+  },
+  "dependencies": {
+    "async_hooks": "^1.0.0",
+    "browserify": "^17.0.1",
+    "buffer": "^6.0.3",
+    "html-entities": "^2.6.0",
+    "isomorphic-fetch": "^3.0.0",
+    "jszip": "^3.10.1",
+    "micromatch": "~4.0.8",
+    "path-browserify": "^1.0.1",
+    "semver": "^7.7.2",
+    "trie-search": "^2.2.0",
+    "vscode-languageserver-textdocument": "^1.0.12",
+    "vscode-languageserver-types": "^3.17.5",
+    "vscode-uri": "^3.1.0"
+  },
+  "devDependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.20.0",
+    "@stylistic/eslint-plugin": "^4.4.0",
+    "@types/isomorphic-fetch": "^0.0.39",
+    "@types/micromatch": "^4.0.9",
+    "@types/node": "~20.10.8",
+    "@types/request": "~2.48.7",
+    "@types/semver": "^7.7.0",
+    "@types/vscode": "^1.96.0",
+    "@typescript-eslint/eslint-plugin": "^8.33.1",
+    "@typescript-eslint/parser": "^8.33.1",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/test-web": "^0.0.68",
+    "@vscode/vsce": "^3.4.2",
+    "esbuild": "^0.25.5",
+    "esbuild-plugin-tsc": "^0.5.0",
+    "eslint": "^9.28.0",
+    "eslint-plugin-jsdoc": "^50.7.1",
+    "rimraf": "^6.0.1",
+    "ts-loader": "^9.5.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
 }
