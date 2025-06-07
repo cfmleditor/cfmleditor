@@ -20,9 +20,8 @@ class CFCComponentItem extends TreeItem {
 export class CFMLFlatPackageProvider implements TreeDataProvider<CFCComponentItem> {
 	private _onDidChangeTreeData = new EventEmitter<CFCComponentItem | undefined>();
 	readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-	private filterText: string = "";
 
-	constructor(private rootPath: string) {
+	constructor() {
 		workspace.onDidCreateFiles((e) => {
 			if (e.files.some(f => f.fsPath.endsWith(".cfc"))) {
 				this._onDidChangeTreeData.fire(undefined);
@@ -47,7 +46,7 @@ export class CFMLFlatPackageProvider implements TreeDataProvider<CFCComponentIte
 	// }
 
 	setFilter(filter: string) {
-		this.filterText = filter.toLowerCase();
+		// this.filterText = filter.toLowerCase();
 		this.refresh();
 	}
 

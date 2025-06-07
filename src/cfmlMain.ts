@@ -338,30 +338,6 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	// 		console.error("Failed to create ComponentTreeDataProvider:", error);
 	// 	}
 	// }
-	context.subscriptions.push(
-		commands.registerCommand("cfml.filterPackages", async () => {
-			const input = await window.showInputBox({
-				placeHolder: "Filter CFML components (e.g. \"utils\")",
-			});
-			if (provider) {
-				provider.setFilter(input ?? "");
-			}
-		})
-	);
-
-	context.subscriptions.push(
-		commands.registerCommand("cfml.openFile", (uri: Uri) => {
-			window.showTextDocument(uri);
-		})
-	);
-
-	context.subscriptions.push(
-		commands.registerCommand("cfml.clearFilter", () => {
-			if (provider) {
-				provider.setFilter("");
-			}
-		})
-	);
 
 	context.subscriptions.push(
 		commands.registerCommand(
