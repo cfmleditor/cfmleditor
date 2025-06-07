@@ -42,9 +42,9 @@ export function convertPathToPackageName(
 	}
 
 	// Now convert it to a package path
-	relPath = relPath.replace(/^[\/|\\]/, "")
-		.replace(/[/|\\]/g, ".")
-		.replace(/\.[A-Za-z]+$/, "");
+	relPath = relPath.replace(/^[/|\\]/, "") // removes leading slashes.
+		.replace(/[/|\\]/g, ".") // replaces slashes with dots.
+		.replace(/\.[A-Za-z]+$/, ""); // removes the file extension.
 
 	return relPath;
 }
