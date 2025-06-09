@@ -2,6 +2,13 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.40] - 2025-04-09
+
+- Added Lucee documentation as alternative to CFDocs -- `cfml.cfDocs.source`: `lucee` ([\#71](https://github.com/cfmleditor/cfmleditor/issues/71))
+- Added support for using `.zip` files in `cfml.cfDocs.localPath`
+- Added support for using URLs in `cfml.cfDocs.localPath`
+- Fixed docblocks ([\#77](https://github.com/cfmleditor/cfmleditor/pull/77))
+
 ## [0.6.39] - 2025-04-06
 
 - Lower VSCode minimum version to `1.96.0` to support Cursor

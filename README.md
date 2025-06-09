@@ -13,6 +13,7 @@ An extension for the development of CFML.
 - [`vscode-coldfusion`](https://github.com/ilich/vscode-coldfusion/) on which the syntax highlighting is based, which was based on the next extension
 - [`sublimetext-cfml`](https://github.com/jcberquist/sublimetext-cfml) as inspiration for some of the features. Some "parsing" logic (including regexes) was also used.
 - [`cfdocs`](https://github.com/foundeo/cfdocs/) as the default documentation and sample images in this README
+- [`lucee-docs`](https://github.com/lucee/lucee-docs) as an alternative source of documentation
 - [`vscode-php-docblocker`](https://github.com/neild3r/vscode-php-docblocker) as the basis for docblock completion
 
 ## Features
