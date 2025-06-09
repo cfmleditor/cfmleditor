@@ -1,10 +1,10 @@
 // This file provides functions to convert paths to package names and vice versa,
 // It also allows replacement of packagenames with mappings.
 
-import { Uri, workspace } from "vscode";
 import { join } from "path";
+import { Uri, workspace } from "vscode";
 
-interface CFMLMapping {
+export interface CFMLMapping {
 	directoryPath: string; // The physical path to the directory
 	logicalPath: string; // The logical path to the directory
 	isPhysicalDirectoryPath: boolean; // Whether the directoryPath is a physical path
@@ -13,23 +13,29 @@ interface CFMLMapping {
  *
  * @param workspacePath
  * @param path
+ * @param mappings
  * @returns
  */
 export function convertPathToPackageName(
-	workspacePath: Uri,
-	path: Uri
+	path: Uri,
+	mappings: CFMLMapping[]
 ): string {
-	const mappings = workspace.getConfiguration("cfml").get<CFMLMapping[]>("mappings", []) || [];
+	let relPath = "";
 
 	// We would need to kinda sort the mappings by length, so that the longest matching path is used first.
 	mappings.sort((a, b) => {
 		return b.directoryPath.length - a.directoryPath.length;
 	});
 
-	let relPath = workspace.asRelativePath(path);
+	relPath = workspace.asRelativePath(path);
+
 	for (const mapping of mappings) {
-		if (mapping.isPhysicalDirectoryPath) {
-			continue;
+		if (mapping.isPhysicalDirectoryPath
+			&& path.fsPath.startsWith(mapping.directoryPath)
+		) {
+			relPath = path.fsPath.replace(mapping.directoryPath, "");
+			relPath = join(mapping.logicalPath, relPath);
+			break;
 		}
 
 		if (relPath.startsWith(mapping.directoryPath)) {

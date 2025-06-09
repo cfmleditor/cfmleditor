@@ -26,7 +26,7 @@ import { DocumentStateContext, getDocumentStateContext } from "./utils/documentU
 import { handleContentChanges } from "./features/autoclose";
 import { resolveBaseName, uriBaseName } from "./utils/fileUtil";
 // import { CFMLFlatPackageProvider } from "./views/components";
-import { convertPathToPackageName } from "./utils/packages";
+import { convertPathToPackageName } from "./utils/cfcPackages";
 
 export const LANGUAGE_ID: string = "cfml";
 export const LANGUAGE_CFS_ID: string = "cfs";
@@ -349,10 +349,11 @@ export async function activate(context: ExtensionContext): Promise<api> {
 				if (!workspacePath) {
 					return;
 				}
+				const mappings = workspace.getConfiguration("cfml").get("mappings", []);
 
 				const packagePath = convertPathToPackageName(
-					workspaceFolder.uri,
-					selectedFileUri
+					selectedFileUri,
+					mappings
 				);
 
 				env.clipboard.writeText(packagePath);
