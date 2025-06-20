@@ -1,7 +1,7 @@
 import { some } from "micromatch";
 import {
 	commands, ConfigurationChangeEvent, ConfigurationTarget, DocumentSelector, Extension, ExtensionContext, extensions,
-	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace, WorkspaceConfiguration,
+	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace, WorkspaceConfiguration, env,
 } from "vscode";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
@@ -25,6 +25,8 @@ import { APPLICATION_CFM_GLOB, isCfcFile } from "./utils/contextUtil";
 import { DocumentStateContext, getDocumentStateContext } from "./utils/documentUtil";
 import { handleContentChanges } from "./features/autoclose";
 import { resolveBaseName, uriBaseName } from "./utils/fileUtil";
+// import { CFMLFlatPackageProvider } from "./views/components";
+import { convertPathToPackageName } from "./utils/cfcPackages";
 
 export const LANGUAGE_ID: string = "cfml";
 export const LANGUAGE_CFS_ID: string = "cfs";
@@ -324,6 +326,40 @@ export async function activate(context: ExtensionContext): Promise<api> {
 			return bulkCaching;
 		},
 	};
+
+	// const rootPath = workspace.workspaceFolders?.[0]?.uri.fsPath;
+	// let provider: CFMLFlatPackageProvider | undefined;
+	// if (rootPath) {
+	// 	try {
+	// 		provider = new CFMLFlatPackageProvider(rootPath);
+	// 		window.registerTreeDataProvider("cfml.components", provider);
+	// 	}
+	// 	catch (error) {
+	// 		console.error("Failed to create ComponentTreeDataProvider:", error);
+	// 	}
+	// }
+
+	context.subscriptions.push(
+		commands.registerCommand(
+			"cfml.copyPackage",
+			(selectedFileUri: Uri) => {
+				const workspaceFolder = workspace.getWorkspaceFolder(selectedFileUri);
+				const workspacePath = workspaceFolder?.uri;
+				// We are not in a workspace or the file is not in a workspace
+				if (!workspacePath) {
+					return;
+				}
+				const mappings = workspace.getConfiguration("cfml").get("mappings", []);
+
+				const packagePath = convertPathToPackageName(
+					selectedFileUri,
+					mappings
+				);
+
+				env.clipboard.writeText(packagePath);
+			}
+		)
+	);
 
 	return api;
 }

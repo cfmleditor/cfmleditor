@@ -550,9 +550,28 @@
 				"command": "cfml.foldAllFunctions",
 				"category": "CFML",
 				"title": "Fold all functions in active editor"
+			},
+
+			{
+				"command": "cfml.copyPackage",
+				"title": "Copy CFC Package Path"
 			}
 		],
 		"menus": {
+			"editor/title/context": [
+				{
+				"command": "cfml.copyPackage",
+				"group": "1_cutcopypaste",
+				"when": "resourceExtname == .cfc"
+				}
+			],
+			"explorer/context": [
+				{
+				"command": "cfml.copyPackage",
+				"group": "6_copypath",
+				"when": "resourceExtname == .cfc"
+				}
+			],
 			"commandPalette": [
 				{
 					"command": "cfml.toggleLineComment",
