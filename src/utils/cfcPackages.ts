@@ -11,7 +11,6 @@ export interface CFMLMapping {
 }
 /**
  *
- * @param workspacePath
  * @param path
  * @param mappings
  * @returns
