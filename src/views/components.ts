@@ -46,6 +46,7 @@ export class CFMLFlatPackageProvider implements TreeDataProvider<CFCComponentIte
 	// 	throw new Error("Method not implemented.");
 	// }
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars or remove unused arguments 
 	setFilter(filter: string) {
 		// this.filterText = filter.toLowerCase();
 		this.refresh();
