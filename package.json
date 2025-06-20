@@ -551,18 +551,6 @@
 				"category": "CFML",
 				"title": "Fold all functions in active editor"
 			},
-			{
-				"command": "cfml.filterPackages",
-				"title": "Filter Packages"
-			},
-			{
-				"command": "cfml.clearFilter",
-				"title": "Clear Filter"
-			},
-			{
-				"command": "cfml.openFile",
-				"title": "Open CFML Component"
-			},
 
 			{
 				"command": "cfml.copyPackage",
