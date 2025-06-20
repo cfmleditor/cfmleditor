@@ -29,6 +29,7 @@ export class CFMLFlatPackageProvider implements TreeDataProvider<CFCComponentIte
 		});
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	getParent?(element: CFCComponentItem): ProviderResult<CFCComponentItem> {
 		throw new Error("Method not implemented.");
 	}
