@@ -9,17 +9,17 @@ on:
         description: 'Publish to the VS Marketplace'
         type: boolean
         required: true
-        default: "true"
+        default: true
       publishOVSX:
         description: 'Publish to OpenVSX'
         type: boolean
         required: true
-        default: "true"
+        default: true
       publishGH:
         description: 'Publish to GitHub Releases'
         type: boolean
         required: true
-        default: "true"
+        default: true
 
 jobs:
   package:
@@ -47,7 +47,7 @@ jobs:
         run: |
           npx vsce package --out ${{ steps.setup.outputs.packageName }}
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: ${{ steps.setup.outputs.packageName }}
           path: ./${{ steps.setup.outputs.packageName }}
