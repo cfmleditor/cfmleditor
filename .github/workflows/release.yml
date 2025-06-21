@@ -30,10 +30,10 @@ jobs:
       tag: ${{ steps.setup-tag.outputs.tag }}
       version: ${{ steps.setup-tag.outputs.version }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 14
+          node-version: 23
           registry-url: https://registry.npmjs.org/
 
       - name: Install dependencies
@@ -47,7 +47,7 @@ jobs:
         run: |
           npx vsce package --out ${{ steps.setup.outputs.packageName }}
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.setup.outputs.packageName }}
           path: ./${{ steps.setup.outputs.packageName }}
@@ -68,8 +68,8 @@ jobs:
     needs: package
     if: github.event.inputs.publishMS == 'true'
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ needs.package.outputs.packageName }}
       - name: Publish to VS marketplace
@@ -81,8 +81,8 @@ jobs:
     needs: package
     if: github.event.inputs.publishOVSX == 'true'
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ needs.package.outputs.packageName }}
       - name: Publish to OpenVSX
@@ -94,7 +94,7 @@ jobs:
     needs: package
     if: github.event.inputs.publishGH == 'true'
     steps:
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/download-artifact@v4
         with:
           name: ${{ needs.package.outputs.packageName }}
 
@@ -110,7 +110,7 @@ jobs:
           prerelease: false
 
       - name: Upload assets to a Release
-        uses: AButler/upload-release-assets@v2.0
+        uses: AButler/upload-release-assets@v3.0
         with:
           files: ${{ needs.package.outputs.packageName }}
           release-tag: ${{ needs.package.outputs.tag }}
