@@ -643,7 +643,6 @@
 	},
 	"dependencies": {
 		"async_hooks": "^1.0.0",
-		"browserify": "^17.0.1",
 		"buffer": "^6.0.3",
 		"html-entities": "^2.6.0",
 		"isomorphic-fetch": "^3.0.0",
@@ -657,6 +656,7 @@
 		"vscode-uri": "^3.1.0"
 	},
 	"devDependencies": {
+		"browserify": "^17.0.1",
 		"@esbuild-plugins/node-globals-polyfill": "^0.2.3",
 		"@eslint/eslintrc": "^3.3.1",
 		"@eslint/js": "^9.20.0",
