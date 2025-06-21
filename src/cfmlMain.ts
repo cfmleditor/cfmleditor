@@ -2,6 +2,7 @@ import { some } from "micromatch";
 import {
 	commands, ConfigurationChangeEvent, ConfigurationTarget, DocumentSelector, Extension, ExtensionContext, extensions,
 	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace, WorkspaceConfiguration, env,
+	chat,
 } from "vscode";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
@@ -27,6 +28,7 @@ import { handleContentChanges } from "./features/autoclose";
 import { resolveBaseName, uriBaseName } from "./utils/fileUtil";
 // import { CFMLFlatPackageProvider } from "./views/components";
 import { convertPathToPackageName } from "./utils/cfcPackages";
+import { cfmleditorAssistantHandler } from "./features/assistant";
 
 export const LANGUAGE_ID: string = "cfml";
 export const LANGUAGE_CFS_ID: string = "cfs";
@@ -212,6 +214,9 @@ export async function activate(context: ExtensionContext): Promise<api> {
 			setApplicationVariables(document.uri, thisApplicationFilteredVariables);
 		}
 	}));
+
+	// Register the chat participant and its request handler
+	chat.createChatParticipant("cfmleditor.assistant", cfmleditorAssistantHandler);
 
 	const componentWatcher: FileSystemWatcher = workspace.createFileSystemWatcher(COMPONENT_FILE_GLOB, false, true, false);
 	componentWatcher.onDidCreate((componentUri: Uri) => {
