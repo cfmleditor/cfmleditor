@@ -34,6 +34,7 @@ export class CFMLFlatPackageProvider implements TreeDataProvider<CFCComponentIte
 		throw new Error("Method not implemented.");
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	resolveTreeItem?(item: TreeItem, element: CFCComponentItem, token: CancellationToken): ProviderResult<TreeItem> {
 		throw new Error("Method not implemented.");
 	}
@@ -46,7 +47,7 @@ export class CFMLFlatPackageProvider implements TreeDataProvider<CFCComponentIte
 	// 	throw new Error("Method not implemented.");
 	// }
 
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars or remove unused arguments 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	setFilter(filter: string) {
 		// this.filterText = filter.toLowerCase();
 		this.refresh();
