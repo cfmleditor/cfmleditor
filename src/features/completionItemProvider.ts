@@ -21,7 +21,7 @@ import { collectDocumentVariableAssignments, getApplicationVariables, getBestMat
 import { CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 import { MyMap, MySet } from "../utils/collections";
 import { getCfScriptRanges, isInCss, isInRanges } from "../utils/contextUtil";
-import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
+import { DocumentPositionStateContext, getCFMLEngine, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { CFMLMapping, filterComponents, filterDirectories, resolveDottedPaths, resolveRootPath, resolveBaseName } from "../utils/fileUtil";
 import { equalsIgnoreCase, escapeMarkdown, textToMarkdownString } from "../utils/textUtil";
 import { getAllCustomSnippets, getAllGlobalFunctions, getAllGlobalMemberFunctions, getAllGlobalTags, getComponent, getGlobalTag } from "./cachedEntities";
@@ -110,7 +110,13 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 			return undefined;
 		}
 
-		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, false);
+		const cfmlEngine: CFMLEngine = getCFMLEngine();
+
+		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+		const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
+		const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+
+		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, false, cfmlEngine, lookbehindMaxLength, includeImplicitAccessors);
 
 		const currentWordMatches = (name: string): boolean => {
 			return matches(documentPositionStateContext.currentWord, name);
@@ -124,7 +130,6 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 			}
 		);
 
-		const userEngine: CFMLEngine = completionState.userEngine;
 		const docIsCfmFile: boolean = completionState.isCfmFile;
 		const docIsCfcFile: boolean = completionState.isCfcFile;
 		const thisComponent: Component | undefined = completionState.component;
@@ -164,7 +169,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		}
 
 		// Global tag attributes
-		if (!positionIsCfScript || userEngine.supportsScriptTags()) {
+		if (!positionIsCfScript || cfmlEngine.supportsScriptTags()) {
 			const ignoredTags: string[] = expressionCfmlTags;
 			const cfTagAttributePattern: RegExp = positionIsCfScript ? getCfScriptTagAttributePattern() : getCfTagAttributePattern();
 			const cfTagAttributeMatch: RegExpExecArray | null = cfTagAttributePattern.exec(docPrefix);
@@ -1042,7 +1047,7 @@ function getGlobalTagCompletions(state: CompletionState, closingSlash: string | 
 function getGlobalTagScriptCompletions(state: CompletionState): CompletionItem[] {
 	const globalTagScriptCompletions: CompletionItem[] = [];
 
-	if (state.userEngine.supportsScriptTags() && !state.isContinuingExpression) {
+	if (state.cfmlEngine.supportsScriptTags() && !state.isContinuingExpression) {
 		const cfmlGTAttributesQuoteType: AttributeQuoteType = state.cfmlCompletionSettings.get<AttributeQuoteType>("globalTags.attributes.quoteType", AttributeQuoteType.Double);
 		const cfmlGTAttributesDefault: boolean = state.cfmlCompletionSettings.get<boolean>("globalTags.attributes.defaultValue", false);
 		const cfmlGTAttributesSetType: IncludeAttributesSetType = state.cfmlCompletionSettings.get<IncludeAttributesSetType>("globalTags.includeAttributes.setType", IncludeAttributesSetType.None);

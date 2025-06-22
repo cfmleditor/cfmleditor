@@ -1,9 +1,10 @@
 import { DocumentColorProvider, TextDocument, CancellationToken, Range, Color, ColorPresentation, TextEdit, ColorInformation, WorkspaceConfiguration, workspace } from "vscode";
 import { getCssRanges, isInCfOutput } from "../utils/contextUtil";
-import { getDocumentStateContext, DocumentStateContext } from "../utils/documentUtil";
+import { getDocumentStateContext, DocumentStateContext, getCFMLEngine } from "../utils/documentUtil";
 import { cssPropertyPattern } from "../entities/css/property";
 import { cssDataManager, cssColors } from "../entities/css/languageFacts";
 import { IPropertyData } from "../entities/css/cssLanguageTypes";
+import { CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 
 const rgbHexPattern = /#?#([0-9A-F]{3,4}|[0-9A-F]{6}|[0-9A-F]{8})\b/gi;
 const rgbFuncPattern = /\brgba?\s*\(\s*([0-9%.]+)\s*,?\s*([0-9%.]+)\s*,?\s*([0-9%.]+)(?:\s*(?:,|\/)?\s*([0-9%.]+)\s*)?\)/gi;
@@ -25,8 +26,12 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 
 		// const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		// const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+		const cfmlEngine: CFMLEngine = getCFMLEngine();
 
-		const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, false, _token, true);
+		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+		const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+
+		const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, false, _token, true, cfmlEngine, includeImplicitAccessors);
 		const cssRanges: Range[] = getCssRanges(documentStateContext, undefined, _token);
 
 		for (const cssRange of cssRanges) {
@@ -158,7 +163,12 @@ export default class CFMLDocumentColorProvider implements DocumentColorProvider 
 
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", context.document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-		const documentStateContext: DocumentStateContext = getDocumentStateContext(context.document, false, replaceComments, _token);
+		const cfmlEngine: CFMLEngine = getCFMLEngine();
+
+		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", context.document.uri);
+		const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+
+		const documentStateContext: DocumentStateContext = getDocumentStateContext(context.document, false, replaceComments, _token, undefined, cfmlEngine, includeImplicitAccessors);
 		const hexPrefix = isInCfOutput(documentStateContext, context.range.start, _token) ? "##" : "#";
 		if (color.alpha === 1) {
 			label = `${hexPrefix}${toTwoDigitHex(red256)}${toTwoDigitHex(green256)}${toTwoDigitHex(blue256)}`;

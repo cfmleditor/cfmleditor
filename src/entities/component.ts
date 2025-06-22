@@ -371,7 +371,7 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 	});
 
 	// Implicit functions
-	if (component.accessors) {
+	if (component.accessors && documentStateContext.includeImplicitAccessors) {
 		component.properties.forEach((prop: Property) => {
 			// getters
 			if (typeof prop.getter === "undefined" || prop.getter) {
