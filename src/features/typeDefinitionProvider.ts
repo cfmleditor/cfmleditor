@@ -6,7 +6,8 @@ import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, getFu
 import { Property } from "../entities/property";
 import { equalsIgnoreCase } from "../utils/textUtil";
 import { Variable, parseVariableAssignments, getApplicationVariables, getServerVariables } from "../entities/variable";
-import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
+import { DocumentPositionStateContext, getCFMLEngine, getDocumentPositionStateContext } from "../utils/documentUtil";
+import { CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 
 export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvider {
 	/**
@@ -24,8 +25,13 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+		const cfmlEngine: CFMLEngine = getCFMLEngine();
 
-		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, false);
+		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+		const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
+		const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+
+		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, false, cfmlEngine, lookbehindMaxLength, includeImplicitAccessors);
 
 		if (documentPositionStateContext.positionInComment) {
 			return undefined;

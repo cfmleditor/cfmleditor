@@ -1,4 +1,4 @@
-import { CancellationToken, Position, Range, TextDocument, WorkspaceConfiguration, workspace } from "vscode";
+import { CancellationToken, ConfigurationScope, Position, Range, TextDocument, WorkspaceConfiguration, workspace } from "vscode";
 import { Component, isScriptComponent } from "../entities/component";
 import { getComponent } from "../features/cachedEntities";
 import { CFMLEngine, CFMLEngineName } from "./cfdocs/cfmlEngine";
@@ -15,7 +15,8 @@ export interface DocumentStateContext {
 	stringEmbeddedCfmlRanges?: Range[];
 	sanitizedDocumentText: string;
 	component?: Component;
-	userEngine: CFMLEngine;
+	cfmlEngine: CFMLEngine;
+	includeImplicitAccessors: boolean;
 }
 
 export interface DocumentPositionStateContext extends DocumentStateContext {
@@ -30,19 +31,29 @@ export interface DocumentPositionStateContext extends DocumentStateContext {
 }
 
 /**
+ *
+ * @param scope
+ * @returns CFMLEngine
+ */
+export function getCFMLEngine(scope?: ConfigurationScope | null): CFMLEngine {
+	const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine", scope);
+	const cfmlEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
+	const cfmlEngine: CFMLEngine = new CFMLEngine(cfmlEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
+	return cfmlEngine;
+}
+
+/**
  * Provides context information for the given document
  * @param document The document for which to provide context
  * @param fast Whether to use the faster, but less accurate parsing
  * @param replaceComments replace comments in getSanitizedDocumentText
  * @param _token
  * @param exclDocumentRanges
+ * @param cfmlEngine
+ * @param includeImplicitAccessors
  * @returns DocumentStateContext
  */
-export function getDocumentStateContext(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentStateContext {
-	const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
-	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
-	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
-
+export function getDocumentStateContext(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false, cfmlEngine: CFMLEngine, includeImplicitAccessors: boolean): DocumentStateContext {
 	const docIsCfcFile: boolean = isCfcFile(document, _token);
 	const docIsCfmFile: boolean = isCfmFile(document, _token);
 	const docIsCfsFile: boolean = isCfsFile(document, _token);
@@ -67,7 +78,8 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
 		stringEmbeddedCfmlRanges,
 		sanitizedDocumentText,
 		component: thisComponent,
-		userEngine,
+		cfmlEngine,
+		includeImplicitAccessors,
 	};
 }
 
@@ -79,12 +91,13 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
  * @param replaceComments replace comments in getDocumentStateContext
  * @param _token
  * @param exclDocumentRanges
+ * @param cfmlEngine
+ * @param lookbehindMaxLength
+ * @param includeImplicitAccessors
  * @returns DocumentPositionStateContext
  */
-export function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentPositionStateContext {
-	const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
-	const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
-	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token, exclDocumentRanges);
+export function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false, cfmlEngine: CFMLEngine, lookbehindMaxLength: number, includeImplicitAccessors: boolean): DocumentPositionStateContext {
+	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token, exclDocumentRanges, cfmlEngine, includeImplicitAccessors);
 	const docIsScript: boolean = documentStateContext.docIsScript;
 	const positionInComment: boolean = isInRanges(documentStateContext.commentRanges, position, false, _token);
 	const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token);
