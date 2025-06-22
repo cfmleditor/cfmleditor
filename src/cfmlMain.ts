@@ -22,11 +22,12 @@ import CFMLTypeDefinitionProvider from "./features/typeDefinitionProvider";
 import CFMLWorkspaceSymbolProvider from "./features/workspaceSymbolProvider";
 import CFDocsService from "./utils/cfdocs/cfDocsService";
 import { APPLICATION_CFM_GLOB, isCfcFile } from "./utils/contextUtil";
-import { DocumentStateContext, getDocumentStateContext } from "./utils/documentUtil";
+import { DocumentStateContext, getCFMLEngine, getDocumentStateContext } from "./utils/documentUtil";
 import { handleContentChanges } from "./features/autoclose";
 import { resolveBaseName, uriBaseName } from "./utils/fileUtil";
 // import { CFMLFlatPackageProvider } from "./views/components";
 import { convertPathToPackageName } from "./utils/cfcPackages";
+import { CFMLEngine } from "./utils/cfdocs/cfmlEngine";
 
 export const LANGUAGE_ID: string = "cfml";
 export const LANGUAGE_CFS_ID: string = "cfs";
@@ -193,6 +194,10 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		}
 
 		const documentUri = document.uri;
+		const cfmlEngine: CFMLEngine = getCFMLEngine();
+
+		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", documentUri);
+		const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
 
 		if (shouldExcludeDocument(documentUri)) {
 			return;
@@ -201,10 +206,10 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		if (isCfcFile(document, undefined)) {
 			const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 			const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-			await cacheComponentFromDocument(document, true, replaceComments, undefined);
+			await cacheComponentFromDocument(document, true, replaceComments, undefined, cfmlEngine, includeImplicitAccessors);
 		}
 		else if (resolveBaseName(document.fileName) === "Application.cfm") {
-			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, true, undefined);
+			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, true, undefined, undefined, cfmlEngine, includeImplicitAccessors);
 			const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, undefined);
 			const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
 				return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
@@ -222,7 +227,12 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		workspace.openTextDocument(componentUri).then(async (document: TextDocument) => {
 			const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 			const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-			await cacheComponentFromDocument(document, true, replaceComments, undefined);
+			const cfmlEngine: CFMLEngine = getCFMLEngine();
+
+			const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+			const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+
+			await cacheComponentFromDocument(document, true, replaceComments, undefined, cfmlEngine, includeImplicitAccessors);
 		});
 	});
 	componentWatcher.onDidDelete((componentUri: Uri) => {
@@ -247,7 +257,10 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		}
 
 		workspace.openTextDocument(applicationUri).then(async (document: TextDocument) => {
-			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, true, undefined);
+			const cfmlEngine: CFMLEngine = getCFMLEngine();
+			const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+			const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, true, undefined, undefined, cfmlEngine, includeImplicitAccessors);
 			const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, undefined);
 			const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
 				return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);

@@ -9,10 +9,11 @@ import { constructSignatureLabelParamsPrefix, getSignatureParamsLabelOffsetTuple
 import { getFunctionFromPrefix, isUserFunctionVariable, UserFunction, UserFunctionVariable, variablesToUserFunctions } from "../entities/userFunction";
 import { collectDocumentVariableAssignments, Variable } from "../entities/variable";
 import { BackwardIterator, getPrecedingIdentifierRange, isContinuingExpression, getStartSigPosition, getClosingPosition } from "../utils/contextUtil";
-import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
+import { DocumentPositionStateContext, getCFMLEngine, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { equalsIgnoreCase, textToMarkdownString } from "../utils/textUtil";
 import { getGlobalFunction } from "./cachedEntities";
 import { cachedComponentPathToUri, getComponent } from "./cachedEntities";
+import { CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 
 export default class CFMLSignatureHelpProvider implements SignatureHelpProvider {
 	/**
@@ -25,20 +26,22 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 	 */
 	public async provideSignatureHelp(document: TextDocument, position: Position, _token: CancellationToken | undefined, _context: SignatureHelpContext): Promise<SignatureHelp | null> {
 		// console.log("provideSignatureHelp:CFMLSignatureHelpProvider:" + _token?.isCancellationRequested);
-
-		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
-		const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
-
 		const cfmlSignatureSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.signature", document.uri);
 		if (!cfmlSignatureSettings.get<boolean>("enable", true)) {
 			return null;
 		}
 
+		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+		const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
+		const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
+		const cfmlEngine: CFMLEngine = getCFMLEngine();
+
 		// Looks like this is the only place where we can't use "fast" parsing
-		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
+		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false, cfmlEngine, lookbehindMaxLength, includeImplicitAccessors);
 		if (documentPositionStateContext.positionInComment) {
 			return null;
 		}

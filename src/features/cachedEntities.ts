@@ -8,11 +8,12 @@ import { parseVariableAssignments, Variable, VariablesByUri } from "../entities/
 import { CFDocsDefinitionInfo } from "../utils/cfdocs/definitionInfo";
 import { MyMap, SearchMode } from "../utils/collections";
 import { APPLICATION_CFM_GLOB } from "../utils/contextUtil";
-import { DocumentStateContext, getDocumentStateContext } from "../utils/documentUtil";
+import { DocumentStateContext, getCFMLEngine, getDocumentStateContext } from "../utils/documentUtil";
 import { resolveCustomMappingPaths, resolveRelativePath, resolveRootPath, uriBaseName } from "../utils/fileUtil";
 import TrieSearch from "trie-search";
 import { Snippet, Snippets } from "../entities/snippet";
 import { setBulkCaching } from "../cfmlMain";
+import { CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 
 let allGlobalEntityDefinitions = new MyMap<string, CFDocsDefinitionInfo>();
 
@@ -396,6 +397,11 @@ export async function cacheAllComponents(_token: CancellationToken | undefined):
  * @param _token
  */
 async function cacheGivenComponents(componentUris: Uri[], _token: CancellationToken | undefined): Promise<void> {
+	const cfmlEngine: CFMLEngine = getCFMLEngine();
+	const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest");
+	const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+	const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition");
+	const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
 	await window.withProgress(
 		{
 			location: ProgressLocation.Notification,
@@ -413,9 +419,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
 
 				try {
 					const document: TextDocument = await LSTextDocument.openTextDocument(componentUri);
-					const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
-					const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-					await cacheComponentFromDocument(document, true, replaceComments, _token);
+					await cacheComponentFromDocument(document, true, replaceComments, _token, cfmlEngine, includeImplicitAccessors);
 				}
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
 				catch (ex) {
@@ -439,10 +443,12 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
  * @param fast Whether to use the faster, but less accurate parsing
  * @param replaceComments
  * @param _token
+ * @param cfmlEngine
+ * @param includeImplicitAccessors
  * @returns
  */
-export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined): Promise<void> {
-	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token);
+export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, cfmlEngine: CFMLEngine, includeImplicitAccessors: boolean): Promise<void> {
+	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token, undefined, cfmlEngine, includeImplicitAccessors);
 	const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
 	if (!parsedComponent) {
 		return;
@@ -513,12 +519,15 @@ export async function cacheAllApplicationCfms(): Promise<void> {
  * @param _token
  */
 async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: CancellationToken): Promise<void> {
+	const cfmlEngine: CFMLEngine = getCFMLEngine();
+	const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition");
+	const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+	const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest");
+	const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 	for (const applicationUri of applicationUris) {
 		try {
-			const document: TextDocument = await workspace.openTextDocument(applicationUri);
-			const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
-			const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, replaceComments, _token);
+			const document: TextDocument = await LSTextDocument.openTextDocument(applicationUri);
+			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, replaceComments, _token, undefined, cfmlEngine, includeImplicitAccessors);
 			const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
 			const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
 				return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);

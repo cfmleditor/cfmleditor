@@ -5,7 +5,8 @@ import CFDocsService from "../utils/cfdocs/cfDocsService";
 import { isCfcFile } from "../utils/contextUtil";
 import { clearAllGlobalFunctions, clearAllGlobalTags, clearAllGlobalEntityDefinitions, clearAllCustomSnippets, cacheAllComponents, getComponent } from "./cachedEntities";
 import SnippetService from "../utils/snippetService";
-import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
+import { DocumentPositionStateContext, getCFMLEngine, getDocumentPositionStateContext } from "../utils/documentUtil";
+import { CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 
 /**
  * Refreshes (clears and retrieves) all CFML global definitions
@@ -105,7 +106,12 @@ interface SnippetArgs {
  */
 export function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: SnippetArgs): void {
 	const position: Position = editor.selection.start;
-	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, true, true, undefined, false);
+	const cfmlEngine: CFMLEngine = getCFMLEngine();
+	const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", editor.document.uri);
+	const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
+	const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+
+	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, true, true, undefined, false, cfmlEngine, lookbehindMaxLength, includeImplicitAccessors);
 
 	if (documentPositionStateContext.positionIsScript) {
 		commands.executeCommand("editor.action.insertSnippet", {

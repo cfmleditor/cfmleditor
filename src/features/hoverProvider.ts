@@ -18,7 +18,7 @@ import { CFMLEngine, CFMLEngineName } from "../utils/cfdocs/cfmlEngine";
 import { CFDocsDefinitionInfo, EngineCompatibilityDetail } from "../utils/cfdocs/definitionInfo";
 import { MyMap, MySet } from "../utils/collections";
 import { getCssRanges, isCfmFile } from "../utils/contextUtil";
-import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
+import { DocumentPositionStateContext, getCFMLEngine, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { equalsIgnoreCase, textToMarkdownCompatibleString, textToMarkdownString } from "../utils/textUtil";
 import { isGlobalFunction, getGlobalFunction, getGlobalTag, isGlobalTag, cachedComponentPathToUri, getGlobalEntityDefinition } from "./cachedEntities";
 import { getComponent } from "./cachedEntities";
@@ -80,8 +80,13 @@ export default class CFMLHoverProvider implements HoverProvider {
 		let definition: HoverProviderItem | undefined;
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, true);
-		const userEngine: CFMLEngine = documentPositionStateContext.userEngine;
+		const cfmlEngine: CFMLEngine = getCFMLEngine();
+
+		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+		const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
+		const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+
+		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, true, cfmlEngine, lookbehindMaxLength, includeImplicitAccessors);
 		const textLine: TextLine = document.lineAt(position);
 		const lineText: string = documentPositionStateContext.sanitizedDocumentText.slice(document.offsetAt(textLine.range.start), document.offsetAt(textLine.range.end));
 		const currentWord: string = documentPositionStateContext.currentWord;
@@ -106,7 +111,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 				return this.createHover(definition);
 			}
 
-			if (userEngine.supportsScriptTags() && functionSuffixPattern.test(lineSuffix)) {
+			if (cfmlEngine.supportsScriptTags() && functionSuffixPattern.test(lineSuffix)) {
 				definition = this.globalTagToHoverProviderItem(getGlobalTag(lowerCurrentWord), true);
 				return this.createHover(definition);
 			}
@@ -156,7 +161,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 		}
 
 		// Global tag attributes
-		if (!positionIsCfScript || userEngine.supportsScriptTags()) {
+		if (!positionIsCfScript || cfmlEngine.supportsScriptTags()) {
 			const cfTagAttributePattern: RegExp = positionIsCfScript ? getCfScriptTagAttributePattern() : getCfTagAttributePattern();
 			const cfTagAttributeMatch: RegExpExecArray | null = cfTagAttributePattern.exec(docPrefix);
 			if (cfTagAttributeMatch) {

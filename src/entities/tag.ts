@@ -1,11 +1,12 @@
 import { CancellationToken, Position, Range, Selection, TextDocument, TextEditor, TextEditorEdit, Uri, WorkspaceConfiguration, window, workspace } from "vscode";
 import { getGlobalTag } from "../features/cachedEntities";
 import { StringContext } from "../utils/contextUtil";
-import { DocumentPositionStateContext, DocumentStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
+import { DocumentPositionStateContext, DocumentStateContext, getCFMLEngine, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { Attributes, parseAttributes } from "./attribute";
 import { DataType } from "./dataType";
 import { GlobalTag } from "./globals";
 import { HTML_EMPTY_ELEMENTS } from "./html/htmlTag";
+import { CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 
 const tagAttributePattern: RegExp = /<(([a-z_]+)\s+)([^<>]*)$/i;
 const cfTagAttributePattern: RegExp = /<((cf[a-z_]+)\s+)([^<>]*)$/i;
@@ -896,10 +897,14 @@ export function goToMatchingTag(editor: TextEditor, edit: TextEditorEdit, _token
 	const position: Position = editor.selection.active;
 	const documentUri: Uri = editor.document.uri;
 
+	const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", documentUri);
+	const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
+	const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+
 	const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", documentUri);
 	const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-
-	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, true, replaceComments, _token, false);
+	const cfmlEngine: CFMLEngine = getCFMLEngine();
+	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, true, replaceComments, _token, false, cfmlEngine, lookbehindMaxLength, includeImplicitAccessors);
 
 	const currentWord: string = documentPositionStateContext.currentWord;
 	let globalTag: GlobalTag = getGlobalTag(currentWord);

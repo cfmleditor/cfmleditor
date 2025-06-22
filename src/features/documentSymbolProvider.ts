@@ -3,9 +3,10 @@ import { Component } from "../entities/component";
 import { Property } from "../entities/property";
 import { getLocalVariables } from "../entities/userFunction";
 import { parseVariableAssignments, usesConstantConvention, Variable } from "../entities/variable";
-import { DocumentStateContext, getDocumentStateContext } from "../utils/documentUtil";
+import { DocumentStateContext, getCFMLEngine, getDocumentStateContext } from "../utils/documentUtil";
 import { getComponent } from "./cachedEntities";
 import { Scope } from "../entities/scope";
+import { CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 
 export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvider {
 	/**
@@ -26,8 +27,12 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+		const cfmlEngine: CFMLEngine = getCFMLEngine();
 
-		const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, replaceComments, _token, true);
+		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
+		const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
+
+		const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, replaceComments, _token, true, cfmlEngine, includeImplicitAccessors);
 
 		if (documentStateContext.isCfcFile) {
 			const componentSymbols = await CFMLDocumentSymbolProvider.getComponentSymbols(documentStateContext, _token);
