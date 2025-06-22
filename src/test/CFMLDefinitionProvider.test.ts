@@ -50,12 +50,12 @@ describe("provideDefinition", function () {
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
 		});
 
-		it.skip("should get definition for createObject() with default type component", async function () {
+		it("should get definition for createObject() with default type component", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'createObject("|cfml.Widget")');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
 		});
 
-		it.skip("should get definition for cfparam type", async function () {
+		it("should get definition for cfparam type", async function () {
 			const definition = await findDefinition(widgetDoc, 'cfparam type="|cfml.WidgetFactory"');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/WidgetFactory.cfc`);
 		});
@@ -80,7 +80,7 @@ describe("provideDefinition", function () {
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
 		});
 
-		it.skip("should get definition for cfimport", async function () {
+		it("should get definition for cfimport", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, '<cfimport path="|cfml.Widget">');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
 		});
@@ -101,7 +101,7 @@ describe("provideDefinition", function () {
 		});
 
 		// Skipped due to a bug in the propertyPattern regex
-		it.skip("should get definition for cfproperty", async function () {
+		it("should get definition for cfproperty", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'cfproperty type="|cfml.Widget"');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
 		});
@@ -131,13 +131,13 @@ describe("provideDefinition", function () {
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
 		});
 
-		it.skip("should get definition for createObject() with default type component", async function () {
+		it("should get definition for createObject() with default type component", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'createObject("|cfscript.Gizmo")');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
 		});
 
-		it.skip("should get definition for cfparam type", async function () {
-			const definition = await findDefinition(gizmoDoc, 'cfparam type="|cfscript.GizmoFactory"');
+		it("should get definition for cfparam type", async function () {
+			const definition = await findDefinition(gizmoDoc, 'param type="|cfscript.GizmoFactory"');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/GizmoFactory.cfc`);
 		});
 
@@ -162,12 +162,12 @@ describe("provideDefinition", function () {
 		});
 
 		// Works in CFML but not in CFScript
-		it.skip("component name is case insensitive", async function () {
+		it("component name is case insensitive", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, "new |cfSCRIPT.gizMO");
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
 		});
 
-		it.skip("should get definition for cfinvoke", async function () {
+		it("should get definition for cfinvoke", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'return invoke("|cfscript.Gizmo"');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
 		});
@@ -193,7 +193,7 @@ describe("provideDefinition", function () {
 		});
 
 		// Skipped due to a bug in the propertyPattern regex
-		it.skip("should get definition for cfproperty", async function () {
+		it("should get definition for cfproperty", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'property type="|cfscript.Gizmo"');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
 		});

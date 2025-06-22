@@ -25,6 +25,11 @@ component implements="cfscript.IFactory" {
 		return widget;
 	}
 
+	public static cfscript.Gizmo function create_case(cfscript.Gizmo source) {
+		var widget = new cfSCRIPT.gizMO(source.name);
+		return widget;
+	}
+
 	public static string function invoke_call() {
 		return invoke("cfscript.Gizmo", "staticGenerateID");
 	}

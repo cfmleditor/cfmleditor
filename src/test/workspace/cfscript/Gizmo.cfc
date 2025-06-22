@@ -1,5 +1,7 @@
 component extends="cfscript.Base" {
 
+	param type="cfscript.GizmoFactory";
+
 	public cfscript.Gizmo function init(string name="") {
 		variables.name = arguments.name;
 		return this;

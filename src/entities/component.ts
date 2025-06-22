@@ -54,6 +54,26 @@ export const objectReferencePatterns: ReferencePattern[] = [
 		pattern: /\bisInstanceOf\s*\(\s*[\w$.]+\s*,\s*(['"])([^'"]+?)\1/gi,
 		refIndex: 2,
 	},
+	// createObject (type defaulted to component)
+	{
+		pattern: /\bcreateObject\s*\(\s*(['"])([^'"]+?)\1\s*\)/gi,
+		refIndex: 2,
+	},
+	// invoke
+	{
+		pattern: /\binvoke\s*\(\s*(['"])([^'"]+?)\1/gi,
+		refIndex: 2,
+	},
+	// cfimport path
+	{
+		pattern: /\bpath\s*(?:=|:)\s*(['"])([^'"]+?)\1/gi,
+		refIndex: 2,
+	},
+	// cfparam, cfproperty and cfargument type
+	{
+		pattern: /\btype\s*(?:=|:)\s*(['"])([^'"]+?)\1/gi,
+		refIndex: 2,
+	},
 ];
 // TODO: variableReferencePatterns
 
