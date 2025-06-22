@@ -383,7 +383,7 @@
 				"cfml.definition.implicitAccessors.include": {
 					"type": "boolean",
 					"description": "Whether to include implicit accessors.",
-					"default": false,
+					"default": true,
 					"scope": "resource"
 				},
 				"cfml.indexComponents.enable": {
