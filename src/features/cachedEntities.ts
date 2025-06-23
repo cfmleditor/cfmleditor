@@ -410,6 +410,9 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
 				if (token.isCancellationRequested) {
 					break;
 				}
+				if (_token && _token.isCancellationRequested) {
+					break;
+				}
 
 				try {
 					const document: TextDocument = await LSTextDocument.openTextDocument(componentUri);

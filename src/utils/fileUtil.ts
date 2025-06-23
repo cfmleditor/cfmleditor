@@ -198,7 +198,11 @@ export function resolveRootPath(baseUri: Uri, appendingPath: string): string | u
 		return undefined;
 	}
 
-	return Uri.joinPath(root.uri, appendingPath).fsPath;
+	// Include the webroot (relative to the workspace root)
+	// Used when the application is served from a subdirectory ("public", "www", "src", etc...)
+	const webRoot = workspace.getConfiguration("cfml", baseUri).get<string>("webRoot", "");
+
+	return Uri.joinPath(root.uri, webRoot, appendingPath).fsPath;
 }
 
 /**

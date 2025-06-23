@@ -495,7 +495,13 @@
 							"directoryPath"
 						]
 					},
-					"description": "Represents CFML mappings from logicalPath to directoryPath.",
+					"markdownDescription": "Represents CFML mappings from logicalPath to directoryPath.\n\nIf paths are relative to a subfolder instead of the workspace root, see `#cfml.webRoot#`.",
+					"scope": "resource"
+				},
+				"cfml.webRoot": {
+					"type": "string",
+					"default": "",
+					"markdownDescription": "A subfolder used as the web root by the ColdFusion/Lucee server.\n\nTypically this will be blank, or a subfolder like `public`, `www`, `src`, or wherever the main `Application.cfc` is located.\n\nUse in conjunction with `#cfml.mappings#` to resolve component paths.",
 					"scope": "resource"
 				}
 			}
