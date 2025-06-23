@@ -1,4 +1,4 @@
-import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit, Position } from "vscode";
+import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit, Position, CancellationTokenSource } from "vscode";
 import { Component, getApplicationUri } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
@@ -26,14 +26,18 @@ export async function refreshGlobalDefinitionCache(): Promise<void> {
 
 /**
  * Refreshes (clears and retrieves) all CFML workspace definitions
- * @param _token
  */
-export async function refreshWorkspaceDefinitionCache(_token: CancellationToken | undefined): Promise<void> {
+export async function refreshWorkspaceDefinitionCache(): Promise<void> {
+	// Cancel any previous refresh operation (running or finished)
+	refreshWorkspaceTokenSource.cancel();
+	refreshWorkspaceTokenSource = new CancellationTokenSource();
+
 	const cfmlIndexComponentsSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.indexComponents");
 	if (cfmlIndexComponentsSettings.get<boolean>("enable")) {
-		await cacheAllComponents(_token);
+		await cacheAllComponents(refreshWorkspaceTokenSource.token);
 	}
 }
+let refreshWorkspaceTokenSource = new CancellationTokenSource();
 
 /**
  * Opens the relevant Application file based on the given editor
