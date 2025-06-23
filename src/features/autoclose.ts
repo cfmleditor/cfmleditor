@@ -39,15 +39,47 @@ export async function handleContentChanges(event: TextDocumentChangeEvent): Prom
 		return;
 	}
 
-	// if ( editor.selections.length > 1 ) {
-	// return;
-	// }
-
-	for (let i = 0; i < editor.selections.length; i++) {
-		await closeTag(contentChange, editor, editor.selections[i], i, editor.selections.length);
+	if (editor.selections.length > 1) {
+		await closeTags(contentChange, editor);
+	}
+	else if (editor.selections.length === 1) {
+		await closeTag(contentChange, editor, editor.selections[0], 0, editor.selections.length);
 	}
 
 	// }
+}
+
+/**
+ * @param contentChange
+ * @param editor
+ * @description Evaluates a contentChange and inserts a closing tag when user types '/'
+ */
+async function closeTags(contentChange: TextDocumentContentChangeEvent, editor: TextEditor): Promise<void> {
+	const isForwardSlash = contentChange.text === "/";
+	const selections = editor.selections;
+	const selectionLength = selections.length;
+
+	if (isForwardSlash) {
+		const selection = selections[0];
+		const originalPosition = selection.start.translate(0, 1);
+		const [last2chars, linePreceding] = getPrecedingCharacters(originalPosition, editor);
+		if (last2chars === "</") {
+			let closeTag: string | undefined = getCloseTag(linePreceding, nonClosingTags);
+			if (closeTag) {
+				const nextChar = getNextChar(editor, originalPosition);
+				if (nextChar === ">") {
+					closeTag = closeTag.substring(0, closeTag.length - 1);
+				}
+				await editor.edit((editBuilder: TextEditorEdit) => {
+					if (closeTag) {
+						for (let i = 0; i < selectionLength; i++) {
+							editBuilder.insert(selections[i].start.translate(0, 1), closeTag);
+						}
+					}
+				});
+			}
+		}
+	}
 }
 
 /**
@@ -125,7 +157,7 @@ function getPrecedingCharacters(originalPosition: Position, editor: TextEditor) 
 	const text = editor.document.getText(range);
 	let last2chars = "";
 	if (text.length > 2) {
-		last2chars = text.substr(text.length - 2);
+		last2chars = text.slice(text.length - 2);
 	}
 	return [last2chars, text];
 }
