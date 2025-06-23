@@ -6,10 +6,9 @@ import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, getFu
 import { Property } from "../entities/property";
 import { equalsIgnoreCase } from "../utils/textUtil";
 import { Variable, parseVariableAssignments, getApplicationVariables, getServerVariables } from "../entities/variable";
-import { DocumentPositionStateContext, getCFMLEngine, getDocumentPositionStateContext } from "../utils/documentUtil";
+import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { SearchMode } from "../utils/collections";
 import { getFunctionSuffixPattern } from "../entities/function";
-import { CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 
 export default class CFMLDefinitionProvider implements DefinitionProvider {
 	/**
@@ -29,12 +28,8 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-		const cfmlEngine: CFMLEngine = getCFMLEngine();
-		const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
-		const lookaheadMaxLength: number = cfmlDefinitionSettings.get<number>("lookahead.maxLength", -1);
-		const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
 
-		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, false, cfmlEngine, lookbehindMaxLength, includeImplicitAccessors);
+		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, false);
 
 		if (documentPositionStateContext.positionInComment) {
 			return undefined;
@@ -358,6 +353,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
 		// Search for function by name
 		if (results.length === 0 && documentPositionStateContext.isContinuingExpression && cfmlDefinitionSettings.get<boolean>("userFunctions.search.enable", false)) {
+			const lookaheadMaxLength: number = cfmlDefinitionSettings.get<number>("lookahead.maxLength", -1);
 			const endOfWordOffset = document.offsetAt(wordRange.end);
 			const searchDocumentOffset = lookaheadMaxLength > -1 ? Math.min((endOfWordOffset + lookaheadMaxLength), documentText.length) : documentText.length;
 			const wordSuffix: string = documentText.slice(endOfWordOffset, searchDocumentOffset);

@@ -1,6 +1,6 @@
 import { DataType } from "./dataType";
 import { Scope, unscopedPrecedence } from "./scope";
-import { Location, TextDocument, Range, Uri, Position, CancellationToken } from "vscode";
+import { Location, TextDocument, Range, Uri, Position, WorkspaceConfiguration, workspace, CancellationToken } from "vscode";
 import { getCfScriptRanges, isCfcFile, getClosingPosition } from "../utils/contextUtil";
 import { COMPONENT_EXT, Component, getApplicationUri, getServerUri } from "./component";
 import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, UserFunctionVariable, parseScriptFunctionArgs, functionValuePattern, isUserFunctionVariable } from "./userFunction";
@@ -11,6 +11,7 @@ import { parseAttributes, Attributes } from "./attribute";
 import { getTagPattern, OutputVariableTags, VariableAttribute, parseTags, Tag, getCfStartTagPattern, getCfScriptTagPatternIgnoreBody, parseStartTags, StartTag } from "./tag";
 import { Properties, Property } from "./property";
 import { getSelectColumnsFromQueryText, Query, QueryColumns, queryValuePattern } from "./query";
+import { CFMLEngineName, CFMLEngine } from "../utils/cfdocs/cfmlEngine";
 import { DocumentStateContext, DocumentPositionStateContext } from "../utils/documentUtil";
 import { getScriptFunctionArgRanges } from "./function";
 import { constructParameterLabel } from "./parameter";
@@ -335,6 +336,10 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		}
 	}
 
+	const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
+	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
+	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
+
 	// Add function arguments
 	if (isCfcFile(document, _token)) {
 		const comp: Component | undefined = getComponent(document.uri, _token);
@@ -573,7 +578,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		}
 	}
 
-	if (!isScript || documentStateContext.cfmlEngine.supportsScriptTags()) {
+	if (!isScript || userEngine.supportsScriptTags()) {
 		// Tags with output attributes
 		const foundOutputVarTags: MySet<string> = new MySet();
 		let cfTagMatch: RegExpExecArray | null;

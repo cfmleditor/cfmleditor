@@ -6,7 +6,7 @@ import { getFunctionSuffixPattern } from "../../entities/function";
 import { GlobalEntity } from "../../entities/globals";
 import { getTagPrefixPattern } from "../../entities/tag";
 import * as cachedEntity from "../../features/cachedEntities";
-import { DocumentPositionStateContext, getCFMLEngine, getDocumentPositionStateContext } from "../documentUtil";
+import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../documentUtil";
 import { CFMLEngine, CFMLEngineName } from "./cfmlEngine";
 import { extensionContext } from "../../cfmlMain";
 import { CFDocsDefinitionInfo, EngineCompatibilityDetail } from "./definitionInfo";
@@ -137,8 +137,11 @@ export default class CFDocsService {
 	 * @param definition The definition object to cache
 	 * @returns
 	 */
-	public static setGlobalFunction(definition: CFDocsDefinitionInfo, cfmlEngine: CFMLEngine): boolean {
-		if (definition.type === "function" && definition.isCompatible(cfmlEngine)) {
+	public static setGlobalFunction(definition: CFDocsDefinitionInfo): boolean {
+		const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
+		const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
+		const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
+		if (definition.type === "function" && definition.isCompatible(userEngine)) {
 			cachedEntity.setGlobalFunction(definition.toGlobalFunction());
 			// TODO: Add member function also
 			cachedEntity.setGlobalEntityDefinition(definition);
@@ -152,8 +155,11 @@ export default class CFDocsService {
 	 * @param definition The definition object to cache
 	 * @returns
 	 */
-	public static setGlobalMemberFunction(definition: CFDocsDefinitionInfo, cfmlEngine: CFMLEngine): boolean {
-		if (definition.type === "function" && definition.isCompatible(cfmlEngine)) {
+	public static setGlobalMemberFunction(definition: CFDocsDefinitionInfo): boolean {
+		const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
+		const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
+		const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
+		if (definition.type === "function" && definition.isCompatible(userEngine)) {
 			cachedEntity.setGlobalMemberFunction(definition.toGlobalFunction());
 			// TODO: Add member function also
 			cachedEntity.setGlobalEntityDefinition(definition);
@@ -167,8 +173,11 @@ export default class CFDocsService {
 	 * @param definition The definition object to cache
 	 * @returns
 	 */
-	public static setGlobalTag(definition: CFDocsDefinitionInfo, cfmlEngine: CFMLEngine): boolean {
-		if (definition.type === "tag" && definition.isCompatible(cfmlEngine)) {
+	public static setGlobalTag(definition: CFDocsDefinitionInfo): boolean {
+		const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
+		const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
+		const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
+		if (definition.type === "tag" && definition.isCompatible(userEngine)) {
 			cachedEntity.setGlobalTag(definition.toGlobalTag());
 			cachedEntity.setGlobalEntityDefinition(definition);
 			return true;
@@ -314,14 +323,13 @@ export default class CFDocsService {
 		const allFunctionNames: string[] = (await getDefinitionInfo("functions")).related || [];
 		const allTagNames: string[] = (await getDefinitionInfo("tags")).related || [];
 		const cfDocsCount = allFunctionNames.length + allTagNames.length;
-		const cfmlEngine: CFMLEngine = getCFMLEngine();
 
 		await window.withProgress({ location: ProgressLocation.Notification, title: "Loading CFDocs" }, async (progress) => {
 			await Promise.all(allFunctionNames.map(async (functionName) => {
 				try {
 					const definitionInfo: CFDocsDefinitionInfo = await getDefinitionInfo(functionName);
 					if (definitionInfo) {
-						CFDocsService.setGlobalFunction(definitionInfo, cfmlEngine);
+						CFDocsService.setGlobalFunction(definitionInfo);
 					}
 				}
 				catch (e) {
@@ -334,7 +342,7 @@ export default class CFDocsService {
 				try {
 					const definitionInfo: CFDocsDefinitionInfo = await getDefinitionInfo(tagName);
 					if (definitionInfo) {
-						CFDocsService.setGlobalTag(definitionInfo, cfmlEngine);
+						CFDocsService.setGlobalTag(definitionInfo);
 					}
 				}
 				catch (e) {
@@ -363,13 +371,7 @@ export default class CFDocsService {
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-		const cfmlEngine: CFMLEngine = getCFMLEngine();
-
-		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
-		const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
-		const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
-
-		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, false, cfmlEngine, lookbehindMaxLength, includeImplicitAccessors);
+		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, false);
 
 		if (documentPositionStateContext.positionInComment) {
 			return;
@@ -379,6 +381,7 @@ export default class CFDocsService {
 		const textLine: TextLine = document.lineAt(position);
 		const wordRange: Range = documentPositionStateContext.wordRange;
 		const lineSuffix: string = documentPositionStateContext.sanitizedDocumentText.slice(document.offsetAt(wordRange.end), document.offsetAt(textLine.range.end));
+		const userEngine: CFMLEngine = documentPositionStateContext.userEngine;
 
 		const currentWord: string = documentPositionStateContext.currentWord;
 
@@ -386,7 +389,7 @@ export default class CFDocsService {
 		const tagPrefixPattern: RegExp = getTagPrefixPattern();
 		const functionSuffixPattern: RegExp = getFunctionSuffixPattern();
 
-		if ((tagPrefixPattern.test(docPrefix) || (cfmlEngine.supportsScriptTags() && functionSuffixPattern.test(lineSuffix))) && cachedEntity.isGlobalTag(currentWord)) {
+		if ((tagPrefixPattern.test(docPrefix) || (userEngine.supportsScriptTags() && functionSuffixPattern.test(lineSuffix))) && cachedEntity.isGlobalTag(currentWord)) {
 			globalEntity = cachedEntity.getGlobalTag(currentWord);
 		}
 		else if (!documentPositionStateContext.isContinuingExpression && functionSuffixPattern.test(lineSuffix) && cachedEntity.isGlobalFunction(currentWord)) {
@@ -412,18 +415,15 @@ export default class CFDocsService {
 		const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-		const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
-		const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
-		const includeImplicitAccessors: boolean = cfmlDefinitionSettings.get<boolean>("implicitAccessors.include", false);
-
-		const cfmlEngine: CFMLEngine = getCFMLEngine();
-		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, false, cfmlEngine, lookbehindMaxLength, includeImplicitAccessors);
+		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, true, replaceComments, _token, false);
 
 		if (documentPositionStateContext.positionInComment) {
 			return;
 		}
 
-		if (cfmlEngine.getName() === CFMLEngineName.Unknown) {
+		const userEngine: CFMLEngine = documentPositionStateContext.userEngine;
+
+		if (userEngine.getName() === CFMLEngineName.Unknown) {
 			window.showInformationMessage("CFML engine is not set");
 			return;
 		}
@@ -439,15 +439,15 @@ export default class CFDocsService {
 		const tagPrefixPattern: RegExp = getTagPrefixPattern();
 		const functionSuffixPattern: RegExp = getFunctionSuffixPattern();
 
-		if ((tagPrefixPattern.test(docPrefix) || (cfmlEngine.supportsScriptTags() && functionSuffixPattern.test(lineSuffix))) && cachedEntity.isGlobalTag(currentWord)) {
+		if ((tagPrefixPattern.test(docPrefix) || (userEngine.supportsScriptTags() && functionSuffixPattern.test(lineSuffix))) && cachedEntity.isGlobalTag(currentWord)) {
 			globalEntity = cachedEntity.getGlobalEntityDefinition(currentWord);
 		}
 		else if (!documentPositionStateContext.isContinuingExpression && functionSuffixPattern.test(lineSuffix) && cachedEntity.isGlobalFunction(currentWord)) {
 			globalEntity = cachedEntity.getGlobalEntityDefinition(currentWord);
 		}
 
-		if (globalEntity && globalEntity.engines && Object.prototype.hasOwnProperty.call(globalEntity.engines, cfmlEngine.getName())) {
-			const engineInfo: EngineCompatibilityDetail = globalEntity.engines[cfmlEngine.getName()];
+		if (globalEntity && globalEntity.engines && Object.prototype.hasOwnProperty.call(globalEntity.engines, userEngine.getName())) {
+			const engineInfo: EngineCompatibilityDetail = globalEntity.engines[userEngine.getName()];
 			if (engineInfo.docs) {
 				commands.executeCommand("vscode.open", Uri.parse(engineInfo.docs));
 			}
