@@ -1,11 +1,11 @@
 import { some } from "micromatch";
 import {
-	commands, ConfigurationChangeEvent, ConfigurationTarget, DocumentSelector, Extension, ExtensionContext, extensions,
+	commands, ConfigurationChangeEvent, DocumentSelector, Extension, ExtensionContext, extensions,
 	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace, WorkspaceConfiguration, env,
 } from "vscode";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
-import { decreasingIndentingTags, goToMatchingTag, nonClosingTags, nonIndentingTags } from "./entities/tag";
+import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./entities/tag";
 import { parseVariableAssignments, Variable } from "./entities/variable";
 import { cacheComponentFromDocument, setApplicationVariables, clearCachedComponent, removeApplicationVariables } from "./features/cachedEntities";
 import CFMLDocumentColorProvider from "./features/colorProvider";
@@ -57,30 +57,6 @@ const DOCUMENT_SELECTOR: DocumentSelector = [
 
 export let extensionContext: ExtensionContext;
 let bulkCaching: boolean = false;
-
-/**
- * Gets a ConfigurationTarget enumerable based on a string representation
- * @param target A string representing a configuration target
- * @returns ConfigurationTarget
- */
-export function getConfigurationTarget(target: string): ConfigurationTarget {
-	let configTarget: ConfigurationTarget;
-	switch (target) {
-		case "Global":
-			configTarget = ConfigurationTarget.Global;
-			break;
-		case "Workspace":
-			configTarget = ConfigurationTarget.Workspace;
-			break;
-		case "WorkspaceFolder":
-			configTarget = ConfigurationTarget.WorkspaceFolder;
-			break;
-		default:
-			configTarget = ConfigurationTarget.Global;
-	}
-
-	return configTarget;
-}
 
 /**
  * Checks whether the given document should be excluded from being used.
@@ -273,54 +249,9 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		}
 	}));
 
-	const cfmlSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml");
-	const autoCloseTagExtId = "formulahendry.auto-close-tag";
-	const autoCloseTagExt = extensions.getExtension(autoCloseTagExtId);
-	const enableAutoCloseTags: boolean = cfmlSettings.get<boolean>("autoCloseTags.enable", true);
-	if (autoCloseTagExt) {
-		const autoCloseTagsSettings: WorkspaceConfiguration = workspace.getConfiguration("auto-close-tag", null);
-		const autoCloseLanguages: string[] = autoCloseTagsSettings.get<string[]>("activationOnLanguage", []);
-		const autoCloseExcludedTags: string[] = autoCloseTagsSettings.get<string[]>("excludedTags", []);
-
-		if (enableAutoCloseTags) {
-			if (!autoCloseLanguages.includes(LANGUAGE_ID)) {
-				autoCloseLanguages.push(LANGUAGE_ID);
-				autoCloseTagsSettings.update(
-					"activationOnLanguage",
-					autoCloseLanguages,
-					getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget", "Global"))
-				);
-			}
-
-			nonClosingTags.filter((tagName: string) => {
-				// Consider ignoring case
-				return !autoCloseExcludedTags.includes(tagName);
-			}).forEach((tagName: string) => {
-				autoCloseExcludedTags.push(tagName);
-			});
-			autoCloseTagsSettings.update(
-				"excludedTags",
-				autoCloseExcludedTags,
-				getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget", "Global"))
-			);
-		}
-		else {
-			const index: number = autoCloseLanguages.indexOf(LANGUAGE_ID);
-			if (index !== -1) {
-				autoCloseLanguages.splice(index, 1);
-				autoCloseTagsSettings.update(
-					"activationOnLanguage",
-					autoCloseLanguages,
-					getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget", "Global"))
-				);
-			}
-		}
-	}
-	else if (enableAutoCloseTags) {
-		workspace.onDidChangeTextDocument(async (event) => {
-			await handleContentChanges(event);
-		});
-	}
+	workspace.onDidChangeTextDocument(async (event) => {
+		await handleContentChanges(event);
+	});
 
 	await commands.executeCommand("cfml.refreshGlobalDefinitionCache");
 	await commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
