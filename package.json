@@ -389,23 +389,8 @@
 				"cfml.autoCloseTags.enable": {
 					"order": 2,
 					"type": "boolean",
-					"markdownDescription": "Whether to enable auto-closing tags for CFML. This uses the third-party extension `auto-close-tag`. This is only checked and set on startup.",
+					"markdownDescription": "Whether to enable auto-closing tags for CFML. This is only checked and set on startup.",
 					"default": true,
-					"scope": "window"
-				},
-				"cfml.autoCloseTags.configurationTarget": {
-					"order": 1,
-					"type": "string",
-					"description": "Auto-configuration target for auto-closing tags.",
-					"enum": [
-						"Global",
-						"Workspace"
-					],
-					"markdownEnumDescription": [
-						"Targets the global/user settings for CFML configuration of `auto-close-tag`",
-						"Targets the workspace settings for CFML configuration of `auto-close-tag`"
-					],
-					"default": "Global",
 					"scope": "window"
 				},
 				"cfml.docBlock.gap": {

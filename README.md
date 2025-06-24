@@ -107,7 +107,7 @@ This extension contributes these settings to Visual Studio Code:
 - `cfml.definition.enable`: Whether providing definitions is enabled. [_Default_: `true`]
 - `cfml.definition.userFunctions.search.enable`: Whether to search for matching functions throughout the workspace when a reliable match cannot be determined. Peek Definition will provide a list of all matches. [_Default_: `false`]
 - `cfml.indexComponents.enable`: Whether to index the components in workspace on startup. This is done on each startup and duration depends on number and complexity of components as well as hardware specifications. Editor may be unresponsive during this period. It is currently required for most features involving components to work properly. [_Default_: `true`]
-- `cfml.autoCloseTags.enable`: Whether to enable auto-closing tags for CFML. This uses the third-party extension `auto-close-tag`. This is only checked and set on startup. [_Default_: `true`]
+- `cfml.autoCloseTags.enable`: Whether to enable auto-closing tags for CFML. This is only checked and set on startup. [_Default_: `true`]
 - `cfml.autoCloseTags.configurationTarget`: Auto-configuration target for auto-closing tags. [_Default_: `Global`]
 - `cfml.docBlock.gap`: Whether there should be a gap between the hint and other tags in a docblock. [_Default_: `true`]
 - `cfml.docBlock.extra`: Extra tags you would like to include in every docblock  

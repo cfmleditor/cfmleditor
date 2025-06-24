@@ -1,6 +1,6 @@
 import { some } from "micromatch";
 import {
-	commands, ConfigurationChangeEvent, ConfigurationTarget, DocumentSelector, Extension, ExtensionContext, extensions,
+	commands, ConfigurationChangeEvent, DocumentSelector, Extension, ExtensionContext, extensions,
 	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace, WorkspaceConfiguration, env,
 } from "vscode";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
@@ -57,30 +57,6 @@ const DOCUMENT_SELECTOR: DocumentSelector = [
 
 export let extensionContext: ExtensionContext;
 let bulkCaching: boolean = false;
-
-/**
- * Gets a ConfigurationTarget enumerable based on a string representation
- * @param target A string representing a configuration target
- * @returns ConfigurationTarget
- */
-export function getConfigurationTarget(target: string): ConfigurationTarget {
-	let configTarget: ConfigurationTarget;
-	switch (target) {
-		case "Global":
-			configTarget = ConfigurationTarget.Global;
-			break;
-		case "Workspace":
-			configTarget = ConfigurationTarget.Workspace;
-			break;
-		case "WorkspaceFolder":
-			configTarget = ConfigurationTarget.WorkspaceFolder;
-			break;
-		default:
-			configTarget = ConfigurationTarget.Global;
-	}
-
-	return configTarget;
-}
 
 /**
  * Checks whether the given document should be excluded from being used.
