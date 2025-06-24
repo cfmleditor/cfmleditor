@@ -5,7 +5,7 @@ import {
 } from "vscode";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
-import { decreasingIndentingTags, goToMatchingTag, nonClosingTags, nonIndentingTags } from "./entities/tag";
+import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./entities/tag";
 import { parseVariableAssignments, Variable } from "./entities/variable";
 import { cacheComponentFromDocument, setApplicationVariables, clearCachedComponent, removeApplicationVariables } from "./features/cachedEntities";
 import CFMLDocumentColorProvider from "./features/colorProvider";
@@ -274,49 +274,9 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	}));
 
 	const cfmlSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml");
-	const autoCloseTagExtId = "formulahendry.auto-close-tag";
-	const autoCloseTagExt = extensions.getExtension(autoCloseTagExtId);
 	const enableAutoCloseTags: boolean = cfmlSettings.get<boolean>("autoCloseTags.enable", true);
-	if (autoCloseTagExt) {
-		const autoCloseTagsSettings: WorkspaceConfiguration = workspace.getConfiguration("auto-close-tag", null);
-		const autoCloseLanguages: string[] = autoCloseTagsSettings.get<string[]>("activationOnLanguage", []);
-		const autoCloseExcludedTags: string[] = autoCloseTagsSettings.get<string[]>("excludedTags", []);
 
-		if (enableAutoCloseTags) {
-			if (!autoCloseLanguages.includes(LANGUAGE_ID)) {
-				autoCloseLanguages.push(LANGUAGE_ID);
-				autoCloseTagsSettings.update(
-					"activationOnLanguage",
-					autoCloseLanguages,
-					getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget", "Global"))
-				);
-			}
-
-			nonClosingTags.filter((tagName: string) => {
-				// Consider ignoring case
-				return !autoCloseExcludedTags.includes(tagName);
-			}).forEach((tagName: string) => {
-				autoCloseExcludedTags.push(tagName);
-			});
-			autoCloseTagsSettings.update(
-				"excludedTags",
-				autoCloseExcludedTags,
-				getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget", "Global"))
-			);
-		}
-		else {
-			const index: number = autoCloseLanguages.indexOf(LANGUAGE_ID);
-			if (index !== -1) {
-				autoCloseLanguages.splice(index, 1);
-				autoCloseTagsSettings.update(
-					"activationOnLanguage",
-					autoCloseLanguages,
-					getConfigurationTarget(cfmlSettings.get<string>("autoCloseTags.configurationTarget", "Global"))
-				);
-			}
-		}
-	}
-	else if (enableAutoCloseTags) {
+	if (enableAutoCloseTags) {
 		workspace.onDidChangeTextDocument(async (event) => {
 			await handleContentChanges(event);
 		});
