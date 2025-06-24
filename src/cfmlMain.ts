@@ -249,14 +249,9 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		}
 	}));
 
-	const cfmlSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml");
-	const enableAutoCloseTags: boolean = cfmlSettings.get<boolean>("autoCloseTags.enable", true);
-
-	if (enableAutoCloseTags) {
-		workspace.onDidChangeTextDocument(async (event) => {
-			await handleContentChanges(event);
-		});
-	}
+	workspace.onDidChangeTextDocument(async (event) => {
+		await handleContentChanges(event);
+	});
 
 	await commands.executeCommand("cfml.refreshGlobalDefinitionCache");
 	await commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
