@@ -389,7 +389,7 @@
 				"cfml.autoCloseTags.enable": {
 					"order": 2,
 					"type": "boolean",
-					"markdownDescription": "Whether to enable auto-closing tags for CFML. This is only checked and set on startup.",
+					"markdownDescription": "Whether to enable auto-closing tags for CFML.",
 					"default": true,
 					"scope": "window"
 				},
