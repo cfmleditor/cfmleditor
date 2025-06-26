@@ -1,4 +1,4 @@
-import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit, Position, CancellationTokenSource } from "vscode";
+import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit, Position, CancellationTokenSource, env } from "vscode";
 import { Component, getApplicationUri } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
@@ -6,6 +6,7 @@ import { isCfcFile } from "../utils/contextUtil";
 import { clearAllGlobalFunctions, clearAllGlobalTags, clearAllGlobalEntityDefinitions, clearAllCustomSnippets, cacheAllComponents, getComponent } from "./cachedEntities";
 import SnippetService from "../utils/snippetService";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
+import { convertPathToPackageName } from "../utils/cfcPackages";
 
 /**
  * Refreshes (clears and retrieves) all CFML global definitions
@@ -123,4 +124,27 @@ export function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: Sn
 			snippet: args.tag,
 		});
 	}
+}
+
+/**
+ * Copies the package path of a CFC file to the clipboard.
+ *
+ * Example: `/com/example/MyComponent.cfc` would be copied as `com.example.MyComponent`
+ * @param selectedFileUri The URI of the file for which to copy the package path
+ */
+export function copyPackage(selectedFileUri: Uri) {
+	const workspaceFolder = workspace.getWorkspaceFolder(selectedFileUri);
+	const workspacePath = workspaceFolder?.uri;
+	// We are not in a workspace or the file is not in a workspace
+	if (!workspacePath) {
+		return;
+	}
+	const mappings = workspace.getConfiguration("cfml").get("mappings", []);
+
+	const packagePath = convertPathToPackageName(
+		selectedFileUri,
+		mappings
+	);
+
+	env.clipboard.writeText(packagePath);
 }

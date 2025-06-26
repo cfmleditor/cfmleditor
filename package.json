@@ -544,6 +544,7 @@
 			},
 			{
 				"command": "cfml.copyPackage",
+				"category": "CFML",
 				"title": "Copy CFC Package Path"
 			}
 		],

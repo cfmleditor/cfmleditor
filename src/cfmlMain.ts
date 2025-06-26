@@ -1,7 +1,7 @@
 import { some } from "micromatch";
 import {
 	commands, ConfigurationChangeEvent, DocumentSelector, Extension, ExtensionContext, extensions,
-	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace, WorkspaceConfiguration, env,
+	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace, WorkspaceConfiguration,
 } from "vscode";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
@@ -9,7 +9,7 @@ import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./en
 import { parseVariableAssignments, Variable } from "./entities/variable";
 import { cacheComponentFromDocument, setApplicationVariables, clearCachedComponent, removeApplicationVariables } from "./features/cachedEntities";
 import CFMLDocumentColorProvider from "./features/colorProvider";
-import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache, insertSnippet } from "./features/commands";
+import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache, insertSnippet, copyPackage } from "./features/commands";
 import { CommentType, toggleComment } from "./features/comment";
 import CFMLCompletionItemProvider from "./features/completionItemProvider";
 import CFMLDefinitionProvider from "./features/definitionProvider";
@@ -26,7 +26,6 @@ import { DocumentStateContext, getDocumentStateContext } from "./utils/documentU
 import { handleContentChanges } from "./features/autoclose";
 import { resolveBaseName, uriBaseName } from "./utils/fileUtil";
 // import { CFMLFlatPackageProvider } from "./views/components";
-import { convertPathToPackageName } from "./utils/cfcPackages";
 
 export const LANGUAGE_ID: string = "cfml";
 export const LANGUAGE_CFS_ID: string = "cfs";
@@ -142,6 +141,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 
 	context.subscriptions.push(commands.registerCommand("cfml.refreshGlobalDefinitionCache", refreshGlobalDefinitionCache));
 	context.subscriptions.push(commands.registerCommand("cfml.refreshWorkspaceDefinitionCache", refreshWorkspaceDefinitionCache));
+	context.subscriptions.push(commands.registerCommand("cfml.copyPackage", copyPackage));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleComment(CommentType.Line, undefined)));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.insertSnippet", insertSnippet));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleComment(CommentType.Block, undefined)));
@@ -273,28 +273,6 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	// 		console.error("Failed to create ComponentTreeDataProvider:", error);
 	// 	}
 	// }
-
-	context.subscriptions.push(
-		commands.registerCommand(
-			"cfml.copyPackage",
-			(selectedFileUri: Uri) => {
-				const workspaceFolder = workspace.getWorkspaceFolder(selectedFileUri);
-				const workspacePath = workspaceFolder?.uri;
-				// We are not in a workspace or the file is not in a workspace
-				if (!workspacePath) {
-					return;
-				}
-				const mappings = workspace.getConfiguration("cfml").get("mappings", []);
-
-				const packagePath = convertPathToPackageName(
-					selectedFileUri,
-					mappings
-				);
-
-				env.clipboard.writeText(packagePath);
-			}
-		)
-	);
 
 	return api;
 }
