@@ -18,7 +18,6 @@ export const cfmleditorAssistantHandler: ChatRequestHandler = async (
 
 	let libResult: ChatHandlerResult;
 	try {
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
 		libResult = sendChatParticipantRequest(
 			request,
 			chatContext,
@@ -45,11 +44,9 @@ export const cfmleditorAssistantHandler: ChatRequestHandler = async (
 		throw new Error(`Failed to send chat participant request: ${message}`);
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 	if (typeof libResult.result !== "object" || typeof libResult.result.then !== "function") {
 		throw new Error("Unexpected result type");
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
 	return await libResult.result;
 };
