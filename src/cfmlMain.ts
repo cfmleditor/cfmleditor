@@ -278,20 +278,37 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		commands.registerCommand(
 			"cfml.copyPackage",
 			(selectedFileUri: Uri) => {
-				const workspaceFolder = workspace.getWorkspaceFolder(selectedFileUri);
-				const workspacePath = workspaceFolder?.uri;
-				// We are not in a workspace or the file is not in a workspace
-				if (!workspacePath) {
-					return;
+				let fileUri: Uri | undefined = selectedFileUri;
+				// If not selected file, try the activeTextEditor
+				if (!fileUri) {
+					fileUri = window.activeTextEditor?.document.uri;
 				}
-				const mappings = workspace.getConfiguration("cfml").get("mappings", []);
 
-				const packagePath = convertPathToPackageName(
-					selectedFileUri,
-					mappings
-				);
+				if (fileUri) {
+					const workspaceFolder = workspace.getWorkspaceFolder(fileUri);
+					const workspacePath = workspaceFolder?.uri;
+					// We are not in a workspace or the file is not in a workspace
+					if (!workspacePath) {
+						return;
+					}
 
-				env.clipboard.writeText(packagePath);
+					const mappings = workspace.getConfiguration("cfml").get("mappings", []);
+
+					const packagePath: string = convertPathToPackageName(
+						fileUri,
+						mappings
+					);
+
+					if (packagePath) {
+						env.clipboard.writeText(packagePath);
+					}
+					else {
+						window.showErrorMessage("Could not find the CFC Package Path for " + fileUri.path);
+					}
+				}
+				else {
+					window.showErrorMessage("No selected file or active editor for this command to execute against.");
+				}
 			}
 		)
 	);
