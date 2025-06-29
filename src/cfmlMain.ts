@@ -279,7 +279,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 			"cfml.copyPackage",
 			(selectedFileUri: Uri) => {
 				let fileUri: Uri | undefined = selectedFileUri;
-				// If not selected file, try the activeTextEditor
+				// If no selected file, try the activeTextEditor
 				if (!fileUri) {
 					fileUri = window.activeTextEditor?.document.uri;
 				}
