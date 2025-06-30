@@ -1,5 +1,5 @@
 import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit, Position, CancellationTokenSource, env } from "vscode";
-import { Component, getApplicationUri } from "../entities/component";
+import { Component, getApplicationUri, getWebRoot } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
 import { isCfcFile } from "../utils/contextUtil";
@@ -148,16 +148,18 @@ export function copyPackage(selectedFileUri?: Uri) {
 		return;
 	}
 
-	const workspaceFolder = workspace.getWorkspaceFolder(selectedFileUri);
-	const workspacePath = workspaceFolder?.uri;
-	// We are not in a workspace or the file is not in a workspace
-	if (!workspacePath) {
+	// Require a workspace so we have a web root to make the package path relative to (otherwise the absolute path would be used)
+	const webRootUri = getWebRoot(selectedFileUri);
+	if (!webRootUri) {
+		window.showErrorMessage("No workspace folder found for the selected file.");
 		return;
 	}
-	const mappings = workspace.getConfiguration("cfml").get("mappings", []);
+
+	const mappings = workspace.getConfiguration("cfml", selectedFileUri).get("mappings", []);
 
 	const packagePath = convertPathToPackageName(
 		selectedFileUri,
+		webRootUri,
 		mappings
 	);
 
