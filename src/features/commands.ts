@@ -142,6 +142,12 @@ export function copyPackage(selectedFileUri?: Uri) {
 		selectedFileUri = window.activeTextEditor.document.uri;
 	}
 
+	// Avoid confusion when used with .cfm files by mistake
+	if (!selectedFileUri.path.toLowerCase().endsWith(".cfc")) {
+		window.showErrorMessage("Copy CFC Package Path only works for CFC files.");
+		return;
+	}
+
 	const workspaceFolder = workspace.getWorkspaceFolder(selectedFileUri);
 	const workspacePath = workspaceFolder?.uri;
 	// We are not in a workspace or the file is not in a workspace
