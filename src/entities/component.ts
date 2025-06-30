@@ -1,4 +1,4 @@
-import { CancellationToken, Position, Range, TextDocument, Uri } from "vscode";
+import { CancellationToken, Position, Range, TextDocument, Uri, workspace } from "vscode";
 import { getComponent, hasComponent, cachedComponentPathToUri } from "../features/cachedEntities";
 import { MySet } from "../utils/collections";
 import { isCfcFile } from "../utils/contextUtil";
@@ -562,6 +562,27 @@ export function getServerUri(baseUri: Uri, _token: CancellationToken | undefined
 	// TODO: custom mapping
 
 	return componentUri;
+}
+
+/**
+ * Get the web root URI for a given file URI
+ *
+ * This is similar to `workspace.getWorkspaceFolder`, but it accounts for the `webRoot` setting.
+ * @param fileUri The URI of the file for which to get the web root
+ * @returns The web root URI for the given file URI, or undefined if the file is not in a workspace
+ */
+export function getWebRoot(fileUri: Uri): Uri | undefined {
+	// Get the workspace folder for the file URI, or return undefined if not found
+	const workspaceUri = workspace.getWorkspaceFolder(fileUri)?.uri;
+	if (!workspaceUri) {
+		return undefined;
+	}
+
+	// Add on the webRoot setting, which is relative to the workspace root
+	const webRootRelative = workspace.getConfiguration("cfml", fileUri).get<string>("webRoot", "");
+	const webrootUri = Uri.joinPath(workspaceUri, webRootRelative);
+
+	return webrootUri;
 }
 
 /**

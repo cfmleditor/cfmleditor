@@ -1,8 +1,8 @@
 // This file provides functions to convert paths to package names and vice versa,
 // It also allows replacement of packagenames with mappings.
 
-import { join } from "path";
-import { Uri, workspace } from "vscode";
+import { join, relative } from "path";
+import { Uri } from "vscode";
 
 export interface CFMLMapping {
 	directoryPath: string; // The physical path to the directory
@@ -10,13 +10,21 @@ export interface CFMLMapping {
 	isPhysicalDirectoryPath: boolean; // Whether the directoryPath is a physical path
 }
 /**
+ * Get the package name for a given file path based on the provided mappings and web root.
  *
- * @param path
- * @param mappings
+ * Example:
+ *
+ *     convertPathToPackageName(
+ *         "/Users/foo.bar/example/src/components/MyComponent.cfc", ...
+ *     ) => "com.MyComponent"
+ * @param path The CFC file path for which to convert to a package name
+ * @param webRoot The web root URI, which the package name will be relative to
+ * @param mappings An array of CFMLMapping objects that define the logical and physical paths
  * @returns
  */
 export function convertPathToPackageName(
 	path: Uri,
+	webRoot: Uri,
 	mappings: CFMLMapping[]
 ): string {
 	let relPath = "";
@@ -26,7 +34,7 @@ export function convertPathToPackageName(
 		return b.directoryPath.length - a.directoryPath.length;
 	});
 
-	relPath = workspace.asRelativePath(path, false);
+	relPath = relative(webRoot.path, path.path);
 
 	for (const mapping of mappings) {
 		if (mapping.isPhysicalDirectoryPath
