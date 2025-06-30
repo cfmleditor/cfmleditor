@@ -26,7 +26,7 @@ export function convertPathToPackageName(
 		return b.directoryPath.length - a.directoryPath.length;
 	});
 
-	relPath = workspace.asRelativePath(path);
+	relPath = workspace.asRelativePath(path, false);
 
 	for (const mapping of mappings) {
 		if (mapping.isPhysicalDirectoryPath
