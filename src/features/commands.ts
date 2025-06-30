@@ -132,7 +132,16 @@ export function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: Sn
  * Example: `/com/example/MyComponent.cfc` would be copied as `com.example.MyComponent`
  * @param selectedFileUri The URI of the file for which to copy the package path
  */
-export function copyPackage(selectedFileUri: Uri) {
+export function copyPackage(selectedFileUri?: Uri) {
+	// When run from the command palette, no file is passed, so use whatever is currently active.
+	if (!selectedFileUri) {
+		if (!window.activeTextEditor) {
+			window.showErrorMessage("No active text editor found.");
+			return;
+		}
+		selectedFileUri = window.activeTextEditor.document.uri;
+	}
+
 	const workspaceFolder = workspace.getWorkspaceFolder(selectedFileUri);
 	const workspacePath = workspaceFolder?.uri;
 	// We are not in a workspace or the file is not in a workspace
