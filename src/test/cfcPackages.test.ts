@@ -26,7 +26,7 @@ describe("convertPathToPackageName", function () {
 		);
 		assert.strictEqual(packageName, "com.MyComponent");
 	});
-	it("should convert path relative to mapping and webRoot", function () {
+	it("should convert path relative to mapping and webroot", function () {
 		const packageName = convertPathToPackageName(
 			Uri.parse("/Users/foo.bar/example/src/components/MyComponent.cfc"),
 			Uri.parse("/Users/foo.bar/example/src"),
