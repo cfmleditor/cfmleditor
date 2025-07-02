@@ -2,6 +2,13 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.41] - TBD
+
+- Remove support for `formulahendry.auto-close-tag` use in cfmleditor ([\#92](https://github.com/cfmleditor/cfmleditor/issues/92))
+- Multi cursor auto tag close fixes / usability improvements ([\#88](https://github.com/cfmleditor/cfmleditor/pull/88))
+- Added command and menu item "Copy CFC Package Path" to copy `component.dot.paths` ([\#80](https://github.com/cfmleditor/cfmleditor/issues/80))
+- Added `cfml.webroot` setting to simplify mappings when a workspace subfolder is the server webroot. ([\#36](https://github.com/cfmleditor/cfmleditor/issues/36))
+
 ## [0.6.40] - 2025-04-09
 
 - Added Lucee documentation as alternative to CFDocs -- `cfml.cfDocs.source`: `lucee` ([\#71](https://github.com/cfmleditor/cfmleditor/issues/71))
