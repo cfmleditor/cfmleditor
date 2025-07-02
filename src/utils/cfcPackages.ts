@@ -18,13 +18,13 @@ export interface CFMLMapping {
  *         "/Users/foo.bar/example/src/components/MyComponent.cfc", ...
  *     ) => "com.MyComponent"
  * @param path The CFC file path for which to convert to a package name
- * @param webRoot The web root URI, which the package name will be relative to
+ * @param webroot The web root URI, which the package name will be relative to
  * @param mappings An array of CFMLMapping objects that define the logical and physical paths
  * @returns
  */
 export function convertPathToPackageName(
 	path: Uri,
-	webRoot: Uri,
+	webroot: Uri,
 	mappings: CFMLMapping[]
 ): string {
 	let relPath = "";
@@ -34,7 +34,7 @@ export function convertPathToPackageName(
 		return b.directoryPath.length - a.directoryPath.length;
 	});
 
-	relPath = relative(webRoot.path, path.path);
+	relPath = relative(webroot.path, path.path);
 
 	for (const mapping of mappings) {
 		if (mapping.isPhysicalDirectoryPath

@@ -243,7 +243,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		if (evt.affectsConfiguration("cfml.globalDefinitions") || evt.affectsConfiguration("cfml.cfDocs") || evt.affectsConfiguration("cfml.engine")) {
 			commands.executeCommand("cfml.refreshGlobalDefinitionCache");
 		}
-		if (evt.affectsConfiguration("cfml.mappings") || evt.affectsConfiguration("cfml.webRoot")) {
+		if (evt.affectsConfiguration("cfml.mappings") || evt.affectsConfiguration("cfml.webroot")) {
 			// Refresh cached components so the config changes take effect
 			commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
 		}
