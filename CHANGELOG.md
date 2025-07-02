@@ -2,7 +2,7 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
-## [0.6.41] - TBD
+## [0.6.41] - 2025-07-03
 
 - Remove support for `formulahendry.auto-close-tag` use in cfmleditor ([\#92](https://github.com/cfmleditor/cfmleditor/issues/92))
 - Multi cursor auto tag close fixes / usability improvements ([\#88](https://github.com/cfmleditor/cfmleditor/pull/88))
