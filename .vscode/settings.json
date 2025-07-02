@@ -20,7 +20,8 @@
 	],
 	"editor.formatOnSave": false,
 	"editor.codeActionsOnSave": {
-		"source.fixAll": "explicit"
+		"source.fixAll.eslint": "explicit",
+		"source.fixAll.ts": "never",
 	},
 	"eslint.rules.customizations": [
 		{
