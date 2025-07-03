@@ -546,6 +546,16 @@
 				"command": "cfml.copyPackage",
 				"category": "CFML",
 				"title": "Copy CFC Package Path"
+			},
+			{
+				"command": "cfml.goToRouteView",
+				"category": "CFML",
+				"title": "Go to Route View"
+			},
+			{
+				"command": "cfml.goToRouteController",
+				"category": "CFML",
+				"title": "Go to Route Controller"
 			}
 		],
 		"menus": {

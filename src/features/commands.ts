@@ -7,6 +7,7 @@ import { clearAllGlobalFunctions, clearAllGlobalTags, clearAllGlobalEntityDefini
 import SnippetService from "../utils/snippetService";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { convertPathToPackageName } from "../utils/cfcPackages";
+import { resolveCustomMappingTemplatePath } from "../utils/fileUtil";
 
 /**
  * Refreshes (clears and retrieves) all CFML global definitions
@@ -164,4 +165,56 @@ export function copyPackage(selectedFileUri?: Uri) {
 	);
 
 	env.clipboard.writeText(packagePath);
+}
+
+/**
+ * This function should return the path to the view based on the appropriate mapping config
+ * @returns
+ */
+export async function goToRouteView() {
+	// Prompt the user for input
+	const userInput = await window.showInputBox({
+		prompt: "Enter the route",
+		placeHolder: "Type something here...",
+	});
+
+	// Check if the user canceled the input
+	if (!userInput) {
+		window.showInformationMessage("No input provided. Command canceled.");
+		return;
+	}
+
+	const dotPath: string = userInput;
+
+	const normalizedPath: string = dotPath.replace(/(\?\.|\.|::)/g, "/") + ".cfm";
+
+	const customMappingPaths: string[] = await resolveCustomMappingTemplatePath(undefined, normalizedPath);
+
+	if (customMappingPaths.length === 0) {
+		window.showErrorMessage("No matching files found for the given route.");
+		return;
+	}
+
+	// Show a list of resolved paths for the user to select
+	const selectedPath = customMappingPaths.length === 1
+		? customMappingPaths[0]
+		: await window.showQuickPick(customMappingPaths, {
+				placeHolder: "Select a file to open",
+			});
+
+	// Check if the user canceled the selection
+	if (!selectedPath) {
+		window.showInformationMessage("No file selected. Command canceled.");
+		return;
+	}
+
+	// Open the selected file
+	const document = await workspace.openTextDocument(Uri.file(selectedPath));
+	await window.showTextDocument(document);
+}
+
+/**
+ * This function should return the path to the .cfc and the name of the function within that cfc based on the appropriate mapping config
+ */
+export function goToRouteController() {
 }

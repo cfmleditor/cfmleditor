@@ -104,6 +104,46 @@ export async function fileExists(path: string): Promise<boolean> {
 
 /**
  *
+ * @param uri file uri
+ * @returns Promise
+ */
+export async function isDirectory(uri: Uri): Promise<boolean> {
+	try {
+		const stat = await workspace.fs.stat(uri);
+		if (stat.type === FileType.Directory) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	catch {
+		return false;
+	}
+}
+
+/**
+ *
+ * @param uri file uri
+ * @returns Promise
+ */
+export async function isFile(uri: Uri): Promise<boolean> {
+	try {
+		const stat = await workspace.fs.stat(uri);
+		if (stat.type === FileType.File) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	catch {
+		return false;
+	}
+}
+
+/**
+ *
  * @param path file path
  * @returns Promise
  */
@@ -190,8 +230,8 @@ export function resolveRelativePath(baseUri: Uri, appendingPath: string): string
  * @param appendingPath A path appended to the resolved root path
  * @returns string
  */
-export function resolveRootPath(baseUri: Uri, appendingPath: string): string | undefined {
-	const root: WorkspaceFolder | undefined = workspace.getWorkspaceFolder(baseUri);
+export function resolveRootPath(baseUri: Uri | undefined, appendingPath: string): string | undefined {
+	const root: WorkspaceFolder | undefined = baseUri ? workspace.getWorkspaceFolder(baseUri) : undefined;
 
 	// When baseUri is not in workspace
 	if (!root) {
@@ -211,7 +251,7 @@ export function resolveRootPath(baseUri: Uri, appendingPath: string): string | u
  * @param appendingPath A path appended to the resolved path
  * @returns array
  */
-export function resolveCustomMappingPaths(baseUri: Uri, appendingPath: string): string[] {
+export function resolveCustomMappingPaths(baseUri: Uri | undefined, appendingPath: string): string[] {
 	const customMappingPaths: string[] = [];
 
 	const cfmlMappings: CFMLMapping[] = workspace.getConfiguration("cfml", baseUri).get<CFMLMapping[]>("mappings", []);
@@ -219,16 +259,102 @@ export function resolveCustomMappingPaths(baseUri: Uri, appendingPath: string): 
 	for (const cfmlMapping of cfmlMappings) {
 		const slicedLogicalPath: string = cfmlMapping.logicalPath.slice(1);
 		const logicalPathStartPattern = new RegExp(`^${slicedLogicalPath}(?:/|$)`);
-		if (logicalPathStartPattern.test(normalizedPath)) {
-			const directoryPath: string | undefined = cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath ? cfmlMapping.directoryPath : resolveRootPath(baseUri, cfmlMapping.directoryPath);
-			if (directoryPath) {
-				const mappedPath: string = Uri.joinPath(Uri.parse(directoryPath), appendingPath.slice(slicedLogicalPath.length)).fsPath;
-				customMappingPaths.push(mappedPath);
+		if (!logicalPathStartPattern.test(normalizedPath)) {
+			continue;
+		}
+		const directoryPath = resolveDirectoryPath(baseUri, cfmlMapping);
+		if (!directoryPath) {
+			continue;
+		}
+		const mappedPath: string = Uri.joinPath(Uri.parse(directoryPath), appendingPath.slice(slicedLogicalPath.length)).fsPath;
+		customMappingPaths.push(mappedPath);
+	}
+
+	return customMappingPaths;
+}
+
+/**
+ * Resolves the directory path for a CFML mapping.
+ * @param baseUri
+ * @param cfmlMapping
+ * @returns
+ */
+function resolveDirectoryPath(baseUri: Uri | undefined, cfmlMapping: CFMLMapping): string | undefined {
+	return cfmlMapping.isPhysicalDirectoryPath === undefined || cfmlMapping.isPhysicalDirectoryPath
+		? cfmlMapping.directoryPath
+		: resolveRootPath(baseUri, cfmlMapping.directoryPath);
+}
+
+/**
+ * Resolves a full path based on mappings
+ * @param baseUri The URI from which the root path will be resolved
+ * @param appendingPath A path appended to the resolved path
+ * @returns array
+ */
+export async function resolveCustomMappingTemplatePath(baseUri: Uri | undefined, appendingPath: string): Promise<string[]> {
+	const templatePaths: string[] = [];
+
+	const cfmlMappings: CFMLMapping[] = workspace.getConfiguration("cfml", baseUri).get<CFMLMapping[]>("mappings", []);
+	const normalizedPath: string = appendingPath.replace(/\\/g, "/");
+
+	for (const cfmlMapping of cfmlMappings) {
+		const slicedLogicalPath: string = cfmlMapping.logicalPath.slice(1);
+
+		const logicalPathStartPattern = new RegExp(`^${slicedLogicalPath}(?:/|$)`);
+
+		if (!logicalPathStartPattern.test(normalizedPath)) {
+			continue;
+		}
+
+		const directoryPath = resolveDirectoryPath(baseUri, cfmlMapping);
+
+		if (!directoryPath) {
+			continue;
+		}
+
+		const templatePath = await resolveTemplatePath(directoryPath, slicedLogicalPath, normalizedPath);
+		if (templatePath) {
+			templatePaths.push(templatePath);
+		}
+	}
+
+	return templatePaths;
+}
+
+/**
+ * Resolves the mapped path by traversing directories and handling special cases.
+ * @param directoryPath
+ * @param slicedLogicalPath
+ * @param normalizedPath
+ * @returns
+ */
+async function resolveTemplatePath(
+	directoryPath: string,
+	slicedLogicalPath: string,
+	normalizedPath: string
+): Promise<string | undefined> {
+	let pathUri: Uri = Uri.parse(directoryPath);
+	const splitPath: string[] = normalizedPath.slice(slicedLogicalPath.length).split("/");
+	const filePath: string[] = [];
+
+	// Handle special case for "tassweb"
+	if (slicedLogicalPath === "tassweb") {
+		pathUri = Uri.joinPath(pathUri, "webroot");
+	}
+
+	for (const path of splitPath) {
+		if (path) {
+			const tmpPath = Uri.joinPath(pathUri, path);
+			if (await isDirectory(tmpPath)) {
+				pathUri = tmpPath;
+			}
+			else {
+				filePath.push(path);
 			}
 		}
 	}
 
-	return customMappingPaths;
+	return Uri.joinPath(pathUri, filePath.join(".")).fsPath;
 }
 
 /**
@@ -247,17 +373,9 @@ export async function findUpWorkspaceFile(name: string, workingDir: Uri): Promis
 		const filePath: Uri = Uri.joinPath(directory, name);
 		count++;
 
-		try {
-			const stats: FileStat = await workspace.fs.stat(filePath);
-			if (stats.type === FileType.File) {
-				return filePath;
-			}
+		if (await isFile(filePath)) {
+			return filePath;
 		}
-		catch {
-			/* empty */
-			// break;
-		}
-
 		// Stop at the workspace folder
 		if (!workspaceDir || count > 20 || directory.fsPath.replace(removePathEnding, "") === workspaceDir.uri.fsPath.replace(removePathEnding, "")) {
 			break;
