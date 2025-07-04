@@ -221,12 +221,27 @@ function setComponent(comp: Component): void {
  * @returns
  */
 export function getComponent(uri: Uri, _token: CancellationToken | undefined): Component | undefined {
-	if (!hasComponent(uri, _token)) {
-		/* TODO: If not already cached, attempt to read, parse and cache. Tricky since read is async */
-		return undefined;
+	if (hasComponent(uri, _token)) {
+		return allComponentsByUri[uri.toString().toLowerCase()];
 	}
 
-	return allComponentsByUri[uri.toString().toLowerCase()];
+	return undefined;
+}
+
+/**
+ * Retrieves the cached component identified by the given URI
+ * @param uri The URI of the component to be retrieved
+ * @param _token
+ * @returns
+ */
+export async function getComponentAsync(uri: Uri, _token: CancellationToken | undefined): Promise<Component | undefined> {
+	if (hasComponent(uri, _token)) {
+		return allComponentsByUri[uri.toString().toLowerCase()];
+	}
+
+	const [, component] = await getParsedComponentFromUri(uri, _token);
+
+	return component;
 }
 
 /**

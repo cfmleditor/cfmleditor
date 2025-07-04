@@ -1,7 +1,8 @@
 import { FileStat, FileType, Uri, workspace, WorkspaceFolder } from "vscode";
 import { Utils } from "vscode-uri";
-import { getComponent } from "../features/cachedEntities";
-import { Component } from "../entities/component";
+import { getComponentAsync } from "../features/cachedEntities";
+import { Component, getComponentFunction } from "../entities/component";
+import { UserFunction } from "../entities/userFunction";
 
 export interface CFMLMapping {
 	logicalPath: string;
@@ -297,9 +298,7 @@ export async function resolveRouteTemplatePath(baseUri: Uri | undefined, route: 
  * @param route
  * @returns array
  */
-export async function resolveRouteControllerPath(baseUri: Uri | undefined, route: string): Promise<string[]> {
-	const controllerPaths: string[] = [];
-
+export async function resolveRouteControllerPath(baseUri: Uri | undefined, route: string): Promise<[Uri | undefined, UserFunction | undefined]> {
 	const cfmlMappings: CFMLMapping[] = workspace.getConfiguration("cfml", baseUri).get<CFMLMapping[]>("mappings", []);
 	const normalizedPath: string = route.replace(/\\/g, "/");
 
@@ -314,13 +313,14 @@ export async function resolveRouteControllerPath(baseUri: Uri | undefined, route
 			continue;
 		}
 
-		const controllerPath = await resolveControllerPath(directoryPath, normalizedPath, cfmlMapping.controllerPath);
-		if (controllerPath) {
-			controllerPaths.push(controllerPath);
+		const [controllerPath, userFunction] = await resolveControllerPath(directoryPath, normalizedPath, cfmlMapping.controllerPath);
+
+		if (controllerPath && userFunction) {
+			return [controllerPath, userFunction];
 		}
 	}
 
-	return controllerPaths;
+	return [undefined, undefined];
 }
 
 /**
@@ -374,7 +374,7 @@ async function resolveControllerPath(
 	directoryPath: string,
 	route: string,
 	controllerPath: string | undefined
-): Promise<string | undefined> {
+): Promise<[Uri | undefined, UserFunction | undefined]> {
 	const directoryUri = Uri.parse(directoryPath);
 	const pathUri: Uri = controllerPath ? Uri.joinPath(directoryUri, controllerPath.replace(/\\/gi, "/")) : directoryUri;
 	const segments: string[] = route.split(".");
@@ -388,20 +388,23 @@ async function resolveControllerPath(
 	3. controller.module.submodule.function should look for controller.cfc#modulesubmodulefunction()
 	*/
 
-	// Iterate from right to left
 	for (let i = segments.length; i > 0; i--) {
 		const currentSegments = segments.slice(0, i);
 		const controllerFileName = currentSegments.join("-") + ".cfc";
 		const controllerFilePath = Uri.joinPath(pathUri, controllerFileName);
 		if (await isFile(controllerFilePath)) {
-			const component: Component | undefined = getComponent(controllerFilePath, undefined);
+			const component: Component | undefined = await getComponentAsync(controllerFilePath, undefined);
 			if (component) {
-				// component.functions;
-				return controllerFilePath.fsPath; // Found the file
+				const remainingSegments = segments.slice(i); // Segments after the current index
+				const controllerFunction: string = remainingSegments.join("");
+				const userFunction: UserFunction | undefined = getComponentFunction(component, controllerFunction);
+				if (userFunction) {
+					return [controllerFilePath, userFunction];
+				}
 			}
 		}
 	}
-	return undefined;
+	return [undefined, undefined];
 }
 
 /**

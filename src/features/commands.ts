@@ -1,4 +1,4 @@
-import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit, Position, CancellationTokenSource, env } from "vscode";
+import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit, Position, CancellationTokenSource, env, Location } from "vscode";
 import { Component, getApplicationUri, getWebroot } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
@@ -238,27 +238,27 @@ export async function goToRouteController() {
 	const activeEditor = window.activeTextEditor;
 	const baseUri = activeEditor ? activeEditor.document.uri : undefined;
 
-	const customMappingPaths: string[] = await resolveRouteControllerPath(baseUri, route);
+	const [uri, fn]: [Uri | undefined, UserFunction | undefined] = await resolveRouteControllerPath(baseUri, route);
 
-	if (customMappingPaths.length === 0) {
+	if (!uri) {
 		window.showErrorMessage("No matching files found for the given route.");
 		return;
 	}
 
-	// Show a list of resolved paths for the user to select
-	const selectedPath = customMappingPaths.length === 1
-		? customMappingPaths[0]
-		: await window.showQuickPick(customMappingPaths, {
-				placeHolder: "Select a file to open",
-			});
+	const document = await workspace.openTextDocument(uri);
+	const editor = await window.showTextDocument(document);
 
-	// Check if the user canceled the selection
-	if (!selectedPath) {
-		window.showInformationMessage("No file selected. Command canceled.");
+	if (!fn) {
+		window.showErrorMessage("No matching function found for the given route.");
 		return;
 	}
 
-	// Open the selected file
-	const document = await workspace.openTextDocument(Uri.file(selectedPath));
-	await window.showTextDocument(document);
+	const location: Location = fn.location;
+
+	if (!location) {
+		return;
+	}
+
+	// Reveal the range in the editor
+	editor.revealRange(location.range);
 }
