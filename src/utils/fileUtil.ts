@@ -1,5 +1,7 @@
 import { FileStat, FileType, Uri, workspace, WorkspaceFolder } from "vscode";
 import { Utils } from "vscode-uri";
+import { getComponent } from "../features/cachedEntities";
+import { Component } from "../entities/component";
 
 export interface CFMLMapping {
 	logicalPath: string;
@@ -392,7 +394,11 @@ async function resolveControllerPath(
 		const controllerFileName = currentSegments.join("-") + ".cfc";
 		const controllerFilePath = Uri.joinPath(pathUri, controllerFileName);
 		if (await isFile(controllerFilePath)) {
-			return controllerFilePath.fsPath; // Found the file
+			const component: Component | undefined = getComponent(controllerFilePath, undefined);
+			if (component) {
+				// component.functions;
+				return controllerFilePath.fsPath; // Found the file
+			}
 		}
 	}
 	return undefined;

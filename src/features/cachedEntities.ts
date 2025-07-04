@@ -415,10 +415,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
 				}
 
 				try {
-					const document: TextDocument = await LSTextDocument.openTextDocument(componentUri);
-					const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
-					const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-					await cacheComponentFromDocument(document, true, replaceComments, _token);
+					await cacheComponentFromUri(componentUri, _token);
 				}
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
 				catch (ex) {
@@ -437,20 +434,65 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
 }
 
 /**
- * Parses given document and caches its definitions
- * @param document The text document to parse and cache
- * @param fast Whether to use the faster, but less accurate parsing
- * @param replaceComments
+ *
+ * @param componentUri
+ * @returns
+ */
+export async function getTextDocumentFromUri(componentUri: Uri): Promise<TextDocument> {
+	const document: TextDocument = await LSTextDocument.openTextDocument(componentUri);
+	return document;
+}
+
+/**
+ *Parses given document
+ * @param componentUri
  * @param _token
  * @returns
  */
-export async function cacheComponentFromDocument(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined): Promise<void> {
-	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token);
+export async function getParsedComponentFromUri(componentUri: Uri, _token: CancellationToken | undefined): Promise<[DocumentStateContext, Component | undefined]> {
+	const document: TextDocument = await getTextDocumentFromUri(componentUri);
+	return getParsedComponentFromDocument(document, _token);
+}
+
+/**
+ *Parses given document
+ * @param document Parses given document
+ * @param _token
+ * @returns
+ */
+export async function getParsedComponentFromDocument(document: TextDocument, _token: CancellationToken | undefined): Promise<[DocumentStateContext, Component | undefined]> {
+	const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
+	const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
+
+	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, replaceComments, _token);
 	const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
+	return [documentStateContext, parsedComponent];
+}
+
+/**
+ * Parses given document and caches its definitions
+ * @param document The text document to parse and cache
+ * @param _token cancellation token
+ * @returns
+ */
+export async function cacheComponentFromDocument(document: TextDocument, _token: CancellationToken | undefined): Promise<void> {
+	const [documentStateContext, parsedComponent]: [DocumentStateContext, Component | undefined] = await getParsedComponentFromDocument(document, _token);
 	if (!parsedComponent) {
 		return;
 	}
 	await cacheComponent(parsedComponent, documentStateContext, _token);
+}
+
+/**
+ * Parses given component from uri and caches its definitions
+ * @param componentUri
+ * @param _token
+ */
+export async function cacheComponentFromUri(componentUri: Uri, _token: CancellationToken | undefined): Promise<void> {
+	const [documentStateContext, parsedComponent] = await getParsedComponentFromUri(componentUri, _token);
+	if (parsedComponent) {
+		await cacheComponent(parsedComponent, documentStateContext, _token);
+	}
 }
 
 /**
