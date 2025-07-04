@@ -5,6 +5,8 @@ export interface CFMLMapping {
 	logicalPath: string;
 	directoryPath: string;
 	isPhysicalDirectoryPath?: boolean;
+	webrootPath?: string;
+	controllerPath?: string;
 }
 
 /**
@@ -104,18 +106,13 @@ export async function fileExists(path: string): Promise<boolean> {
 
 /**
  *
- * @param uri file uri
- * @returns Promise
+ * @param uri path uri
+ * @returns true if the uri is a FileType.Directory and false if it is not, also returns false if the uri cannot be resolved
  */
 export async function isDirectory(uri: Uri): Promise<boolean> {
 	try {
 		const stat = await workspace.fs.stat(uri);
-		if (stat.type === FileType.Directory) {
-			return true;
-		}
-		else {
-			return false;
-		}
+		return stat.type === FileType.Directory;
 	}
 	catch {
 		return false;
@@ -124,18 +121,13 @@ export async function isDirectory(uri: Uri): Promise<boolean> {
 
 /**
  *
- * @param uri file uri
- * @returns Promise
+ * @param uri path uri
+ * @returns true if the uri is a FileType.File and false if it is not, also returns false if the uri cannot be resolved
  */
 export async function isFile(uri: Uri): Promise<boolean> {
 	try {
 		const stat = await workspace.fs.stat(uri);
-		if (stat.type === FileType.File) {
-			return true;
-		}
-		else {
-			return false;
-		}
+		return stat.type === FileType.File;
 	}
 	catch {
 		return false;
@@ -288,14 +280,14 @@ function resolveDirectoryPath(baseUri: Uri | undefined, cfmlMapping: CFMLMapping
 /**
  * Resolves a full path based on mappings
  * @param baseUri The URI from which the root path will be resolved
- * @param appendingPath A path appended to the resolved path
+ * @param route
  * @returns array
  */
-export async function resolveCustomMappingTemplatePath(baseUri: Uri | undefined, appendingPath: string): Promise<string[]> {
+export async function resolveRouteTemplatePath(baseUri: Uri | undefined, route: string): Promise<string[]> {
 	const templatePaths: string[] = [];
 
 	const cfmlMappings: CFMLMapping[] = workspace.getConfiguration("cfml", baseUri).get<CFMLMapping[]>("mappings", []);
-	const normalizedPath: string = appendingPath.replace(/\\/g, "/");
+	const normalizedPath: string = route.replace(/\./g, "/");
 
 	for (const cfmlMapping of cfmlMappings) {
 		const slicedLogicalPath: string = cfmlMapping.logicalPath.slice(1);
@@ -312,8 +304,8 @@ export async function resolveCustomMappingTemplatePath(baseUri: Uri | undefined,
 			continue;
 		}
 
-		const templatePath = await resolveTemplatePath(directoryPath, slicedLogicalPath, normalizedPath);
-		if (templatePath) {
+		const templatePath = await resolveTemplatePath(directoryPath, slicedLogicalPath, normalizedPath, cfmlMapping.webrootPath);
+		if (templatePath && await fileExists(templatePath)) {
 			templatePaths.push(templatePath);
 		}
 	}
@@ -322,39 +314,112 @@ export async function resolveCustomMappingTemplatePath(baseUri: Uri | undefined,
 }
 
 /**
+ * Resolves a full path based on mappings
+ * @param baseUri The URI from which the root path will be resolved
+ * @param route
+ * @returns array
+ */
+export async function resolveRouteControllerPath(baseUri: Uri | undefined, route: string): Promise<string[]> {
+	const controllerPaths: string[] = [];
+
+	const cfmlMappings: CFMLMapping[] = workspace.getConfiguration("cfml", baseUri).get<CFMLMapping[]>("mappings", []);
+	const normalizedPath: string = route.replace(/\\/g, "/");
+
+	for (const cfmlMapping of cfmlMappings) {
+		if (!cfmlMapping.controllerPath) {
+			continue;
+		}
+
+		const directoryPath = resolveDirectoryPath(baseUri, cfmlMapping);
+
+		if (!directoryPath) {
+			continue;
+		}
+
+		const controllerPath = await resolveControllerPath(directoryPath, normalizedPath, cfmlMapping.controllerPath);
+		if (controllerPath) {
+			controllerPaths.push(controllerPath);
+		}
+	}
+
+	return controllerPaths;
+}
+
+/**
  * Resolves the mapped path by traversing directories and handling special cases.
  * @param directoryPath
  * @param slicedLogicalPath
  * @param normalizedPath
+ * @param webrootPath
  * @returns
  */
 async function resolveTemplatePath(
 	directoryPath: string,
 	slicedLogicalPath: string,
-	normalizedPath: string
+	normalizedPath: string,
+	webrootPath: string | undefined
 ): Promise<string | undefined> {
 	let pathUri: Uri = Uri.parse(directoryPath);
 	const splitPath: string[] = normalizedPath.slice(slicedLogicalPath.length).split("/");
 	const filePath: string[] = [];
 
-	// Handle special case for "tassweb"
-	if (slicedLogicalPath === "tassweb") {
-		pathUri = Uri.joinPath(pathUri, "webroot");
+	if (webrootPath) {
+		pathUri = Uri.joinPath(pathUri, webrootPath);
 	}
 
 	for (const path of splitPath) {
-		if (path) {
-			const tmpPath = Uri.joinPath(pathUri, path);
-			if (await isDirectory(tmpPath)) {
-				pathUri = tmpPath;
-			}
-			else {
-				filePath.push(path);
-			}
+		if (!path) {
+			continue;
+		}
+		const tmpPath = Uri.joinPath(pathUri, path);
+		if (await isDirectory(tmpPath)) {
+			pathUri = tmpPath;
+		}
+		else {
+			filePath.push(path);
 		}
 	}
 
+	filePath.push("cfm");
+
 	return Uri.joinPath(pathUri, filePath.join(".")).fsPath;
+}
+
+/**
+ * Resolves the mapped path by traversing directories and handling special cases.
+ * @param directoryPath
+ * @param route
+ * @param controllerPath
+ * @returns
+ */
+async function resolveControllerPath(
+	directoryPath: string,
+	route: string,
+	controllerPath: string | undefined
+): Promise<string | undefined> {
+	const directoryUri = Uri.parse(directoryPath);
+	const pathUri: Uri = controllerPath ? Uri.joinPath(directoryUri, controllerPath.replace(/\\/gi, "/")) : directoryUri;
+	const segments: string[] = route.split(".");
+
+	/*
+	routes should lookup paths from right to left using "." as delimeters from right to left
+
+	Attempt to resolve paths and functions in this order where # is the function name within each of the controller .cfc files
+	1. controller.module.submodule.function should look for controller-module-submodule.cfc#function()
+	2. controller.module.submodule.function should look for controller-module.cfc#submodulefunction()
+	3. controller.module.submodule.function should look for controller.cfc#modulesubmodulefunction()
+	*/
+
+	// Iterate from right to left
+	for (let i = segments.length; i > 0; i--) {
+		const currentSegments = segments.slice(0, i);
+		const controllerFileName = currentSegments.join("-") + ".cfc";
+		const controllerFilePath = Uri.joinPath(pathUri, controllerFileName);
+		if (await isFile(controllerFilePath)) {
+			return controllerFilePath.fsPath; // Found the file
+		}
+	}
+	return undefined;
 }
 
 /**

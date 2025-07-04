@@ -151,12 +151,12 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openCfDocs", CFDocsService.openCfDocsForCurrentWord.bind(CFDocsService)));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openEngineDocs", CFDocsService.openEngineDocsForCurrentWord.bind(CFDocsService)));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.foldAllFunctions", foldAllFunctions));
-	context.subscriptions.push(
-		commands.registerTextEditorCommand("cfml.goToRouteView", () => {
-			void goToRouteView();
-		})
-	);
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToRouteController", goToRouteController));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToRouteView", () => {
+		void goToRouteView();
+	}));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToRouteController", () => {
+		void goToRouteController();
+	}));
 
 	context.subscriptions.push(languages.registerHoverProvider(DOCUMENT_SELECTOR, new CFMLHoverProvider()));
 	context.subscriptions.push(languages.registerDocumentSymbolProvider(DOCUMENT_SELECTOR, new CFMLDocumentSymbolProvider()));
