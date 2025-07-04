@@ -186,9 +186,12 @@ export async function goToRouteView() {
 
 	const route: string = userInput;
 
-	// const normalizedPath: string = dotPath.replace(/(\?\.|\.|::)/g, "/") + ".cfm";
+	// Determine the base URI
+	const activeEditor = window.activeTextEditor;
+	const baseUri = activeEditor ? activeEditor.document.uri : undefined;
 
-	const customMappingPaths: string[] = await resolveRouteTemplatePath(undefined, route);
+	// Resolve the template paths
+	const customMappingPaths: string[] = await resolveRouteTemplatePath(baseUri, route);
 
 	if (customMappingPaths.length === 0) {
 		window.showErrorMessage("No matching files found for the given route.");
@@ -231,7 +234,11 @@ export async function goToRouteController() {
 
 	const route: string = userInput;
 
-	const customMappingPaths: string[] = await resolveRouteControllerPath(undefined, route);
+	// Determine the base URI
+	const activeEditor = window.activeTextEditor;
+	const baseUri = activeEditor ? activeEditor.document.uri : undefined;
+
+	const customMappingPaths: string[] = await resolveRouteControllerPath(baseUri, route);
 
 	if (customMappingPaths.length === 0) {
 		window.showErrorMessage("No matching files found for the given route.");
