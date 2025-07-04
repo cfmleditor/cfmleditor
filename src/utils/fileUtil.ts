@@ -111,7 +111,7 @@ export async function fileExists(path: string): Promise<boolean> {
  */
 export async function isDirectory(uri: Uri): Promise<boolean> {
 	try {
-		const stat = await workspace.fs.stat(uri);
+		const stat: FileStat = await workspace.fs.stat(uri);
 		return stat.type === FileType.Directory;
 	}
 	catch {
@@ -126,36 +126,12 @@ export async function isDirectory(uri: Uri): Promise<boolean> {
  */
 export async function isFile(uri: Uri): Promise<boolean> {
 	try {
-		const stat = await workspace.fs.stat(uri);
+		const stat: FileStat = await workspace.fs.stat(uri);
 		return stat.type === FileType.File;
 	}
 	catch {
 		return false;
 	}
-}
-
-/**
- *
- * @param path file path
- * @returns Promise
- */
-export async function uriExists(path: Uri): Promise<boolean> {
-	try {
-		await workspace.fs.stat(path);
-		return true;
-	}
-	catch {
-		return false;
-	}
-}
-
-/**
- *
- * @param path file path
- * @returns Promise
- */
-export async function uriStat(path: Uri): Promise<FileStat> {
-	return await workspace.fs.stat(path);
 }
 
 /**

@@ -1,6 +1,6 @@
-import { CancellationToken, DocumentLink, DocumentLinkProvider, FileStat, FileType, Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode";
+import { CancellationToken, DocumentLink, DocumentLinkProvider, Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode";
 import { isUri } from "../utils/textUtil";
-import { uriExists, uriStat } from "../utils/fileUtil";
+import { isFile } from "../utils/fileUtil";
 import { Utils } from "vscode-uri";
 
 export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
@@ -104,11 +104,8 @@ export default class CFMLDocumentLinkProvider implements DocumentLinkProvider {
 		}
 
 		// Check custom virtual directories?
-		if (resourcePath && await uriExists(resourcePath)) {
-			const fileStat: FileStat = await uriStat(resourcePath);
-			if (fileStat.type === FileType.File) {
-				return resourcePath;
-			}
+		if (resourcePath && await isFile(resourcePath)) {
+			return resourcePath;
 		}
 
 		return undefined;
