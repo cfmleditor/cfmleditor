@@ -11,6 +11,7 @@ src/**
 **/.eslintrc.js
 .markdownlint.json
 tsconfig.json
+tsconfig.tsbuildinfo
 webpack.config.js
 node_modules
 typings/**
