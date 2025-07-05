@@ -641,3 +641,23 @@ export function isSubcomponent(checkComponent: Component, baseComponent: Compone
 
 	return false;
 }
+
+/**
+ * Gets a function by name if it exists in the component
+ * @param component the component object
+ * @param functionName the name of the function
+ * @returns
+ */
+export function getComponentFunction(component: Component, functionName: string): UserFunction | undefined {
+	if (!component || !component.functions) {
+		return undefined;
+	}
+
+	// Normalize the function name to lowercase for case-insensitive comparison
+	const normalizedFunctionName = functionName.toLowerCase();
+
+	// Check if any UserFunction in the component.functions array matches the functionName
+	return Array.from(component.functions.values()).find((userFunction: UserFunction) => {
+		return userFunction.name.toLowerCase() === normalizedFunctionName;
+	});
+}

@@ -1,4 +1,4 @@
-import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit, Position, CancellationTokenSource, env } from "vscode";
+import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit, Position, CancellationTokenSource, env, Location } from "vscode";
 import { Component, getApplicationUri, getWebroot } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
@@ -7,6 +7,7 @@ import { clearAllGlobalFunctions, clearAllGlobalTags, clearAllGlobalEntityDefini
 import SnippetService from "../utils/snippetService";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { convertPathToPackageName } from "../utils/cfcPackages";
+import { resolveRouteControllerPath, resolveRouteTemplatePath } from "../utils/fileUtil";
 
 /**
  * Refreshes (clears and retrieves) all CFML global definitions
@@ -164,4 +165,100 @@ export function copyPackage(selectedFileUri?: Uri) {
 	);
 
 	env.clipboard.writeText(packagePath);
+}
+
+/**
+ * This function should return the path to the view based on the appropriate mapping config
+ * @returns
+ */
+export async function goToRouteView() {
+	// Prompt the user for input
+	const userInput = await window.showInputBox({
+		prompt: "Enter the route",
+		placeHolder: "Type something here...",
+	});
+
+	// Check if the user canceled the input
+	if (!userInput) {
+		window.showInformationMessage("No input provided. Command canceled.");
+		return;
+	}
+
+	const route: string = userInput;
+
+	// Determine the base URI
+	const activeEditor = window.activeTextEditor;
+	const baseUri = activeEditor ? activeEditor.document.uri : undefined;
+
+	// Resolve the template paths
+	const customMappingPaths: string[] = await resolveRouteTemplatePath(baseUri, route);
+
+	if (customMappingPaths.length === 0) {
+		window.showErrorMessage("No matching files found for the given route.");
+		return;
+	}
+
+	// Show a list of resolved paths for the user to select
+	const selectedPath = customMappingPaths.length === 1
+		? customMappingPaths[0]
+		: await window.showQuickPick(customMappingPaths, {
+				placeHolder: "Select a file to open",
+			});
+
+	// Check if the user canceled the selection
+	if (!selectedPath) {
+		window.showInformationMessage("No file selected. Command canceled.");
+		return;
+	}
+
+	// Open the selected file
+	const document = await workspace.openTextDocument(Uri.file(selectedPath));
+	await window.showTextDocument(document);
+}
+
+/**
+ * This function should return the path to the .cfc and the name of the function within that cfc based on the appropriate mapping config
+ */
+export async function goToRouteController() {
+	// Prompt the user for input
+	const userInput = await window.showInputBox({
+		prompt: "Enter the route",
+		placeHolder: "Type something here...",
+	});
+
+	// Check if the user canceled the input
+	if (!userInput) {
+		window.showInformationMessage("No input provided. Command canceled.");
+		return;
+	}
+
+	const route: string = userInput;
+
+	// Determine the base URI
+	const activeEditor = window.activeTextEditor;
+	const baseUri = activeEditor ? activeEditor.document.uri : undefined;
+
+	const [uri, fn]: [Uri | undefined, UserFunction | undefined] = await resolveRouteControllerPath(baseUri, route);
+
+	if (!uri) {
+		window.showErrorMessage("No matching files found for the given route.");
+		return;
+	}
+
+	const document = await workspace.openTextDocument(uri);
+	const editor = await window.showTextDocument(document);
+
+	if (!fn) {
+		window.showErrorMessage("No matching function found for the given route.");
+		return;
+	}
+
+	const location: Location = fn.location;
+
+	if (!location) {
+		return;
+	}
+
+	// Reveal the range in the editor
+	editor.revealRange(location.range);
 }

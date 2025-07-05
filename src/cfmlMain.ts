@@ -7,9 +7,9 @@ import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { Scope } from "./entities/scope";
 import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./entities/tag";
 import { parseVariableAssignments, Variable } from "./entities/variable";
-import { cacheComponentFromDocument, setApplicationVariables, clearCachedComponent, removeApplicationVariables } from "./features/cachedEntities";
+import { cacheComponentFromDocument, setApplicationVariables, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri } from "./features/cachedEntities";
 import CFMLDocumentColorProvider from "./features/colorProvider";
-import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache, insertSnippet, copyPackage } from "./features/commands";
+import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache, insertSnippet, copyPackage, goToRouteController, goToRouteView } from "./features/commands";
 import { CommentType, toggleComment } from "./features/comment";
 import CFMLCompletionItemProvider from "./features/completionItemProvider";
 import CFMLDefinitionProvider from "./features/definitionProvider";
@@ -151,6 +151,12 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openCfDocs", CFDocsService.openCfDocsForCurrentWord.bind(CFDocsService)));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openEngineDocs", CFDocsService.openEngineDocsForCurrentWord.bind(CFDocsService)));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.foldAllFunctions", foldAllFunctions));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToRouteView", () => {
+		void goToRouteView();
+	}));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToRouteController", () => {
+		void goToRouteController();
+	}));
 
 	context.subscriptions.push(languages.registerHoverProvider(DOCUMENT_SELECTOR, new CFMLHoverProvider()));
 	context.subscriptions.push(languages.registerDocumentSymbolProvider(DOCUMENT_SELECTOR, new CFMLDocumentSymbolProvider()));
@@ -175,9 +181,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		}
 
 		if (isCfcFile(document, undefined)) {
-			const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
-			const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-			await cacheComponentFromDocument(document, true, replaceComments, undefined);
+			await cacheComponentFromDocument(document, undefined);
 		}
 		else if (resolveBaseName(document.fileName) === "Application.cfm") {
 			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, true, undefined);
@@ -194,12 +198,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		if (shouldExcludeDocument(componentUri)) {
 			return;
 		}
-
-		workspace.openTextDocument(componentUri).then(async (document: TextDocument) => {
-			const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
-			const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-			await cacheComponentFromDocument(document, true, replaceComments, undefined);
-		});
+		void cacheComponentFromUri(componentUri, undefined);
 	});
 	componentWatcher.onDidDelete((componentUri: Uri) => {
 		if (shouldExcludeDocument(componentUri)) {
