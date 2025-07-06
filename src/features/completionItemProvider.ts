@@ -284,7 +284,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		}
 
 		// Server variables
-		const serverDocVariables: Variable[] = getServerVariables(documentUri, _token);
+		const serverDocVariables: Variable[] = getServerVariables(documentUri);
 		allVariableAssignments = allVariableAssignments.concat(serverDocVariables.filter((variable: Variable) => {
 			return getMatchingVariables(allVariableAssignments, variable.identifier, variable.scope).length === 0;
 		}));
@@ -409,7 +409,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 				if (docIsCfcFile && !varScope && equalsIgnoreCase(varName, "super")) {
 					const addedFunctions: MySet<string> = new MySet();
 					if (thisComponent && thisComponent.extends) {
-						const baseComponent: Component | undefined = getComponent(thisComponent.extends, _token);
+						const baseComponent: Component | undefined = getComponent(thisComponent.extends);
 						let currComponent: Component | undefined = baseComponent;
 						while (currComponent) {
 							currComponent.functions.filter((_func: UserFunction, funcKey: string) => {
@@ -424,7 +424,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 							});
 
 							if (currComponent.extends) {
-								currComponent = getComponent(currComponent.extends, _token);
+								currComponent = getComponent(currComponent.extends);
 							}
 							else {
 								currComponent = undefined;
@@ -440,14 +440,14 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 					if (foundVar) {
 						// From component variable
 						if (foundVar.dataTypeComponentUri) {
-							const initialFoundComp: Component | undefined = getComponent(foundVar.dataTypeComponentUri, _token);
+							const initialFoundComp: Component | undefined = getComponent(foundVar.dataTypeComponentUri);
 
 							if (initialFoundComp) {
 								const addedFunctions: MySet<string> = new MySet();
 								const addedVariables: MySet<string> = new MySet();
 								const validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
 								if (thisComponent) {
-									if (isSubcomponentOrEqual(thisComponent, initialFoundComp, _token)) {
+									if (isSubcomponentOrEqual(thisComponent, initialFoundComp)) {
 										validFunctionAccess.add(Access.Private);
 										validFunctionAccess.add(Access.Package);
 									}
@@ -490,7 +490,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 									});
 
 									if (foundComponent.extends) {
-										foundComponent = getComponent(foundComponent.extends, _token);
+										foundComponent = getComponent(foundComponent.extends);
 									}
 									else {
 										foundComponent = undefined;
@@ -894,6 +894,9 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 		const getterSetterPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.This], true).test(state.docPrefix);
 		let currComponent: Component | undefined = component;
 		while (currComponent) {
+			if (_token && _token.isCancellationRequested) {
+				break;
+			}
 			currComponent.functions.filter((func: UserFunction, funcKey: string) => {
 				let hasValidScopes: boolean = false;
 				if (func.access === Access.Private) {
@@ -907,6 +910,9 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 				}
 				return (hasValidScopes && state.currentWordMatches(funcKey) && !addedFunctions.has(funcKey));
 			}).forEach((func: UserFunction, funcKey: string) => {
+				if (_token && _token.isCancellationRequested) {
+					return;
+				}
 				addedFunctions.add(funcKey);
 				if (currComponent) {
 					componentFunctionCompletions.push(
@@ -916,7 +922,7 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 			});
 
 			if (currComponent.extends) {
-				currComponent = getComponent(currComponent.extends, _token);
+				currComponent = getComponent(currComponent.extends);
 			}
 			else {
 				currComponent = undefined;

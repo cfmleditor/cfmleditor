@@ -43,13 +43,13 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
 	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
 	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
 
-	const docIsCfcFile: boolean = isCfcFile(document, _token);
-	const docIsCfmFile: boolean = isCfmFile(document, _token);
-	const docIsCfsFile: boolean = isCfsFile(document, _token);
-	const thisComponent: Component | undefined = getComponent(document.uri, _token);
+	const docIsCfcFile: boolean = isCfcFile(document);
+	const docIsCfmFile: boolean = isCfmFile(document);
+	const docIsCfsFile: boolean = isCfsFile(document);
+	const thisComponent: Component | undefined = getComponent(document.uri);
 
 	// If we've already cached the component we already know if it is a script component
-	const docIsScript: boolean = thisComponent ? thisComponent.isScript : ((docIsCfcFile && isScriptComponent(document, _token)) || docIsCfsFile);
+	const docIsScript: boolean = thisComponent ? thisComponent.isScript : ((docIsCfcFile && isScriptComponent(document)) || docIsCfsFile);
 
 	const documentRanges: DocumentContextRanges = getDocumentContextRanges(document, docIsScript, undefined, fast, _token, exclDocumentRanges);
 	const commentRanges: Range[] = documentRanges.commentRanges;

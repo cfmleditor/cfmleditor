@@ -162,16 +162,15 @@ export interface ComponentsByName {
 /**
  * Determines whether the given document is a script-based component
  * @param document The document to check
- * @param _token
  * @returns
  */
-export function isScriptComponent(document: TextDocument, _token: CancellationToken | undefined): boolean {
+export function isScriptComponent(document: TextDocument): boolean {
 	const componentTagMatch: RegExpExecArray | null = COMPONENT_TAG_PATTERN.exec(document.getText());
 	if (componentTagMatch) {
 		return false;
 	}
 
-	return isCfcFile(document, _token);
+	return isCfcFile(document);
 }
 
 /**
@@ -547,10 +546,9 @@ export async function getApplicationUri(baseUri: Uri): Promise<Uri | undefined> 
 /**
  * Finds the applicable Server file for the given file URI
  * @param baseUri The URI from which the Server file will be searched
- * @param _token
  * @returns
  */
-export function getServerUri(baseUri: Uri, _token: CancellationToken | undefined): Uri | undefined {
+export function getServerUri(baseUri: Uri): Uri | undefined {
 	let componentUri: Uri | undefined;
 
 	const fileName = "Server.cfc";
@@ -559,7 +557,7 @@ export function getServerUri(baseUri: Uri, _token: CancellationToken | undefined
 	if (rootPath) {
 		const rootUri: Uri = Uri.file(rootPath);
 
-		if (hasComponent(rootUri, _token)) {
+		if (hasComponent(rootUri)) {
 			componentUri = rootUri;
 		}
 	}
@@ -594,10 +592,9 @@ export function getWebroot(fileUri: Uri): Uri | undefined {
  * Checks whether `checkComponent` is a subcomponent or equal to `baseComponent`
  * @param checkComponent The candidate subcomponent
  * @param baseComponent The candidate base component
- * @param _token
  * @returns
  */
-export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component, _token: CancellationToken | undefined): boolean {
+export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component): boolean {
 	let localCheckComponent: Component | undefined = checkComponent;
 	while (localCheckComponent) {
 		if (localCheckComponent.uri.toString() === baseComponent.uri.toString()) {
@@ -605,7 +602,7 @@ export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: 
 		}
 
 		if (localCheckComponent.extends) {
-			localCheckComponent = getComponent(localCheckComponent.extends, _token);
+			localCheckComponent = getComponent(localCheckComponent.extends);
 		}
 		else {
 			localCheckComponent = undefined;
@@ -619,13 +616,12 @@ export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: 
  * Checks whether `checkComponent` is a subcomponent of `baseComponent`
  * @param checkComponent The candidate subcomponent
  * @param baseComponent The candidate base component
- * @param _token
  * @returns
  */
-export function isSubcomponent(checkComponent: Component, baseComponent: Component, _token: CancellationToken | undefined): boolean {
+export function isSubcomponent(checkComponent: Component, baseComponent: Component): boolean {
 	let localCheckComponent: Component | undefined = checkComponent;
 	if (localCheckComponent.extends) {
-		localCheckComponent = getComponent(localCheckComponent.extends, _token);
+		localCheckComponent = getComponent(localCheckComponent.extends);
 	}
 	else {
 		return false;
@@ -637,7 +633,7 @@ export function isSubcomponent(checkComponent: Component, baseComponent: Compone
 		}
 
 		if (localCheckComponent.extends) {
-			localCheckComponent = getComponent(localCheckComponent.extends, _token);
+			localCheckComponent = getComponent(localCheckComponent.extends);
 		}
 		else {
 			localCheckComponent = undefined;

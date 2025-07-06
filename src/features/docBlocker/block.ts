@@ -49,7 +49,7 @@ export abstract class Block {
 	}
 
 	public setup(): void {
-		this.component = getComponent(this.document.uri, undefined);
+		this.component = getComponent(this.document.uri);
 	}
 
 	/**

@@ -341,8 +341,8 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
 
 	// Add function arguments
-	if (isCfcFile(document, _token)) {
-		const comp: Component | undefined = getComponent(document.uri, _token);
+	if (isCfcFile(document)) {
+		const comp: Component | undefined = getComponent(document.uri);
 		if (comp) {
 			comp.functions.forEach((func: UserFunction) => {
 				if (!func.isImplicit && (!docRange || (func.bodyRange && func.bodyRange.contains(docRange)))) {
@@ -878,13 +878,12 @@ export async function getApplicationVariables(baseUri: Uri): Promise<Variable[]>
 /**
  * Gets the server variables
  * @param baseUri The URI of the document for which the Server file will be found
- * @param _token
  * @returns
  */
-export function getServerVariables(baseUri: Uri, _token: CancellationToken | undefined): Variable[] {
+export function getServerVariables(baseUri: Uri): Variable[] {
 	let serverVariables: Variable[] = [];
 
-	const serverUri: Uri | undefined = getServerUri(baseUri, _token);
+	const serverUri: Uri | undefined = getServerUri(baseUri);
 	if (serverUri) {
 		serverVariables = getCachedServerVariables(serverUri) || [];
 	}
@@ -943,7 +942,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 				allVariableAssignments = allVariableAssignments.concat(componentVariables);
 
 				if (currComponent.extends) {
-					currComponent = getComponent(currComponent.extends, _token);
+					currComponent = getComponent(currComponent.extends);
 				}
 				else {
 					currComponent = undefined;

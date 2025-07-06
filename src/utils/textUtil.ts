@@ -108,7 +108,7 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges: 
 		documentCommentRanges = commentRanges;
 	}
 	else {
-		const docIsScript: boolean = (isCfcFile(document, _token) && hasComponent(document.uri, _token) && (getComponent(document.uri, _token))?.isScript) ? true : false;
+		const docIsScript: boolean = (isCfcFile(document) && hasComponent(document.uri) && (getComponent(document.uri))?.isScript) ? true : false;
 		documentCommentRanges = getDocumentContextRanges(document, docIsScript, undefined, true, _token).commentRanges;
 	}
 

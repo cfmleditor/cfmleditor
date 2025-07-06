@@ -855,9 +855,9 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
 		if (varMatchText.split(".").length === dotSeparatedCount) {
 			if (documentPositionStateContext.isCfcFile && !varScope && equalsIgnoreCase(varName, "super")) {
 				if (documentPositionStateContext.component && documentPositionStateContext.component.extends) {
-					const baseComponent: Component | undefined = getComponent(documentPositionStateContext.component.extends, _token);
+					const baseComponent: Component | undefined = getComponent(documentPositionStateContext.component.extends);
 					if (baseComponent) {
-						foundFunction = getFunctionFromComponent(baseComponent, functionKey, documentPositionStateContext.document.uri, undefined, false, _token);
+						foundFunction = getFunctionFromComponent(baseComponent, functionKey, documentPositionStateContext.document.uri, undefined, false);
 					}
 				}
 			}
@@ -870,7 +870,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
 				const disallowImplicit: boolean = equalsIgnoreCase(varName, Scope.Variables);
 
 				if (documentPositionStateContext.component) {
-					foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, disallowedAccess, disallowImplicit, _token);
+					foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, disallowedAccess, disallowImplicit);
 				}
 			}
 			else if (documentPositionStateContext.isCfmFile && !varScope && equalsIgnoreCase(varName, Scope.Variables)) {
@@ -893,9 +893,9 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
 				const foundVar: Variable | undefined = getBestMatchingVariable(variableAssignments, varName, scopeVal);
 
 				if (foundVar && foundVar.dataTypeComponentUri) {
-					const foundVarComponent: Component | undefined = getComponent(foundVar.dataTypeComponentUri, _token);
+					const foundVarComponent: Component | undefined = getComponent(foundVar.dataTypeComponentUri);
 					if (foundVarComponent) {
-						foundFunction = getFunctionFromComponent(foundVarComponent, functionKey, documentPositionStateContext.document.uri, undefined, false, _token);
+						foundFunction = getFunctionFromComponent(foundVarComponent, functionKey, documentPositionStateContext.document.uri, undefined, false);
 					}
 				}
 			}
@@ -908,7 +908,7 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
 				foundFunction = await getFunctionFromTemplate(documentPositionStateContext, functionKey, _token);
 			}
 			else if (documentPositionStateContext.component) {
-				foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, undefined, false, _token);
+				foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, undefined, false);
 			}
 		}
 	}
@@ -923,14 +923,13 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
  * @param callerUri The URI of the document from which the function is being called
  * @param disallowedAccess An access specifier to disallow
  * @param disallowImplicit Whether to disallow implicit functions from being checked
- * @param _token
  * @returns
  */
-export function getFunctionFromComponent(component: Component, lowerFunctionName: string, callerUri: Uri, disallowedAccess: Access | undefined, disallowImplicit: boolean = false, _token: CancellationToken | undefined): UserFunction | undefined {
+export function getFunctionFromComponent(component: Component, lowerFunctionName: string, callerUri: Uri, disallowedAccess: Access | undefined, disallowImplicit: boolean = false): UserFunction | undefined {
 	const validFunctionAccess: MySet<Access> = new MySet([Access.Remote, Access.Public]);
-	if (hasComponent(callerUri, _token)) {
-		const callerComponent: Component | undefined = getComponent(callerUri, _token);
-		if (callerComponent && isSubcomponentOrEqual(callerComponent, component, _token)) {
+	if (hasComponent(callerUri)) {
+		const callerComponent: Component | undefined = getComponent(callerUri);
+		if (callerComponent && isSubcomponentOrEqual(callerComponent, component)) {
 			validFunctionAccess.add(Access.Private);
 			validFunctionAccess.add(Access.Package);
 		}
@@ -954,7 +953,7 @@ export function getFunctionFromComponent(component: Component, lowerFunctionName
 		}
 
 		if (currComponent.extends) {
-			currComponent = getComponent(currComponent.extends, _token);
+			currComponent = getComponent(currComponent.extends);
 		}
 		else {
 			currComponent = undefined;
