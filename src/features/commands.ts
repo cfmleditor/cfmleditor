@@ -1,4 +1,4 @@
-import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, CancellationToken, TextEditorEdit, Position, CancellationTokenSource, env, Location } from "vscode";
+import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, TextEditorEdit, Position, CancellationTokenSource, env, Location } from "vscode";
 import { Component, getApplicationUri, getWebroot } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
@@ -67,14 +67,12 @@ export async function showApplicationDocument(editor: TextEditor): Promise<void>
 /**
  * Folds all functions in the active editor. Currently only works for components.
  * @param editor  The text editor which represents the document for which to fold all function
- * @param edit
- * @param _token
  */
-export function foldAllFunctions(editor: TextEditor, edit: TextEditorEdit, _token: CancellationToken | undefined): void {
+export function foldAllFunctions(editor: TextEditor): void {
 	const document: TextDocument = editor.document;
 
-	if (isCfcFile(document, _token)) {
-		const thisComponent: Component | undefined = getComponent(document.uri, _token);
+	if (isCfcFile(document)) {
+		const thisComponent: Component | undefined = getComponent(document.uri);
 		if (thisComponent) {
 			const functionStartLines: number[] = [];
 			thisComponent.functions.filter((func: UserFunction) => {

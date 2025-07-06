@@ -30,6 +30,10 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 		const result: CompletionItem[] = [];
 		let wordMatchRange: Range | undefined;
 
+		if (_token && _token.isCancellationRequested) {
+			return result;
+		}
+
 		if ((wordMatchRange = document.getWordRangeAtPosition(position, /\/\*\*/)) !== undefined) {
 			const documenter: Documenter = new Documenter(wordMatchRange.end, document);
 
@@ -42,8 +46,16 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 			return result;
 		}
 
-		const comp: Component | undefined = getComponent(document.uri, _token);
+		if (_token && _token.isCancellationRequested) {
+			return result;
+		}
+
+		const comp: Component | undefined = getComponent(document.uri);
 		if (!comp) {
+			return result;
+		}
+
+		if (_token && _token.isCancellationRequested) {
 			return result;
 		}
 
@@ -53,6 +65,9 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 
 		// const tagKeyPattern = / \* @$/;
 		// const tagSubKeyPattern = / \* @[\w$]+\.$/;
+		if (_token && _token.isCancellationRequested) {
+			return result;
+		}
 
 		const tagSuggestions: MyMap<string, string> = new MyMap<string, string>();
 		const subKeySuggestions: MyMap<string, string> = new MyMap<string, string>();
@@ -141,6 +156,10 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 			}
 		}
 
+		if (_token && _token.isCancellationRequested) {
+			return result;
+		}
+
 		let suggestions: MyMap<string, string> | undefined;
 		if (prefixChr === "." && argumentNames.size !== 0) {
 			let prevWordRange: Range | undefined = document.getWordRangeAtPosition(wordRange.start.translate(0, -1));
@@ -154,6 +173,10 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 		}
 		else if (prefixChr === "@") {
 			suggestions = tagSuggestions;
+		}
+
+		if (_token && _token.isCancellationRequested) {
+			return result;
 		}
 
 		if (suggestions) {

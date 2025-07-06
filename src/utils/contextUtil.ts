@@ -1,4 +1,4 @@
-import { CancellationToken, CharacterPair, Position, Range, TextDocument, Uri } from "vscode";
+import { CancellationToken, CharacterPair, Position, Range, TextDocument, Uri, workspace, WorkspaceConfiguration } from "vscode";
 import { COMPONENT_EXT, isScriptComponent } from "../entities/component";
 import { getTagPattern, parseTags, Tag, TagContext } from "../entities/tag";
 import { cfmlCommentRules, CommentContext, CommentType } from "../features/comment";
@@ -6,10 +6,14 @@ import { DocumentStateContext } from "./documentUtil";
 import { equalsIgnoreCase } from "./textUtil";
 import { stringArrayIncludesIgnoreCase } from "./collections";
 import { Utils } from "vscode-uri";
+import { some } from "micromatch";
 
 const CFM_FILE_EXTS: string[] = [".cfm", ".cfml"];
 const CFS_FILE_EXTS: string[] = [".cfs"];
 export const APPLICATION_CFM_GLOB: string = "**/Application.cfm";
+export const APPLICATION_CFM: string = "Application.cfm";
+export const APPLICATION_CFC: string = "Application.cfc";
+export const SERVER_CFC: string = "Server.cfc";
 // const notContinuingExpressionPattern: RegExp = /(?:^|[^\w$.\s])\s*$/;
 const continuingExpressionPattern: RegExp = /(?:\?\.\s*|\.\s*|::\s*|[\w$])$/;
 const memberExpressionPattern: RegExp = /(?:\?\.|\.|::)$/;
@@ -174,8 +178,13 @@ export class BackwardIterator {
  * @param _token
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function isCfmFile(document: TextDocument, _token: CancellationToken | undefined): boolean {
+
+/**
+ *
+ * @param document
+ * @returns
+ */
+export function isCfmFile(document: TextDocument): boolean {
 	const extensionName: string = Utils.extname(Uri.parse(document.fileName));
 	for (const currExt of CFM_FILE_EXTS) {
 		if (equalsIgnoreCase(extensionName, currExt)) {
@@ -186,13 +195,38 @@ export function isCfmFile(document: TextDocument, _token: CancellationToken | un
 }
 
 /**
+ * Checks whether the given document is an Application.cfm file
+ * @param uri the uri to check
+ * @returns true if the document is an Application.cfm file
+ */
+export function isApplicationFile(uri: Uri): boolean {
+	const fileName = Utils.basename(uri);
+	return (fileName === APPLICATION_CFM || fileName === APPLICATION_CFC) ? true : false;
+}
+
+/**
+ * Checks whether the given document is an Application.cfm file
+ * @param uri the uri to check
+ * @returns true if the document is an Application.cfm file
+ */
+export function isServerFile(uri: Uri): boolean {
+	const fileName = Utils.basename(uri);
+	return (fileName === SERVER_CFC) ? true : false;
+}
+
+/**
  * Returns true if the file extension is a CFS file
  * @param document
  * @param _token
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function isCfsFile(document: TextDocument, _token: CancellationToken | undefined): boolean {
+
+/**
+ *
+ * @param document
+ * @returns
+ */
+export function isCfsFile(document: TextDocument): boolean {
 	const extensionName: string = Utils.extname(Uri.parse(document.fileName));
 	for (const currExt of CFS_FILE_EXTS) {
 		if (equalsIgnoreCase(extensionName, currExt)) {
@@ -205,21 +239,18 @@ export function isCfsFile(document: TextDocument, _token: CancellationToken | un
 /**
  * Checks whether the given document is a CFC file
  * @param document The document to check
- * @param _token
  * @returns
  */
-export function isCfcFile(document: TextDocument, _token: CancellationToken | undefined): boolean {
-	return isCfcUri(document.uri, _token);
+export function isCfcFile(document: TextDocument): boolean {
+	return isCfcUri(document.uri);
 }
 
 /**
  * Checks whether the given URI represents a CFC file
  * @param uri The URI to check
- * @param _token
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function isCfcUri(uri: Uri, _token: CancellationToken | undefined): boolean {
+export function isCfcUri(uri: Uri): boolean {
 	const extensionName = Utils.extname(uri);
 	return equalsIgnoreCase(extensionName, COMPONENT_EXT);
 }
@@ -718,7 +749,7 @@ export function isInCfScript(document: TextDocument, position: Position, _token:
  * @returns
  */
 export function isPositionScript(document: TextDocument, position: Position, _token: CancellationToken | undefined): boolean {
-	return (isScriptComponent(document, _token) || isInCfScript(document, position, _token));
+	return (isScriptComponent(document) || isInCfScript(document, position, _token));
 }
 
 /**
@@ -1156,4 +1187,28 @@ export function getStartSigPosition(iterator: BackwardIterator, _token: Cancella
 	}
 
 	return undefined;
+}
+
+/**
+ * Checks whether the given document should be excluded from being used.
+ * @param documentUri The URI of the document to check against
+ * @returns boolean
+ */
+export function shouldExcludeDocument(documentUri: Uri): boolean {
+	const fileSettings: WorkspaceConfiguration = workspace.getConfiguration("files", documentUri);
+
+	const fileExcludes: object = fileSettings.get<object>("exclude", []);
+	const fileExcludeGlobs: string[] = [];
+	for (let fileExcludeGlob in fileExcludes) {
+		if (fileExcludes[fileExcludeGlob]) {
+			if (fileExcludeGlob.endsWith("/")) {
+				fileExcludeGlob += "**";
+			}
+			fileExcludeGlobs.push(fileExcludeGlob);
+		}
+	}
+
+	const relativePath = workspace.asRelativePath(documentUri);
+
+	return some(relativePath, fileExcludeGlobs);
 }

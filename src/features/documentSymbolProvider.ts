@@ -49,7 +49,7 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 	 */
 	private static async getComponentSymbols(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<DocumentSymbol[]> {
 		const document: TextDocument = documentStateContext.document;
-		const component: Component | undefined = getComponent(document.uri, _token);
+		const component: Component | undefined = getComponent(document.uri);
 
 		if (!component) {
 			return [];

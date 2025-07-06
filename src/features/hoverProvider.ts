@@ -122,7 +122,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 			if (objectNewInstanceInitPrefixMatch && objectNewInstanceInitPrefixMatch[2] === componentPathWord) {
 				const componentUri: Uri | undefined = cachedComponentPathToUri(componentPathWord, document.uri, _token);
 				if (componentUri) {
-					const initComponent: Component | undefined = getComponent(componentUri, _token);
+					const initComponent: Component | undefined = getComponent(componentUri);
 					if (initComponent) {
 						const initMethod = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
 						if (initComponent.functions.has(initMethod)) {
@@ -178,7 +178,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 
 		// HTML tags
 		const htmlHoverSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.hover.html", document.uri);
-		if (isCfmFile(document, _token) && htmlHoverSettings.get<boolean>("enable", true) && tagPrefixPattern.test(docPrefix) && isKnownHTMLTag(lowerCurrentWord)) {
+		if (isCfmFile(document) && htmlHoverSettings.get<boolean>("enable", true) && tagPrefixPattern.test(docPrefix) && isKnownHTMLTag(lowerCurrentWord)) {
 			const htmlTag: HTMLTagData | undefined = getHTMLTag(lowerCurrentWord);
 			if (htmlTag) {
 				definition = this.htmlTagToHoverProviderItem(htmlTag);

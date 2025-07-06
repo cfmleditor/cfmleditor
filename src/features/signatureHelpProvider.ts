@@ -78,7 +78,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 			const componentDotPath: string = objectNewInstanceInitPrefixMatch[2];
 			const componentUri: Uri | undefined = cachedComponentPathToUri(componentDotPath, document.uri, _token);
 			if (componentUri) {
-				const initComponent: Component | undefined = getComponent(componentUri, _token);
+				const initComponent: Component | undefined = getComponent(componentUri);
 				if (initComponent) {
 					const initMethod: string = initComponent.initmethod ? initComponent.initmethod.toLowerCase() : "init";
 					if (initComponent.functions.has(initMethod)) {
