@@ -13,8 +13,6 @@ export const APPLICATION_CFM_GLOB: string = "**/Application.cfm";
 // const notContinuingExpressionPattern: RegExp = /(?:^|[^\w$.\s])\s*$/;
 const continuingExpressionPattern: RegExp = /(?:\?\.\s*|\.\s*|::\s*|[\w$])$/;
 const memberExpressionPattern: RegExp = /(?:\?\.|\.|::)$/;
-const cfscriptLineCommentPattern: RegExp = /\/\/[^\r\n]*/g;
-const cfscriptBlockCommentPattern: RegExp = /\/\*[\s\S]*?\*\//g;
 
 const characterPairs: CharacterPair[] = [
 	["{", "}"],
@@ -277,7 +275,11 @@ export function getCfScriptRanges(document: TextDocument, range: Range | undefin
  */
 export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, fast: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentContextRanges {
 	if (fast) {
-		return { commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token), stringRanges: undefined, stringEmbeddedCfmlRanges: undefined };
+		return {
+			commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token),
+			stringRanges: undefined,
+			stringEmbeddedCfmlRanges: undefined,
+		};
 	}
 
 	if (exclDocumentRanges) {
@@ -295,49 +297,73 @@ export function getDocumentContextRanges(document: TextDocument, isScript: boole
  * @param _token
  * @returns
  */
+
 function getCommentRangesByRegex(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
 	let commentRanges: Range[] = [];
-	let documentText: string;
-	let textOffset: number;
-	if (docRange && document.validateRange(docRange)) {
-		documentText = document.getText(docRange);
-		textOffset = document.offsetAt(docRange.start);
-	}
-	else {
-		documentText = document.getText();
-		textOffset = 0;
-	}
 
 	if (isScript) {
-		let scriptBlockCommentMatch: RegExpExecArray | null;
-		while ((scriptBlockCommentMatch = cfscriptBlockCommentPattern.exec(documentText))) {
-			const scriptBlockCommentText: string = scriptBlockCommentMatch[0];
-			const scriptBlockCommentStartOffset: number = textOffset + scriptBlockCommentMatch.index;
-			commentRanges.push(new Range(
-				document.positionAt(scriptBlockCommentStartOffset),
-				document.positionAt(scriptBlockCommentStartOffset + scriptBlockCommentText.length)
-			));
-		}
-
-		let scriptLineCommentMatch: RegExpExecArray | null;
-		while ((scriptLineCommentMatch = cfscriptLineCommentPattern.exec(documentText))) {
-			const scriptLineCommentText = scriptLineCommentMatch[0];
-			const scriptLineCommentStartOffset = textOffset + scriptLineCommentMatch.index;
-			commentRanges.push(new Range(
-				document.positionAt(scriptLineCommentStartOffset),
-				document.positionAt(scriptLineCommentStartOffset + scriptLineCommentText.length)
-			));
-		}
+		const scriptCommentRanges: Range[] = getScriptCommentRanges(document, docRange, _token);
+		commentRanges = commentRanges.concat(scriptCommentRanges);
 	}
 	else {
-		const nestedCommentRanges: Range[] = getNestedCommentRanges(document, docRange, _token);
-		commentRanges = commentRanges.concat(nestedCommentRanges);
+		const tagCommentRanges: Range[] = getTagCommentRanges(document, docRange, _token);
+		commentRanges = commentRanges.concat(tagCommentRanges);
 
 		const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token, commentRanges);
 		cfScriptRanges.forEach((range: Range) => {
-			const cfscriptCommentRanges: Range[] = getCommentRangesByRegex(document, true, range, _token);
+			const cfscriptCommentRanges: Range[] = getScriptCommentRanges(document, range, _token);
 			commentRanges = commentRanges.concat(cfscriptCommentRanges);
 		});
+	}
+
+	return commentRanges;
+}
+
+/**
+ * Returns ranges for nested script-based comments.
+ * @param document The document to check.
+ * @param docRange Range within which to check.
+ * @param _token A cancellation token.
+ * @returns An array of comment ranges.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getScriptCommentRanges(document: TextDocument, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
+	const commentRanges: Range[] = [];
+	const documentText = docRange ? document.getText(docRange) : document.getText();
+	const textOffset = docRange ? document.offsetAt(docRange.start) : 0;
+
+	const commentRegex = /((?:\/\*)|(?:\*\/)|(?:\/\/(?:[^\n\r]*)))/g; // Matches startComment and endComment
+	let match: RegExpExecArray | null;
+	let startOffset: number | undefined;
+	let inBlockComment = false;
+
+	while ((match = commentRegex.exec(documentText)) !== null) {
+		if (match[0] === "/*") {
+			if (inBlockComment !== true) {
+				startOffset = match.index;
+				inBlockComment = true;
+			}
+		}
+		else if (match[0] === "*/") {
+			if (inBlockComment === true && startOffset !== undefined) {
+				const range = new Range(
+					document.positionAt(textOffset + startOffset),
+					document.positionAt(textOffset + match.index + match[0].length)
+				);
+				commentRanges.push(range);
+				startOffset = undefined;
+				inBlockComment = false;
+			}
+		}
+		else if (match[0].startsWith("//") && inBlockComment !== true) {
+			startOffset = match.index;
+			const range = new Range(
+				document.positionAt(textOffset + startOffset),
+				document.positionAt(textOffset + match.index + match[0].length)
+			);
+			startOffset = undefined;
+			commentRanges.push(range);
+		}
 	}
 
 	return commentRanges;
@@ -351,7 +377,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function getNestedCommentRanges(document: TextDocument, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
+function getTagCommentRanges(document: TextDocument, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
 	const commentRanges: Range[] = [];
 	const documentText = docRange ? document.getText(docRange) : document.getText();
 	const textOffset = docRange ? document.offsetAt(docRange.start) : 0;
