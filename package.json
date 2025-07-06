@@ -473,6 +473,16 @@
 								"type": "boolean",
 								"default": true,
 								"description": "Whether directoryPath refers to a physical path or one relative to the workspace root"
+							},
+							"webrootPath": {
+								"type": "string",
+								"default": "",
+								"description": "webroot path relative to mapping ( currently only used for goto route(s) )"
+							},
+							"controllerPath": {
+								"type": "string",
+								"default": "",
+								"description": "controller path relative to mapping ( currently only used for goto route(s) )"
 							}
 						},
 						"required": [
@@ -546,6 +556,16 @@
 				"command": "cfml.copyPackage",
 				"category": "CFML",
 				"title": "Copy CFC Package Path"
+			},
+			{
+				"command": "cfml.goToRouteView",
+				"category": "CFML",
+				"title": "Go to Route View"
+			},
+			{
+				"command": "cfml.goToRouteController",
+				"category": "CFML",
+				"title": "Go to Route Controller"
 			}
 		],
 		"menus": {
