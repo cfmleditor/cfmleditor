@@ -44,6 +44,11 @@ export const objectReferencePatterns: ReferencePattern[] = [
 		pattern: /\bcreateObject\s*\(\s*(['"])component\1\s*,\s*(['"])([^'"]+?)\2/gi,
 		refIndex: 3,
 	},
+	// createObject("...")
+	{
+		pattern: /\bcreateObject\s*(?:\(\s*(?!["'](?:component|com|java|corba|webservice)["']))(['"])\s*([^'"]+?)\1/gi,
+		refIndex: 2,
+	},
 	// cfobject or cfinvoke
 	{
 		pattern: /\bcomponent\s*(?:=|:)\s*(['"])([^'"]+?)\1/gi,
