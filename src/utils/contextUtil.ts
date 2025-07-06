@@ -1,4 +1,4 @@
-import { CancellationToken, CharacterPair, Position, Range, TextDocument, Uri } from "vscode";
+import { CancellationToken, CharacterPair, Position, Range, TextDocument, Uri, workspace, WorkspaceConfiguration } from "vscode";
 import { COMPONENT_EXT, isScriptComponent } from "../entities/component";
 import { getTagPattern, parseTags, Tag, TagContext } from "../entities/tag";
 import { cfmlCommentRules, CommentContext, CommentType } from "../features/comment";
@@ -6,15 +6,17 @@ import { DocumentStateContext } from "./documentUtil";
 import { equalsIgnoreCase } from "./textUtil";
 import { stringArrayIncludesIgnoreCase } from "./collections";
 import { Utils } from "vscode-uri";
+import { some } from "micromatch";
 
 const CFM_FILE_EXTS: string[] = [".cfm", ".cfml"];
 const CFS_FILE_EXTS: string[] = [".cfs"];
 export const APPLICATION_CFM_GLOB: string = "**/Application.cfm";
+export const APPLICATION_CFM: string = "Application.cfm";
+export const APPLICATION_CFC: string = "Application.cfc";
+export const SERVER_CFC: string = "Server.cfc";
 // const notContinuingExpressionPattern: RegExp = /(?:^|[^\w$.\s])\s*$/;
 const continuingExpressionPattern: RegExp = /(?:\?\.\s*|\.\s*|::\s*|[\w$])$/;
 const memberExpressionPattern: RegExp = /(?:\?\.|\.|::)$/;
-const cfscriptLineCommentPattern: RegExp = /\/\/[^\r\n]*/g;
-const cfscriptBlockCommentPattern: RegExp = /\/\*[\s\S]*?\*\//g;
 
 const characterPairs: CharacterPair[] = [
 	["{", "}"],
@@ -174,8 +176,13 @@ export class BackwardIterator {
  * @param _token
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function isCfmFile(document: TextDocument, _token: CancellationToken | undefined): boolean {
+
+/**
+ *
+ * @param document
+ * @returns
+ */
+export function isCfmFile(document: TextDocument): boolean {
 	const extensionName: string = Utils.extname(Uri.parse(document.fileName));
 	for (const currExt of CFM_FILE_EXTS) {
 		if (equalsIgnoreCase(extensionName, currExt)) {
@@ -186,13 +193,38 @@ export function isCfmFile(document: TextDocument, _token: CancellationToken | un
 }
 
 /**
+ * Checks whether the given document is an Application.cfm file
+ * @param uri the uri to check
+ * @returns true if the document is an Application.cfm file
+ */
+export function isApplicationFile(uri: Uri): boolean {
+	const fileName = Utils.basename(uri);
+	return (fileName === APPLICATION_CFM || fileName === APPLICATION_CFC) ? true : false;
+}
+
+/**
+ * Checks whether the given document is an Application.cfm file
+ * @param uri the uri to check
+ * @returns true if the document is an Application.cfm file
+ */
+export function isServerFile(uri: Uri): boolean {
+	const fileName = Utils.basename(uri);
+	return (fileName === SERVER_CFC) ? true : false;
+}
+
+/**
  * Returns true if the file extension is a CFS file
  * @param document
  * @param _token
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function isCfsFile(document: TextDocument, _token: CancellationToken | undefined): boolean {
+
+/**
+ *
+ * @param document
+ * @returns
+ */
+export function isCfsFile(document: TextDocument): boolean {
 	const extensionName: string = Utils.extname(Uri.parse(document.fileName));
 	for (const currExt of CFS_FILE_EXTS) {
 		if (equalsIgnoreCase(extensionName, currExt)) {
@@ -205,21 +237,18 @@ export function isCfsFile(document: TextDocument, _token: CancellationToken | un
 /**
  * Checks whether the given document is a CFC file
  * @param document The document to check
- * @param _token
  * @returns
  */
-export function isCfcFile(document: TextDocument, _token: CancellationToken | undefined): boolean {
-	return isCfcUri(document.uri, _token);
+export function isCfcFile(document: TextDocument): boolean {
+	return isCfcUri(document.uri);
 }
 
 /**
  * Checks whether the given URI represents a CFC file
  * @param uri The URI to check
- * @param _token
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function isCfcUri(uri: Uri, _token: CancellationToken | undefined): boolean {
+export function isCfcUri(uri: Uri): boolean {
 	const extensionName = Utils.extname(uri);
 	return equalsIgnoreCase(extensionName, COMPONENT_EXT);
 }
@@ -277,7 +306,11 @@ export function getCfScriptRanges(document: TextDocument, range: Range | undefin
  */
 export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, fast: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentContextRanges {
 	if (fast) {
-		return { commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token), stringRanges: undefined, stringEmbeddedCfmlRanges: undefined };
+		return {
+			commentRanges: getCommentRangesByRegex(document, isScript, docRange, _token),
+			stringRanges: undefined,
+			stringEmbeddedCfmlRanges: undefined,
+		};
 	}
 
 	if (exclDocumentRanges) {
@@ -295,49 +328,73 @@ export function getDocumentContextRanges(document: TextDocument, isScript: boole
  * @param _token
  * @returns
  */
+
 function getCommentRangesByRegex(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
 	let commentRanges: Range[] = [];
-	let documentText: string;
-	let textOffset: number;
-	if (docRange && document.validateRange(docRange)) {
-		documentText = document.getText(docRange);
-		textOffset = document.offsetAt(docRange.start);
-	}
-	else {
-		documentText = document.getText();
-		textOffset = 0;
-	}
 
 	if (isScript) {
-		let scriptBlockCommentMatch: RegExpExecArray | null;
-		while ((scriptBlockCommentMatch = cfscriptBlockCommentPattern.exec(documentText))) {
-			const scriptBlockCommentText: string = scriptBlockCommentMatch[0];
-			const scriptBlockCommentStartOffset: number = textOffset + scriptBlockCommentMatch.index;
-			commentRanges.push(new Range(
-				document.positionAt(scriptBlockCommentStartOffset),
-				document.positionAt(scriptBlockCommentStartOffset + scriptBlockCommentText.length)
-			));
-		}
-
-		let scriptLineCommentMatch: RegExpExecArray | null;
-		while ((scriptLineCommentMatch = cfscriptLineCommentPattern.exec(documentText))) {
-			const scriptLineCommentText = scriptLineCommentMatch[0];
-			const scriptLineCommentStartOffset = textOffset + scriptLineCommentMatch.index;
-			commentRanges.push(new Range(
-				document.positionAt(scriptLineCommentStartOffset),
-				document.positionAt(scriptLineCommentStartOffset + scriptLineCommentText.length)
-			));
-		}
+		const scriptCommentRanges: Range[] = getScriptCommentRanges(document, docRange, _token);
+		commentRanges = commentRanges.concat(scriptCommentRanges);
 	}
 	else {
-		const nestedCommentRanges: Range[] = getNestedCommentRanges(document, docRange, _token);
-		commentRanges = commentRanges.concat(nestedCommentRanges);
+		const tagCommentRanges: Range[] = getTagCommentRanges(document, docRange, _token);
+		commentRanges = commentRanges.concat(tagCommentRanges);
 
 		const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token, commentRanges);
 		cfScriptRanges.forEach((range: Range) => {
-			const cfscriptCommentRanges: Range[] = getCommentRangesByRegex(document, true, range, _token);
+			const cfscriptCommentRanges: Range[] = getScriptCommentRanges(document, range, _token);
 			commentRanges = commentRanges.concat(cfscriptCommentRanges);
 		});
+	}
+
+	return commentRanges;
+}
+
+/**
+ * Returns ranges for nested script-based comments.
+ * @param document The document to check.
+ * @param docRange Range within which to check.
+ * @param _token A cancellation token.
+ * @returns An array of comment ranges.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getScriptCommentRanges(document: TextDocument, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
+	const commentRanges: Range[] = [];
+	const documentText = docRange ? document.getText(docRange) : document.getText();
+	const textOffset = docRange ? document.offsetAt(docRange.start) : 0;
+
+	const commentRegex = /((?:\/\*)|(?:\*\/)|(?:\/\/(?:[^\n\r]*)))/g; // Matches startComment and endComment
+	let match: RegExpExecArray | null;
+	let startOffset: number | undefined;
+	let inBlockComment = false;
+
+	while ((match = commentRegex.exec(documentText)) !== null) {
+		if (match[0] === "/*") {
+			if (inBlockComment !== true) {
+				startOffset = match.index;
+				inBlockComment = true;
+			}
+		}
+		else if (match[0] === "*/") {
+			if (inBlockComment === true && startOffset !== undefined) {
+				const range = new Range(
+					document.positionAt(textOffset + startOffset),
+					document.positionAt(textOffset + match.index + match[0].length)
+				);
+				commentRanges.push(range);
+				startOffset = undefined;
+				inBlockComment = false;
+			}
+		}
+		else if (match[0].startsWith("//") && inBlockComment !== true) {
+			startOffset = match.index;
+			const range = new Range(
+				document.positionAt(textOffset + startOffset),
+				document.positionAt(textOffset + match.index + match[0].length)
+			);
+			startOffset = undefined;
+			commentRanges.push(range);
+		}
 	}
 
 	return commentRanges;
@@ -351,7 +408,7 @@ function getCommentRangesByRegex(document: TextDocument, isScript: boolean = fal
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function getNestedCommentRanges(document: TextDocument, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
+function getTagCommentRanges(document: TextDocument, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
 	const commentRanges: Range[] = [];
 	const documentText = docRange ? document.getText(docRange) : document.getText();
 	const textOffset = docRange ? document.offsetAt(docRange.start) : 0;
@@ -718,7 +775,7 @@ export function isInCfScript(document: TextDocument, position: Position, _token:
  * @returns
  */
 export function isPositionScript(document: TextDocument, position: Position, _token: CancellationToken | undefined): boolean {
-	return (isScriptComponent(document, _token) || isInCfScript(document, position, _token));
+	return (isScriptComponent(document) || isInCfScript(document, position, _token));
 }
 
 /**
@@ -1156,4 +1213,28 @@ export function getStartSigPosition(iterator: BackwardIterator, _token: Cancella
 	}
 
 	return undefined;
+}
+
+/**
+ * Checks whether the given document should be excluded from being used.
+ * @param documentUri The URI of the document to check against
+ * @returns boolean
+ */
+export function shouldExcludeDocument(documentUri: Uri): boolean {
+	const fileSettings: WorkspaceConfiguration = workspace.getConfiguration("files", documentUri);
+
+	const fileExcludes: object = fileSettings.get<object>("exclude", []);
+	const fileExcludeGlobs: string[] = [];
+	for (let fileExcludeGlob in fileExcludes) {
+		if (fileExcludes[fileExcludeGlob]) {
+			if (fileExcludeGlob.endsWith("/")) {
+				fileExcludeGlob += "**";
+			}
+			fileExcludeGlobs.push(fileExcludeGlob);
+		}
+	}
+
+	const relativePath = workspace.asRelativePath(documentUri);
+
+	return some(relativePath, fileExcludeGlobs);
 }

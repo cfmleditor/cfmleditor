@@ -7,7 +7,7 @@ import { ComponentFunctions, UserFunction } from "../entities/userFunction";
 import { parseVariableAssignments, Variable, VariablesByUri } from "../entities/variable";
 import { CFDocsDefinitionInfo } from "../utils/cfdocs/definitionInfo";
 import { MyMap, SearchMode } from "../utils/collections";
-import { APPLICATION_CFM_GLOB } from "../utils/contextUtil";
+import { APPLICATION_CFM_GLOB, isApplicationFile, isServerFile } from "../utils/contextUtil";
 import { DocumentStateContext, getDocumentStateContext } from "../utils/documentUtil";
 import { resolveCustomMappingPaths, resolveRelativePath, resolveRootPath, uriBaseName } from "../utils/fileUtil";
 import TrieSearch from "trie-search";
@@ -217,11 +217,10 @@ function setComponent(comp: Component): void {
 /**
  * Retrieves the cached component identified by the given URI
  * @param uri The URI of the component to be retrieved
- * @param _token
  * @returns
  */
-export function getComponent(uri: Uri, _token: CancellationToken | undefined): Component | undefined {
-	if (hasComponent(uri, _token)) {
+export function getComponent(uri: Uri): Component | undefined {
+	if (hasComponent(uri)) {
 		return allComponentsByUri[uri.toString().toLowerCase()];
 	}
 
@@ -235,7 +234,7 @@ export function getComponent(uri: Uri, _token: CancellationToken | undefined): C
  * @returns
  */
 export async function getComponentAsync(uri: Uri, _token: CancellationToken | undefined): Promise<Component | undefined> {
-	if (hasComponent(uri, _token)) {
+	if (hasComponent(uri)) {
 		return allComponentsByUri[uri.toString().toLowerCase()];
 	}
 
@@ -250,8 +249,13 @@ export async function getComponentAsync(uri: Uri, _token: CancellationToken | un
  * @param _token
  * @returns
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function hasComponent(uri: Uri, _token: CancellationToken | undefined): boolean {
+
+/**
+ *
+ * @param uri
+ * @returns
+ */
+export function hasComponent(uri: Uri): boolean {
 	return Object.prototype.hasOwnProperty.call(allComponentsByUri, uri.toString().toLowerCase());
 }
 
@@ -365,21 +369,14 @@ export async function cacheComponent(component: Component, documentStateContext:
 		setUserFunction(funcObj);
 	});
 
-	const componentUri: Uri = component.uri;
-	const fileName: string = uriBaseName(componentUri);
-	if (fileName === "Application.cfc") {
-		const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
-
-		const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
-			return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
-		});
-		setApplicationVariables(componentUri, thisApplicationFilteredVariables);
+	if (isApplicationFile(component.uri)) {
+		await cacheApplicationFromStateContext(documentStateContext, _token);
 	}
-	else if (fileName === "Server.cfc") {
+	else if (isServerFile(component.uri)) {
 		const thisServerVariables: Variable[] = (await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token)).filter((variable: Variable) => {
 			return variable.scope === Scope.Server;
 		});
-		allServerVariables.set(componentUri.toString(), thisServerVariables);
+		allServerVariables.set(component.uri.toString(), thisServerVariables);
 	}
 }
 
@@ -559,12 +556,8 @@ function clearAllCachedComponents(): void {
  * @returns
  */
 export async function cacheAllApplicationCfms(): Promise<void> {
-	return workspace.findFiles(APPLICATION_CFM_GLOB).then(
-		cacheGivenApplicationCfms,
-		(reason) => {
-			console.warn(reason);
-		}
-	);
+	const applicationUris: Uri[] = await workspace.findFiles(APPLICATION_CFM_GLOB);
+	await cacheGivenApplicationCfms(applicationUris, undefined);
 }
 
 /**
@@ -572,23 +565,39 @@ export async function cacheAllApplicationCfms(): Promise<void> {
  * @param applicationUris List of URIs to parse and cache
  * @param _token
  */
-async function cacheGivenApplicationCfms(applicationUris: Uri[], _token?: CancellationToken): Promise<void> {
+async function cacheGivenApplicationCfms(applicationUris: Uri[], _token: CancellationToken | undefined): Promise<void> {
 	for (const applicationUri of applicationUris) {
-		try {
-			const document: TextDocument = await workspace.openTextDocument(applicationUri);
-			const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
-			const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
-			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, replaceComments, _token);
-			const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
-			const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
-				return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
-			});
-			setApplicationVariables(applicationUri, thisApplicationFilteredVariables);
-		}
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		catch (ex) {
-			console.warn(`Cannot parse document at ${applicationUri.fsPath}`);
-		}
+		const document: TextDocument = await workspace.openTextDocument(applicationUri);
+		await cacheApplicationFromDocument(document, _token);
+	}
+}
+
+/**
+ * Reads and parses given Application.cfm files and caches their definitions
+ * @param document
+ * @param _token
+ */
+export async function cacheApplicationFromDocument(document: TextDocument, _token: CancellationToken | undefined): Promise<void> {
+	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, true, _token);
+	await cacheApplicationFromStateContext(documentStateContext, _token);
+}
+
+/**
+ * Reads and parses given Application.cfm documentStateContext and caches their definitions
+ * @param documentStateContext
+ * @param _token
+ */
+export async function cacheApplicationFromStateContext(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<void> {
+	try {
+		const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, _token);
+		const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
+			return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
+		});
+		setApplicationVariables(documentStateContext.document.uri, thisApplicationFilteredVariables);
+	}
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	catch (ex) {
+		console.warn(`Cannot parse document at ${documentStateContext.document.uri.fsPath}`);
 	}
 }
 

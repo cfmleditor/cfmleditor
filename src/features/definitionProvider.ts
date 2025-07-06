@@ -74,7 +74,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 				if (pathRange.contains(position)) {
 					const componentUri: Uri | undefined = cachedComponentPathToUri(path, document.uri, _token);
 					if (componentUri) {
-						const comp: Component | undefined = getComponent(componentUri, _token);
+						const comp: Component | undefined = getComponent(componentUri);
 						if (comp) {
 							results.push({
 								originSelectionRange: pathRange,
@@ -98,7 +98,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 				 */
 				if (thisComponent.extendsRange && thisComponent.extendsRange.contains(position)) {
 					if (thisComponent.extends) {
-						const extendsComp: Component | undefined = getComponent(thisComponent.extends, _token);
+						const extendsComp: Component | undefined = getComponent(thisComponent.extends);
 						if (extendsComp) {
 							results.push({
 								originSelectionRange: thisComponent.extendsRange,
@@ -118,7 +118,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 				if (thisComponent.implementsRanges) {
 					thisComponent.implementsRanges.map((range: Range, idx: number) => {
 						if (range && range.contains(position) && thisComponent.implements) {
-							const implComp: Component | undefined = getComponent(thisComponent.implements[idx], _token);
+							const implComp: Component | undefined = getComponent(thisComponent.implements[idx]);
 							if (implComp) {
 								results.push({
 									originSelectionRange: range,
@@ -139,7 +139,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 					 * - <cffunction name="foo" returntype="ComponentType">
 					 */
 					if (func.returnTypeUri && func.returnTypeRange && func.returnTypeRange.contains(position)) {
-						const returnTypeComp: Component | undefined = getComponent(func.returnTypeUri, _token);
+						const returnTypeComp: Component | undefined = getComponent(func.returnTypeUri);
 						if (returnTypeComp) {
 							results.push({
 								originSelectionRange: func.returnTypeRange,
@@ -162,7 +162,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
 						parameters.map((arg: Argument) => {
 							if (arg.dataTypeComponentUri) {
-								const argTypeComp: Component | undefined = getComponent(arg.dataTypeComponentUri, _token);
+								const argTypeComp: Component | undefined = getComponent(arg.dataTypeComponentUri);
 								if (argTypeComp) {
 									results.push({
 										originSelectionRange: arg.dataTypeRange,
@@ -229,7 +229,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
 				for (const [, prop] of componentproperties) {
 					if (prop.dataTypeComponentUri) {
-						const dataTypeComp: Component | undefined = getComponent(prop.dataTypeComponentUri, _token);
+						const dataTypeComp: Component | undefined = getComponent(prop.dataTypeComponentUri);
 						if (dataTypeComp) {
 							results.push({
 								originSelectionRange: prop.dataTypeRange,
@@ -339,7 +339,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 		 */
 		const serverVariablesPrefixPattern = getValidScopesPrefixPattern([Scope.Server], false);
 		if (serverVariablesPrefixPattern.test(documentPositionStateContext.docPrefix)) {
-			const serverDocVariables: Variable[] = getServerVariables(document.uri, _token);
+			const serverDocVariables: Variable[] = getServerVariables(document.uri);
 			serverDocVariables.filter((variable: Variable) => {
 				return variable.scope === Scope.Server && equalsIgnoreCase(variable.identifier, currentWord);
 			}).forEach((variable: Variable) => {

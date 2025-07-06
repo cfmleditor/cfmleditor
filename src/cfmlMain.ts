@@ -1,13 +1,10 @@
-import { some } from "micromatch";
 import {
 	commands, ConfigurationChangeEvent, DocumentSelector, Extension, ExtensionContext, extensions,
-	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace, WorkspaceConfiguration,
+	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace,
 } from "vscode";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
-import { Scope } from "./entities/scope";
 import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./entities/tag";
-import { parseVariableAssignments, Variable } from "./entities/variable";
-import { cacheComponentFromDocument, setApplicationVariables, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri } from "./features/cachedEntities";
+import { cacheComponentFromDocument, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri, cacheApplicationFromDocument } from "./features/cachedEntities";
 import CFMLDocumentColorProvider from "./features/colorProvider";
 import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache, insertSnippet, copyPackage, goToRouteController, goToRouteView } from "./features/commands";
 import { CommentType, toggleComment } from "./features/comment";
@@ -21,10 +18,8 @@ import CFMLSignatureHelpProvider from "./features/signatureHelpProvider";
 import CFMLTypeDefinitionProvider from "./features/typeDefinitionProvider";
 import CFMLWorkspaceSymbolProvider from "./features/workspaceSymbolProvider";
 import CFDocsService from "./utils/cfdocs/cfDocsService";
-import { APPLICATION_CFM_GLOB, isCfcFile } from "./utils/contextUtil";
-import { DocumentStateContext, getDocumentStateContext } from "./utils/documentUtil";
+import { APPLICATION_CFM_GLOB, isApplicationFile, isCfcUri, shouldExcludeDocument } from "./utils/contextUtil";
 import { handleContentChanges } from "./features/autoclose";
-import { resolveBaseName, uriBaseName } from "./utils/fileUtil";
 // import { CFMLFlatPackageProvider } from "./views/components";
 
 export const LANGUAGE_ID: string = "cfml";
@@ -56,30 +51,6 @@ const DOCUMENT_SELECTOR: DocumentSelector = [
 
 export let extensionContext: ExtensionContext;
 let bulkCaching: boolean = false;
-
-/**
- * Checks whether the given document should be excluded from being used.
- * @param documentUri The URI of the document to check against
- * @returns boolean
- */
-function shouldExcludeDocument(documentUri: Uri): boolean {
-	const fileSettings: WorkspaceConfiguration = workspace.getConfiguration("files", documentUri);
-
-	const fileExcludes: object = fileSettings.get<object>("exclude", []);
-	const fileExcludeGlobs: string[] = [];
-	for (let fileExcludeGlob in fileExcludes) {
-		if (fileExcludes[fileExcludeGlob]) {
-			if (fileExcludeGlob.endsWith("/")) {
-				fileExcludeGlob += "**";
-			}
-			fileExcludeGlobs.push(fileExcludeGlob);
-		}
-	}
-
-	const relativePath = workspace.asRelativePath(documentUri);
-
-	return some(relativePath, fileExcludeGlobs);
-}
 
 export type api = {
 	isBulkCaching(): boolean;
@@ -170,26 +141,15 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	context.subscriptions.push(languages.registerColorProvider(DOCUMENT_SELECTOR, new CFMLDocumentColorProvider()));
 
 	context.subscriptions.push(workspace.onDidSaveTextDocument(async (document: TextDocument) => {
-		if (!document) {
+		if (!document || shouldExcludeDocument(document.uri)) {
 			return;
 		}
 
-		const documentUri = document.uri;
-
-		if (shouldExcludeDocument(documentUri)) {
-			return;
-		}
-
-		if (isCfcFile(document, undefined)) {
+		if (isCfcUri(document.uri)) {
 			await cacheComponentFromDocument(document, undefined);
 		}
-		else if (resolveBaseName(document.fileName) === "Application.cfm") {
-			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, true, undefined);
-			const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, undefined);
-			const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
-				return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
-			});
-			setApplicationVariables(document.uri, thisApplicationFilteredVariables);
+		else if (isApplicationFile(document.uri)) {
+			await cacheComponentFromDocument(document, undefined);
 		}
 	}));
 
@@ -207,8 +167,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 
 		clearCachedComponent(componentUri);
 
-		const fileName: string = uriBaseName(componentUri);
-		if (fileName === "Application.cfc") {
+		if (isApplicationFile(componentUri)) {
 			removeApplicationVariables(componentUri);
 		}
 	});
@@ -222,12 +181,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		}
 
 		workspace.openTextDocument(applicationUri).then(async (document: TextDocument) => {
-			const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, true, undefined);
-			const thisApplicationVariables: Variable[] = await parseVariableAssignments(documentStateContext, documentStateContext.docIsScript, undefined, undefined);
-			const thisApplicationFilteredVariables: Variable[] = thisApplicationVariables.filter((variable: Variable) => {
-				return [Scope.Application, Scope.Session, Scope.Request].includes(variable.scope);
-			});
-			setApplicationVariables(applicationUri, thisApplicationFilteredVariables);
+			await cacheApplicationFromDocument(document, undefined);
 		});
 	});
 	applicationCfmWatcher.onDidDelete((applicationUri: Uri) => {

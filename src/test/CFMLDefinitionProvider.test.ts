@@ -50,7 +50,7 @@ describe("provideDefinition", function () {
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
 		});
 
-		it.skip("should get definition for createObject() with default type component", async function () {
+		it("should get definition for createObject() with default type component", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'createObject("|cfml.Widget")');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
 		});
@@ -131,7 +131,7 @@ describe("provideDefinition", function () {
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
 		});
 
-		it.skip("should get definition for createObject() with default type component", async function () {
+		it("should get definition for createObject() with default type component", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'createObject("|cfscript.Gizmo")');
 			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
 		});
