@@ -168,8 +168,7 @@ export function copyPackage(selectedFileUri?: Uri) {
 }
 
 /**
- * This function should return the path to the view based on the appropriate mapping config
- * @returns
+ * Determine the path and function for the `view` using `resolveRouteTemplatePath` then open editor
  */
 export async function goToRouteView() {
 	// Prompt the user for input
@@ -217,7 +216,7 @@ export async function goToRouteView() {
 }
 
 /**
- * This function should return the path to the .cfc and the name of the function within that cfc based on the appropriate mapping config
+ * Determine the path and function for the controller using `resolveRouteControllerPath` then open editor / reveal range
  */
 export async function goToRouteController() {
 	// Prompt the user for input

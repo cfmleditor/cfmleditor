@@ -257,9 +257,9 @@ function resolveDirectoryPath(baseUri: Uri | undefined, cfmlMapping: CFMLMapping
 }
 
 /**
- * Resolves a full path based on mappings
+ * Resolves a full view template .cfm path from the string route
  * @param baseUri The URI from which the root path will be resolved
- * @param route
+ * @param route String based route for resolution
  * @returns array
  */
 export async function resolveRouteTemplatePath(baseUri: Uri | undefined, route: string): Promise<string[]> {
@@ -293,9 +293,9 @@ export async function resolveRouteTemplatePath(baseUri: Uri | undefined, route: 
 }
 
 /**
- * Resolves a full path based on mappings
+ * Resolves a full controller .cfc path and function range from string route
  * @param baseUri The URI from which the root path will be resolved
- * @param route
+ * @param route String based route for resolution
  * @returns array
  */
 export async function resolveRouteControllerPath(baseUri: Uri | undefined, route: string): Promise<[Uri | undefined, UserFunction | undefined]> {
