@@ -280,6 +280,15 @@ export namespace DataType {
 			return [DataType.Component, undefined];
 		}
 
+		const objectMatch3 = /^(?:["']\s*#\s*)?(createObject(?:\(\s*(?!["'](?:component|com|java|corba|webservice)["']))(["'])([^'"]+)\2)/i.exec(value);
+		if (objectMatch3) {
+			const [dataType, uri]: [DataType | undefined, Uri | undefined] = await getDataTypeAndUri(objectMatch3[3], documentUri, _token);
+			if (dataType) {
+				return [dataType, uri];
+			}
+			return [DataType.Component, undefined];
+		}
+
 		// TODO: Check against functions and use its return type
 
 		return [DataType.Any, undefined];
