@@ -1,5 +1,5 @@
 import assert from "assert/strict";
-import { TextDocument, Position, commands, DefinitionLink } from "vscode";
+import { TextDocument, Position, commands, DefinitionLink, Range } from "vscode";
 
 /**
  * Get a position in the document based on a search text and a cursor
@@ -64,3 +64,16 @@ export async function findDefinition(doc: TextDocument, search: string, cursor: 
 	assert.strictEqual(definitions.length, matches, "Expected exactly one definition");
 	return definitions[posn];
 }
+
+/**
+ * Converts a Range object to a string representation.
+ *
+ * Math notation: square brackets [ ] mean inclusive, parentheses ( ) mean exclusive.
+ *
+ * For example, the "Foo" in "FooBar" is represented as "[0:0 -> 0:3)". Character 0 "F" is included, and character 3 "B" is excluded.
+ * @param range The range to convert to a string
+ * @returns A string representation of the range in the format "[startLine:startCharacter -> endLine:endCharacter)"
+ */
+export function rangeToString(range: Range): string {
+	return `[${range.start.line}:${range.start.character} -> ${range.end.line}:${range.end.character})`;
+};
