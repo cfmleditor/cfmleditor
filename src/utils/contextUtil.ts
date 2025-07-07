@@ -534,6 +534,11 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 					}
 				}
 			}
+			// Handle the edge case of a line comment on the last line of the document
+			else if (previousPosition && commentContext.start && commentContext.commentType === CommentType.Line && offset === textOffsetEnd - 1) {
+				const rangeLengthFix = characterAtPosition === "\n" ? 0 : 1; // If the last character is a newline, don't include it in the range
+				commentRanges.push(new Range(commentContext.start, position.translate(0, rangeLengthFix)));
+			}
 		}
 		else if (stringContext.inString) {
 			if (characterAtPosition === stringEmbeddedCFMLDelimiter) {
