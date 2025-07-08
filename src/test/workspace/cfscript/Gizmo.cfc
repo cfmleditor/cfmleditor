@@ -28,9 +28,9 @@ component extends="cfscript.Base" {
      *     }
      * @param template [required] The template string to be used.
      * @param line The line number as a numeric value.
-     * @return Returns true.
+     * @returns cfscript.Gizmo hello world string
      */
-	static function staticGenerateID() {
+	static function staticGenerateID(template, line) {
 		return "Hello World";
 	}
 

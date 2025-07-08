@@ -3,7 +3,7 @@ import { Range, TextDocument } from "vscode";
 // If the key has no value, the last letter is ignored
 // const DOC_PATTERN: RegExp = /(\n\s*(?:\*[ \t]*)?(?:@(\w+)(?:[. ](\w+))?)?[ \t]*)(\S.*)/gi;
 
-const DOC_PATTERN: RegExp = /(\n\s*(?:\*)?)(?:(?:[ \t]*(@(\w+))[ \t]+(\w+))|([ \t]*[^@\s].*)?)(.*)/gi;
+const DOC_PATTERN: RegExp = /(\n\s*(?:\*)?)(?:(?:[ \t]*(@(\w+))[ \t.]+([\w.]+))|([ \t]*[^@\s].*)?)(.*)/gi;
 const INDENT_PATTERN: RegExp = /^[ \t]{2,}/i;
 const CODE_BLOCK_PATTERN: RegExp = /```/i;
 

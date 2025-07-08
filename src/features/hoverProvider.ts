@@ -34,6 +34,7 @@ interface HoverProviderItem {
 	description: string;
 	params?: Parameter[];
 	returnType?: string;
+	returnDescription?: string;
 	genericDocLink?: string;
 	engineLinks?: MyMap<CFMLEngineName, Uri>;
 	language?: string;
@@ -310,6 +311,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 		});
 
 		let returnType: string | undefined;
+		let returnDescription: string | undefined;
 		if ("returnTypeUri" in func) {
 			const userFunction: UserFunction = func as UserFunction;
 			if (userFunction.returnTypeUri) {
@@ -324,6 +326,13 @@ export default class CFMLHoverProvider implements HoverProvider {
 			returnType = DataType.Any;
 		}
 
+		if (func.returnDescription) {
+			returnDescription = func.returnDescription;
+		}
+		else {
+			returnDescription = "";
+		}
+
 		const hoverItem: HoverProviderItem = {
 			name: func.name,
 			syntax: constructSyntaxString(func),
@@ -331,6 +340,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 			description: func.description,
 			params: paramArr,
 			returnType: returnType,
+			returnDescription: returnDescription,
 		};
 
 		if (isGlobalFunction(func.name)) {
@@ -554,6 +564,10 @@ export default class CFMLHoverProvider implements HoverProvider {
 		const paramList: Parameter[] | undefined = definition.params;
 		if (paramList && paramList.length > 0) {
 			hoverTexts.push(this.paramsMarkdownPreview(paramList));
+		}
+
+		if (definition.returnType) {
+			hoverTexts.push(new MarkdownString("@returns `" + definition.returnType + "`" + (definition.returnDescription ? " " + definition.returnDescription : "")));
 		}
 
 		return hoverTexts;

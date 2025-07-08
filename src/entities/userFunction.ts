@@ -131,6 +131,7 @@ export interface UserFunction extends Function {
 	final: boolean;
 	returnTypeUri?: Uri; // Only when returntype is Component
 	returnTypeRange?: Range;
+	returnDescription?: string;
 	nameRange: Range;
 	bodyRange?: Range;
 	signatures: UserFunctionSignature[];
@@ -254,6 +255,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 			name: functionName,
 			description: "",
 			returntype: DataType.Any,
+			returnDescription: "",
 			signatures: [],
 			nameRange: functionNameRange,
 			bodyRange: functionBodyRange,
@@ -335,12 +337,11 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 				if (docElem.key === "access") {
 					userFunction.access = Access.valueOf(docElem.value);
 				}
-				else if (docElem.key === "returntype") {
-					const [dataType, uri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
+				else if (docElem.key === "returntype" || docElem.key === "returns") {
+					const [dataType, uri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri((docElem.key === "returns" && docElem.subkey) ? docElem.subkey : docElem.value, document.uri, _token);
 					if (dataType) {
 						userFunction.returntype = dataType;
-
-						const returnTypeKeyMatch: RegExpExecArray | null = getKeyPattern("returnType").exec(fullDocBlock);
+						const returnTypeKeyMatch: RegExpExecArray | null = getKeyPattern(docElem.key === "returns" ? "returns" : "returnType").exec(fullDocBlock);
 						if (returnTypeKeyMatch) {
 							const returnTypePath: string = returnTypeKeyMatch[1];
 							if (scriptFunctionMatch) {
@@ -354,6 +355,9 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 						if (uri) {
 							userFunction.returnTypeUri = uri;
 						}
+					}
+					if (docElem.key === "returns") {
+						userFunction.returnDescription = !dataType ? docElem.subkey + " " : "" + docElem.value;
 					}
 				}
 				else if (userFunctionBooleanAttributes.has(docElem.key)) {
@@ -519,33 +523,38 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 			}
 
 			const matchingDocBlocks = docBlock.filter((docElem: DocBlockKeyValue) => {
-				return equalsIgnoreCase(docElem.key, argument.name);
+				return (docElem.key === "param" && docElem.subkey && equalsIgnoreCase(docElem.subkey, argument.name)) || equalsIgnoreCase(docElem.key, argument.name);
 			});
 
 			await Promise.all(matchingDocBlocks.map(async (docElem: DocBlockKeyValue) => {
-				if (docElem.subkey === "required") {
-					argument.required = DataType.isTruthy(docElem.value);
-				}
-				else if (!docElem.subkey || docElem.subkey === "hint") {
+				if (docElem.key === "param") {
 					argument.description = docElem.value;
 				}
-				else if (docElem.subkey === "default") {
-					argument.default = docElem.value;
-				}
-				else if (docElem.subkey === "type") {
-					const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.value, documentUri, _token);
-					if (dataType) {
-						argument.dataType = dataType;
-						if (dataTypeComponentUri) {
-							argument.dataTypeComponentUri = dataTypeComponentUri;
-						}
+				else {
+					if (docElem.subkey === "required") {
+						argument.required = DataType.isTruthy(docElem.value);
+					}
+					else if (docElem.subkey === "default") {
+						argument.default = docElem.value;
+					}
+					else if (docElem.subkey === "type") {
+						const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.value, documentUri, _token);
+						if (dataType) {
+							argument.dataType = dataType;
+							if (dataTypeComponentUri) {
+								argument.dataTypeComponentUri = dataTypeComponentUri;
+							}
 
-						argument.dataTypeRange = docElem.valueRange
-							? new Range(
-								docElem.valueRange.start,
-								docElem.valueRange.end
-							)
-							: undefined;
+							argument.dataTypeRange = docElem.valueRange
+								? new Range(
+									docElem.valueRange.start,
+									docElem.valueRange.end
+								)
+								: undefined;
+						}
+					}
+					else {
+						argument.description = (docElem.subkey ? (docElem.subkey + " ") : "") + docElem.value;
 					}
 				}
 			}));

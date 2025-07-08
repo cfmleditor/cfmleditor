@@ -13,6 +13,7 @@ export interface Function {
 	name: string;
 	description: string;
 	returntype: DataType;
+	returnDescription?: string;
 	signatures: Signature[];
 }
 
