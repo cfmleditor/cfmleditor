@@ -27,6 +27,7 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 	let prevKey = "hint";
 	let activeKey = "hint";
 	let prevSubkey: string | undefined;
+	let prevType: string | undefined;
 	let activeSubkey: string | undefined;
 	let activeValue: string | undefined;
 	let activeType: string | undefined;
@@ -61,7 +62,7 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 			continue;
 		}
 
-		if ((activeKey !== prevKey || activeSubkey !== prevSubkey) && activeValue) {
+		if ((activeKey !== prevKey || activeSubkey !== prevSubkey) && (activeValue || prevSubkey)) {
 			// Close code blocks if they're open
 			if (explicitCodeBlock) {
 				explicitCodeBlock = false;
@@ -75,12 +76,13 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 			docBlock.push({
 				key: prevKey,
 				subkey: prevSubkey,
-				value: activeValue.trim(),
-				type: activeType,
+				value: activeValue ? activeValue.trim() : "",
+				type: prevType,
 				valueRange: new Range(document.positionAt(activeValueStartOffset), document.positionAt(activeValueEndOffset)),
 			});
 			prevKey = activeKey;
 			prevSubkey = activeSubkey;
+			prevType = activeType;
 			activeType = undefined;
 			activeValue = undefined;
 		}
@@ -116,11 +118,11 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 		activeValueEndOffset = docValueOffset + metadataValue.length;
 	}
 
-	if (activeValue) {
+	if (activeValue || activeSubkey) {
 		docBlock.push({
 			key: activeKey,
 			subkey: activeSubkey,
-			value: activeValue.trim(),
+			value: activeValue ? activeValue.trim() : "",
 			type: activeType,
 			valueRange: new Range(document.positionAt(activeValueStartOffset), document.positionAt(activeValueEndOffset)),
 		});

@@ -99,6 +99,11 @@ interface ArgumentAttributes {
 	restargsource?: string;
 	restargname?: string;
 }
+
+interface TypeAttributes {
+	type: string;
+	typeRange?: Range;
+}
 /*
 const argumentAttributesToInterfaceMapping = {
   type: "dataType",
@@ -358,7 +363,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 							userFunction.returnTypeUri = uri;
 						}
 					}
-					userFunction.returnDescription = !dataType ? docElem.subkey + " " : "" + docElem.value;
+					userFunction.returnDescription = (!dataType ? docElem.subkey + " " : "") + docElem.value;
 				}
 				else if (userFunctionBooleanAttributes.has(docElem.key)) {
 					userFunction[docElem.key] = DataType.isTruthy(docElem.value);
@@ -400,18 +405,36 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 		const argText: string = documentStateContext.sanitizedDocumentText.slice(document.offsetAt(argRange.start), document.offsetAt(argRange.end));
 		const argStartOffset = document.offsetAt(argRange.start);
 		const scriptFunctionArgMatch: RegExpExecArray | null = scriptFunctionArgPattern.exec(argText);
+
 		if (scriptFunctionArgMatch) {
 			const fullArg = scriptFunctionArgMatch[0];
 			const attributePrefix = scriptFunctionArgMatch[1];
 			const argRequired = scriptFunctionArgMatch[2];
-			const argType = scriptFunctionArgMatch[3];
+
+			const argType: string | undefined = scriptFunctionArgMatch[3];
+			const typeAttributes: TypeAttributes[] = [];
+
 			const argName = scriptFunctionArgMatch[4];
+
 			let argDefault = scriptFunctionArgMatch[5];
+
 			const argAttributes = scriptFunctionArgMatch[6];
 			const argOffset = argStartOffset + scriptFunctionArgMatch.index;
 
 			if (!argName) {
 				return;
+			}
+
+			if (argType) {
+				// Script Argument Type
+				const argTypeOffset: number = fullArg.indexOf(argType);
+				typeAttributes.push({
+					type: argType,
+					typeRange: new Range(
+						document.positionAt(argOffset + argTypeOffset),
+						document.positionAt(argOffset + argTypeOffset + argType.length)
+					),
+				});
 			}
 
 			let argDefaultAndAttributesLen = 0;
@@ -435,31 +458,11 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 				removedDefaultAndAttributes = fullArg.slice(0, -argDefaultAndAttributesLen);
 			}
 			const argNameOffset = argOffset + removedDefaultAndAttributes.lastIndexOf(argName);
-
-			let convertedArgType: DataType = DataType.Any;
-			let typeUri: Uri | undefined;
-			let argTypeRange: Range | undefined;
-			if (argType) {
-				const [dataType, returnTypeUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(argType, documentUri, _token);
-				if (dataType) {
-					convertedArgType = dataType;
-					if (returnTypeUri) {
-						typeUri = returnTypeUri;
-					}
-
-					const argTypeOffset: number = fullArg.indexOf(argType);
-					argTypeRange = new Range(
-						document.positionAt(argOffset + argTypeOffset),
-						document.positionAt(argOffset + argTypeOffset + argType.length)
-					);
-				}
-			}
-
 			const argument: Argument = {
 				name: argName,
 				type: argType,
 				required: argRequired ? true : false,
-				dataType: convertedArgType,
+				dataType: DataType.Any,
 				description: "",
 				nameRange: new Range(
 					document.positionAt(argNameOffset),
@@ -478,14 +481,6 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 				argument.default = argDefault;
 			}
 
-			if (typeUri) {
-				argument.dataTypeComponentUri = typeUri;
-			}
-
-			if (argTypeRange) {
-				argument.dataTypeRange = argTypeRange;
-			}
-
 			if (parsedArgAttributes) {
 				// Bit of a hack because I can't work this out right now
 				const attributes: Attribute[] = [];
@@ -493,7 +488,7 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 					attributes.push(attribute);
 				});
 
-				await Promise.all(attributes.map(async (attr: Attribute) => {
+				attributes.forEach((attr: Attribute) => {
 					const argAttrName: string = attr.name;
 					const argAttrVal: string = attr.value;
 					if (argAttrName === "required") {
@@ -506,27 +501,23 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 						argument.default = argAttrVal;
 					}
 					else if (argAttrName === "type") {
-						const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(argAttrVal, documentUri, _token);
-						if (dataType) {
-							argument.dataType = dataType;
-							if (dataTypeComponentUri) {
-								argument.dataTypeComponentUri = dataTypeComponentUri;
-							}
-
-							argument.dataTypeRange = new Range(
+						// Attributes Type
+						typeAttributes.push({
+							type: argAttrVal,
+							typeRange: new Range(
 								attr.valueRange.start,
 								attr.valueRange.end
-							);
-						}
+							),
+						});
 					}
-				}));
+				});
 			}
 
 			const matchingDocBlocks = docBlock.filter((docElem: DocBlockKeyValue) => {
 				return (docElem.key === "param" && docElem.subkey && equalsIgnoreCase(docElem.subkey, argument.name)) || equalsIgnoreCase(docElem.key, argument.name);
 			});
 
-			await Promise.all(matchingDocBlocks.map(async (docElem: DocBlockKeyValue) => {
+			matchingDocBlocks.forEach((docElem: DocBlockKeyValue) => {
 				if (docElem.key === "param") {
 					argument.description = docElem.value;
 				}
@@ -538,26 +529,49 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 						argument.default = docElem.value;
 					}
 					else if (docElem.subkey === "type") {
-						const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.value, documentUri, _token);
-						if (dataType) {
-							argument.dataType = dataType;
-							if (dataTypeComponentUri) {
-								argument.dataTypeComponentUri = dataTypeComponentUri;
-							}
-
-							argument.dataTypeRange = docElem.valueRange
-								? new Range(
-									docElem.valueRange.start,
-									docElem.valueRange.end
-								)
-								: undefined;
+						if (docElem.value) {
+							typeAttributes.push({
+								type: docElem.value,
+								typeRange: docElem.valueRange
+									? new Range(
+										docElem.valueRange.start,
+										docElem.valueRange.end
+									)
+									: undefined,
+							});
 						}
 					}
 					else {
 						argument.description = (docElem.subkey ? (docElem.subkey + " ") : "") + docElem.value;
+						if (docElem.type) {
+							typeAttributes.push({
+								type: docElem.type,
+							});
+						}
 					}
 				}
-			}));
+			});
+
+			/*
+			Work out what typeAttributes we have before so we can loop over and determine which one looks like a valid dataType
+			Easier for debugging mismatches, reduces duplication of code and allows us to avoid issues with async/await and
+			map functions.
+			*/
+			if (typeAttributes.length > 0) {
+				typeloop: for (const typeAttr of typeAttributes) {
+					const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(typeAttr.type, documentUri, _token);
+					if (dataType) {
+						argument.dataType = dataType;
+						if (dataTypeComponentUri) {
+							argument.dataTypeComponentUri = dataTypeComponentUri;
+						}
+						if (typeAttr.typeRange) {
+							argument.dataTypeRange = typeAttr.typeRange;
+						}
+						break typeloop;
+					}
+				}
+			}
 
 			return argument;
 		}
