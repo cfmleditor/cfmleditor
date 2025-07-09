@@ -22,6 +22,8 @@ const scriptFunctionArgPattern: RegExp = /((?:(required)\s+)?(?:\b([\w.]+)\b\s+)
 export const functionValuePattern: RegExp = /^function\s*\(/i;
 export const normalizeSplit: RegExp = /(::|\?\.)/g;
 
+const RETURN_KEYS = ["returns", "return", "returntype"];
+
 /*
 const userFunctionAttributeNames: MySet<string> = new MySet([
   "name",
@@ -337,11 +339,11 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 				if (docElem.key === "access") {
 					userFunction.access = Access.valueOf(docElem.value);
 				}
-				else if (docElem.key === "returntype" || docElem.key === "returns") {
-					const [dataType, uri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri((docElem.key === "returns" && docElem.subkey) ? docElem.subkey : docElem.value, document.uri, _token);
+				else if (RETURN_KEYS.includes(docElem.key)) {
+					const [dataType, uri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.subkey || docElem.value, document.uri, _token);
 					if (dataType) {
 						userFunction.returntype = dataType;
-						const returnTypeKeyMatch: RegExpExecArray | null = getKeyPattern(docElem.key === "returns" ? "returns" : "returnType").exec(fullDocBlock);
+						const returnTypeKeyMatch: RegExpExecArray | null = getKeyPattern(docElem.key).exec(fullDocBlock);
 						if (returnTypeKeyMatch) {
 							const returnTypePath: string = returnTypeKeyMatch[1];
 							if (scriptFunctionMatch) {
@@ -356,9 +358,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 							userFunction.returnTypeUri = uri;
 						}
 					}
-					if (docElem.key === "returns") {
-						userFunction.returnDescription = !dataType ? docElem.subkey + " " : "" + docElem.value;
-					}
+					userFunction.returnDescription = !dataType ? docElem.subkey + " " : "" + docElem.value;
 				}
 				else if (userFunctionBooleanAttributes.has(docElem.key)) {
 					userFunction[docElem.key] = DataType.isTruthy(docElem.value);

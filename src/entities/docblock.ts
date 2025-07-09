@@ -3,7 +3,7 @@ import { Range, TextDocument } from "vscode";
 // If the key has no value, the last letter is ignored
 // const DOC_PATTERN: RegExp = /(\n\s*(?:\*[ \t]*)?(?:@(\w+)(?:[. ](\w+))?)?[ \t]*)(\S.*)/gi;
 
-const DOC_PATTERN: RegExp = /(\n\s*(?:\*)?)(?:(?:[ \t]*(@(\w+))[ \t.]+([\w.]+))|([ \t]*[^@\s].*)?)(.*)/gi;
+const DOC_PATTERN: RegExp = /(\n\s*(?:\*)?)(?:(?:[ \t]*(@([\w{}]+)(?:[\s]+((?:\{(?:[^{}]+)\}|\s?\{\s?|\s?\}\s?)+))?)[ \t.]+([\w{}.]+))|([ \t]*[^@\s].*)?)(.*)/gi;
 const INDENT_PATTERN: RegExp = /^[ \t]{2,}/i;
 const CODE_BLOCK_PATTERN: RegExp = /```/i;
 
@@ -11,6 +11,7 @@ export interface DocBlockKeyValue {
 	key: string; // lowercased
 	subkey?: string; // lowercased
 	value: string;
+	type: string | undefined;
 	valueRange?: Range;
 }
 
@@ -28,6 +29,7 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 	let prevSubkey: string | undefined;
 	let activeSubkey: string | undefined;
 	let activeValue: string | undefined;
+	let activeType: string | undefined;
 	let activeValueStartOffset = 0;
 	let activeValueEndOffset = 0;
 	let docBlockMatches: RegExpExecArray | null;
@@ -37,14 +39,17 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 	let metadataValueReplace: RegExp | undefined;
 	const docBlockOffset: number = document.offsetAt(docRange.start);
 	while ((docBlockMatches = DOC_PATTERN.exec(docBlockStr))) {
-		const valuePrefix: string = docBlockMatches[0] || "";
-		const metadataKey: string = docBlockMatches[3] || "";
-		const metadataValue: string = docBlockMatches[6] || docBlockMatches[5] || "";
-		const metadataSubkey: string = docBlockMatches[4] || "";
+		const valuePrefix: string = docBlockMatches[0] || ""; // full line
+		// const metadataKeyWithAtSymbol = docBlockMatches[2] matches @value with @prefix
+		const metadataKey: string = docBlockMatches[3] || ""; // matches @value without @prefix
+		const metadataValue: string = docBlockMatches[7] || docBlockMatches[6] || ""; // matches description [7] when @value exists on that line otherwise [6]
+		const metadataType: string = docBlockMatches[4] || ""; // matches first value after the @value where it is {}
+		const metadataSubkey: string = docBlockMatches[5] || ""; // matches value after the @value where its not {}, the second where it is {}
 		const docValueOffset: number = docBlockOffset + docBlockMatches.index + valuePrefix.length;
 
 		if (metadataKey) {
 			activeKey = metadataKey.toLowerCase();
+			activeType = metadataType.toLowerCase();
 			if (metadataSubkey) {
 				activeSubkey = metadataSubkey.toLowerCase();
 			}
@@ -71,10 +76,12 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 				key: prevKey,
 				subkey: prevSubkey,
 				value: activeValue.trim(),
+				type: activeType,
 				valueRange: new Range(document.positionAt(activeValueStartOffset), document.positionAt(activeValueEndOffset)),
 			});
 			prevKey = activeKey;
 			prevSubkey = activeSubkey;
+			activeType = undefined;
 			activeValue = undefined;
 		}
 
@@ -114,6 +121,7 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 			key: activeKey,
 			subkey: activeSubkey,
 			value: activeValue.trim(),
+			type: activeType,
 			valueRange: new Range(document.positionAt(activeValueStartOffset), document.positionAt(activeValueEndOffset)),
 		});
 	}

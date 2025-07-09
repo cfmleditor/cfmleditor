@@ -322,7 +322,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 		if (!returnType && func.returntype) {
 			returnType = func.returntype;
 		}
-		else {
+		else if (!returnType) {
 			returnType = DataType.Any;
 		}
 
