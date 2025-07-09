@@ -115,6 +115,7 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 		}
 
 		activeValue += metadataValueReplace ? metadataValue.replace(metadataValueReplace, "") : metadataValue;
+		activeType = metadataType.toLowerCase();
 		activeValueEndOffset = docValueOffset + metadataValue.length;
 	}
 

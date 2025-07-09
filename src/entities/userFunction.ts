@@ -104,6 +104,11 @@ interface TypeAttributes {
 	type: string;
 	typeRange?: Range;
 }
+
+interface ReturnTypes {
+	type: string;
+	typeRange?: Range;
+}
 /*
 const argumentAttributesToInterfaceMapping = {
   type: "dataType",
@@ -195,6 +200,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 		const modifier2: string = scriptFunctionMatch[5];
 		const returnType: string = scriptFunctionMatch[6];
 		const functionName: string = scriptFunctionMatch[7];
+		const returnTypes: ReturnTypes[] = [];
 
 		const functionNameStartOffset: number = scriptFunctionMatch.index + fullMatch.lastIndexOf(functionName);
 		const functionNameRange: Range = new Range(
@@ -271,18 +277,14 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 		};
 
 		if (returnType) {
-			const [dataType, returnTypeUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(returnType, document.uri, _token);
-			if (dataType) {
-				userFunction.returntype = dataType;
-				if (returnTypeUri) {
-					userFunction.returnTypeUri = returnTypeUri;
-				}
-				const returnTypeOffset: number = scriptFunctionMatch.index + returnTypePrefix.length;
-				userFunction.returnTypeRange = new Range(
+			const returnTypeOffset: number = scriptFunctionMatch.index + returnTypePrefix.length;
+			returnTypes.push({
+				type: returnType,
+				typeRange: new Range(
 					document.positionAt(returnTypeOffset),
 					document.positionAt(returnTypeOffset + returnType.length)
-				);
-			}
+				),
+			});
 		}
 
 		if (modifier1) {
@@ -340,30 +342,25 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 			scriptDocBlockParsed = parseDocBlock(document,
 				docBlockRange
 			);
-			await Promise.all(scriptDocBlockParsed.map(async (docElem: DocBlockKeyValue) => {
+			scriptDocBlockParsed.forEach((docElem: DocBlockKeyValue) => {
 				if (docElem.key === "access") {
 					userFunction.access = Access.valueOf(docElem.value);
 				}
 				else if (RETURN_KEYS.includes(docElem.key)) {
-					const [dataType, uri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.subkey || docElem.value, document.uri, _token);
-					if (dataType) {
-						userFunction.returntype = dataType;
-						const returnTypeKeyMatch: RegExpExecArray | null = getKeyPattern(docElem.key).exec(fullDocBlock);
-						if (returnTypeKeyMatch) {
-							const returnTypePath: string = returnTypeKeyMatch[1];
-							if (scriptFunctionMatch) {
-								const returnTypeOffset: number = scriptFunctionMatch.index + returnTypeKeyMatch.index;
-								userFunction.returnTypeRange = new Range(
-									document.positionAt(returnTypeOffset),
-									document.positionAt(returnTypeOffset + returnTypePath.length)
-								);
-							}
-						}
-						if (uri) {
-							userFunction.returnTypeUri = uri;
-						}
-					}
-					userFunction.returnDescription = (!dataType ? docElem.subkey + " " : "") + docElem.value;
+					const returnTypeKeyMatch: RegExpExecArray | null = getKeyPattern(docElem.key).exec(fullDocBlock);
+					const returnTypePath: string = returnTypeKeyMatch ? returnTypeKeyMatch[1] : "";
+					const returnTypeOffset: number = scriptFunctionMatch && returnTypeKeyMatch ? scriptFunctionMatch.index + returnTypeKeyMatch.index : -1;
+
+					returnTypes.push({
+						type: (docElem.type || docElem.subkey || docElem.value),
+						typeRange: ((returnTypePath && returnTypeOffset > -1)
+							? new Range(
+								document.positionAt(returnTypeOffset),
+								document.positionAt(returnTypeOffset + returnTypePath.length)
+							)
+							: undefined),
+					});
+					userFunction.returnDescription = docElem.value;
 				}
 				else if (userFunctionBooleanAttributes.has(docElem.key)) {
 					userFunction[docElem.key] = DataType.isTruthy(docElem.value);
@@ -374,11 +371,36 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 				else if (docElem.key === "description" && userFunction.description === "") {
 					userFunction.description = docElem.value;
 				}
-			}));
+			});
 		}
+
+		if (returnTypes.length > 0) {
+			const returntypeDescriptions: string[] = [];
+			typeloop: for (const typeAttr of returnTypes) {
+				const [returnType, returnTypeUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(typeAttr.type, document.uri, _token);
+				if (returnType) {
+					userFunction.returntype = returnType;
+					if (returnTypeUri) {
+						userFunction.returnTypeUri = returnTypeUri;
+					}
+					if (typeAttr.typeRange) {
+						userFunction.returnTypeRange = typeAttr.typeRange;
+					}
+					break typeloop;
+				}
+				else {
+					returntypeDescriptions.push(typeAttr.type);
+				}
+			}
+			if (returntypeDescriptions.length > 0) {
+				userFunction.returnDescription = "[" + returntypeDescriptions.join(",") + "] " + userFunction.returnDescription;
+			}
+		}
+
 		const signature: UserFunctionSignature = {
 			parameters: await parseScriptFunctionArgs(documentStateContext, functionArgsRange, scriptDocBlockParsed, _token),
 		};
+
 		userFunction.signatures = [signature];
 
 		userFunctions.push(userFunction);
