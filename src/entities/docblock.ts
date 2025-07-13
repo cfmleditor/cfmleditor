@@ -11,7 +11,7 @@ export interface DocBlockKeyValue {
 	key: string; // lowercased
 	subkey?: string; // lowercased
 	value: string;
-	type: string | undefined;
+	type?: string;
 	valueRange?: Range;
 }
 
