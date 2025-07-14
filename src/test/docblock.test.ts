@@ -116,7 +116,7 @@ describe("parseDocBlock", function () {
 		const values = parseDocBlock(doc, range);
 		assertDocBlockArrayEqual(values, [
 			{ key: "hint", value: "foo\nbar" },
-			{ key: "param1", value: "description" },
+			{ key: "param1", value: "subkey value" },
 		]);
 	});
 
