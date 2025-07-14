@@ -1,5 +1,4 @@
 import { Range, TextDocument } from "vscode";
-import { integer } from "vscode-languageserver-types";
 
 // If the key has no value, the last letter is ignored
 // const DOC_PATTERN: RegExp = /(\n\s*(?:\*[ \t]*)?(?:@(\w+)(?:[. ](\w+))?)?[ \t]*)(\S.*)/gi;
@@ -31,7 +30,7 @@ export interface DocBlockKeyValue {
 export function parseDocBlock(document: TextDocument, docRange: Range): DocBlockKeyValue[] {
 	const docBlockStr: string = document.getText(docRange);
 	const docBlock: DocBlockKeyValue[] = [];
-	const docBlockKeys: Map<string, integer> = new Map();
+	const docBlockKeys: Map<string, number> = new Map();
 	let prevKey = "hint";
 	let activeKey = "hint";
 	let prevSubkey: string | undefined;
@@ -74,7 +73,7 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 			}
 		}
 		else {
-			if (metadataValue.trim() === "") {
+			if (activeKey !== "hint" && metadataValue.trim() === "") {
 				continue;
 			}
 		}
@@ -117,7 +116,7 @@ export function parseDocBlock(document: TextDocument, docRange: Range): DocBlock
 		 * If no metadataKey and we're not in multi line property mode, assume the line is for a "Hint"
 		 */
 		if (!MULTI_LINE_PROPERTIES && !metadataKey && docBlockKeys.get("hint") !== undefined) {
-			const posn: integer | undefined = docBlockKeys.get("hint");
+			const posn: number | undefined = docBlockKeys.get("hint");
 			if (posn !== undefined) {
 				docBlock[posn].value += "\n" + metadataValue.trim();
 			}
