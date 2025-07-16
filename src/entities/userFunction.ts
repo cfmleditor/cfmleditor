@@ -22,6 +22,8 @@ const scriptFunctionArgPattern: RegExp = /((?:(required)\s+)?(?:\b([\w.]+)\b\s+)
 export const functionValuePattern: RegExp = /^function\s*\(/i;
 export const normalizeSplit: RegExp = /(::|\?\.)/g;
 
+const RETURN_KEYS = ["returns", "return", "returntype"];
+
 /*
 const userFunctionAttributeNames: MySet<string> = new MySet([
   "name",
@@ -97,6 +99,16 @@ interface ArgumentAttributes {
 	restargsource?: string;
 	restargname?: string;
 }
+
+interface TypeAttributes {
+	type: string;
+	typeRange?: Range;
+}
+
+interface ReturnTypes {
+	type: string;
+	typeRange?: Range;
+}
 /*
 const argumentAttributesToInterfaceMapping = {
   type: "dataType",
@@ -131,6 +143,7 @@ export interface UserFunction extends Function {
 	final: boolean;
 	returnTypeUri?: Uri; // Only when returntype is Component
 	returnTypeRange?: Range;
+	returnDescription?: string;
 	nameRange: Range;
 	bodyRange?: Range;
 	signatures: UserFunctionSignature[];
@@ -187,6 +200,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 		const modifier2: string = scriptFunctionMatch[5];
 		const returnType: string = scriptFunctionMatch[6];
 		const functionName: string = scriptFunctionMatch[7];
+		const returnTypes: ReturnTypes[] = [];
 
 		const functionNameStartOffset: number = scriptFunctionMatch.index + fullMatch.lastIndexOf(functionName);
 		const functionNameRange: Range = new Range(
@@ -254,6 +268,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 			name: functionName,
 			description: "",
 			returntype: DataType.Any,
+			returnDescription: "",
 			signatures: [],
 			nameRange: functionNameRange,
 			bodyRange: functionBodyRange,
@@ -262,18 +277,14 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 		};
 
 		if (returnType) {
-			const [dataType, returnTypeUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(returnType, document.uri, _token);
-			if (dataType) {
-				userFunction.returntype = dataType;
-				if (returnTypeUri) {
-					userFunction.returnTypeUri = returnTypeUri;
-				}
-				const returnTypeOffset: number = scriptFunctionMatch.index + returnTypePrefix.length;
-				userFunction.returnTypeRange = new Range(
+			const returnTypeOffset: number = scriptFunctionMatch.index + returnTypePrefix.length;
+			returnTypes.push({
+				type: returnType,
+				typeRange: new Range(
 					document.positionAt(returnTypeOffset),
 					document.positionAt(returnTypeOffset + returnType.length)
-				);
-			}
+				),
+			});
 		}
 
 		if (modifier1) {
@@ -331,30 +342,25 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 			scriptDocBlockParsed = parseDocBlock(document,
 				docBlockRange
 			);
-			await Promise.all(scriptDocBlockParsed.map(async (docElem: DocBlockKeyValue) => {
+			scriptDocBlockParsed.forEach((docElem: DocBlockKeyValue) => {
 				if (docElem.key === "access") {
 					userFunction.access = Access.valueOf(docElem.value);
 				}
-				else if (docElem.key === "returntype") {
-					const [dataType, uri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
-					if (dataType) {
-						userFunction.returntype = dataType;
+				else if (RETURN_KEYS.includes(docElem.key)) {
+					const returnTypeKeyMatch: RegExpExecArray | null = getKeyPattern(docElem.key).exec(fullDocBlock);
+					const returnTypePath: string = returnTypeKeyMatch ? returnTypeKeyMatch[1] : "";
+					const returnTypeOffset: number = scriptFunctionMatch && returnTypeKeyMatch ? scriptFunctionMatch.index + returnTypeKeyMatch.index : -1;
 
-						const returnTypeKeyMatch: RegExpExecArray | null = getKeyPattern("returnType").exec(fullDocBlock);
-						if (returnTypeKeyMatch) {
-							const returnTypePath: string = returnTypeKeyMatch[1];
-							if (scriptFunctionMatch) {
-								const returnTypeOffset: number = scriptFunctionMatch.index + returnTypeKeyMatch.index;
-								userFunction.returnTypeRange = new Range(
-									document.positionAt(returnTypeOffset),
-									document.positionAt(returnTypeOffset + returnTypePath.length)
-								);
-							}
-						}
-						if (uri) {
-							userFunction.returnTypeUri = uri;
-						}
-					}
+					returnTypes.push({
+						type: (docElem.type || docElem.subkey || docElem.value),
+						typeRange: ((returnTypePath && returnTypeOffset > -1)
+							? new Range(
+								document.positionAt(returnTypeOffset),
+								document.positionAt(returnTypeOffset + returnTypePath.length)
+							)
+							: undefined),
+					});
+					userFunction.returnDescription = docElem.value;
 				}
 				else if (userFunctionBooleanAttributes.has(docElem.key)) {
 					userFunction[docElem.key] = DataType.isTruthy(docElem.value);
@@ -365,11 +371,36 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 				else if (docElem.key === "description" && userFunction.description === "") {
 					userFunction.description = docElem.value;
 				}
-			}));
+			});
 		}
+
+		if (returnTypes.length > 0) {
+			const returntypeDescriptions: string[] = [];
+			typeloop: for (const typeAttr of returnTypes) {
+				const [returnType, returnTypeUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(typeAttr.type, document.uri, _token);
+				if (returnType) {
+					userFunction.returntype = returnType;
+					if (returnTypeUri) {
+						userFunction.returnTypeUri = returnTypeUri;
+					}
+					if (typeAttr.typeRange) {
+						userFunction.returnTypeRange = typeAttr.typeRange;
+					}
+					break typeloop;
+				}
+				else {
+					returntypeDescriptions.push(typeAttr.type);
+				}
+			}
+			if (returntypeDescriptions.length > 0) {
+				userFunction.returnDescription = "[" + returntypeDescriptions.join(",") + "] " + userFunction.returnDescription;
+			}
+		}
+
 		const signature: UserFunctionSignature = {
 			parameters: await parseScriptFunctionArgs(documentStateContext, functionArgsRange, scriptDocBlockParsed, _token),
 		};
+
 		userFunction.signatures = [signature];
 
 		userFunctions.push(userFunction);
@@ -396,18 +427,36 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 		const argText: string = documentStateContext.sanitizedDocumentText.slice(document.offsetAt(argRange.start), document.offsetAt(argRange.end));
 		const argStartOffset = document.offsetAt(argRange.start);
 		const scriptFunctionArgMatch: RegExpExecArray | null = scriptFunctionArgPattern.exec(argText);
+
 		if (scriptFunctionArgMatch) {
 			const fullArg = scriptFunctionArgMatch[0];
 			const attributePrefix = scriptFunctionArgMatch[1];
 			const argRequired = scriptFunctionArgMatch[2];
-			const argType = scriptFunctionArgMatch[3];
+
+			const argType: string | undefined = scriptFunctionArgMatch[3];
+			const typeAttributes: TypeAttributes[] = [];
+
 			const argName = scriptFunctionArgMatch[4];
+
 			let argDefault = scriptFunctionArgMatch[5];
+
 			const argAttributes = scriptFunctionArgMatch[6];
 			const argOffset = argStartOffset + scriptFunctionArgMatch.index;
 
 			if (!argName) {
 				return;
+			}
+
+			if (argType) {
+				// Script Argument Type
+				const argTypeOffset: number = fullArg.indexOf(argType);
+				typeAttributes.push({
+					type: argType,
+					typeRange: new Range(
+						document.positionAt(argOffset + argTypeOffset),
+						document.positionAt(argOffset + argTypeOffset + argType.length)
+					),
+				});
 			}
 
 			let argDefaultAndAttributesLen = 0;
@@ -431,31 +480,11 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 				removedDefaultAndAttributes = fullArg.slice(0, -argDefaultAndAttributesLen);
 			}
 			const argNameOffset = argOffset + removedDefaultAndAttributes.lastIndexOf(argName);
-
-			let convertedArgType: DataType = DataType.Any;
-			let typeUri: Uri | undefined;
-			let argTypeRange: Range | undefined;
-			if (argType) {
-				const [dataType, returnTypeUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(argType, documentUri, _token);
-				if (dataType) {
-					convertedArgType = dataType;
-					if (returnTypeUri) {
-						typeUri = returnTypeUri;
-					}
-
-					const argTypeOffset: number = fullArg.indexOf(argType);
-					argTypeRange = new Range(
-						document.positionAt(argOffset + argTypeOffset),
-						document.positionAt(argOffset + argTypeOffset + argType.length)
-					);
-				}
-			}
-
 			const argument: Argument = {
 				name: argName,
 				type: argType,
 				required: argRequired ? true : false,
-				dataType: convertedArgType,
+				dataType: DataType.Any,
 				description: "",
 				nameRange: new Range(
 					document.positionAt(argNameOffset),
@@ -474,14 +503,6 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 				argument.default = argDefault;
 			}
 
-			if (typeUri) {
-				argument.dataTypeComponentUri = typeUri;
-			}
-
-			if (argTypeRange) {
-				argument.dataTypeRange = argTypeRange;
-			}
-
 			if (parsedArgAttributes) {
 				// Bit of a hack because I can't work this out right now
 				const attributes: Attribute[] = [];
@@ -489,7 +510,7 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 					attributes.push(attribute);
 				});
 
-				await Promise.all(attributes.map(async (attr: Attribute) => {
+				attributes.forEach((attr: Attribute) => {
 					const argAttrName: string = attr.name;
 					const argAttrVal: string = attr.value;
 					if (argAttrName === "required") {
@@ -502,53 +523,77 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 						argument.default = argAttrVal;
 					}
 					else if (argAttrName === "type") {
-						const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(argAttrVal, documentUri, _token);
-						if (dataType) {
-							argument.dataType = dataType;
-							if (dataTypeComponentUri) {
-								argument.dataTypeComponentUri = dataTypeComponentUri;
-							}
-
-							argument.dataTypeRange = new Range(
+						// Attributes Type
+						typeAttributes.push({
+							type: argAttrVal,
+							typeRange: new Range(
 								attr.valueRange.start,
 								attr.valueRange.end
-							);
-						}
+							),
+						});
 					}
-				}));
+				});
 			}
 
 			const matchingDocBlocks = docBlock.filter((docElem: DocBlockKeyValue) => {
-				return equalsIgnoreCase(docElem.key, argument.name);
+				return (docElem.key === "param" && docElem.subkey && equalsIgnoreCase(docElem.subkey, argument.name)) || equalsIgnoreCase(docElem.key, argument.name);
 			});
 
-			await Promise.all(matchingDocBlocks.map(async (docElem: DocBlockKeyValue) => {
-				if (docElem.subkey === "required") {
-					argument.required = DataType.isTruthy(docElem.value);
-				}
-				else if (!docElem.subkey || docElem.subkey === "hint") {
+			matchingDocBlocks.forEach((docElem: DocBlockKeyValue) => {
+				if (docElem.key === "param") {
 					argument.description = docElem.value;
 				}
-				else if (docElem.subkey === "default") {
-					argument.default = docElem.value;
+				else {
+					if (docElem.subkey === "required") {
+						argument.required = DataType.isTruthy(docElem.value);
+					}
+					else if (docElem.subkey === "default") {
+						argument.default = docElem.value;
+					}
+					else if (docElem.subkey === "type") {
+						if (docElem.value) {
+							typeAttributes.push({
+								type: docElem.value,
+								typeRange: docElem.valueRange
+									? new Range(
+										docElem.valueRange.start,
+										docElem.valueRange.end
+									)
+									: undefined,
+							});
+						}
+					}
+					else {
+						argument.description = (docElem.subkey ? (docElem.subkey + " ") : "") + docElem.value;
+						if (docElem.type) {
+							typeAttributes.push({
+								type: docElem.type,
+							});
+						}
+					}
 				}
-				else if (docElem.subkey === "type") {
-					const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.value, documentUri, _token);
+			});
+
+			/*
+			Work out what typeAttributes we have before so we can loop over and determine which one looks like a valid dataType
+			Easier for debugging mismatches, reduces duplication of code and allows us to avoid issues with async/await and
+			map functions.
+			*/
+			if (typeAttributes.length > 0) {
+				typeloop: for (const typeAttr of typeAttributes) {
+					const [dataType, dataTypeComponentUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(typeAttr.type, documentUri, _token);
 					if (dataType) {
 						argument.dataType = dataType;
 						if (dataTypeComponentUri) {
 							argument.dataTypeComponentUri = dataTypeComponentUri;
 						}
-
-						argument.dataTypeRange = docElem.valueRange
-							? new Range(
-								docElem.valueRange.start,
-								docElem.valueRange.end
-							)
-							: undefined;
+						if (typeAttr.typeRange) {
+							argument.dataTypeRange = typeAttr.typeRange;
+						}
+						break typeloop;
 					}
 				}
-			}));
+			}
 
 			return argument;
 		}

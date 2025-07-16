@@ -1,5 +1,6 @@
 import assert from "assert/strict";
 import { TextDocument, Position, commands, DefinitionLink, Range } from "vscode";
+import { DocBlockKeyValue } from "../entities/docblock";
 
 /**
  * Get a position in the document based on a search text and a cursor
@@ -76,4 +77,22 @@ export async function findDefinition(doc: TextDocument, search: string, cursor: 
  */
 export function rangeToString(range: Range): string {
 	return `[${range.start.line}:${range.start.character} -> ${range.end.line}:${range.end.character})`;
+};
+
+/**
+ * Converts a DocBlockKeyValue object to a string representation.
+ * @param docblock The DocBlockKeyValue object to convert to a string
+ * @returns A string representation of the DocBlockKeyValue object for easy comparison in tests.
+ */
+export function DocBlockToString(docblock: DocBlockKeyValue): string {
+	const parts: string[] = [];
+
+	parts.push(`[${docblock.key || "<NO_KEY>"}]`);
+	if (docblock.subkey) parts.push(`.[${docblock.subkey}]`);
+	if (docblock.type) parts.push(` : [${docblock.type}]`);
+	if (docblock.value) parts.push(` = [${docblock.value}]`);
+
+	// I'm not sure if we want to include the valueRange in the string representation. The value key may be enough.
+	// if (docblock.valueRange) parts.push(" " + rangeToString(docblock.valueRange));
+	return parts.join("");
 };
