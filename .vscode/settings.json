@@ -21,7 +21,7 @@
 	"editor.formatOnSave": false,
 	"editor.codeActionsOnSave": {
 		"source.fixAll.eslint": "explicit",
-		"source.fixAll.ts": "never",
+		"source.fixAll.ts": "never"
 	},
 	"eslint.rules.customizations": [
 		{
