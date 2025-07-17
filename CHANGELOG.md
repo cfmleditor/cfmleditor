@@ -2,6 +2,13 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.42] - TBD
+
+- Update Minimum version of VSCode to `1.99.3`
+- Fixes and Tests for CFScript comment line parsing ([\#109](https://github.com/cfmleditor/cfmleditor/issues/109)) ([\#105](https://github.com/cfmleditor/cfmleditor/issues/105))
+- Improve component references and enable further tests ([\#38](https://github.com/cfmleditor/cfmleditor/issues/38))
+- Reduce duplication of code for Application.cfm and Application.cfc application variable caching ([\#106](https://github.com/cfmleditor/cfmleditor/issues/106))
+
 ## [0.6.41] - 2025-07-05
 
 - Remove support for `formulahendry.auto-close-tag` use in cfmleditor ([\#92](https://github.com/cfmleditor/cfmleditor/issues/92))
