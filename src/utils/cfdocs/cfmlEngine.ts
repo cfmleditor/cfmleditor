@@ -1,5 +1,4 @@
-import { valid, eq, lt, lte, gt, gte, clean } from "semver";
-import { DataType } from "../../entities/dataType";
+import { valid, eq, lt, lte, gt, gte, clean, coerce } from "semver";
 import { Uri } from "vscode";
 import { extensionContext } from "../../cfmlMain";
 
@@ -178,18 +177,7 @@ export class CFMLEngine {
 		if (versionStr !== "" && clean(versionStr, true)) {
 			return clean(versionStr, true) || undefined;
 		}
-		else if (DataType.isNumeric(versionStr)) {
-			const splitVer: string[] = versionStr.split(".");
-			while (splitVer.length < 3) {
-				splitVer.push("0");
-			}
-			const reconstructedVer = splitVer.join(".");
-			if (valid(reconstructedVer, true)) {
-				return valid(reconstructedVer, true) || undefined;
-			}
-		}
-
-		return undefined;
+		return valid(coerce(versionStr)) || undefined;
 	}
 
 	/**
