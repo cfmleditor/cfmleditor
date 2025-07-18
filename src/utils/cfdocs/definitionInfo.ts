@@ -316,8 +316,19 @@ export class CFDocsDefinitionInfo {
 
 		// We want to check if this definition is compatible with the user's chosen CFML engine.
 		// If this definition does not specify any engines, assume it is compatible with all engines.
-		if (targetEngineVendor === CFMLEngineName.Unknown || !this.engines) {
+		if (!this.engines) {
 			return true;
+		}
+
+		// If the user hasn't specified an engine, we can assume that most definitions are compatible.
+		if (targetEngineVendor === CFMLEngineName.Unknown) {
+			// Get the set of engines supported by this definition.
+			const engineSet = new Set(Object.keys(this.engines));
+			// CFDocs provides compatibility info for some non-CFML engines, like BoxLang.
+			// Any definitions that are not compatible with a CFML engine should not be shown.
+			engineSet.delete("boxlang");
+			const hasCompatibleEngine = engineSet.size > 0;
+			return hasCompatibleEngine;
 		}
 
 		const vendorCompatibility: EngineCompatibilityDetail = this.engines[targetEngineVendor];
