@@ -1,6 +1,6 @@
 import { CancellationToken, CharacterPair, Position, Range, TextDocument, Uri, workspace, WorkspaceConfiguration } from "vscode";
 import { COMPONENT_EXT, isScriptComponent } from "../entities/component";
-import { getTagPattern, parseTags, Tag, TagContext } from "../entities/tag";
+import { getTagStartAndEndPattern, parseTags, Tag, TagContext } from "../entities/tag";
 import { cfmlCommentRules, CommentContext, CommentType } from "../features/comment";
 import { DocumentStateContext } from "./documentUtil";
 import { equalsIgnoreCase } from "./textUtil";
@@ -257,11 +257,12 @@ export function isCfcUri(uri: Uri): boolean {
  * Returns all of the ranges in which tagged cfscript is active
  * @param document The document to check
  * @param range Optional range within which to check
- * @param _token
- * @param commentRanges
+ * @param _token cancellation token prevents the regex from excuting if cancelled
+ * @param commentRanges check start and end tags are not inside the passed comment ranges
+ * @param excludeTags exclude the cfscript tags from the ranges, false is the current and default behaviuor
  * @returns
  */
-export function getCfScriptRanges(document: TextDocument, range: Range | undefined, _token: CancellationToken | undefined, commentRanges: Range[] = []): Range[] {
+export function getCfScriptRanges(document: TextDocument, range: Range | undefined, _token: CancellationToken | undefined, commentRanges: Range[] = [], excludeTags: boolean = false): Range[] {
 	const ranges: Range[] = [];
 	let documentText: string;
 	let textOffset: number;
@@ -274,19 +275,31 @@ export function getCfScriptRanges(document: TextDocument, range: Range | undefin
 		textOffset = 0;
 	}
 
-	const cfscriptTagPattern: RegExp = getTagPattern("cfscript");
-	let cfscriptTagMatch: RegExpExecArray | null;
-	while ((cfscriptTagMatch = cfscriptTagPattern.exec(documentText))) {
-		const prefixLen: number = cfscriptTagMatch[1].length + cfscriptTagMatch[2].length + 1;
-		const cfscriptBodyText: string = cfscriptTagMatch[3];
-		if (cfscriptBodyText) {
-			const cfscriptBodyStartOffset: number = textOffset + cfscriptTagMatch.index + prefixLen;
-			const range = new Range(
-				document.positionAt(cfscriptBodyStartOffset),
-				document.positionAt(cfscriptBodyStartOffset + cfscriptBodyText.length)
-			);
-			if (!isInRanges(commentRanges, range, false, _token)) {
-				ranges.push(range);
+	const cfscriptTagPattern: RegExp = getTagStartAndEndPattern("cfscript");
+
+	let match: RegExpExecArray | null;
+	let startOffset: number | undefined;
+	let startLength: number | undefined;
+
+	while ((match = cfscriptTagPattern.exec(documentText)) !== null) {
+		if (_token && _token.isCancellationRequested) {
+			return ranges;
+		}
+		if (!isInRanges(commentRanges, document.positionAt(textOffset + match.index), false, _token)) {
+			if (match[0].startsWith("</")) {
+				if (startOffset !== undefined) {
+					const range = new Range(
+						document.positionAt(textOffset + startOffset + (excludeTags === true && startLength !== undefined ? startLength : 0)),
+						document.positionAt(textOffset + match.index + (excludeTags === true ? 0 : match[0].length))
+					);
+					ranges.push(range);
+					startOffset = undefined;
+					startLength = undefined;
+				}
+			}
+			else {
+				startOffset = match.index;
+				startLength = match[0].length;
 			}
 		}
 	}
@@ -408,7 +421,7 @@ function getScriptCommentRanges(document: TextDocument, docRange: Range | undefi
  * @returns
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function getTagCommentRanges(document: TextDocument, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
+export function getTagCommentRanges(document: TextDocument, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
 	const commentRanges: Range[] = [];
 	const documentText = docRange ? document.getText(docRange) : document.getText();
 	const textOffset = docRange ? document.offsetAt(docRange.start) : 0;
@@ -766,10 +779,12 @@ export function isInCfOutput(documentStateContext: DocumentStateContext, positio
  * @param document The document to check
  * @param position Position at which to check
  * @param _token
+ * @param commentRanges
+ * @param excludeTags
  * @returns
  */
-export function isInCfScript(document: TextDocument, position: Position, _token: CancellationToken | undefined): boolean {
-	return isInRanges(getCfScriptRanges(document, undefined, _token), position, false, _token);
+export function isInCfScript(document: TextDocument, position: Position, _token: CancellationToken | undefined, commentRanges: Range[], excludeTags: boolean = false): boolean {
+	return isInRanges(getCfScriptRanges(document, undefined, _token, commentRanges, excludeTags), position, false, _token);
 }
 
 /**
@@ -777,10 +792,11 @@ export function isInCfScript(document: TextDocument, position: Position, _token:
  * @param document The document to check
  * @param position Position at which to check
  * @param _token
+ * @param commentRanges
  * @returns
  */
-export function isPositionScript(document: TextDocument, position: Position, _token: CancellationToken | undefined): boolean {
-	return (isScriptComponent(document) || isInCfScript(document, position, _token));
+export function isPositionScript(document: TextDocument, position: Position, _token: CancellationToken | undefined, commentRanges: Range[]): boolean {
+	return (isScriptComponent(document) || isInCfScript(document, position, _token, commentRanges));
 }
 
 /**
