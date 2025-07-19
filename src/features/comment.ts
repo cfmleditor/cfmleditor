@@ -1,6 +1,6 @@
-import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken } from "vscode";
-import { LANGUAGE_ID, LANGUAGE_CFS_ID } from "../cfmlMain";
-import { isInCfScript, isCfcFile } from "../utils/contextUtil";
+import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken, Range } from "vscode";
+import { LANGUAGE_ID } from "../cfmlMain";
+import { isInCfScript, isCfcFile, getTagCommentRanges, isCfsFile } from "../utils/contextUtil";
 import { getComponent, hasComponent } from "./cachedEntities";
 
 export enum CommentType {
@@ -33,12 +33,18 @@ export const cfmlCommentRules: CFMLCommentRules = {
  * @param document The TextDocument in which the selection is made
  * @param startPosition The position at which the comment starts
  * @param _token
+ * @param commentRanges
  * @returns
  */
 function isTagComment(document: TextDocument, startPosition: Position, _token: CancellationToken | undefined): boolean {
-	const docIsScript: boolean = (isCfcFile(document) && hasComponent(document.uri) && (getComponent(document.uri))?.isScript) ? true : false;
+	const docIsScript: boolean = (isCfsFile(document) || (isCfcFile(document) && hasComponent(document.uri) && (getComponent(document.uri))?.isScript)) ? true : false;
 
-	return !docIsScript && !isInCfScript(document, startPosition, _token);
+	if (docIsScript) {
+		return false;
+	}
+
+	const commentRanges: Range[] = getTagCommentRanges(document, undefined, _token);
+	return !isInCfScript(document, startPosition, _token, commentRanges, true);
 }
 
 /**
@@ -67,31 +73,21 @@ function getCommentCommand(commentType: CommentType): string {
 export function toggleComment(commentType: CommentType, _token: CancellationToken | undefined): (editor: TextEditor) => void {
 	return (editor: TextEditor) => {
 		if (editor) {
-			// default comment config
-			let languageConfig: LanguageConfiguration = {
-				comments: {
-					lineComment: cfmlCommentRules.scriptLineComment,
-					blockComment: cfmlCommentRules.scriptBlockComment,
-				},
-			};
-
-			const cfsLanguageConfig: LanguageConfiguration = {
-				comments: {
-					lineComment: cfmlCommentRules.scriptLineComment,
-					blockComment: cfmlCommentRules.scriptBlockComment,
-				},
-			};
-
-			// Changes the comment in language configuration based on the context
-			if (isTagComment(editor.document, editor.selection.start, _token)) {
-				languageConfig = {
-					comments: {
-						blockComment: cfmlCommentRules.tagBlockComment,
-					},
-				};
-			}
+			// const isSingleLine: boolean = (editor.selections.every(selection => selection.isSingleLine) && editor.selections.length === 1);
+			const tagComment: boolean = isTagComment(editor.document, editor.selection.start, _token);
+			const languageConfig: LanguageConfiguration = tagComment
+				? {
+						comments: {
+							blockComment: cfmlCommentRules.tagBlockComment,
+						},
+					}
+				: {
+						comments: {
+							lineComment: cfmlCommentRules.scriptLineComment,
+							blockComment: cfmlCommentRules.scriptBlockComment,
+						},
+					};
 			languages.setLanguageConfiguration(LANGUAGE_ID, languageConfig);
-			languages.setLanguageConfiguration(LANGUAGE_CFS_ID, cfsLanguageConfig);
 			const command: string = getCommentCommand(commentType);
 			commands.executeCommand(command);
 		}

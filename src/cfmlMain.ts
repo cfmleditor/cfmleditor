@@ -7,7 +7,7 @@ import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./en
 import { cacheComponentFromDocument, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri, cacheApplicationFromDocument } from "./features/cachedEntities";
 import CFMLDocumentColorProvider from "./features/colorProvider";
 import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache, insertSnippet, copyPackage, goToRouteController, goToRouteView } from "./features/commands";
-import { CommentType, toggleComment } from "./features/comment";
+import { cfmlCommentRules, CommentType, toggleComment } from "./features/comment";
 import CFMLCompletionItemProvider from "./features/completionItemProvider";
 import CFMLDefinitionProvider from "./features/definitionProvider";
 import DocBlockCompletions from "./features/docBlocker/docCompletionProvider";
@@ -75,6 +75,10 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		indentationRules: {
 			increaseIndentPattern: new RegExp(`<(?!\\?|(?:${nonIndentingTags.join("|")})\\b|[^>]*\\/>)([-_.A-Za-z0-9]+)(?=\\s|>)\\b[^>]*>(?!.*<\\/\\1>)|<!--(?!.*-->)|\\{[^}"']*$`, "i"),
 			decreaseIndentPattern: new RegExp(`^\\s*(<\\/[-_.A-Za-z0-9]+\\b[^>]*>|-?-->|\\}|<(${decreasingIndentingTags.join("|")})\\b[^>]*>)`, "i"),
+		},
+		comments: {
+			lineComment: cfmlCommentRules.scriptLineComment,
+			blockComment: cfmlCommentRules.scriptBlockComment,
 		},
 		onEnterRules: [
 			{
