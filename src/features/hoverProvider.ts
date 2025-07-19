@@ -36,6 +36,7 @@ interface HoverProviderItem {
 	returnType?: string;
 	genericDocLink?: string;
 	engineLinks?: MyMap<CFMLEngineName, Uri>;
+	engineMinimumVersions?: MyMap<CFMLEngineName, string>;
 	language?: string;
 }
 
@@ -267,6 +268,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 		const globalEntity: CFDocsDefinitionInfo | undefined = getGlobalEntityDefinition(tag.name);
 		if (globalEntity && globalEntity.engines) {
 			hoverItem.engineLinks = new MyMap();
+			hoverItem.engineMinimumVersions = new MyMap();
 			const cfmlEngineNames: CFMLEngineName[] = [
 				CFMLEngineName.ColdFusion,
 				CFMLEngineName.Lucee,
@@ -279,6 +281,9 @@ export default class CFMLHoverProvider implements HoverProvider {
 						try {
 							const engineDocUri: Uri = Uri.parse(cfEngineInfo.docs);
 							hoverItem.engineLinks.set(CFMLEngineName.valueOf(cfmlEngineName), engineDocUri);
+							if (cfEngineInfo.minimum_version) {
+								hoverItem.engineMinimumVersions.set(CFMLEngineName.valueOf(cfmlEngineName), cfEngineInfo.minimum_version);
+							}
 						}
 						catch (ex) {
 							console.warn(ex);
@@ -342,6 +347,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 			const globalEntity: CFDocsDefinitionInfo | undefined = getGlobalEntityDefinition(globalFunc.name);
 			if (globalEntity && globalEntity.engines) {
 				hoverItem.engineLinks = new MyMap();
+				hoverItem.engineMinimumVersions = new MyMap();
 				const cfmlEngineNames: CFMLEngineName[] = [
 					CFMLEngineName.ColdFusion,
 					CFMLEngineName.Lucee,
@@ -354,6 +360,9 @@ export default class CFMLHoverProvider implements HoverProvider {
 							try {
 								const engineDocUri: Uri = Uri.parse(cfEngineInfo.docs);
 								hoverItem.engineLinks.set(CFMLEngineName.valueOf(cfmlEngineName), engineDocUri);
+								if (cfEngineInfo.minimum_version) {
+									hoverItem.engineMinimumVersions.set(CFMLEngineName.valueOf(cfmlEngineName), cfEngineInfo.minimum_version);
+								}
 							}
 							catch (ex) {
 								console.warn(ex);
@@ -539,7 +548,16 @@ export default class CFMLHoverProvider implements HoverProvider {
 					definition.engineLinks.forEach((docUri: Uri, engineName: CFMLEngineName) => {
 						const engineIconUri = CFMLEngine.getIconUri(engineName);
 						if (engineIconUri) {
-							docLinks += `  &nbsp;&nbsp;[![${engineName}](${engineIconUri.toString()})](${docUri.toString()})`;
+							let engineVersion = "";
+							if (definition.engineMinimumVersions?.has(engineName)) {
+								engineVersion = definition.engineMinimumVersions.get(engineName) || "";
+								// Convert Lucee docs to semver, e.g. "6.2.1.16" becomes "6.2.1"
+								engineVersion = CFMLEngine.toSemVer(engineVersion) || "";
+								if (engineVersion) {
+									engineVersion = ` ${engineVersion}`;
+								}
+							}
+							docLinks += `  &nbsp;&nbsp;[![${engineName}](${engineIconUri.toString()})](${docUri.toString()})${engineVersion}`;
 						}
 					});
 				}
