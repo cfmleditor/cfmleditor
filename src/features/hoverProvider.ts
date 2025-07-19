@@ -1,5 +1,5 @@
 import { CancellationToken, Hover, HoverProvider, MarkdownString, Position, Range, TextDocument, TextLine, Uri, workspace, WorkspaceConfiguration } from "vscode";
-import { extensionContext, LANGUAGE_ID } from "../cfmlMain";
+import { LANGUAGE_ID } from "../cfmlMain";
 import { VALUE_PATTERN } from "../entities/attribute";
 import { Component, COMPONENT_EXT, objectNewInstanceInitPrefix } from "../entities/component";
 import { IPropertyData, IAtDirectiveData } from "../entities/css/cssLanguageTypes";
@@ -489,8 +489,8 @@ export default class CFMLHoverProvider implements HoverProvider {
 	 * @returns
 	 */
 	public createHoverText(definition: HoverProviderItem): MarkdownString[] | undefined {
-		const cfdocsIconUri: Uri = Uri.joinPath(extensionContext.extensionUri, "images/cfdocs.png");
-		const mdnIconUri: Uri = Uri.joinPath(extensionContext.extensionUri, "images/mdn.png");
+		const cfdocsIconUri: Uri = CFMLEngine.getIconUri("cfdocs");
+		const mdnIconUri: Uri = CFMLEngine.getIconUri("mdn");
 
 		const hoverTexts: MarkdownString[] = [];
 		let syntax: string = definition.syntax;

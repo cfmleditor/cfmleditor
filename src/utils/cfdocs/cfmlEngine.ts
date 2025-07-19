@@ -185,7 +185,7 @@ export class CFMLEngine {
 	 * @param name CFMLEngineName
 	 * @returns
 	 */
-	public static getIconUri(name: CFMLEngineName): Uri {
+	public static getIconUri(name: CFMLEngineName | "cfdocs" | "mdn"): Uri {
 		return Uri.joinPath(extensionContext.extensionUri, `images/${name}.png`);
 	}
 }
