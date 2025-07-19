@@ -308,39 +308,58 @@ export class CFDocsDefinitionInfo {
 
 	/**
 	 * Checks if this definition is compatible with given engine
-	 * @param engine The CFML engine with which to check compatibility
+	 * @param targetEngine The CFML engine with which to check compatibility
 	 * @returns
 	 */
-	public isCompatible(engine: CFMLEngine): boolean {
-		const engineVendor: CFMLEngineName = engine.getName();
-		if (engineVendor === CFMLEngineName.Unknown || !this.engines) {
+	public isCompatible(targetEngine: CFMLEngine): boolean {
+		const targetEngineVendor: CFMLEngineName = targetEngine.getName();
+
+		// We want to check if this definition is compatible with the user's chosen CFML engine.
+		// If this definition does not specify any engines, assume it is compatible with all engines.
+		if (!this.engines) {
 			return true;
 		}
 
-		const engineCompat: EngineCompatibilityDetail = this.engines[engineVendor];
-		if (!engineCompat) {
+		// If the user hasn't specified an engine, we can assume that most definitions are compatible.
+		if (targetEngineVendor === CFMLEngineName.Unknown) {
+			// Get the set of engines supported by this definition.
+			const engineSet = new Set(Object.keys(this.engines));
+			// CFDocs provides compatibility info for some non-CFML engines, like BoxLang.
+			// Any definitions that are not compatible with a CFML engine should not be shown.
+			engineSet.delete("boxlang");
+			const hasCompatibleEngine = engineSet.size > 0;
+			return hasCompatibleEngine;
+		}
+
+		const vendorCompatibility: EngineCompatibilityDetail = this.engines[targetEngineVendor];
+		if (!vendorCompatibility) {
+			// Example: CFDocs has info for `arrayGetMetadata()`, but Lucee is not listed as a compatible engine (at least when this was written)
 			return false;
 		}
 
-		const engineVersion: string | undefined = engine.getVersion();
-		if (!engineVersion) {
+		const targetEngineVersion: string | undefined = targetEngine.getVersion();
+		if (!targetEngineVersion) {
+			// This definition may have a min or max version, but if the user hasn't specified an engine version, assume it is compatible.
 			return true;
 		}
 
-		if (engineCompat.minimum_version) {
-			const minEngine: CFMLEngine = new CFMLEngine(engineVendor, engineCompat.minimum_version);
-			if (engine.isOlder(minEngine)) {
+		if (vendorCompatibility.minimum_version) {
+			const earliestSupportedVersion: CFMLEngine = new CFMLEngine(targetEngineVendor, vendorCompatibility.minimum_version);
+			if (targetEngine.isOlder(earliestSupportedVersion)) {
+				// Example: `arraySplice()` has a minimum version of Lucee 6, or ColdFusion 2018.0.5
 				return false;
 			}
 		}
 
-		if (engineCompat.removed) {
-			const maxEngine: CFMLEngine = new CFMLEngine(engineVendor, engineCompat.removed);
-			if (engine.isNewerOrEquals(maxEngine)) {
+		if (vendorCompatibility.removed) {
+			const earliestUnsupportedEngine: CFMLEngine = new CFMLEngine(targetEngineVendor, vendorCompatibility.removed);
+			if (targetEngine.isNewerOrEquals(earliestUnsupportedEngine)) {
+				// Example: `GetBaseTemplatePath()` has been removed in ColdFusion 2025
 				return false;
 			}
 		}
 
+		// The definition is compatible with the user's engine and version
 		return true;
 	}
 
