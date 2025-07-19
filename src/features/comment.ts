@@ -1,6 +1,6 @@
 import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken, Range } from "vscode";
 import { LANGUAGE_ID } from "../cfmlMain";
-import { isInCfScript, isCfcFile, getTagCommentRanges } from "../utils/contextUtil";
+import { isInCfScript, isCfcFile, getTagCommentRanges, isCfsFile } from "../utils/contextUtil";
 import { getComponent, hasComponent } from "./cachedEntities";
 
 export enum CommentType {
@@ -36,10 +36,15 @@ export const cfmlCommentRules: CFMLCommentRules = {
  * @param commentRanges
  * @returns
  */
-function isTagComment(document: TextDocument, startPosition: Position, _token: CancellationToken | undefined, commentRanges: Range[]): boolean {
-	const docIsScript: boolean = (isCfcFile(document) && hasComponent(document.uri) && (getComponent(document.uri))?.isScript) ? true : false;
+function isTagComment(document: TextDocument, startPosition: Position, _token: CancellationToken | undefined): boolean {
+	const docIsScript: boolean = (isCfsFile(document) || (isCfcFile(document) && hasComponent(document.uri) && (getComponent(document.uri))?.isScript)) ? true : false;
 
-	return !docIsScript && !isInCfScript(document, startPosition, _token, commentRanges, true);
+	if (docIsScript) {
+		return false;
+	}
+
+	const commentRanges: Range[] = getTagCommentRanges(document, undefined, _token);
+	return !isInCfScript(document, startPosition, _token, commentRanges, true);
 }
 
 /**
@@ -69,8 +74,8 @@ export function toggleComment(commentType: CommentType, _token: CancellationToke
 	return (editor: TextEditor) => {
 		if (editor) {
 			// const isSingleLine: boolean = (editor.selections.every(selection => selection.isSingleLine) && editor.selections.length === 1);
-			const commentRanges: Range[] = getTagCommentRanges(editor.document, undefined, _token);
-			const languageConfig: LanguageConfiguration = isTagComment(editor.document, editor.selection.start, _token, commentRanges)
+			const tagComment: boolean = isTagComment(editor.document, editor.selection.start, _token);
+			const languageConfig: LanguageConfiguration = tagComment
 				? {
 						comments: {
 							blockComment: cfmlCommentRules.tagBlockComment,
