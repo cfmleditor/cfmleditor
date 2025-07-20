@@ -7,7 +7,7 @@ import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./en
 import { cacheComponentFromDocument, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri, cacheApplicationFromDocument } from "./features/cachedEntities";
 import CFMLDocumentColorProvider from "./features/colorProvider";
 import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache, insertSnippet, copyPackage, goToRouteController, goToRouteView } from "./features/commands";
-import { CommentType, toggleComment } from "./features/comment";
+import { cfmlCommentRules, toggleBlockComment, toggleLineComment } from "./features/comment";
 import CFMLCompletionItemProvider from "./features/completionItemProvider";
 import CFMLDefinitionProvider from "./features/definitionProvider";
 import DocBlockCompletions from "./features/docBlocker/docCompletionProvider";
@@ -51,6 +51,7 @@ const DOCUMENT_SELECTOR: DocumentSelector = [
 
 export let extensionContext: ExtensionContext;
 let bulkCaching: boolean = false;
+let currentConfigIsTag: boolean = false;
 
 export type api = {
 	isBulkCaching(): boolean;
@@ -75,6 +76,10 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		indentationRules: {
 			increaseIndentPattern: new RegExp(`<(?!\\?|(?:${nonIndentingTags.join("|")})\\b|[^>]*\\/>)([-_.A-Za-z0-9]+)(?=\\s|>)\\b[^>]*>(?!.*<\\/\\1>)|<!--(?!.*-->)|\\{[^}"']*$`, "i"),
 			decreaseIndentPattern: new RegExp(`^\\s*(<\\/[-_.A-Za-z0-9]+\\b[^>]*>|-?-->|\\}|<(${decreasingIndentingTags.join("|")})\\b[^>]*>)`, "i"),
+		},
+		comments: {
+			lineComment: cfmlCommentRules.scriptLineComment,
+			blockComment: cfmlCommentRules.scriptBlockComment,
 		},
 		onEnterRules: [
 			{
@@ -113,9 +118,9 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	context.subscriptions.push(commands.registerCommand("cfml.refreshGlobalDefinitionCache", refreshGlobalDefinitionCache));
 	context.subscriptions.push(commands.registerCommand("cfml.refreshWorkspaceDefinitionCache", refreshWorkspaceDefinitionCache));
 	context.subscriptions.push(commands.registerCommand("cfml.copyPackage", copyPackage));
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleComment(CommentType.Line, undefined)));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleLineComment));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.insertSnippet", insertSnippet));
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleComment(CommentType.Block, undefined)));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleBlockComment));
 	// eslint-disable-next-line @typescript-eslint/no-misused-promises
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openActiveApplicationFile", showApplicationDocument));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToMatchingTag", goToMatchingTag));
@@ -244,6 +249,22 @@ export function setBulkCaching(value: boolean): void {
  */
 export function getBulkCaching(): boolean {
 	return bulkCaching;
+}
+
+/**
+ *
+ * @param value
+ */
+export function setCurrentConfigIsTag(value: boolean): void {
+	currentConfigIsTag = value;
+}
+
+/**
+ *
+ * @returns
+ */
+export function getCurrentConfigIsTag(): boolean {
+	return currentConfigIsTag;
 }
 
 /**
