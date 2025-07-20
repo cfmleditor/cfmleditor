@@ -1,9 +1,7 @@
-import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken, Range, Selection } from "vscode";
+import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken, Range, Selection, workspace, WorkspaceConfiguration } from "vscode";
 import { getCurrentConfigIsTag, LANGUAGE_ID, setCurrentConfigIsTag } from "../cfmlMain";
 import { isCfcFile, getTagCommentRanges, isCfsFile, getCfScriptRanges, getScriptCommentRanges } from "../utils/contextUtil";
 import { getComponent, hasComponent } from "./cachedEntities";
-
-const UNCOMMENT_INCOMMENT: boolean = true; // TODO: This should be a setting
 
 export enum CommentType {
 	Line,
@@ -150,8 +148,12 @@ export function toggleComment(commentType: CommentType, editor: TextEditor): voi
 		window.showInformationMessage("No editor is active");
 		return;
 	}
+
+	const cfmlCommentSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.comments", editor.document.uri);
+	const uncommentAnywhere: boolean = cfmlCommentSettings.get<boolean>("uncommentAnywhere.enabled", false);
+
 	const [lang, range] = getCommentLangAndInRange(editor.document, editor.selection.start, undefined);
-	if (UNCOMMENT_INCOMMENT && editor.selections.length < 2 && range && (lang === CommentLanguage.Tag || editor.document.getText(range).charCodeAt(1) === 42)) { // 47 = '/', 42 = '*'
+	if (uncommentAnywhere && editor.selections.length < 2 && range && (lang === CommentLanguage.Tag || editor.document.getText(range).charCodeAt(1) === 42)) { // 47 = '/', 42 = '*'
 		forceUncommentBlock(
 			editor,
 			range,
