@@ -3,6 +3,8 @@ import { getCurrentConfigIsTag, LANGUAGE_ID, setCurrentConfigIsTag } from "../cf
 import { isCfcFile, getTagCommentRanges, isCfsFile, getCfScriptRanges, getScriptCommentRanges } from "../utils/contextUtil";
 import { getComponent, hasComponent } from "./cachedEntities";
 
+const UNCOMMENT_INCOMMENT: boolean = false; // TODO: This should be a setting
+
 export enum CommentType {
 	Line,
 	Block,
@@ -89,46 +91,10 @@ function getCommentLangAndInRange(document: TextDocument, startPosition: Positio
 }
 
 /**
- * Returns the command for the comment type specified
- * @param commentType The comment type for which to get the command
- * @returns
- */
-function getCommentCommand(commentType: CommentType): string {
-	let command: string = "";
-	if (commentType === CommentType.Line) {
-		command = "editor.action.commentLine";
-	}
-	else {
-		command = "editor.action.blockComment";
-	}
-
-	return command;
-}
-
-/**
  * @param editor
  */
 export function toggleBlockComment(editor: TextEditor): void {
-	if (editor) {
-		const [lang, range] = getCommentLangAndInRange(editor.document, editor.selection.start, undefined);
-		if (range) {
-			forceUncommentBlock(
-				editor,
-				range,
-				(
-					(lang === CommentLanguage.Tag)
-						? cfmlCommentRules.tagBlockComment
-						: cfmlCommentRules.scriptBlockComment
-				)
-			);
-		}
-		else {
-			toggleComment(CommentType.Block, editor, ((lang === CommentLanguage.Tag) ? true : false));
-		}
-	}
-	else {
-		window.showInformationMessage("No editor is active");
-	}
+	toggleComment(CommentType.Block, editor);
 }
 
 function forceUncommentBlock(editor: TextEditor, range: Range, commentPair: CharacterPair): void {
@@ -137,7 +103,7 @@ function forceUncommentBlock(editor: TextEditor, range: Range, commentPair: Char
 
 	const [start, end] = commentPair;
 	if (text.startsWith(start) && text.endsWith(end)) {
-		const uncommentedText = text.slice(start.length, -end.length);
+		const uncommentedText = text.slice(start.length + 1, -(end.length + 1));
 		editor.edit((editBuilder) => {
 			editBuilder.replace(range, uncommentedText);
 		});
@@ -148,36 +114,33 @@ function forceUncommentBlock(editor: TextEditor, range: Range, commentPair: Char
  * @param editor
  */
 export function toggleLineComment(editor: TextEditor): void {
-	if (editor) {
-		const [lang, range] = getCommentLangAndInRange(editor.document, editor.selection.start, undefined);
-		if (range) {
-			forceUncommentBlock(
-				editor,
-				range,
-				(
-					(lang === CommentLanguage.Tag)
-						? cfmlCommentRules.tagBlockComment
-						: cfmlCommentRules.scriptBlockComment
-				)
-			);
-		}
-		else {
-			toggleComment(CommentType.Line, editor, ((lang === CommentLanguage.Tag) ? true : false));
-		}
-	}
-	else {
-		window.showInformationMessage("No editor is active");
-	}
+	toggleComment(CommentType.Line, editor);
 }
 
 /**
  * Return a function that can be used to execute a line or block comment
  * @param commentType The comment type for which the command will be executed
  * @param editor
- * @param tagComment
  */
-export function toggleComment(commentType: CommentType, editor: TextEditor, tagComment: boolean): void {
-	if (editor) {
+export function toggleComment(commentType: CommentType, editor: TextEditor): void {
+	if (!editor) {
+		window.showInformationMessage("No editor is active");
+		return;
+	}
+	const [lang, range] = getCommentLangAndInRange(editor.document, editor.selection.start, undefined);
+	if (UNCOMMENT_INCOMMENT && range && (lang === CommentLanguage.Tag || editor.document.getText(range).charCodeAt(1) === 42)) { // 47 = '/', 42 = '*'
+		forceUncommentBlock(
+			editor,
+			range,
+			(
+				(lang === CommentLanguage.Tag)
+					? cfmlCommentRules.tagBlockComment
+					: cfmlCommentRules.scriptBlockComment
+			)
+		);
+	}
+	else {
+		const tagComment: boolean = (lang === CommentLanguage.Tag);
 		if (getCurrentConfigIsTag() !== tagComment) {
 			setCurrentConfigIsTag(tagComment);
 			const languageConfig: LanguageConfiguration = tagComment
@@ -194,10 +157,6 @@ export function toggleComment(commentType: CommentType, editor: TextEditor, tagC
 					};
 			languages.setLanguageConfiguration(LANGUAGE_ID, languageConfig);
 		}
-		const command: string = getCommentCommand(commentType);
-		commands.executeCommand(command);
-	}
-	else {
-		window.showInformationMessage("No editor is active");
+		commands.executeCommand((commentType === CommentType.Line) ? "editor.action.commentLine" : "editor.action.blockComment");
 	}
 }
