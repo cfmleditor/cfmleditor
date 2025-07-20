@@ -7,7 +7,7 @@ import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./en
 import { cacheComponentFromDocument, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri, cacheApplicationFromDocument } from "./features/cachedEntities";
 import CFMLDocumentColorProvider from "./features/colorProvider";
 import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache, insertSnippet, copyPackage, goToRouteController, goToRouteView } from "./features/commands";
-import { cfmlCommentRules, CommentType, toggleComment } from "./features/comment";
+import { cfmlCommentRules, toggleBlockComment, toggleLineComment } from "./features/comment";
 import CFMLCompletionItemProvider from "./features/completionItemProvider";
 import CFMLDefinitionProvider from "./features/definitionProvider";
 import DocBlockCompletions from "./features/docBlocker/docCompletionProvider";
@@ -118,9 +118,9 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	context.subscriptions.push(commands.registerCommand("cfml.refreshGlobalDefinitionCache", refreshGlobalDefinitionCache));
 	context.subscriptions.push(commands.registerCommand("cfml.refreshWorkspaceDefinitionCache", refreshWorkspaceDefinitionCache));
 	context.subscriptions.push(commands.registerCommand("cfml.copyPackage", copyPackage));
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleComment(CommentType.Line, undefined)));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleLineComment));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.insertSnippet", insertSnippet));
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleComment(CommentType.Block, undefined)));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleBlockComment));
 	// eslint-disable-next-line @typescript-eslint/no-misused-promises
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openActiveApplicationFile", showApplicationDocument));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToMatchingTag", goToMatchingTag));
