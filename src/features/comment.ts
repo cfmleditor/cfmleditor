@@ -1,5 +1,5 @@
 import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken, Range } from "vscode";
-import { LANGUAGE_ID } from "../cfmlMain";
+import { getCurrentConfigIsTag, LANGUAGE_ID, setCurrentConfigIsTag } from "../cfmlMain";
 import { isCfcFile, getTagCommentRanges, isCfsFile, getCfScriptRanges } from "../utils/contextUtil";
 import { getComponent, hasComponent } from "./cachedEntities";
 
@@ -83,19 +83,22 @@ export function toggleComment(commentType: CommentType, _token: CancellationToke
 		if (editor) {
 			// const isSingleLine: boolean = (editor.selections.every(selection => selection.isSingleLine) && editor.selections.length === 1);
 			const tagComment: boolean = isTagComment(editor.document, editor.selection.start, _token);
-			const languageConfig: LanguageConfiguration = tagComment
-				? {
-						comments: {
-							blockComment: cfmlCommentRules.tagBlockComment,
-						},
-					}
-				: {
-						comments: {
-							lineComment: cfmlCommentRules.scriptLineComment,
-							blockComment: cfmlCommentRules.scriptBlockComment,
-						},
-					};
-			languages.setLanguageConfiguration(LANGUAGE_ID, languageConfig);
+			if (getCurrentConfigIsTag() !== tagComment) {
+				setCurrentConfigIsTag(tagComment);
+				const languageConfig: LanguageConfiguration = tagComment
+					? {
+							comments: {
+								blockComment: cfmlCommentRules.tagBlockComment,
+							},
+						}
+					: {
+							comments: {
+								lineComment: cfmlCommentRules.scriptLineComment,
+								blockComment: cfmlCommentRules.scriptBlockComment,
+							},
+						};
+				languages.setLanguageConfiguration(LANGUAGE_ID, languageConfig);
+			}
 			const command: string = getCommentCommand(commentType);
 			commands.executeCommand(command);
 		}

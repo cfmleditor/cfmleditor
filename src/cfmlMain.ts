@@ -51,6 +51,7 @@ const DOCUMENT_SELECTOR: DocumentSelector = [
 
 export let extensionContext: ExtensionContext;
 let bulkCaching: boolean = false;
+let currentConfigIsTag: boolean = false;
 
 export type api = {
 	isBulkCaching(): boolean;
@@ -248,6 +249,22 @@ export function setBulkCaching(value: boolean): void {
  */
 export function getBulkCaching(): boolean {
 	return bulkCaching;
+}
+
+/**
+ *
+ * @param value
+ */
+export function setCurrentConfigIsTag(value: boolean): void {
+	currentConfigIsTag = value;
+}
+
+/**
+ *
+ * @returns
+ */
+export function getCurrentConfigIsTag(): boolean {
+	return currentConfigIsTag;
 }
 
 /**
