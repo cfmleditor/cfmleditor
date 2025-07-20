@@ -382,8 +382,7 @@ function getCommentRanges(document: TextDocument, isScript: boolean = false, doc
  * @param _token A cancellation token.
  * @returns An array of comment ranges.
  */
-
-function getScriptCommentRanges(document: TextDocument, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
+export function getScriptCommentRanges(document: TextDocument, docRange: Range | undefined, _token: CancellationToken | undefined): Range[] {
 	const commentRanges: Range[] = [];
 	const validRange = docRange && document.validateRange(docRange);
 	const documentText = validRange ? document.getText(docRange) : document.getText();

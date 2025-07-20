@@ -1,11 +1,16 @@
 import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken, Range } from "vscode";
 import { getCurrentConfigIsTag, LANGUAGE_ID, setCurrentConfigIsTag } from "../cfmlMain";
-import { isCfcFile, getTagCommentRanges, isCfsFile, getCfScriptRanges } from "../utils/contextUtil";
+import { isCfcFile, getTagCommentRanges, isCfsFile, getCfScriptRanges, getScriptCommentRanges } from "../utils/contextUtil";
 import { getComponent, hasComponent } from "./cachedEntities";
 
 export enum CommentType {
 	Line,
 	Block,
+}
+
+export enum CommentLanguage {
+	Tag,
+	Script,
 }
 
 export interface CFMLCommentRules {
@@ -35,24 +40,52 @@ export const cfmlCommentRules: CFMLCommentRules = {
  * @param _token cancellation token
  * @returns
  */
-function isTagComment(document: TextDocument, startPosition: Position, _token: CancellationToken | undefined): boolean {
+function getCommentLangAndInRange(document: TextDocument, startPosition: Position, _token: CancellationToken | undefined): [CommentLanguage, Range | undefined] {
 	const docIsScript: boolean = (isCfsFile(document) || (isCfcFile(document) && hasComponent(document.uri) && (getComponent(document.uri))?.isScript)) ? true : false;
 
+	let commentLang: CommentLanguage = CommentLanguage.Tag;
+	let inCommentRange: Range | undefined;
+	let scriptCommentRanges: Range[] | undefined;
+	let tagCommentRanges: Range[] | undefined;
+
 	if (docIsScript) {
-		return false;
+		commentLang = CommentLanguage.Script;
+		scriptCommentRanges = getScriptCommentRanges(document, undefined, _token);
 	}
 
-	const commentRanges: Range[] = getTagCommentRanges(document, undefined, _token, startPosition);
-	const scriptRanges: Range[] = getCfScriptRanges(document, undefined, _token, commentRanges, true, startPosition);
+	if (commentLang === CommentLanguage.Tag) {
+		tagCommentRanges = getTagCommentRanges(document, undefined, _token, startPosition);
+		const scriptRanges: Range[] = getCfScriptRanges(document, undefined, _token, tagCommentRanges, true, startPosition);
 
-	for (const range of scriptRanges) {
-		if (range.contains(startPosition)) {
-			return false;
+		for (const scriptRange of scriptRanges) {
+			if (scriptRange.contains(startPosition)) {
+				commentLang = CommentLanguage.Script;
+				scriptCommentRanges = getScriptCommentRanges(document, scriptRange, _token);
+				break;
+			}
+			if (startPosition.isBefore(scriptRange.start)) break;
 		}
-		if (startPosition.isBefore(range.start)) break;
 	}
 
-	return true;
+	if (commentLang === CommentLanguage.Tag && tagCommentRanges) {
+		for (const commentRange of tagCommentRanges) {
+			if (commentRange.contains(startPosition)) {
+				inCommentRange = commentRange;
+				break;
+			}
+		}
+	}
+
+	if (commentLang === CommentLanguage.Script && scriptCommentRanges) {
+		for (const commentRange of scriptCommentRanges) {
+			if (commentRange.contains(startPosition)) {
+				inCommentRange = commentRange;
+				break;
+			}
+		}
+	}
+
+	return [commentLang, inCommentRange];
 }
 
 /**
@@ -77,11 +110,37 @@ function getCommentCommand(commentType: CommentType): string {
  */
 export function toggleBlockComment(editor: TextEditor): void {
 	if (editor) {
-		const tagComment: boolean = isTagComment(editor.document, editor.selection.start, undefined);
-		toggleComment(CommentType.Block, editor, tagComment);
+		const [lang, range] = getCommentLangAndInRange(editor.document, editor.selection.start, undefined);
+		if (range) {
+			forceUncommentBlock(
+				editor,
+				range,
+				(
+					(lang === CommentLanguage.Tag)
+						? cfmlCommentRules.tagBlockComment
+						: cfmlCommentRules.scriptBlockComment
+				)
+			);
+		}
+		else {
+			toggleComment(CommentType.Block, editor, ((lang === CommentLanguage.Tag) ? true : false));
+		}
 	}
 	else {
 		window.showInformationMessage("No editor is active");
+	}
+}
+
+function forceUncommentBlock(editor: TextEditor, range: Range, commentPair: CharacterPair): void {
+	const document = editor.document;
+	const text = document.getText(range);
+
+	const [start, end] = commentPair;
+	if (text.startsWith(start) && text.endsWith(end)) {
+		const uncommentedText = text.slice(start.length, -end.length);
+		editor.edit((editBuilder) => {
+			editBuilder.replace(range, uncommentedText);
+		});
 	}
 }
 
@@ -90,8 +149,21 @@ export function toggleBlockComment(editor: TextEditor): void {
  */
 export function toggleLineComment(editor: TextEditor): void {
 	if (editor) {
-		const tagComment: boolean = isTagComment(editor.document, editor.selection.start, undefined);
-		toggleComment(CommentType.Line, editor, tagComment);
+		const [lang, range] = getCommentLangAndInRange(editor.document, editor.selection.start, undefined);
+		if (range) {
+			forceUncommentBlock(
+				editor,
+				range,
+				(
+					(lang === CommentLanguage.Tag)
+						? cfmlCommentRules.tagBlockComment
+						: cfmlCommentRules.scriptBlockComment
+				)
+			);
+		}
+		else {
+			toggleComment(CommentType.Line, editor, ((lang === CommentLanguage.Tag) ? true : false));
+		}
 	}
 	else {
 		window.showInformationMessage("No editor is active");
