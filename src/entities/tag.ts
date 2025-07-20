@@ -506,17 +506,6 @@ export function getTagPattern(tagName: string): RegExp {
 }
 
 /**
- * Returns a pattern that matches start and end tags with the given name, using an or `|` condition so they're matched independantly
- * and can be used for loops that match relevant start and end tags
- * @param tagName The name of the tag to capture
- * @returns
- */
-export function getTagStartAndEndPattern(tagName: string): RegExp {
-	// Attributes capture fails if an attribute value contains >
-	return new RegExp(`((?:<${tagName}\\b\\s*)(?:[^>]*?)(?:>)|(?:<\\/${tagName}>))`, "gi");
-}
-
-/**
  * Returns a pattern that matches start tags with the given name.
  * Capture groups:
  * 1. Prefix

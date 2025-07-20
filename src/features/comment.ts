@@ -1,6 +1,6 @@
 import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken, Range } from "vscode";
 import { LANGUAGE_ID } from "../cfmlMain";
-import { isInCfScript, isCfcFile, getTagCommentRanges, isCfsFile } from "../utils/contextUtil";
+import { isCfcFile, getTagCommentRanges, isCfsFile, getCfScriptRanges } from "../utils/contextUtil";
 import { getComponent, hasComponent } from "./cachedEntities";
 
 export enum CommentType {
@@ -32,8 +32,7 @@ export const cfmlCommentRules: CFMLCommentRules = {
  * Returns whether to use CFML tag comment
  * @param document The TextDocument in which the selection is made
  * @param startPosition The position at which the comment starts
- * @param _token
- * @param commentRanges
+ * @param _token cancellation token
  * @returns
  */
 function isTagComment(document: TextDocument, startPosition: Position, _token: CancellationToken | undefined): boolean {
@@ -43,8 +42,17 @@ function isTagComment(document: TextDocument, startPosition: Position, _token: C
 		return false;
 	}
 
-	const commentRanges: Range[] = getTagCommentRanges(document, undefined, _token);
-	return !isInCfScript(document, startPosition, _token, commentRanges, true);
+	const commentRanges: Range[] = getTagCommentRanges(document, undefined, _token, startPosition);
+	const scriptRanges: Range[] = getCfScriptRanges(document, undefined, _token, commentRanges, true, startPosition);
+
+	for (const range of scriptRanges) {
+		if (range.contains(startPosition)) {
+			return false;
+		}
+		if (startPosition.isBefore(range.start)) break;
+	}
+
+	return true;
 }
 
 /**
