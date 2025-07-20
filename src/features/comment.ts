@@ -1,9 +1,9 @@
-import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken, Range } from "vscode";
+import { Position, languages, commands, window, TextEditor, LanguageConfiguration, TextDocument, CharacterPair, CancellationToken, Range, Selection } from "vscode";
 import { getCurrentConfigIsTag, LANGUAGE_ID, setCurrentConfigIsTag } from "../cfmlMain";
 import { isCfcFile, getTagCommentRanges, isCfsFile, getCfScriptRanges, getScriptCommentRanges } from "../utils/contextUtil";
 import { getComponent, hasComponent } from "./cachedEntities";
 
-const UNCOMMENT_INCOMMENT: boolean = false; // TODO: This should be a setting
+const UNCOMMENT_INCOMMENT: boolean = true; // TODO: This should be a setting
 
 export enum CommentType {
 	Line,
@@ -103,9 +103,32 @@ function forceUncommentBlock(editor: TextEditor, range: Range, commentPair: Char
 
 	const [start, end] = commentPair;
 	if (text.startsWith(start) && text.endsWith(end)) {
-		const uncommentedText = text.slice(start.length + 1, -(end.length + 1));
+		// Check for spaces after start and before end markers
+		const hasStartSpace = text.charAt(start.length) === " ";
+		const hasEndSpace = text.charAt(text.length - end.length - 1) === " ";
+
+		const startOffset = start.length + (hasStartSpace ? 1 : 0);
+		const endOffset = end.length + (hasEndSpace ? 1 : 0);
+
+		const uncommentedText = text.slice(startOffset, -endOffset);
+		// Store relative positions within the content (not the comment markers)
+		const contentStart = document.offsetAt(range.start) + startOffset;
+		const relativeSelections = editor.selections.map(selection => ({
+			startOffset: document.offsetAt(selection.start) - contentStart,
+			endOffset: document.offsetAt(selection.end) - contentStart,
+		}));
+
 		editor.edit((editBuilder) => {
 			editBuilder.replace(range, uncommentedText);
+		}).then(() => {
+			const newRangeStart = document.offsetAt(range.start);
+			const newSelections = relativeSelections.map((rel) => {
+				const newStart = document.positionAt(newRangeStart + Math.max(0, rel.startOffset));
+				const newEnd = document.positionAt(newRangeStart + Math.max(0, rel.endOffset));
+				return new Selection(newStart, newEnd);
+			});
+
+			editor.selections = newSelections;
 		});
 	}
 }
@@ -128,7 +151,7 @@ export function toggleComment(commentType: CommentType, editor: TextEditor): voi
 		return;
 	}
 	const [lang, range] = getCommentLangAndInRange(editor.document, editor.selection.start, undefined);
-	if (UNCOMMENT_INCOMMENT && range && (lang === CommentLanguage.Tag || editor.document.getText(range).charCodeAt(1) === 42)) { // 47 = '/', 42 = '*'
+	if (UNCOMMENT_INCOMMENT && editor.selections.length < 2 && range && (lang === CommentLanguage.Tag || editor.document.getText(range).charCodeAt(1) === 42)) { // 47 = '/', 42 = '*'
 		forceUncommentBlock(
 			editor,
 			range,
