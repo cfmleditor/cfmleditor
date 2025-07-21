@@ -2,7 +2,7 @@
 	"name": "cfmleditor",
 	"displayName": "CFML Editor",
 	"description": "CFML Language Editor",
-	"version": "0.6.42-beta2",
+	"version": "0.6.42-beta3",
 	"preview": true,
 	"author": "cfmleditor",
 	"publisher": "cfmleditor",
@@ -497,6 +497,12 @@
 					"type": "string",
 					"default": "",
 					"markdownDescription": "A subfolder used as the web root by the ColdFusion/Lucee server.\n\nTypically this will be blank, or a subfolder like `public`, `www`, `src`, or wherever the main `Application.cfc` is located.\n\nUse in conjunction with `#cfml.mappings#` to resolve component paths.",
+					"scope": "resource"
+				},
+				"cfml.comments.uncommentAnywhere.enabled": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "A setting to enable uncomment from anywhere within a comment block.",
 					"scope": "resource"
 				}
 			}
