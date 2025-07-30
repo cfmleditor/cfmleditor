@@ -207,8 +207,14 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		}
 	}));
 
+	// const debouncedHandleContentChanges = debounce(async (event: TextDocumentChangeEvent) => {
+	// 	console.log("text change.debounce");
+	// 	await handleContentChanges(event);
+	// }, 600);
+
 	workspace.onDidChangeTextDocument(async (event) => {
 		await handleContentChanges(event);
+		// await debouncedHandleContentChanges(event);
 	});
 
 	await commands.executeCommand("cfml.refreshGlobalDefinitionCache");
