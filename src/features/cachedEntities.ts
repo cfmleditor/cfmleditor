@@ -1,9 +1,9 @@
 import { CancellationToken, ProgressLocation, TextDocument, Uri, window, workspace, WorkspaceConfiguration } from "vscode";
 import { LSTextDocument } from "../utils/LSTextDocument";
-import { Component, ComponentsByName, ComponentsByUri, COMPONENT_EXT, COMPONENT_FILE_GLOB, parseComponent } from "../entities/component";
+import { Component, ComponentsByName, ComponentsByUri, COMPONENT_EXT, COMPONENT_FILE_GLOB, parseComponent, ComponentRef } from "../entities/component";
 import { GlobalFunction, GlobalFunctions, GlobalMemberFunction, GlobalMemberFunctions, GlobalTag, GlobalTags } from "../entities/globals";
 import { Scope } from "../entities/scope";
-import { ComponentFunctions, UserFunction } from "../entities/userFunction";
+import { ComponentFunctions, UserFunction, UserFunctionRef } from "../entities/userFunction";
 import { parseVariableAssignments, Variable, VariablesByUri } from "../entities/variable";
 import { CFDocsDefinitionInfo } from "../utils/cfdocs/definitionInfo";
 import { MyMap, SearchMode } from "../utils/collections";
@@ -25,10 +25,10 @@ let allComponentsByUri: ComponentsByUri = {};
 let allComponentsByName: ComponentsByName = {};
 let allComponentUris: { [key: string]: Uri } = {};
 
-const allComponentNames: TrieSearch<Component> = new TrieSearch<Component>("uri");
-const allFunctionNames: TrieSearch<UserFunction> = new TrieSearch<UserFunction>("name", {
-	idFieldOrFunction: (userFunction: UserFunction) => {
-		return userFunction.name + ":" + userFunction.location.uri.fsPath;
+const allComponentNames: TrieSearch<ComponentRef> = new TrieSearch<ComponentRef>("uri");
+const allFunctionNames: TrieSearch<UserFunctionRef> = new TrieSearch<UserFunctionRef>("name", {
+	idFieldOrFunction: (userFunction: UserFunctionRef) => {
+		return userFunction.name + ":" + userFunction.componenturi.fsPath;
 	},
 });
 
@@ -196,13 +196,14 @@ export function clearAllGlobalEntityDefinitions(): void {
  * @param comp The component to cache
  */
 function setComponent(comp: Component): void {
-	allComponentsByUri[comp.uri.toString().toLowerCase()] = comp;
-	allComponentUris[comp.uri.toString().toLowerCase()] = comp.uri;
-	const componentKey: string = uriBaseName(comp.uri, COMPONENT_EXT).toLowerCase();
-	if (!allComponentsByName[componentKey]) {
-		allComponentsByName[componentKey] = {};
+	const componentUriKey = comp.uri.toString().toLowerCase();
+	allComponentsByUri[componentUriKey] = comp;
+	allComponentUris[componentUriKey] = comp.uri;
+	const componentNameKey: string = uriBaseName(comp.uri, COMPONENT_EXT).toLowerCase();
+	if (!allComponentsByName[componentNameKey]) {
+		allComponentsByName[componentNameKey] = {};
 	}
-	allComponentsByName[componentKey][comp.uri.toString()] = comp;
+	allComponentsByName[componentNameKey][componentUriKey] = comp;
 
 	try {
 		allComponentNames.add(comp);
@@ -210,7 +211,7 @@ function setComponent(comp: Component): void {
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	catch (ex) {
 		// console.warn(ex);
-		console.warn(`Unable to add ${componentKey} to trie`);
+		console.warn(`Unable to add ${componentNameKey} to allComponentNames`);
 	}
 }
 
@@ -267,8 +268,13 @@ export function hasComponent(uri: Uri): boolean {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function searchAllComponentNames(query: string, _token: CancellationToken | undefined): Component[] {
-	let components: Component[] = [];
-	components = allComponentNames.search(query);
+	const components: Component[] = [];
+	allComponentNames.search(query).forEach((componentRef: ComponentRef) => {
+		const componentUriKey: string = componentRef.uri.toString().toLowerCase();
+		if (allComponentsByUri[componentUriKey]) {
+			components.push(allComponentsByUri[componentUriKey]);
+		}
+	});
 	return components;
 }
 
@@ -276,13 +282,13 @@ export function searchAllComponentNames(query: string, _token: CancellationToken
  * Sets the given user function object into cache
  * @param userFunction The user function to cache
  */
-function setUserFunction(userFunction: UserFunction): void {
+function setUserFunction(userFunction: UserFunctionRef): void {
 	try {
 		allFunctionNames.add(userFunction);
 	}
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	catch (ex) {
-		console.warn(`Unable to add ${userFunction.name} to trie`);
+		console.warn(`Unable to add ${userFunction.name} to allFunctionNames`);
 	}
 }
 
@@ -300,13 +306,25 @@ function setUserFunction(userFunction: UserFunction): void {
  * @returns
  */
 export function searchAllFunctionNames(query: string, _searchMode: SearchMode = SearchMode.StartsWith): UserFunction[] {
-	let functions: UserFunction[] = [];
-	functions = allFunctionNames.search(query);
+	const functions: UserFunction[] = [];
+	let functionRefs: UserFunctionRef[] = [];
+	functionRefs = allFunctionNames.search(query);
 	if (_searchMode === SearchMode.EqualTo) {
-		functions = functions.filter((funcObj: UserFunction) => {
+		functionRefs = functionRefs.filter((funcObj: UserFunctionRef) => {
 			return funcObj.name.toLowerCase() === query.toLowerCase();
 		});
 	}
+	functionRefs.forEach((ref: UserFunctionRef) => {
+		const componentUriKey = ref.componenturi.toString().toLowerCase();
+		if (allComponentsByUri[componentUriKey]) {
+			const component: Component = allComponentsByUri[componentUriKey];
+			const functionKey: string = ref.name.toLocaleLowerCase();
+			const componentFunction: UserFunction | undefined = component.functions.get(functionKey.toLocaleLowerCase());
+			if (componentFunction) {
+				functions.push(componentFunction);
+			}
+		}
+	});
 	return functions;
 }
 
@@ -366,7 +384,10 @@ export async function cacheComponent(component: Component, documentStateContext:
 	clearCachedComponent(component.uri);
 	setComponent(component);
 	component.functions.forEach((funcObj: UserFunction) => {
-		setUserFunction(funcObj);
+		setUserFunction({
+			name: funcObj.name,
+			componenturi: funcObj.location.uri,
+		});
 	});
 
 	if (isApplicationFile(component.uri)) {
@@ -512,23 +533,23 @@ export async function cacheComponentFromUri(componentUri: Uri, _token: Cancellat
  * @param componentUri The URI of the component to be removed from cache
  */
 export function clearCachedComponent(componentUri: Uri): void {
-	const componentByUri: Component = allComponentsByUri[componentUri.toString().toLowerCase()];
+	const componentUriKey = componentUri.toString().toLocaleLowerCase();
+	const componentByUri: Component = allComponentsByUri[componentUriKey];
 	if (componentByUri) {
-		delete allComponentsByUri[componentUri.toString().toLowerCase()];
+		delete allComponentsByUri[componentUriKey];
 	}
 
-	const componentKey: string = uriBaseName(componentUri).toLowerCase();
-	const componentsByName: ComponentsByUri = allComponentsByName[componentKey];
+	const componentNameKey: string = uriBaseName(componentUri, COMPONENT_EXT).toLowerCase();
+	const componentsByName: ComponentsByUri = allComponentsByName[componentNameKey];
 	if (componentsByName) {
 		const componentsByNameLen: number = Object.keys(componentsByName).length;
-		if (componentsByName[componentUri.toString()]) {
-			const prevCompFunctions: ComponentFunctions = componentsByName[componentUri.toString()].functions;
+		if (componentsByName[componentUriKey]) {
+			const prevCompFunctions: ComponentFunctions = componentsByName[componentUriKey].functions;
 			if (componentsByNameLen === 1) {
-				delete allComponentsByName[componentKey];
-				allComponentNames.remove(componentKey);
+				delete allComponentsByName[componentNameKey];
 			}
 			else {
-				delete componentsByName[componentUri.toString()];
+				delete componentsByName[componentUriKey];
 			}
 
 			if (prevCompFunctions) {

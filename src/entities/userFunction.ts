@@ -124,6 +124,11 @@ export interface UserFunctionSignature extends Signature {
 	parameters: Argument[];
 }
 
+export interface UserFunctionRef {
+	name: string;
+	componenturi: Uri;
+}
+
 export interface UserFunction extends Function {
 	access: Access;
 	static: boolean;
