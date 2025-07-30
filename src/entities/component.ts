@@ -102,6 +102,11 @@ const booleanAttributes: MySet<string> = new MySet([
 	"serializable",
 ]);
 
+export interface ComponentRef {
+	uri: Uri;
+	name: string;
+}
+
 export interface Component {
 	uri: Uri;
 	name: string;
