@@ -11,6 +11,7 @@ All notable changes to the CFML extension will be documented in this file.
 - Improve cfscript range calculations for better comment (Tag or Script) mode detection ([\#120](https://github.com/cfmleditor/cfmleditor/issues/120))
 - Uncomment Anywhere feature / setting to allow for uncommenting of a comment block from anywhere within the comment block ([\#118](https://github.com/cfmleditor/cfmleditor/issues/118))
 - CFDocs / Lucee docs, show minimum version on inline help ([\#72](https://github.com/cfmleditor/cfmleditor/issues/72))
+- Fixes for Component and Function definitions not updating on save ([\#125](https://github.com/cfmleditor/cfmleditor/issues/125))
 
 ## [0.6.41] - 2025-07-05
 
