@@ -175,25 +175,17 @@ Used in [Command Palette](https://code.visualstudio.com/docs/getstarted/userinte
 ## Known Issues/Limitations
 
 1. Initial indexing can be a lengthy process depending on how many components you have and your hardware specifications. During this time, some features will be unavailable and the editor may be sluggish.
-1. There is partial embedded language support. You will get some HTML and CSS features, but no JS or SQL assistance within CFML files. You will still get syntax highlighting and you can use user snippets and Emmet to supplement somewhat.
-1. An extension of the issue above is that as implemented there is only one language defined for CFML. This can cause a number of issues where functionality or settings are based on language ID. For example, with Emmet enabled, you will get the Emmet functionality throughout all CFML files and contexts.
-1. Removing, moving, or renaming folders does not update the workspace definitions or symbols and will cause discrepancies with those resources. To rectify this, you may use the command to refresh workspace definitions at any time.
-1. Completion suggestions are not always properly contextual.
-1. The "parsing" is mostly done with regular expressions without considering context in most cases, which can result in occasional issues. One way this manifests is that you may get non-CFML being parsed as CFML. This can also result in strings and comments being parsed as if they were part of code. To simplify the expressions, semicolons are often expected as terminators in CFScript even though they are optional in some engines.
-1. Type inference is extremely primitive and only based on variable initialization.
-1. Using `<cfoutput>` within embedded languages (CSS and JavaScript) reverts the syntax tokenization to the base language which results in incorrect highlighting.
+2. There is partial embedded language support. You will get some HTML and CSS features, but no JS or SQL assistance within CFML files. You will still get syntax highlighting and you can use user snippets and Emmet to supplement somewhat.
+3. An extension of the issue above is that as implemented there is only one language defined for CFML. This can cause a number of issues where functionality or settings are based on language ID. For example, with Emmet enabled, you will get the Emmet functionality throughout all CFML files and contexts.
+4. Removing, moving, or renaming folders does not update the workspace definitions or symbols and will cause discrepancies with those resources. To rectify this, you may use the command to refresh workspace definitions at any time.
+5. Completion suggestions are not always properly contextual.
+6. The "parsing" is mostly done with regular expressions without considering context in most cases, which can result in occasional issues. One way this manifests is that you may get non-CFML being parsed as CFML. This can also result in strings and comments being parsed as if they were part of code. To simplify the expressions, semicolons are often expected as terminators in CFScript even though they are optional in some engines.
+7. Type inference is extremely primitive and only based on variable initialization.
+8. Using `<cfoutput>` within embedded languages (CSS and JavaScript) reverts the syntax tokenization to the base language which results in incorrect highlighting.
 
 ## Future Plans
 
-Feel free to open issues for these or any other features you would find helpful so we can discuss.
-
-- Provide additional completion suggestions
-  - Member functions for native types
-  - Enumerated values for global functions
-- Consider component imports
-- References (within same file/block)
-- Use proper parser ([CFParser](https://github.com/cfparser/cfparser))
-- Utilize a CFML language server via LSP
+If there is no ticket for it in the [Github issues](https://github.com/cfmleditor/cfmleditor/issues) its likely not on our radar. Submit a ticket if you want to discuss something for future development.
 
 ## Recommended Extensions
 
@@ -214,3 +206,33 @@ See [CONTRIBUTING.md](/CONTRIBUTING.md)
 ## Support
 
 For questions or help, join the `#ide` channel in the [CFML Slack workspace](http://cfml-slack.net/ ) to talk with people about this or other editor tools. To file a bug or feature request, open a [GitHub issue](https://github.com/cfmleditor/cfmleditor/issues).
+
+## Performance Tweaks
+
+Performance may depend on lots of different factors and in a perfect world performance wouldn't be a problem, some of the following performance tweaks might reduce the feature set of CFMLEditor, but improve the general experience. Try these things one at a time to see if they provide an improvement for you.
+
+You may have to restart your editor to see the benefits of these performance tweaks.
+
+### Provide the most bang for buck
+
+Thse provide best improvements for the least amount of feature loss, recommend starting with these.
+
+- Disable Signature Help by unticking `Cfml > Signature: Enable` in the settings
+- Setting a positive `Cfml > Definition > Lookahead: Max Length` value ( start with `1000` )
+  - This can reduce the overhead when looking around based on the current cursor position. ( `-1` is the default, where the lookahead is unlimited )
+- Setting a positive `Cfml > Definition > Lookbehind: Max Length` value ( start with `1000` )
+  - This can reduce the overhead when looking around based on the current cursor position. ( `-1` is the default, where the lookbehind is unlimited )
+
+### Good performance improvements but at a cost 
+
+These can provide good performance benefits but reduce the feature set significantly
+
+- Disable `Cfml > Definition > User Functions > Search: Enable`
+- Disable `Cfml > Index Components: Enable`
+- Disable `Cfml › Definition: Enable`
+
+### Experimental performance improvements
+
+These are not recommended, so only try if everything else hasn't worked, these could make things worse.
+
+- Disable `Cfml › Suggest: Replace Comments`
