@@ -2,7 +2,7 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
-## [0.6.42] - TBD
+## [0.6.42] - 2025-07-31
 
 - Update Minimum version of VSCode to `1.99.3`
 - Fixes and Tests for CFScript comment line parsing ([\#109](https://github.com/cfmleditor/cfmleditor/issues/109)) ([\#105](https://github.com/cfmleditor/cfmleditor/issues/105))
