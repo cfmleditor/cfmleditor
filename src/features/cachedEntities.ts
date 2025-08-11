@@ -437,14 +437,11 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
 		},
 		async (progress, token) => {
 			const componentCount = componentUris.length;
-			let i = 0;
+			let completedCount = 0;
 
-			for (const componentUri of componentUris) {
-				if (token.isCancellationRequested) {
-					break;
-				}
-				if (_token && _token.isCancellationRequested) {
-					break;
+			const promises = componentUris.map(async (componentUri) => {
+				if (token.isCancellationRequested || (_token && _token.isCancellationRequested)) {
+					return; // Skip if cancellation is requested
 				}
 
 				try {
@@ -455,13 +452,16 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
 					console.warn(`Cannot parse document at ${componentUri.fsPath}`);
 				}
 				finally {
-					i++;
+					completedCount++;
 					progress.report({
-						message: `${i} / ${componentCount}`,
+						message: `${completedCount} / ${componentCount}`,
 						increment: (100 / componentCount),
 					});
 				}
-			}
+			});
+
+			// Wait for all promises to complete
+			await Promise.all(promises);
 		}
 	);
 }
