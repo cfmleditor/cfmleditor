@@ -12,7 +12,7 @@ import { TextDocument, Position, commands, DefinitionLink, Range } from "vscode"
  * @param doc The document to search in
  * @param search The text to search for in the document
  * @param cursor The character representing the cursor in the search text.
- * @throws If the search text does not contain the cursor, or the search text is not found in the document
+ * @throws {Error} If the search text does not contain the cursor, or the search text is not found in the document
  * @returns The position of the cursor in the doc.
  */
 export function findPosition(doc: TextDocument, search: string, cursor: string = "|"): Position {
@@ -54,7 +54,7 @@ export function findPosition(doc: TextDocument, search: string, cursor: string =
  * @param cursor The character representing the cursor in the search text.
  * @param matches Length of the expected definition array
  * @param posn position of defitions to return
- * @throws Same as {@link findPosition}, and if no definition is found, or more than one definition is found
+ * @throws {Error} Same as {@link findPosition}, and if no definition is found, or more than one definition is found
  * @returns The position of the cursor in the doc.
  */
 export async function findDefinition(doc: TextDocument, search: string, cursor: string = "|", matches: number = 1, posn: number = 0): Promise<DefinitionLink> {
