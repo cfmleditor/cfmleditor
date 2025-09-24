@@ -1,6 +1,7 @@
 import * as assert from "assert/strict";
 import { DefinitionLink, Range, workspace } from "vscode";
-import { rangeToString } from "./testUtils";
+import { DocBlockToString as docBlockToString, rangeToString } from "./testUtils";
+import { DocBlockKeyValue } from "../entities/docblock";
 
 /**
  * Assert that the target of a DefinitionLink matches a given text string and surrounding context
@@ -59,4 +60,13 @@ export function assertRangeEqual(actual: Range, expected: Range) {
  */
 export function assertRangeArrayEqual(actual: Range[], expected: Range[]) {
 	assert.deepEqual(actual.map(rangeToString), expected.map(rangeToString), `Expected ranges do not match.`);
+}
+
+/**
+ * Asserts that two arrays of Range objects are equal by comparing their string representations.
+ * @param actual The actual array of Range objects to compare.
+ * @param expected The expected array of Range objects to compare against.
+ */
+export function assertDocBlockArrayEqual(actual: DocBlockKeyValue[], expected: DocBlockKeyValue[]) {
+	assert.deepEqual(actual.map(docBlockToString), expected.map(docBlockToString), `Expected docblocks do not match.`);
 }
