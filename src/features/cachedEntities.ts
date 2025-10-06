@@ -414,7 +414,8 @@ export async function cacheAllComponents(_token: CancellationToken | undefined):
 	const components: Uri[] = await workspace.findFiles(COMPONENT_FILE_GLOB);
 
 	for (const componentUri of components) {
-		allComponentUris[componentUri.toString().toLowerCase()] = componentUri;
+		const componentUriKey: string = componentUri.toString().toLowerCase();
+		allComponentUris[componentUriKey] = componentUri;
 	}
 
 	await cacheGivenComponents(components, _token);
@@ -429,6 +430,45 @@ export async function cacheAllComponents(_token: CancellationToken | undefined):
  * @param _token
  */
 async function cacheGivenComponents(componentUris: Uri[], _token: CancellationToken | undefined): Promise<void> {
+	await window.withProgress(
+		{
+			location: ProgressLocation.Notification,
+			title: "Caching components",
+			cancellable: true,
+		},
+		async (progress, token) => {
+			const componentCount = componentUris.length;
+			let i = 0;
+
+			for (const componentUri of componentUris) {
+				if (token.isCancellationRequested) {
+					break;
+				}
+				if (_token && _token.isCancellationRequested) {
+					break;
+				}
+
+				try {
+					await cacheComponentFromUri(componentUri, _token);
+				}
+				// eslint-disable-next-line @typescript-eslint/no-unused-vars
+				catch (ex) {
+					console.warn(`Cannot parse document at ${componentUri.fsPath}`);
+				}
+				finally {
+					i++;
+					progress.report({
+						message: `${i} / ${componentCount}`,
+						increment: (100 / componentCount),
+					});
+				}
+			}
+		}
+	);
+}
+
+/*
+async function cacheGivenComponentsParallel(componentUris: Uri[], _token: CancellationToken | undefined): Promise<void> {
 	await window.withProgress(
 		{
 			location: ProgressLocation.Notification,
@@ -465,6 +505,7 @@ async function cacheGivenComponents(componentUris: Uri[], _token: CancellationTo
 		}
 	);
 }
+*/
 
 /**
  *
