@@ -545,12 +545,7 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 							argument.dataTypeComponentUri = dataTypeComponentUri;
 						}
 
-						argument.dataTypeRange = docElem.valueRange
-							? new Range(
-								docElem.valueRange.start,
-								docElem.valueRange.end
-							)
-							: undefined;
+						argument.dataTypeRange = docElem.valueRange ? new Range(docElem.valueRange.start, docElem.valueRange.end) : undefined;
 					}
 				}
 			}));

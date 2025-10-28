@@ -2,6 +2,11 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.6.43] - 2025-10-28
+
+- Update to typescript `5.9.3`
+- Update dependencies
+
 ## [0.6.42] - 2025-07-31
 
 - Update Minimum version of VSCode to `1.99.3`
