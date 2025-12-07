@@ -27,5 +27,31 @@ jobs:
         run: npm run build
 
       - name: Run tests
-        continue-on-error: true  # TODO: fix path separator issues in tests
         run: npm test
+
+      - name: Find and copy test results
+        if: always()
+        shell: bash
+        run: |
+          # Find test-results.json in .vscode-test directory (it gets created in VSCode's CWD)
+          find .vscode-test -name "test-results.json" -exec cp {} . \; 2>/dev/null || true
+          if [ -f test-results.json ]; then
+            echo "Found test-results.json"
+          else
+            echo "test-results.json not found"
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}
+          path: test-results.json
+
+      - name: Test Report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: Tests (${{ matrix.os }})
+          path: test-results.json
+          reporter: mocha-json
