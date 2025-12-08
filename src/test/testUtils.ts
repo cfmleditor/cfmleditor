@@ -2,6 +2,15 @@ import assert from "assert/strict";
 import { TextDocument, Position, commands, DefinitionLink, Range } from "vscode";
 
 /**
+ * Normalize a path to use forward slashes for cross-platform comparison.
+ * @param path The path to normalize
+ * @returns The path with all backslashes replaced by forward slashes
+ */
+export function normalizePath(path: string): string {
+	return path.replace(/\\/g, "/");
+}
+
+/**
  * Get a position in the document based on a search text and a cursor
  *
  * This is intended to be easy to read and write than hardcoded positions.

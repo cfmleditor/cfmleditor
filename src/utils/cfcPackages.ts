@@ -1,7 +1,7 @@
 // This file provides functions to convert paths to package names and vice versa,
 // It also allows replacement of packagenames with mappings.
 
-import { join, relative } from "path";
+import { posix } from "path";
 import { Uri } from "vscode";
 
 export interface CFMLMapping {
@@ -34,19 +34,19 @@ export function convertPathToPackageName(
 		return b.directoryPath.length - a.directoryPath.length;
 	});
 
-	relPath = relative(webroot.path, path.path);
+	relPath = posix.relative(webroot.path, path.path);
 
 	for (const mapping of mappings) {
 		if (mapping.isPhysicalDirectoryPath
-			&& path.fsPath.startsWith(mapping.directoryPath)
+			&& path.path.startsWith(mapping.directoryPath)
 		) {
-			relPath = path.fsPath.replace(mapping.directoryPath, "");
-			relPath = join(mapping.logicalPath, relPath);
+			relPath = path.path.replace(mapping.directoryPath, "");
+			relPath = posix.join(mapping.logicalPath, relPath);
 			break;
 		}
 
 		if (relPath.startsWith(mapping.directoryPath)) {
-			relPath = join(
+			relPath = posix.join(
 				mapping.logicalPath,
 				relPath.slice(mapping.directoryPath.length)
 			);

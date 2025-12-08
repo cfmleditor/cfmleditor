@@ -1,6 +1,6 @@
 import * as assert from "assert/strict";
 import { workspace, extensions, TextDocument } from "vscode";
-import { findDefinition } from "./testUtils";
+import { findDefinition, normalizePath } from "./testUtils";
 import { assertDefinitionLinkTarget } from "./testAssertions";
 
 // Tweak the linter rules for better test readability
@@ -8,7 +8,7 @@ import { assertDefinitionLinkTarget } from "./testAssertions";
 
 describe("provideDefinition", function () {
 	/** Workspace root, does not end with a "/" */
-	const root = workspace && workspace.workspaceFolders ? workspace.workspaceFolders[0].uri.fsPath : undefined;
+	const root = workspace && workspace.workspaceFolders ? normalizePath(workspace.workspaceFolders[0].uri.fsPath) : undefined;
 
 	if (!root) {
 		throw new Error("No workspace folder found.");
@@ -37,73 +37,73 @@ describe("provideDefinition", function () {
 
 		it("should get definition for return type", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'name="create_with_new" returntype="|cfml.Widget"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 
 		it("should get definition for new keyword", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, "var widget = new |cfml.Widget()");
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 
 		it('should get definition for createObject("component")', async function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'createObject("component", "|cfml.Widget")');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 
 		it("should get definition for createObject() with default type component", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'createObject("|cfml.Widget")');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 
 		it.skip("should get definition for cfparam type", async function () {
 			const definition = await findDefinition(widgetDoc, 'cfparam type="|cfml.WidgetFactory"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/WidgetFactory.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/WidgetFactory.cfc`);
 		});
 
 		it("should get definition for cfargument type", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'cfargument type="|cfml.Widget"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 
 		it.skip("should get definition for component as part of static method call", async function () {
 			const definition = await findDefinition(widgetDoc, "|WidgetFactory::");
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/WidgetFactory.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/WidgetFactory.cfc`);
 		});
 
 		it("component name is case insensitive", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, "new |cFML.wIDGET");
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 
 		it("should get definition for cfinvoke", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, '<cfinvoke component="|cfml.Widget"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 
 		it.skip("should get definition for cfimport", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, '<cfimport path="|cfml.Widget">');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 
 		it("should get definition for isInstanceOf", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'isInstanceOf(widget, "|cfml.Widget")');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 
 		it("should get definition for extends", async function () {
 			const definition = await findDefinition(widgetDoc, 'extends="|cfml.Base"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Base.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Base.cfc`);
 		});
 
 		it("should get definition for implements", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'implements="|cfml.IFactory"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/IFactory.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/IFactory.cfc`);
 		});
 
 		// Skipped due to a bug in the propertyPattern regex
 		it.skip("should get definition for cfproperty", async function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'cfproperty type="|cfml.Widget"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfml/Widget.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 	});
 
@@ -118,84 +118,84 @@ describe("provideDefinition", function () {
 
 		it("should get definition for return type", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, "|cfscript.Gizmo function create_with_new");
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 
 		it("should get definition for new keyword", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, "var gizmo = new |cfscript.Gizmo();");
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 
 		it('should get definition for createObject("component")', async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'createObject("component", "|cfscript.Gizmo")');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 
 		it("should get definition for createObject() with default type component", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'createObject("|cfscript.Gizmo")');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 
 		it.skip("should get definition for cfparam type", async function () {
 			const definition = await findDefinition(gizmoDoc, 'cfparam type="|cfscript.GizmoFactory"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/GizmoFactory.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/GizmoFactory.cfc`);
 		});
 
 		it("should get definition for cfargument type", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, "create_from(|cfscript.Gizmo source)");
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 
 		it.skip("should get definition for component as part of static method call", async function () {
 			const definition = await findDefinition(gizmoDoc, "|GizmoFactory::");
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/GizmoFactory.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/GizmoFactory.cfc`);
 		});
 
 		it("should get definition for component as part of method returntype (cfscript)", async function () {
 			const definition = await findDefinition(gizmoDoc, "|cfscript.Gizmo function");
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 
 		it.skip("should get definition for component as part of method argument (cfscript)", async function () {
 			const definition = await findDefinition(gizmoDoc, "(|cfscript.Gizmo gizmo)");
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 
 		// Works in CFML but not in CFScript
 		it.skip("component name is case insensitive", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, "new |cfSCRIPT.gizMO");
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 
 		it.skip("should get definition for cfinvoke", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'return invoke("|cfscript.Gizmo"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 
 		it("should get definition for import", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'import "|cfscript.Gizmo";');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 
 		it("should get definition for isInstanceOf", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'isInstanceOf(other, "|cfscript.Gizmo")');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 
 		it("should get definition for extends", async function () {
 			const definition = await findDefinition(gizmoDoc, 'extends="|cfscript.Base"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Base.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Base.cfc`);
 		});
 
 		it("should get definition for implements", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'implements="|cfscript.IFactory"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/IFactory.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/IFactory.cfc`);
 		});
 
 		// Skipped due to a bug in the propertyPattern regex
 		it.skip("should get definition for cfproperty", async function () {
 			const definition = await findDefinition(gizmoFactoryDoc, 'property type="|cfscript.Gizmo"');
-			assert.strictEqual(definition.targetUri.fsPath, `${root}/cfscript/Gizmo.cfc`);
+			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 	});
 
