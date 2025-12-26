@@ -20,6 +20,7 @@ import CFMLWorkspaceSymbolProvider from "./features/workspaceSymbolProvider";
 import CFDocsService from "./utils/cfdocs/cfDocsService";
 import { APPLICATION_CFM_GLOB, isApplicationFile, isCfcUri, shouldExcludeDocument } from "./utils/contextUtil";
 import { handleContentChanges } from "./features/autoclose";
+import { registerDebugAdapter } from "./features/debugAdapter";
 // import { CFMLFlatPackageProvider } from "./views/components";
 
 export const LANGUAGE_ID: string = "cfml";
@@ -144,6 +145,9 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	context.subscriptions.push(languages.registerDefinitionProvider(DOCUMENT_SELECTOR, new CFMLDefinitionProvider()));
 	context.subscriptions.push(languages.registerTypeDefinitionProvider(DOCUMENT_SELECTOR, new CFMLTypeDefinitionProvider()));
 	context.subscriptions.push(languages.registerColorProvider(DOCUMENT_SELECTOR, new CFMLDocumentColorProvider()));
+
+	// Register debug adapter
+	registerDebugAdapter(context);
 
 	context.subscriptions.push(workspace.onDidSaveTextDocument(async (document: TextDocument) => {
 		if (!document || shouldExcludeDocument(document.uri)) {
