@@ -36,6 +36,9 @@ const LEFT_PAREN = "(".charCodeAt(0);
 const RIGHT_PAREN = ")".charCodeAt(0);
 const SINGLE_QUOTE = "'".charCodeAt(0);
 const DOUBLE_QUOTE = "\"".charCodeAt(0);
+const HASH = "#".charCodeAt(0);
+const CLOSE_TAG_DELIM = ">".charCodeAt(0);
+
 const BOF = 0;
 
 const identPattern = /[$A-Za-z_][$\w]*/;
@@ -44,6 +47,7 @@ const identPartPattern = /[$\w]/;
 export interface StringContext {
 	inString: boolean;
 	activeStringDelimiter?: string;
+	activeCharCodeDelimiter?: number;
 	start?: Position;
 	embeddedCFML: boolean;
 	embeddedCFMLStartPosition?: Position;
@@ -330,19 +334,33 @@ export function getCfScriptRanges(document: TextDocument, range: Range | undefin
  * @returns
  */
 export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, fast: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentContextRanges {
+	const startTime = performance.now();
+
 	if (fast) {
-		return {
+		const fastEndTime = performance.now();
+
+		const fastresult = {
 			commentRanges: getCommentRanges(document, isScript, docRange, _token),
 			stringRanges: undefined,
 			stringEmbeddedCfmlRanges: undefined,
 		};
+
+		console.info(`getDocumentContextRanges (fast) on ${document.fileName} took ${(fastEndTime - startTime).toFixed(2)}ms`);
+
+		return fastresult;
 	}
 
 	if (exclDocumentRanges) {
 		return { commentRanges: [], stringRanges: undefined, stringEmbeddedCfmlRanges: undefined };
 	}
 
-	return getCommentAndStringRangesIterated(document, isScript, docRange, _token);
+	const result = getCommentAndStringRangesIterated(document, isScript, docRange, _token);
+
+	const endTime = performance.now();
+
+	console.info(`getDocumentContextRanges on ${document.fileName} took ${(endTime - startTime).toFixed(2)}ms`);
+
+	return result;
 }
 
 /**
@@ -481,12 +499,11 @@ export function getTagCommentRanges(document: TextDocument, docRange: Range | un
  * @returns
  */
 function getCommentAndStringRangesIterated(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, _token: CancellationToken | undefined): DocumentContextRanges {
-	let commentRanges: Range[] = [];
-	let stringRanges: Range[] = [];
+	const commentRanges: Range[] = [];
+	const stringRanges: Range[] = [];
 	const documentText: string = document.getText();
 	let textOffsetStart: number = 0;
 	let textOffsetEnd: number = documentText.length;
-	let previousPosition: Position | undefined;
 	if (docRange && document.validateRange(docRange)) {
 		textOffsetStart = document.offsetAt(docRange.start);
 		textOffsetEnd = document.offsetAt(docRange.end);
@@ -500,45 +517,52 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 		depth: 0,
 	};
 
-	let lineText = "";
+	let lineText: string = "";
+	let lineLen: number = 0;
 
-	let stringContext: StringContext = {
+	const stringContext: StringContext = {
 		inString: false,
 		activeStringDelimiter: undefined,
+		activeCharCodeDelimiter: undefined,
 		start: undefined,
 		embeddedCFML: false,
 		embeddedCFMLStartPosition: undefined,
 	};
 
-	let tagContext: TagContext = {
+	const tagContext: TagContext = {
 		inStartTag: false,
 		inEndTag: false,
 		name: undefined,
 		startOffset: undefined,
 	};
 
-	const stringEmbeddedCFMLDelimiter: string = "#";
-	const tagOpeningChars: string = "<cf";
-	const tagClosingChar: string = ">";
 	const stringEmbeddedCFMLRanges: Range[] = [];
-	let commentDepth: number = 0;
+	const scriptLineComment = cfmlCommentRules.scriptLineComment;
+	const scriptBlockComment = cfmlCommentRules.scriptBlockComment;
+	const tagBlockComment = cfmlCommentRules.tagBlockComment;
+
+	let charCodeAtNextPosition: number = 0;
+	let hashEscaped: boolean = false;
+	let quoteEscaped: boolean = false;
+	let newDepth: number = 0;
+	let currentLine = 0;
+	let currentChar = 0;
+	let prevLine = 0;
+	let prevChar = 0;
+	let position: Position | undefined;
+	let tagName: string = "";
+	let characterAtPosition: string = "";
+	let charCodeAtPosition: number = 0;
 
 	// TODO: Account for code delimited by hashes within cfoutput, cfmail, cfquery, etc. blocks
 
 	for (let offset = textOffsetStart; offset < textOffsetEnd; offset++) {
-		let position: Position = document.positionAt(offset);
-		const characterAtPosition: string = documentText.charAt(offset);
-
-		if (previousPosition && position.line !== previousPosition.line) {
-			lineText = "";
-		}
-
-		lineText += characterAtPosition;
-
-		if (commentContext.inComment) {
-			// Check for end of comment
-			if (previousPosition && commentContext.start && commentContext.commentType === CommentType.Line && position.line !== previousPosition.line) {
-				commentRanges.push(new Range(commentContext.start, previousPosition));
+		charCodeAtPosition = documentText.charCodeAt(offset);
+		characterAtPosition = String.fromCharCode(charCodeAtPosition);
+		// Handle newline: close line comments and update position tracking
+		if (charCodeAtPosition === NEW_LINE) {
+			if (commentContext.inComment && commentContext.commentType === CommentType.Line && commentContext.start) {
+				commentRanges.push(new Range(commentContext.start, new Position(currentLine, currentChar)));
 				commentContext = {
 					inComment: false,
 					activeComment: undefined,
@@ -547,10 +571,24 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 					depth: 0,
 				};
 			}
-			else if (commentContext.commentType === CommentType.Block && commentContext.activeComment && lineText.endsWith(commentContext.activeComment[1])) {
+			prevLine = currentLine;
+			prevChar = currentChar;
+			currentLine++;
+			currentChar = 0;
+			lineText = "";
+			lineLen = 0;
+			continue;
+		}
+		else {
+			lineText += characterAtPosition;
+			lineLen++;
+		}
+
+		if (commentContext.inComment) {
+			// Check for end of block comment
+			if (commentContext.commentType === CommentType.Block && commentContext.activeComment && lineLen >= 2 && lineText.endsWith(commentContext.activeComment[1])) {
 				if (commentContext.depth > 1) {
-					commentDepth = commentContext.depth - 1;
-					commentContext.depth = commentDepth;
+					commentContext.depth--;
 				}
 				else {
 					if (commentContext.start) {
@@ -566,13 +604,13 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 				}
 			}
 			// Handle the edge case of a line comment on the last line of the document
-			else if (previousPosition && commentContext.start && commentContext.commentType === CommentType.Line && offset === textOffsetEnd - 1) {
-				const rangeLengthFix = characterAtPosition === "\n" ? 0 : 1; // If the last character is a newline, don't include it in the range
-				commentRanges.push(new Range(commentContext.start, position.translate(0, rangeLengthFix)));
+			else if (commentContext.start && commentContext.commentType === CommentType.Line && offset === textOffsetEnd - 1) {
+				const rangeLengthFix = charCodeAtPosition === NEW_LINE ? 0 : 1;
+				commentRanges.push(new Range(commentContext.start, new Position(currentLine, currentChar + rangeLengthFix)));
 			}
 		}
 		else if (stringContext.inString) {
-			if (characterAtPosition === stringEmbeddedCFMLDelimiter) {
+			if (charCodeAtPosition === HASH) {
 				if (stringContext.embeddedCFML) {
 					stringContext.embeddedCFML = false;
 					if (stringContext.embeddedCFMLStartPosition) {
@@ -581,140 +619,132 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 					stringContext.embeddedCFMLStartPosition = undefined;
 				}
 				else {
-					let hashEscaped = false;
-					let characterAtNextPosition: string = "";
-					try {
-						characterAtNextPosition = documentText.charAt(offset + 1);
-						hashEscaped = characterAtNextPosition === stringEmbeddedCFMLDelimiter;
-					}
-					// eslint-disable-next-line @typescript-eslint/no-unused-vars
-					catch (e) {
-						// Keep value
-					}
+					charCodeAtNextPosition = documentText.charCodeAt(offset + 1);
+					hashEscaped = charCodeAtNextPosition === HASH;
 
 					if (hashEscaped) {
 						offset++;
-						lineText += characterAtNextPosition;
-						position = document.positionAt(offset);
+						lineText += String.fromCharCode(charCodeAtNextPosition);
+						lineLen++;
+						currentChar++;
 					}
 					else {
 						stringContext.embeddedCFML = true;
-						stringContext.embeddedCFMLStartPosition = position;
+						stringContext.embeddedCFMLStartPosition = new Position(currentLine, currentChar);
 					}
 				}
 			}
-			else if (!stringContext.embeddedCFML && characterAtPosition === stringContext.activeStringDelimiter) {
-				let quoteEscaped = false;
-				let characterAtNextPosition: string = "";
-				try {
-					characterAtNextPosition = documentText.charAt(offset + 1);
-					quoteEscaped = characterAtNextPosition === stringContext.activeStringDelimiter;
-				}
-				// eslint-disable-next-line @typescript-eslint/no-unused-vars
-				catch (e) {
-					// Keep value
-				}
+			else if (!stringContext.embeddedCFML && charCodeAtPosition === stringContext.activeCharCodeDelimiter) {
+				charCodeAtNextPosition = documentText.charCodeAt(offset + 1);
+				quoteEscaped = charCodeAtNextPosition === stringContext.activeCharCodeDelimiter;
 
 				if (quoteEscaped) {
 					offset++;
-					lineText += characterAtNextPosition;
-					position = document.positionAt(offset);
+					lineText += String.fromCharCode(charCodeAtNextPosition);
+					lineLen++;
+					currentChar++;
 				}
 				else {
 					if (stringContext.start) {
 						stringRanges.push(new Range(stringContext.start, document.positionAt(offset + 1)));
-						stringContext = {
-							inString: false,
-							activeStringDelimiter: undefined,
-							start: undefined,
-							embeddedCFML: false,
-						};
+						stringContext.inString = false;
+						stringContext.activeStringDelimiter = undefined;
+						stringContext.activeCharCodeDelimiter = undefined;
+						stringContext.start = undefined;
+						stringContext.embeddedCFML = false;
 					}
 				}
 			}
 		}
 		else {
 			if (isScript) {
-				if (characterAtPosition === "'" || characterAtPosition === "\"") {
-					stringContext = {
-						inString: true,
-						activeStringDelimiter: characterAtPosition,
-						start: position,
-						embeddedCFML: false,
-					};
+				if (charCodeAtPosition === SINGLE_QUOTE || charCodeAtPosition === DOUBLE_QUOTE) {
+					stringContext.inString = true;
+					stringContext.activeStringDelimiter = characterAtPosition;
+					stringContext.activeCharCodeDelimiter = charCodeAtPosition;
+					stringContext.start = new Position(currentLine, currentChar);
+					stringContext.embeddedCFML = false;
 				}
-				else if (lineText.endsWith(cfmlCommentRules.scriptLineComment)) {
-					// Comments in tag block
-					if (commentContext.activeComment !== cfmlCommentRules.tagBlockComment) {
-						commentDepth = commentContext.depth + 1;
-						commentContext = {
-							inComment: true,
-							activeComment: cfmlCommentRules.scriptLineComment,
-							commentType: CommentType.Line,
-							start: previousPosition,
-							depth: commentDepth,
-						};
-					}
-				}
-				else if (lineText.endsWith(cfmlCommentRules.scriptBlockComment[0])) {
-					// Comments in tag block
-					if (commentContext.activeComment !== cfmlCommentRules.tagBlockComment) {
-						commentDepth = commentContext.depth + 1;
-						commentContext = {
-							inComment: true,
-							activeComment: cfmlCommentRules.scriptBlockComment,
-							commentType: CommentType.Block,
-							start: previousPosition,
-							depth: commentDepth,
-						};
+				// For "/*" or "//" check
+				else if (lineLen >= 2 && lineText.charCodeAt(lineLen - 2) === 47) {
+					// Comments not in tag block
+					if (commentContext.activeComment !== tagBlockComment) {
+						// For "//" check
+						if (lineText.charCodeAt(lineLen - 1) === 47) {
+							newDepth = commentContext.depth + 1;
+							commentContext = {
+								inComment: true,
+								activeComment: scriptLineComment,
+								commentType: CommentType.Line,
+								start: new Position(prevLine, prevChar),
+								depth: newDepth,
+							};
+						}
+						// For "/*" check
+						else if (lineText.charCodeAt(lineLen - 1) === 42) {
+							newDepth = commentContext.depth + 1;
+							commentContext = {
+								inComment: true,
+								activeComment: scriptBlockComment,
+								commentType: CommentType.Block,
+								start: new Position(prevLine, prevChar),
+								depth: newDepth,
+							};
+						}
 					}
 				}
 			}
-			else if (lineText.endsWith(cfmlCommentRules.tagBlockComment[0])) {
-				commentDepth = commentContext.depth + 1;
-				if (commentDepth > 1) {
-					commentContext.depth = commentDepth;
+			else if (lineLen >= 5
+				&& lineText.charCodeAt(lineLen - 5) === 60 // <
+				&& lineText.charCodeAt(lineLen - 4) === 33 // !
+				&& lineText.charCodeAt(lineLen - 3) === 45 // -
+				&& lineText.charCodeAt(lineLen - 2) === 45 // -
+				&& lineText.charCodeAt(lineLen - 1) === 45) {
+				newDepth = commentContext.depth + 1;
+				if (newDepth > 1) {
+					commentContext.depth = newDepth;
 				}
 				else {
 					commentContext = {
 						inComment: true,
-						activeComment: cfmlCommentRules.tagBlockComment,
+						activeComment: tagBlockComment,
 						commentType: CommentType.Block,
-						start: position.translate(0, 1 - cfmlCommentRules.tagBlockComment[0].length),
-						depth: commentDepth,
+						start: new Position(currentLine, currentChar + 1 - tagBlockComment[0].length),
+						depth: newDepth,
 					};
 				}
 			}
 			else if (tagContext.inStartTag) {
-				if (characterAtPosition === tagClosingChar) {
-					tagContext = {
-						inStartTag: false,
-						inEndTag: false,
-						name: undefined,
-						startOffset: undefined,
-					};
+				if (charCodeAtPosition === CLOSE_TAG_DELIM) {
+					tagContext.inStartTag = false;
+					tagContext.inEndTag = false;
+					tagContext.name = undefined;
+					tagContext.startOffset = undefined;
 				}
-				else if (characterAtPosition === "'" || characterAtPosition === "\"") {
-					stringContext = {
-						inString: true,
-						activeStringDelimiter: characterAtPosition,
-						start: document.positionAt(offset),
-						embeddedCFML: false,
-					};
+				else if (charCodeAtPosition === SINGLE_QUOTE || charCodeAtPosition === DOUBLE_QUOTE) {
+					stringContext.inString = true;
+					stringContext.activeStringDelimiter = characterAtPosition;
+					stringContext.activeCharCodeDelimiter = charCodeAtPosition;
+					stringContext.start = new Position(currentLine, currentChar);
+					stringContext.embeddedCFML = false;
 				}
 			}
-			else if (lineText.endsWith(tagOpeningChars)) {
-				const tagName = document.getText(document.getWordRangeAtPosition(position));
-				tagContext = {
-					inStartTag: true,
-					inEndTag: false,
-					name: tagName,
-					startOffset: offset - 2,
-				};
+			else if (lineLen >= 3
+				&& lineText.charCodeAt(lineLen - 3) === 60 // <
+				&& lineText.charCodeAt(lineLen - 2) === 99 // c
+				&& lineText.charCodeAt(lineLen - 1) === 102) { // f
+				position = new Position(currentLine, currentChar);
+				tagName = document.getText(document.getWordRangeAtPosition(position));
+				tagContext.inStartTag = true;
+				tagContext.inEndTag = false;
+				tagContext.name = tagName;
+				tagContext.startOffset = offset - 2;
 			}
 		}
 
-		previousPosition = position;
+		prevLine = currentLine;
+		prevChar = currentChar;
+		currentChar++;
 	}
 
 	let cfScriptRanges: Range[] = [];
@@ -731,9 +761,9 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 		cfScriptRanges.forEach((range: Range) => {
 			if (!isInRanges(commentRanges, range, false, _token)) {
 				const cfscriptContextRanges: DocumentContextRanges = getCommentAndStringRangesIterated(document, true, range, _token);
-				commentRanges = commentRanges.concat(cfscriptContextRanges.commentRanges);
+				commentRanges.push(...cfscriptContextRanges.commentRanges);
 				if (cfscriptContextRanges.stringRanges) {
-					stringRanges = stringRanges.concat(cfscriptContextRanges.stringRanges);
+					stringRanges.push(...cfscriptContextRanges.stringRanges);
 				}
 			}
 		});
@@ -971,6 +1001,8 @@ export function getNextCharacterPosition(documentStateContext: DocumentStateCont
 		embeddedCFML: false,
 	};
 	const embeddedCFMLDelimiter: string = "#";
+	const aposChar = "'";
+	const quotChar = "\"";
 	const searchChar = Array.isArray(char) ? char : [char];
 
 	const pairContext = [
@@ -1029,7 +1061,7 @@ export function getNextCharacterPosition(documentStateContext: DocumentStateCont
 				};
 			}
 		}
-		else if (characterAtPosition === "'" || characterAtPosition === "\"") {
+		else if (characterAtPosition === aposChar || characterAtPosition === quotChar) {
 			stringContext = {
 				inString: true,
 				activeStringDelimiter: characterAtPosition,
@@ -1069,6 +1101,8 @@ export function getClosingPosition(documentStateContext: DocumentStateContext, i
 	const openingChar = getOpeningChar(closingChar);
 	const document: TextDocument = documentStateContext.document;
 	const documentText: string = documentStateContext.sanitizedDocumentText;
+	const aposChar = "'";
+	const quotChar = "\"";
 	let unclosedPairs = 0;
 	let stringContext: StringContext = {
 		inString: false,
@@ -1094,7 +1128,7 @@ export function getClosingPosition(documentStateContext: DocumentStateContext, i
 				};
 			}
 		}
-		else if (characterAtPosition === "'" || characterAtPosition === "\"") {
+		else if (characterAtPosition === aposChar || characterAtPosition === quotChar) {
 			stringContext = {
 				inString: true,
 				activeStringDelimiter: characterAtPosition,
