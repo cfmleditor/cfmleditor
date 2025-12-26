@@ -12,6 +12,18 @@ const cfTagAttributePattern: RegExp = /<((cf[a-z_]+)\s+)([^<>]*)$/i;
 // FIXME: If an attribute value contains ) then subsequent attributes will not match this
 const cfScriptTagAttributePattern: RegExp = /\b((cf[a-z_]+)\s*\(\s*)([^)]*)$/i;
 const tagPrefixPattern: RegExp = /<\s*(\/)?\s*$/;
+const cfScriptTagPatternIgnoreBody: RegExp = /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)/gi;
+const cfStartTagPattern: RegExp = /(<(cf[a-z_]+)\s*)([^>]*?)>/gi;
+const cfTagPattern: RegExp = /(<(cf[a-z_]+)\s*)([^>]*?)(?:>([\s\S]*?)<\/\2>|\/?>)/gi;
+const cfScriptTagPattern: RegExp = /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)(?:\s*{([^}]*?)})?/gi;
+
+const SINGLE_QUOTE = "'".charCodeAt(0);
+const DOUBLE_QUOTE = "\"".charCodeAt(0);
+const HASH = "#".charCodeAt(0);
+const FORWARD_SLASH = "/".charCodeAt(0);
+const C = "c".charCodeAt(0);
+const F = "f".charCodeAt(0);
+const CLOSE_TAG_DELIM = ">".charCodeAt(0);
 
 export interface Tag {
 	name: string;
@@ -491,6 +503,10 @@ export function getTagPrefixPattern(): RegExp {
 	return tagPrefixPattern;
 }
 
+const tagPatternCache = new Map<string, RegExp>();
+const startTagPatternCache = new Map<string, RegExp>();
+const startScriptTagPatternCache = new Map<string, RegExp>();
+
 /**
  * Returns a pattern that matches tags with the given name. Nested tags of the same name will not be correctly selected.
  * Capture groups:
@@ -501,8 +517,10 @@ export function getTagPrefixPattern(): RegExp {
  * @returns
  */
 export function getTagPattern(tagName: string): RegExp {
-	// Attributes capture fails if an attribute value contains >
-	return new RegExp(`(<${tagName}\\b\\s*)([^>]*?)(?:>([\\s\\S]*?)<\\/${tagName}>|\\/?>)`, "gi");
+	if (!tagPatternCache.has(tagName)) {
+		tagPatternCache.set(tagName, new RegExp(`(<${tagName}\\b\\s*)([^>]*?)(?:>([\\s\\S]*?)<\\/${tagName}>|\\/?>)`, "gi"));
+	}
+	return tagPatternCache.get(tagName)!;
 }
 
 /**
@@ -515,7 +533,10 @@ export function getTagPattern(tagName: string): RegExp {
  * @returns
  */
 export function getStartTagPattern(tagName: string): RegExp {
-	return new RegExp(`(<${tagName}\\b\\s*)([^>]*?)(\\/)?>`, "gi");
+	if (!startTagPatternCache.has(tagName)) {
+		startTagPatternCache.set(tagName, new RegExp(`(<${tagName}\\b\\s*)([^>]*?)(\\/)?>`, "gi"));
+	}
+	return startTagPatternCache.get(tagName)!;
 }
 
 /**
@@ -528,7 +549,10 @@ export function getStartTagPattern(tagName: string): RegExp {
  * @returns
  */
 export function getStartScriptTagPattern(tagName: string): RegExp {
-	return new RegExp(`\\b(${tagName}\\s*\\(\\s*)([^)]*)\\)(;)?`, "gi");
+	if (!startScriptTagPatternCache.has(tagName)) {
+		startScriptTagPatternCache.set(tagName, new RegExp(`\\b(${tagName}\\s*\\(\\s*)([^)]*)\\)(;)?`, "gi"));
+	}
+	return startScriptTagPatternCache.get(tagName)!;
 }
 
 /**
@@ -541,7 +565,7 @@ export function getStartScriptTagPattern(tagName: string): RegExp {
  * @returns
  */
 export function getCfTagPattern(): RegExp {
-	return /(<(cf[a-z_]+)\s*)([^>]*?)(?:>([\s\S]*?)<\/\2>|\/?>)/gi;
+	return cfTagPattern;
 }
 
 /**
@@ -553,7 +577,7 @@ export function getCfTagPattern(): RegExp {
  * @returns
  */
 export function getCfStartTagPattern(): RegExp {
-	return /(<(cf[a-z_]+)\s*)([^>]*?)>/gi;
+	return cfStartTagPattern;
 }
 
 /**
@@ -566,7 +590,7 @@ export function getCfStartTagPattern(): RegExp {
  * @returns
  */
 export function getCfScriptTagPattern(): RegExp {
-	return /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)(?:\s*{([^}]*?)})?/gi;
+	return cfScriptTagPattern;
 }
 
 /**
@@ -578,7 +602,7 @@ export function getCfScriptTagPattern(): RegExp {
  * @returns
  */
 export function getCfScriptTagPatternIgnoreBody(): RegExp {
-	return /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)/gi;
+	return cfScriptTagPatternIgnoreBody;
 }
 
 /**
@@ -724,38 +748,34 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 
 	let stringContext: StringContext = {
 		inString: false,
-		activeStringDelimiter: undefined,
+		activeCharCodeDelimiter: undefined,
 		start: undefined,
 		embeddedCFML: false,
 	};
 
 	const nonClosingCfmlTags: string[] = getNonClosingCfmlTags();
 
-	const tagOpeningChar: string = "<";
-	const tagClosingChar: string = ">";
-	const embeddedCFMLDelimiter: string = "#";
-
 	// TODO: Account for script tags
 
-	let characterAtPreviousPosition: string | undefined;
+	let charcodeAtPreviousPosition: number | undefined;
 	for (let offset = textOffsetStart; offset < textOffsetEnd; offset++) {
-		const characterAtPosition: string = documentText.charAt(offset);
+		const charcodeAtPosition: number = documentText.charCodeAt(offset);
 
 		if (stringContext.inString) {
-			if (characterAtPosition === embeddedCFMLDelimiter) {
+			if (charcodeAtPosition === HASH) {
 				stringContext.embeddedCFML = !stringContext.embeddedCFML;
 			}
-			else if (!stringContext.embeddedCFML && characterAtPosition === stringContext.activeStringDelimiter) {
+			else if (!stringContext.embeddedCFML && charcodeAtPosition === stringContext.activeCharCodeDelimiter) {
 				stringContext = {
 					inString: false,
-					activeStringDelimiter: undefined,
+					activeCharCodeDelimiter: undefined,
 					start: undefined,
 					embeddedCFML: false,
 				};
 			}
 		}
 		else if (tagContext.inStartTag) {
-			if (characterAtPosition === tagClosingChar) {
+			if (charcodeAtPosition === CLOSE_TAG_DELIM) {
 				const globalTag: GlobalTag | undefined = tagContext.name ? getGlobalTag(tagContext.name) : undefined;
 				let attributes: Attributes | undefined;
 				if (!globalTag || (globalTag.signatures.length > 0 && globalTag.signatures[0].parameters.length > 0)) {
@@ -768,7 +788,7 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 					}
 				}
 				const tagRange: Range | undefined = tagContext.startOffset ? new Range(document.positionAt(tagContext.startOffset), document.positionAt(offset + 1)) : undefined;
-				if (tagRange && ((tagContext.name && nonClosingCfmlTags.includes(tagContext.name)) || characterAtPreviousPosition === "/")) {
+				if (tagRange && ((tagContext.name && nonClosingCfmlTags.includes(tagContext.name)) || charcodeAtPreviousPosition === FORWARD_SLASH)) {
 					if (tagContext.name) {
 						tags.push({
 							name: tagContext.name,
@@ -795,17 +815,17 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 					startOffset: undefined,
 				};
 			}
-			else if (characterAtPosition === "'" || characterAtPosition === "\"") {
+			else if (charcodeAtPosition === SINGLE_QUOTE || charcodeAtPosition === DOUBLE_QUOTE) {
 				stringContext = {
 					inString: true,
-					activeStringDelimiter: characterAtPosition,
+					activeCharCodeDelimiter: charcodeAtPosition,
 					start: document.positionAt(offset),
 					embeddedCFML: false,
 				};
 			}
 		}
 		else if (tagContext.inEndTag) {
-			if (characterAtPosition === tagClosingChar) {
+			if (charcodeAtPosition === CLOSE_TAG_DELIM) {
 				const unclosedTag: StartTag | undefined = unclosedTags.pop();
 				if (unclosedTag && tagContext.startOffset) {
 					const bodyRange = new Range(unclosedTag.tagRange.end.translate(0, 1), document.positionAt(tagContext.startOffset));
@@ -828,49 +848,51 @@ export function getCfTags(documentStateContext: DocumentStateContext, isScript: 
 			}
 		}
 		else if (isScript) {
-			if (characterAtPosition === "'" || characterAtPosition === "\"") {
+			if (charcodeAtPosition === SINGLE_QUOTE || charcodeAtPosition === DOUBLE_QUOTE) {
 				const currentPosition: Position = document.positionAt(offset);
 				stringContext = {
 					inString: true,
-					activeStringDelimiter: characterAtPosition,
+					activeCharCodeDelimiter: charcodeAtPosition,
 					start: currentPosition,
 					embeddedCFML: false,
 				};
 			}
 		}
-		else if (characterAtPreviousPosition === "c" && characterAtPosition === "f") {
-			const currentPosition: Position = document.positionAt(offset);
-			const prefixStartPosition: Position = document.positionAt(offset - 2);
-			const prefixEndPosition: Position = document.positionAt(offset - 1);
-			let prefixText: string = document.getText(new Range(prefixStartPosition, prefixEndPosition));
-			if (prefixText === tagOpeningChar) {
-				const tagName = document.getText(document.getWordRangeAtPosition(currentPosition));
-				tagContext = {
-					inStartTag: true,
-					inEndTag: false,
-					name: tagName,
-					startOffset: offset - 2,
-				};
-			}
-			else {
-				const beforePrefixPosition: Position = document.positionAt(offset - 3);
-				prefixText = document.getText(new Range(beforePrefixPosition, prefixEndPosition));
-				if (prefixText === "</") {
+		else {
+			if (charcodeAtPreviousPosition === C && charcodeAtPosition === F) {
+				const currentPosition: Position = document.positionAt(offset);
+				const prefixStartPosition: Position = document.positionAt(offset - 2);
+				const prefixEndPosition: Position = document.positionAt(offset - 1);
+				let prefixText: string = document.getText(new Range(prefixStartPosition, prefixEndPosition));
+				if (prefixText === "<") {
 					const tagName = document.getText(document.getWordRangeAtPosition(currentPosition));
-					const lastUnclosedTag: StartTag = unclosedTags.slice(-1)[0];
-					if (lastUnclosedTag && lastUnclosedTag.name === tagName) {
-						tagContext = {
-							inStartTag: false,
-							inEndTag: true,
-							name: tagName,
-							startOffset: offset - 3,
-						};
+					tagContext = {
+						inStartTag: true,
+						inEndTag: false,
+						name: tagName,
+						startOffset: offset - 2,
+					};
+				}
+				else {
+					const beforePrefixPosition: Position = document.positionAt(offset - 3);
+					prefixText = document.getText(new Range(beforePrefixPosition, prefixEndPosition));
+					if (prefixText === "</") {
+						const tagName = document.getText(document.getWordRangeAtPosition(currentPosition));
+						const lastUnclosedTag: StartTag = unclosedTags.slice(-1)[0];
+						if (lastUnclosedTag && lastUnclosedTag.name === tagName) {
+							tagContext = {
+								inStartTag: false,
+								inEndTag: true,
+								name: tagName,
+								startOffset: offset - 3,
+							};
+						}
 					}
 				}
 			}
 		}
 
-		characterAtPreviousPosition = characterAtPosition;
+		charcodeAtPreviousPosition = charcodeAtPosition;
 	}
 
 	/*

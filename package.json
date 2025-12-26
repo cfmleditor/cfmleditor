@@ -2,7 +2,7 @@
 	"name": "cfmleditor",
 	"displayName": "CFML Editor",
 	"description": "CFML Language Editor",
-	"version": "0.7.0-beta2",
+	"version": "0.7.0-beta3",
 	"preview": true,
 	"author": "cfmleditor",
 	"publisher": "cfmleditor",
@@ -45,7 +45,13 @@
 				"extensions": [
 					".cfml",
 					".cfm",
-					".cfc",
+					".cfc"
+				],
+				"configuration": "./language-configuration.json"
+			},
+			{
+				"id": "cfs",
+				"extensions": [
 					".cfs"
 				],
 				"configuration": "./language-configuration.json"
@@ -73,10 +79,9 @@
 				}
 			},
 			{
-				"language": "cfml",
+				"language": "cfs",
 				"scopeName": "embedding.cfml.cfs",
 				"path": "./syntaxes/cfml-cfs.tmLanguage.json",
-				"fileTypes": [".cfs"],
 				"embeddedLanguages": {
 					"source.css": "css",
 					"meta.embedded.block.css": "css",

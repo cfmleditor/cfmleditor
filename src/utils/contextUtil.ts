@@ -38,6 +38,7 @@ const SINGLE_QUOTE = "'".charCodeAt(0);
 const DOUBLE_QUOTE = "\"".charCodeAt(0);
 const HASH = "#".charCodeAt(0);
 const CLOSE_TAG_DELIM = ">".charCodeAt(0);
+const OPEN_TAG_DELIM = "<".charCodeAt(0);
 
 const BOF = 0;
 
@@ -46,7 +47,6 @@ const identPartPattern = /[$\w]/;
 
 export interface StringContext {
 	inString: boolean;
-	activeStringDelimiter?: string;
 	activeCharCodeDelimiter?: number;
 	start?: Position;
 	embeddedCFML: boolean;
@@ -522,7 +522,6 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 
 	const stringContext: StringContext = {
 		inString: false,
-		activeStringDelimiter: undefined,
 		activeCharCodeDelimiter: undefined,
 		start: undefined,
 		embeddedCFML: false,
@@ -558,7 +557,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 
 	for (let offset = textOffsetStart; offset < textOffsetEnd; offset++) {
 		charCodeAtPosition = documentText.charCodeAt(offset);
-		characterAtPosition = String.fromCharCode(charCodeAtPosition);
+
 		// Handle newline: close line comments and update position tracking
 		if (charCodeAtPosition === NEW_LINE) {
 			if (commentContext.inComment && commentContext.commentType === CommentType.Line && commentContext.start) {
@@ -580,6 +579,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 			continue;
 		}
 		else {
+			characterAtPosition = String.fromCharCode(charCodeAtPosition);
 			lineText += characterAtPosition;
 			lineLen++;
 		}
@@ -648,7 +648,6 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 					if (stringContext.start) {
 						stringRanges.push(new Range(stringContext.start, document.positionAt(offset + 1)));
 						stringContext.inString = false;
-						stringContext.activeStringDelimiter = undefined;
 						stringContext.activeCharCodeDelimiter = undefined;
 						stringContext.start = undefined;
 						stringContext.embeddedCFML = false;
@@ -660,7 +659,6 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 			if (isScript) {
 				if (charCodeAtPosition === SINGLE_QUOTE || charCodeAtPosition === DOUBLE_QUOTE) {
 					stringContext.inString = true;
-					stringContext.activeStringDelimiter = characterAtPosition;
 					stringContext.activeCharCodeDelimiter = charCodeAtPosition;
 					stringContext.start = new Position(currentLine, currentChar);
 					stringContext.embeddedCFML = false;
@@ -695,7 +693,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 				}
 			}
 			else if (lineLen >= 5
-				&& lineText.charCodeAt(lineLen - 5) === 60 // <
+				&& lineText.charCodeAt(lineLen - 5) === OPEN_TAG_DELIM // <
 				&& lineText.charCodeAt(lineLen - 4) === 33 // !
 				&& lineText.charCodeAt(lineLen - 3) === 45 // -
 				&& lineText.charCodeAt(lineLen - 2) === 45 // -
@@ -723,14 +721,13 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 				}
 				else if (charCodeAtPosition === SINGLE_QUOTE || charCodeAtPosition === DOUBLE_QUOTE) {
 					stringContext.inString = true;
-					stringContext.activeStringDelimiter = characterAtPosition;
 					stringContext.activeCharCodeDelimiter = charCodeAtPosition;
 					stringContext.start = new Position(currentLine, currentChar);
 					stringContext.embeddedCFML = false;
 				}
 			}
 			else if (lineLen >= 3
-				&& lineText.charCodeAt(lineLen - 3) === 60 // <
+				&& lineText.charCodeAt(lineLen - 3) === OPEN_TAG_DELIM // <
 				&& lineText.charCodeAt(lineLen - 2) === 99 // c
 				&& lineText.charCodeAt(lineLen - 1) === 102) { // f
 				position = new Position(currentLine, currentChar);
@@ -996,13 +993,10 @@ export function getNextCharacterPosition(documentStateContext: DocumentStateCont
 	const documentText: string = documentStateContext.sanitizedDocumentText;
 	let stringContext: StringContext = {
 		inString: false,
-		activeStringDelimiter: undefined,
+		activeCharCodeDelimiter: undefined,
 		start: undefined,
 		embeddedCFML: false,
 	};
-	const embeddedCFMLDelimiter: string = "#";
-	const aposChar = "'";
-	const quotChar = "\"";
 	const searchChar = Array.isArray(char) ? char : [char];
 
 	const pairContext = [
@@ -1046,42 +1040,45 @@ export function getNextCharacterPosition(documentStateContext: DocumentStateCont
 	};
 
 	for (let offset = startOffset; offset < endOffset; offset++) {
-		const characterAtPosition: string = documentText.charAt(offset);
+		const charcodeAtPosition: number = documentText.charCodeAt(offset);
 
 		if (stringContext.inString) {
-			if (characterAtPosition === embeddedCFMLDelimiter) {
+			if (charcodeAtPosition === HASH) {
 				stringContext.embeddedCFML = !stringContext.embeddedCFML;
 			}
-			else if (!stringContext.embeddedCFML && characterAtPosition === stringContext.activeStringDelimiter) {
+			else if (!stringContext.embeddedCFML && charcodeAtPosition === stringContext.activeCharCodeDelimiter) {
 				stringContext = {
 					inString: false,
-					activeStringDelimiter: undefined,
+					activeCharCodeDelimiter: undefined,
 					start: undefined,
 					embeddedCFML: false,
 				};
 			}
 		}
-		else if (characterAtPosition === aposChar || characterAtPosition === quotChar) {
+		else if (charcodeAtPosition === SINGLE_QUOTE || charcodeAtPosition === DOUBLE_QUOTE) {
 			stringContext = {
 				inString: true,
-				activeStringDelimiter: characterAtPosition,
+				activeCharCodeDelimiter: charcodeAtPosition,
 				start: document.positionAt(offset),
 				embeddedCFML: false,
 			};
 		}
-		else if (searchChar.includes(characterAtPosition) && hasNoUnclosedPairs()) {
-			if (includeChar) {
-				return document.positionAt(offset + 1);
+		else {
+			const characterAtPosition = String.fromCharCode(charcodeAtPosition);
+			if (searchChar.includes(characterAtPosition) && hasNoUnclosedPairs()) {
+				if (includeChar) {
+					return document.positionAt(offset + 1);
+				}
+				else {
+					return document.positionAt(offset);
+				}
 			}
-			else {
-				return document.positionAt(offset);
+			else if (openingPairs.includes(characterAtPosition)) {
+				incrementUnclosedPair(characterAtPosition);
 			}
-		}
-		else if (openingPairs.includes(characterAtPosition)) {
-			incrementUnclosedPair(characterAtPosition);
-		}
-		else if (closingPairs.includes(characterAtPosition)) {
-			decrementUnclosedPair(characterAtPosition);
+			else if (closingPairs.includes(characterAtPosition)) {
+				decrementUnclosedPair(characterAtPosition);
+			}
 		}
 	}
 
@@ -1098,53 +1095,57 @@ export function getNextCharacterPosition(documentStateContext: DocumentStateCont
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getClosingPosition(documentStateContext: DocumentStateContext, initialOffset: number, closingChar: string, _token: CancellationToken | undefined): Position {
-	const openingChar = getOpeningChar(closingChar);
 	const document: TextDocument = documentStateContext.document;
 	const documentText: string = documentStateContext.sanitizedDocumentText;
-	const aposChar = "'";
-	const quotChar = "\"";
+
+	let openingChar: string | undefined;
 	let unclosedPairs = 0;
 	let stringContext: StringContext = {
 		inString: false,
-		activeStringDelimiter: undefined,
+		activeCharCodeDelimiter: undefined,
 		start: undefined,
 		embeddedCFML: false,
 	};
-	const embeddedCFMLDelimiter: string = "#";
 
 	for (let offset = initialOffset; offset < documentText.length; offset++) {
-		const characterAtPosition: string = documentText.charAt(offset);
+		const charcodeAtPosition: number = documentText.charCodeAt(offset);
 
 		if (stringContext.inString) {
-			if (characterAtPosition === embeddedCFMLDelimiter) {
+			if (charcodeAtPosition === HASH) {
 				stringContext.embeddedCFML = !stringContext.embeddedCFML;
 			}
-			else if (!stringContext.embeddedCFML && characterAtPosition === stringContext.activeStringDelimiter) {
+			else if (!stringContext.embeddedCFML && charcodeAtPosition === stringContext.activeCharCodeDelimiter) {
 				stringContext = {
 					inString: false,
-					activeStringDelimiter: undefined,
+					activeCharCodeDelimiter: undefined,
 					start: undefined,
 					embeddedCFML: false,
 				};
 			}
 		}
-		else if (characterAtPosition === aposChar || characterAtPosition === quotChar) {
+		else if (charcodeAtPosition === SINGLE_QUOTE || charcodeAtPosition === DOUBLE_QUOTE) {
 			stringContext = {
 				inString: true,
-				activeStringDelimiter: characterAtPosition,
+				activeCharCodeDelimiter: charcodeAtPosition,
 				start: document.positionAt(offset),
 				embeddedCFML: false,
 			};
 		}
-		else if (characterAtPosition === openingChar) {
-			unclosedPairs++;
-		}
-		else if (characterAtPosition === closingChar) {
-			if (unclosedPairs !== 0) {
-				unclosedPairs--;
+		else {
+			const characterAtPosition: string = String.fromCharCode(charcodeAtPosition);
+			if (openingChar === undefined) {
+				openingChar = getOpeningChar(closingChar);
 			}
-			else {
-				return document.positionAt(offset + 1);
+			if (characterAtPosition === openingChar) {
+				unclosedPairs++;
+			}
+			else if (characterAtPosition === closingChar) {
+				if (unclosedPairs !== 0) {
+					unclosedPairs--;
+				}
+				else {
+					return document.positionAt(offset + 1);
+				}
 			}
 		}
 	}
@@ -1159,6 +1160,28 @@ export function getClosingPosition(documentStateContext: DocumentStateContext, i
  */
 export function isValidIdentifierPart(char: string): boolean {
 	return identPartPattern.test(char);
+}
+
+/**
+ * Tests whether the given charCode can be part of a valid CFML identifier
+ * @param ch charCode to test
+ * @returns
+ */
+function isValidIdentifierPartCharCode(ch: number): boolean {
+	return ch === 36 // $
+		|| ch === 95 // _
+		|| (ch >= 48 && ch <= 57) // 0-9
+		|| (ch >= 65 && ch <= 90) // A-Z
+		|| (ch >= 97 && ch <= 122); // a-z
+}
+
+/**
+ * Tests whether the given charCode is not a white space character
+ * @param ch charCode to test
+ * @returns
+ */
+function isValidNonWhiteSpaceCharCode(ch: number): boolean {
+	return (ch !== 32 && ch !== 9 && ch !== 10 && ch !== 13 && ch !== 160);
 }
 
 /**
@@ -1179,17 +1202,17 @@ export function isValidIdentifier(word: string): boolean {
  */
 export function getPrecedingIdentifierRange(documentStateContext: DocumentStateContext, position: Position, _token: CancellationToken | undefined): Range | undefined {
 	let identRange: Range | undefined;
-	let charStr = "";
+	let lastCharCode: number = 0;
 	const iterator: BackwardIterator = new BackwardIterator(documentStateContext, position, _token);
 	while (iterator.hasNext()) {
 		const ch: number = iterator.next(_token);
-		charStr = String.fromCharCode(ch);
-		if (/\S/.test(charStr)) {
+		if (isValidNonWhiteSpaceCharCode(ch)) {
+			lastCharCode = ch;
 			break;
 		}
 	}
 
-	if (isValidIdentifierPart(charStr)) {
+	if (lastCharCode > 0 && isValidIdentifierPartCharCode(lastCharCode)) {
 		const iterPosition: Position | undefined = iterator.getPosition();
 		if (iterPosition) {
 			const currentWordRange: Range | undefined = documentStateContext.document.getWordRangeAtPosition(iterPosition);
@@ -1247,11 +1270,10 @@ export function getStartSigPosition(iterator: BackwardIterator, _token: Cancella
 					const candidatePosition: Position | undefined = iterator.getPosition();
 					while (iterator.hasNext()) {
 						const nch: number = iterator.next(_token);
-						const charStr = String.fromCharCode(nch);
-						if (/\S/.test(charStr)) {
+						if (isValidNonWhiteSpaceCharCode(nch)) {
 							const iterPos: Position | undefined = iterator.getPosition();
 							if (iterPos) {
-								if (isValidIdentifierPart(charStr)) {
+								if (isValidIdentifierPartCharCode(nch)) {
 									const nameRange = document.getWordRangeAtPosition(iterPos);
 									const name = document.getText(nameRange);
 									if (isValidIdentifier(name) && !stringArrayIncludesIgnoreCase(["function", "if", "for", "while", "switch", "catch"], name)) {
