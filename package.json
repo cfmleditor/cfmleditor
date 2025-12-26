@@ -45,16 +45,7 @@
 				"extensions": [
 					".cfml",
 					".cfm",
-					".cfc"
-				],
-				"configuration": "./language-configuration.json"
-			},
-			{
-				"id": "cfs",
-				"aliases": [
-					"CFS"
-				],
-				"extensions": [
+					".cfc",
 					".cfs"
 				],
 				"configuration": "./language-configuration.json"
@@ -82,9 +73,10 @@
 				}
 			},
 			{
-				"language": "cfs",
+				"language": "cfml",
 				"scopeName": "embedding.cfml.cfs",
 				"path": "./syntaxes/cfml-cfs.tmLanguage.json",
+				"fileTypes": [".cfs"],
 				"embeddedLanguages": {
 					"source.css": "css",
 					"meta.embedded.block.css": "css",
