@@ -29,12 +29,17 @@
 		"workspaceContains:**/*.cfm",
 		"workspaceContains:**/*.cfml",
 		"workspaceContains:**/*.cfc",
-		"workspaceContains:**/*.cfs"
+		"workspaceContains:**/*.cfs",
+		"onDebugResolve:cfml"
 	],
 	"icon": "images/icon2x.png",
 	"main": "./dist/desktop/extension.js",
 	"browser": "./dist/web/extension.js",
 	"contributes": {
+		"breakpoints": [
+			{ "language": "cfml" },
+			{ "language": "cfs" }
+		],
 		"languages": [
 			{
 				"id": "cfml",
@@ -569,9 +574,67 @@
 				"command": "cfml.goToRouteController",
 				"category": "CFML",
 				"title": "Go to Route Controller"
+			},
+			{
+				"command": "cfml.debug.dump",
+				"category": "CFML",
+				"title": "Dump Variable",
+				"enablement": "debugType == 'cfml' && config.cfml.engine.name == 'lucee'"
+			},
+			{
+				"command": "cfml.debug.dumpAsJSON",
+				"category": "CFML",
+				"title": "Dump Variable as JSON",
+				"enablement": "debugType == 'cfml' && config.cfml.engine.name == 'lucee'"
+			},
+			{
+				"command": "cfml.debug.getMetadata",
+				"category": "CFML",
+				"title": "Get Metadata",
+				"enablement": "debugType == 'cfml' && config.cfml.engine.name == 'lucee'"
+			},
+			{
+				"command": "cfml.debug.getApplicationSettings",
+				"category": "CFML",
+				"title": "Get Application Settings",
+				"enablement": "debugType == 'cfml' && config.cfml.engine.name == 'lucee'"
+			},
+			{
+				"command": "cfml.debug.openSourceFile",
+				"category": "CFML",
+				"title": "Open Defining File",
+				"enablement": "debugType == 'cfml' && config.cfml.engine.name == 'lucee'"
+			},
+			{
+				"command": "cfml.debug.showBreakpointBindings",
+				"category": "CFML",
+				"title": "Show Breakpoint Bindings",
+				"enablement": "config.cfml.engine.name == 'lucee'"
 			}
 		],
 		"menus": {
+			"debug/variables/context": [
+				{
+					"when": "debugType == 'cfml' && config.cfml.engine.name == 'lucee'",
+					"command": "cfml.debug.dump"
+				},
+				{
+					"when": "debugType == 'cfml' && config.cfml.engine.name == 'lucee'",
+					"command": "cfml.debug.dumpAsJSON"
+				},
+				{
+					"when": "debugType == 'cfml' && config.cfml.engine.name == 'lucee'",
+					"command": "cfml.debug.getMetadata"
+				},
+				{
+					"when": "debugType == 'cfml' && config.cfml.engine.name == 'lucee'",
+					"command": "cfml.debug.getApplicationSettings"
+				},
+				{
+					"when": "debugType == 'cfml' && config.cfml.engine.name == 'lucee'",
+					"command": "cfml.debug.openSourceFile"
+				}
+			],
 			"editor/title/context": [
 				{
 					"command": "cfml.copyPackage",
@@ -632,6 +695,141 @@
 					"tag": "<cfdump var=\"$TM_SELECTED_TEXT\">",
 					"script": "writeDump($TM_SELECTED_TEXT)"
 				}
+			}
+		],
+		"debuggers": [
+			{
+				"type": "cfml",
+				"languages": ["cfml", "cfs"],
+				"label": "CFML Debugger",
+				"configurationAttributes": {
+					"attach": {
+						"required": ["hostName", "port"],
+						"properties": {
+							"hostName": {
+								"type": "string",
+								"description": "Hostname or IP address of the server running the Lucee debugger."
+							},
+							"port": {
+								"type": "number",
+								"description": "Port configured to accept debugger connections.",
+								"default": 10000
+							},
+							"pathTransforms": {
+								"type": "array",
+								"description": "Ordered list of path transforms for mapping IDE paths to server webroot paths (e.g. for Docker containers). First match wins. For local development where paths match, leave empty.",
+								"items": {
+									"type": "object",
+									"properties": {
+										"idePrefix": {
+											"type": "string",
+											"default": "${workspaceFolder}"
+										},
+										"serverPrefix": {
+											"type": "string",
+											"default": "${workspaceFolder}"
+										}
+									},
+									"required": ["idePrefix", "serverPrefix"]
+								},
+								"default": []
+							},
+							"pathSeparator": {
+								"type": "string",
+								"enum": ["none", "auto", "posix", "windows"],
+								"default": "auto",
+								"description": "How paths returned from the debugger should be normalized."
+							},
+							"secret": {
+								"type": "string",
+								"description": "Secret that must match LUCEE_DEBUGGER_SECRET environment variable on the server."
+							},
+							"evaluation": {
+								"type": "boolean",
+								"default": true,
+								"description": "Enable expression evaluation in debug console, watch panel, and hover tooltips."
+							},
+							"logLevel": {
+								"type": "string",
+								"enum": ["error", "info", "debug"],
+								"default": "info",
+								"description": "Debugger log verbosity level."
+							},
+							"logColor": {
+								"type": "boolean",
+								"default": true,
+								"description": "Enable ANSI colors in debugger log output."
+							},
+							"logExceptions": {
+								"type": "boolean",
+								"default": false,
+								"description": "Log exceptions to the debug console."
+							},
+							"consoleOutput": {
+								"type": "boolean",
+								"default": false,
+								"description": "Stream console output to the debug console (Lucee 7.1+)."
+							}
+						}
+					}
+				},
+				"initialConfigurations": [
+					{
+						"type": "cfml",
+						"request": "attach",
+						"name": "Attach to Lucee",
+						"hostName": "localhost",
+						"port": 9999,
+						"secret": "",
+						"pathTransforms": [
+							{
+								"idePrefix": "${workspaceFolder}",
+								"serverPrefix": "${workspaceFolder}"
+							}
+						],
+						"pathSeparator": "auto"
+					}
+				],
+				"configurationSnippets": [
+					{
+						"label": "CFML: Attach to Lucee",
+						"description": "Attach to Lucee debugger (local development)",
+						"body": {
+							"type": "cfml",
+							"request": "attach",
+							"name": "Attach to Lucee",
+							"hostName": "localhost",
+							"port": 9999,
+							"secret": "",
+							"pathTransforms": [
+								{
+									"idePrefix": "\\${workspaceFolder}",
+									"serverPrefix": "\\${workspaceFolder}"
+								}
+							],
+							"pathSeparator": "auto"
+						}
+					},
+					{
+						"label": "CFML: Attach to Lucee (Docker)",
+						"description": "Attach to Lucee debugger in Docker container",
+						"body": {
+							"type": "cfml",
+							"request": "attach",
+							"name": "Attach to Lucee (Docker)",
+							"hostName": "localhost",
+							"port": 9999,
+							"secret": "",
+							"pathTransforms": [
+								{
+									"idePrefix": "\\${workspaceFolder}",
+									"serverPrefix": "/var/www"
+								}
+							],
+							"pathSeparator": "posix"
+						}
+					}
+				]
 			}
 		]
 	},
