@@ -2,10 +2,11 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
-## [0.7.0] - 2025-11-16
+## [0.7.0] - 2026-01-27
 
 - Update `cfmleditor` and `cfmleditor-lint` versions to `0.7.x` with the intention of keeping releases in sync
 - Update dependencies
+- Improve parsing performance
 
 ## [0.6.43] - 2025-10-28
 
