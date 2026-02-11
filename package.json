@@ -681,6 +681,7 @@
 		"@types/request": "~2.48.7",
 		"@types/semver": "^7.7.1",
 		"@types/vscode": "^1.99.3",
+		"@typescript-eslint/eslint-plugin": "^8.55.0",
 		"@typescript-eslint/parser": "^8.55.0",
 		"@vscode/test-cli": "^0.0.12",
 		"@vscode/test-electron": "^2.5.2",
