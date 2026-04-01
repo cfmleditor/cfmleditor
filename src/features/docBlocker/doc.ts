@@ -130,7 +130,6 @@ export class Doc {
 		if (Array.isArray(extra) && extra.length > 0) {
 			if (!gap) {
 				snippet.appendText("\n *");
-				gap = true;
 			}
 			extra.filter((extraItem: ConfigExtra) => {
 				if (extraItem.types && Array.isArray(extraItem.types)) {

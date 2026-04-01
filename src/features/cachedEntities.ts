@@ -307,7 +307,7 @@ function setUserFunction(userFunction: UserFunctionRef): void {
  */
 export function searchAllFunctionNames(query: string, _searchMode: SearchMode = SearchMode.StartsWith): UserFunction[] {
 	const functions: UserFunction[] = [];
-	let functionRefs: UserFunctionRef[] = [];
+	let functionRefs: UserFunctionRef[];
 	functionRefs = allFunctionNames.search(query);
 	if (_searchMode === SearchMode.EqualTo) {
 		functionRefs = functionRefs.filter((funcObj: UserFunctionRef) => {

@@ -540,18 +540,15 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 	const scriptBlockComment = cfmlCommentRules.scriptBlockComment;
 	const tagBlockComment = cfmlCommentRules.tagBlockComment;
 
-	let charCodeAtNextPosition: number = 0;
-	let hashEscaped: boolean = false;
-	let quoteEscaped: boolean = false;
-	let newDepth: number = 0;
+	let charCodeAtNextPosition: number;
+	let newDepth: number;
 	let currentLine = 0;
 	let currentChar = 0;
 	let prevLine = 0;
 	let prevChar = 0;
 	let position: Position | undefined;
-	let tagName: string = "";
-	let characterAtPosition: string = "";
-	let charCodeAtPosition: number = 0;
+	let characterAtPosition: string;
+	let charCodeAtPosition: number;
 
 	// TODO: Account for code delimited by hashes within cfoutput, cfmail, cfquery, etc. blocks
 
@@ -620,7 +617,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 				}
 				else {
 					charCodeAtNextPosition = documentText.charCodeAt(offset + 1);
-					hashEscaped = charCodeAtNextPosition === HASH;
+					const hashEscaped = charCodeAtNextPosition === HASH;
 
 					if (hashEscaped) {
 						offset++;
@@ -636,7 +633,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 			}
 			else if (!stringContext.embeddedCFML && charCodeAtPosition === stringContext.activeCharCodeDelimiter) {
 				charCodeAtNextPosition = documentText.charCodeAt(offset + 1);
-				quoteEscaped = charCodeAtNextPosition === stringContext.activeCharCodeDelimiter;
+				const quoteEscaped = charCodeAtNextPosition === stringContext.activeCharCodeDelimiter;
 
 				if (quoteEscaped) {
 					offset++;
@@ -731,7 +728,7 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 				&& lineText.charCodeAt(lineLen - 2) === 99 // c
 				&& lineText.charCodeAt(lineLen - 1) === 102) { // f
 				position = new Position(currentLine, currentChar);
-				tagName = document.getText(document.getWordRangeAtPosition(position));
+				const tagName: string = document.getText(document.getWordRangeAtPosition(position));
 				tagContext.inStartTag = true;
 				tagContext.inEndTag = false;
 				tagContext.name = tagName;

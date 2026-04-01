@@ -57,8 +57,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		const endSigPosition: Position = getClosingPosition(documentPositionStateContext, document.offsetAt(startSigPosition), ")", _token).translate(0, -1);
 		const functionArgRanges: Range[] = getScriptFunctionArgRanges(documentPositionStateContext, new Range(startSigPosition, endSigPosition), ",", _token);
 
-		let paramIndex: number = 0;
-		paramIndex = functionArgRanges.findIndex((range: Range) => {
+		let paramIndex: number = functionArgRanges.findIndex((range: Range) => {
 			return range.contains(position);
 		});
 		if (paramIndex === -1) {

@@ -59,7 +59,7 @@ export default class DocBlockCompletions implements CompletionItemProvider {
 			return result;
 		}
 
-		if ((wordMatchRange = document.getWordRangeAtPosition(position, /@[\w$]*((?:\?\.|\.|::)[a-z]*)?/)) === undefined) {
+		if ((document.getWordRangeAtPosition(position, /@[\w$]*((?:\?\.|\.|::)[a-z]*)?/)) === undefined) {
 			return result;
 		}
 

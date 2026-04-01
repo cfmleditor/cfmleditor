@@ -150,9 +150,8 @@ export namespace DataType {
 		let stringValue: string = "";
 
 		let previousChar: string = "";
-		let currentChar: string = "";
 		for (let idx = 0; idx < trimmedStr.length; idx++) {
-			currentChar = trimmedStr.charAt(idx);
+			const currentChar = trimmedStr.charAt(idx);
 
 			// Skip if escaped
 			if (previousChar === stringDelimiter && currentChar === stringDelimiter) {

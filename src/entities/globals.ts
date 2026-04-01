@@ -116,7 +116,7 @@ export function constructTagSnippet(
 			});
 		}
 
-		let snippetString: string = "";
+		let snippetString: string;
 
 		if (isScript) {
 			snippetString = `${globalTag.name}(${snippetParamParts.join(", ")})$0`;

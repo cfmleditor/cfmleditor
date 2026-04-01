@@ -1,4 +1,4 @@
-import { TypeDefinitionProvider, TextDocument, Position, CancellationToken, Definition, Range, Location, workspace, WorkspaceConfiguration } from "vscode";
+import { TypeDefinitionProvider, TextDocument, Position, CancellationToken, Definition, Location, workspace, WorkspaceConfiguration } from "vscode";
 import { Component } from "../entities/component";
 import { getComponent } from "./cachedEntities";
 import { Scope, getValidScopesPrefixPattern, getVariableScopePrefixPattern, unscopedPrecedence } from "../entities/scope";
@@ -33,12 +33,12 @@ export default class CFMLTypeDefinitionProvider implements TypeDefinitionProvide
 
 		const docIsCfcFile: boolean = documentPositionStateContext.isCfcFile;
 		const docIsCfmFile: boolean = documentPositionStateContext.isCfmFile;
-		let wordRange: Range | undefined = document.getWordRangeAtPosition(position);
+		// let wordRange: Range | undefined = document.getWordRangeAtPosition(position);
 		const currentWord: string = documentPositionStateContext.currentWord;
 		const lowerCurrentWord: string = currentWord.toLowerCase();
-		if (!wordRange) {
-			wordRange = new Range(position, position);
-		}
+		// if (!wordRange) {
+		// 	wordRange = new Range(position, position);
+		// }
 
 		const docPrefix: string = documentPositionStateContext.docPrefix;
 

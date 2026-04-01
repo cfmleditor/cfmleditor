@@ -27,14 +27,12 @@ export function convertPathToPackageName(
 	webroot: Uri,
 	mappings: CFMLMapping[]
 ): string {
-	let relPath = "";
-
 	// We would need to kinda sort the mappings by length, so that the longest matching path is used first.
 	mappings.sort((a, b) => {
 		return b.directoryPath.length - a.directoryPath.length;
 	});
 
-	relPath = posix.relative(webroot.path, path.path);
+	let relPath = posix.relative(webroot.path, path.path);
 
 	for (const mapping of mappings) {
 		if (mapping.isPhysicalDirectoryPath

@@ -898,7 +898,7 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 				break;
 			}
 			currComponent.functions.filter((func: UserFunction, funcKey: string) => {
-				let hasValidScopes: boolean = false;
+				let hasValidScopes: boolean;
 				if (func.access === Access.Private) {
 					hasValidScopes = privateAccessPrefixMatched;
 				}
@@ -947,10 +947,10 @@ function getGlobalFunctionCompletions(state: CompletionState): CompletionItem[] 
 		for (const name in globalFunctions) {
 			if (state.currentWordMatches(name)) {
 				const globalFunction: GlobalFunction = globalFunctions[name];
-				let functionDetail = globalFunction.syntax;
-				if (!functionDetail.startsWith("function ")) {
-					functionDetail = "function " + globalFunction.syntax;
-				}
+				// let functionDetail = globalFunction.syntax;
+				// if (!functionDetail.startsWith("function ")) {
+				// 	functionDetail = "function " + globalFunction.syntax;
+				// }
 
 				let globalFunctionName: string = globalFunction.name;
 				if (cfmlGFFirstLetterCase === "lower") {
@@ -983,10 +983,10 @@ function getGlobalMemberFunctionCompletions(state: CompletionState): CompletionI
 			if (state.currentWordMatches(name)) {
 				const globalMemberFunction: GlobalMemberFunction = memberFunctions[name];
 
-				let functionDetail = globalMemberFunction.syntax;
-				if (!functionDetail.startsWith("function ")) {
-					functionDetail = "function " + globalMemberFunction.syntax;
-				}
+				// let functionDetail = globalMemberFunction.syntax;
+				// if (!functionDetail.startsWith("function ")) {
+				// 	functionDetail = "function " + globalMemberFunction.syntax;
+				// }
 
 				let globalMemberFunctionName: string = globalMemberFunction.name;
 				if (cfmlGFFirstLetterCase === "lower") {
