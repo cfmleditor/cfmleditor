@@ -18,25 +18,25 @@ function generateTests_getDocumentContextRanges(fast: boolean) {
 	const token = undefined;
 	const docRange = undefined;
 	const exclDocumentRanges = undefined;
-	it("should parse single-line comment", function () {
+	it("should parse single-line comment", async function () {
 		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, dedent`
 		// Foo
 		a = 1;
 		`);
-		const contextRanges = getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
+		const contextRanges = await getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
 		const comments = contextRanges.commentRanges;
 		assertRangeArrayEqual(comments, [
 			new Range(0, 0, 0, 6),
 		]);
 	});
 
-	it("should parse adjacent single-line comments separately", function () {
+	it("should parse adjacent single-line comments separately", async function () {
 		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, dedent`
 		// Foo
 		// Floop
 		a = 1;
 		`);
-		const contextRanges = getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
+		const contextRanges = await getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
 		const comments = contextRanges.commentRanges;
 		assertRangeArrayEqual(comments, [
 			new Range(0, 0, 0, 6),
@@ -44,119 +44,119 @@ function generateTests_getDocumentContextRanges(fast: boolean) {
 		]);
 	});
 
-	it("should parse line comment on last line (no trailing newline)", function () {
+	it("should parse line comment on last line (no trailing newline)", async function () {
 		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, dedent`
 		a = 1;
 		// Foo
 		`);
-		const contextRanges = getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
+		const contextRanges = await getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
 		const comments = contextRanges.commentRanges;
 		assertRangeArrayEqual(comments, [
 			new Range(1, 0, 1, 6),
 		]);
 	});
 
-	it("should parse line comment on last line (with trailing newline)", function () {
+	it("should parse line comment on last line (with trailing newline)", async function () {
 		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, dedent`
 		a = 1;
 		// Foo
 
 		`);
-		const contextRanges = getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
+		const contextRanges = await getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
 		const comments = contextRanges.commentRanges;
 		assertRangeArrayEqual(comments, [
 			new Range(1, 0, 1, 6),
 		]);
 	});
 
-	it("should parse single-line comment block", function () {
+	it("should parse single-line comment block", async function () {
 		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, dedent`
 		/* foo */
 		a = 1;
 		`);
-		const contextRanges = getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
+		const contextRanges = await getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
 		const comments = contextRanges.commentRanges;
 		assertRangeArrayEqual(comments, [
 			new Range(0, 0, 0, 9),
 		]);
 	});
 
-	it("should parse single-line comment block on last line", function () {
+	it("should parse single-line comment block on last line", async function () {
 		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, dedent`
 		a = 1;
 		/* foo */
 		`);
-		const contextRanges = getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
+		const contextRanges = await getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
 		const comments = contextRanges.commentRanges;
 		assertRangeArrayEqual(comments, [
 			new Range(1, 0, 1, 9),
 		]);
 	});
 
-	it("should parse multi-line comment", function () {
+	it("should parse multi-line comment", async function () {
 		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, dedent`
 		/*
 		foo
 		*/
 		a = 1;
 		`);
-		const contextRanges = getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
+		const contextRanges = await getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
 		const comments = contextRanges.commentRanges;
 		assertRangeArrayEqual(comments, [
 			new Range(0, 0, 2, 2),
 		]);
 	});
 
-	it("should parse multi-line comment on last", function () {
+	it("should parse multi-line comment on last", async function () {
 		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, dedent`
 		a = 1;
 		/*
 		foo
 		*/
 		`);
-		const contextRanges = getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
+		const contextRanges = await getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
 		const comments = contextRanges.commentRanges;
 		assertRangeArrayEqual(comments, [
 			new Range(1, 0, 3, 2),
 		]);
 	});
 
-	it("should ignore single-line comment in comment block", function () {
+	it("should ignore single-line comment in comment block", async function () {
 		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, dedent`
 		/*
 		// foo
 		*/
 		a = 1;
 		`);
-		const contextRanges = getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
+		const contextRanges = await getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
 		const comments = contextRanges.commentRanges;
 		assertRangeArrayEqual(comments, [
 			new Range(0, 0, 2, 2),
 		]);
 	});
 
-	it("should ignore multi-line comment start in existing comment", function () {
+	it("should ignore multi-line comment start in existing comment", async function () {
 		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, dedent`
 		/*
 		/* foo
 		*/
 		a = 1;
 		`);
-		const contextRanges = getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
+		const contextRanges = await getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
 		const comments = contextRanges.commentRanges;
 		assertRangeArrayEqual(comments, [
 			new Range(0, 0, 2, 2),
 		]);
 	});
 
-	it("should parse docblock comment", function () {
+	it("should parse docblock comment", async function () {
 		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, dedent`
 		/**
 		 * Foo
 		 */
 		a = 1;
 		`);
-		const contextRanges = getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
+		const contextRanges = await getDocumentContextRanges(doc, isScript, docRange, fast, token, exclDocumentRanges);
 		const comments = contextRanges.commentRanges;
 		assertRangeArrayEqual(comments, [
 			new Range(0, 0, 2, 3),

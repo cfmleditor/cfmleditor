@@ -10,6 +10,52 @@ import { some } from "micromatch";
 
 const CFM_FILE_EXTS: string[] = [".cfm", ".cfml"];
 const CFS_FILE_EXTS: string[] = [".cfs"];
+
+interface CachedDocumentContextRanges {
+	version: number;
+	contentHash: ArrayBuffer;
+	isScript: boolean;
+	ranges: DocumentContextRanges;
+}
+
+const documentContextRangesCache = new Map<string, CachedDocumentContextRanges>();
+const documentContextFastRangesCache = new Map<string, CachedDocumentContextRanges>();
+
+/**
+ * Simple fast hash for cache invalidation.
+ * @param str
+ * @returns
+ */
+async function hashString(str: string): Promise<ArrayBuffer> {
+	const encoder = new TextEncoder();
+	const data = encoder.encode(str);
+	const hash = await crypto.subtle.digest("SHA-1", data);
+	return hash;
+}
+
+function hashEqual(buf1: ArrayBuffer, buf2: ArrayBuffer) {
+	if (buf1.byteLength !== buf2.byteLength) {
+		return false;
+	}
+	const dv1 = new Uint8Array(buf1);
+	const dv2 = new Uint8Array(buf2);
+	return dv1.every((value, index) => value === dv2[index]);
+}
+
+/**
+ * Clears the document context ranges cache for a specific URI, or all entries if no URI is provided.
+ * @param uri Optional URI to clear from cache
+ */
+export function clearDocumentContextRangesCache(uri?: Uri): void {
+	if (uri) {
+		documentContextRangesCache.delete(uri.toString());
+		documentContextFastRangesCache.delete(uri.toString());
+	}
+	else {
+		documentContextRangesCache.clear();
+		documentContextFastRangesCache.clear();
+	}
+}
 export const APPLICATION_CFM_GLOB: string = "**/Application.cfm";
 export const APPLICATION_CFM: string = "Application.cfm";
 export const APPLICATION_CFC: string = "Application.cfc";
@@ -333,31 +379,68 @@ export function getCfScriptRanges(document: TextDocument, range: Range | undefin
  * @param exclDocumentRanges
  * @returns
  */
-export function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, fast: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentContextRanges {
+export async function getDocumentContextRanges(document: TextDocument, isScript: boolean = false, docRange: Range | undefined, fast: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): Promise<DocumentContextRanges> {
+	if (exclDocumentRanges) {
+		return { commentRanges: [], stringRanges: undefined, stringEmbeddedCfmlRanges: undefined };
+	}
+
+	// Only use cache for whole-document requests (docRange === undefined)
+	if (docRange === undefined) {
+		const cacheKey = document.uri.toString();
+		const cached = (fast ? documentContextFastRangesCache : documentContextRangesCache).get(cacheKey);
+		const contentHash = await hashString(document.getText());
+
+		if (cached && cached.version === document.version && hashEqual(cached.contentHash, contentHash) && cached.isScript === isScript) {
+			// A full (non-fast) cached result can serve both fast and full requests
+			return cached.ranges;
+		}
+
+		const result = computeDocumentContextRanges(document, isScript, docRange, fast, _token);
+
+		// Only cache if this result is at least as complete as what we have
+		if (!cached || cached.version !== document.version || !hashEqual(cached.contentHash, contentHash) || cached.isScript !== isScript) {
+			(fast ? documentContextFastRangesCache : documentContextRangesCache).set(cacheKey, {
+				version: document.version,
+				contentHash,
+				isScript,
+				ranges: result,
+			});
+		}
+
+		return result;
+	}
+
+	return computeDocumentContextRanges(document, isScript, docRange, fast, _token);
+}
+
+/**
+ * Computes document context ranges (comments, strings, embedded CFML) without caching.
+ * @param document The document to check
+ * @param isScript Whether the document or given range is CFScript
+ * @param docRange Range within which to check
+ * @param fast Whether to choose the faster but less accurate method
+ * @param _token
+ * @returns
+ */
+function computeDocumentContextRanges(document: TextDocument, isScript: boolean, docRange: Range | undefined, fast: boolean, _token: CancellationToken | undefined): DocumentContextRanges {
 	const startTime = performance.now();
 
 	if (fast) {
-		const fastEndTime = performance.now();
-
 		const fastresult = {
 			commentRanges: getCommentRanges(document, isScript, docRange, _token),
 			stringRanges: undefined,
 			stringEmbeddedCfmlRanges: undefined,
 		};
 
+		const fastEndTime = performance.now();
 		console.info(`getDocumentContextRanges (fast) on ${document.fileName} took ${(fastEndTime - startTime).toFixed(2)}ms`);
 
 		return fastresult;
 	}
 
-	if (exclDocumentRanges) {
-		return { commentRanges: [], stringRanges: undefined, stringEmbeddedCfmlRanges: undefined };
-	}
-
 	const result = getCommentAndStringRangesIterated(document, isScript, docRange, _token);
 
 	const endTime = performance.now();
-
 	console.info(`getDocumentContextRanges on ${document.fileName} took ${(endTime - startTime).toFixed(2)}ms`);
 
 	return result;
@@ -871,8 +954,9 @@ export function isInCss(documentStateContext: DocumentStateContext, position: Po
  * @param _token
  * @returns
  */
-export function isInComment(document: TextDocument, position: Position, isScript: boolean = false, _token: CancellationToken | undefined): boolean {
-	return isInRanges(getDocumentContextRanges(document, isScript, undefined, false, _token).commentRanges, position, true, _token);
+export async function isInComment(document: TextDocument, position: Position, isScript: boolean = false, _token: CancellationToken | undefined): Promise<boolean> {
+	const documentRanges = await getDocumentContextRanges(document, isScript, undefined, false, _token);
+	return isInRanges(documentRanges.commentRanges, position, true, _token);
 }
 
 /**

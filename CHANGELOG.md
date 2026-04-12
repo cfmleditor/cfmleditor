@@ -2,6 +2,11 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.7.1] - 2026-04-01
+
+- Update Minimum version of VSCode to `1.105.1`
+- Update Typescript to v6
+
 ## [0.7.0] - 2026-01-27
 
 - Update `cfmleditor` and `cfmleditor-lint` versions to `0.7.x` with the intention of keeping releases in sync

@@ -64,7 +64,8 @@ async function main() {
 const replacePath = () => {
     const replace = {
         'path': require.resolve('path-browserify'),
-        'buffer': require.resolve('buffer/')
+        'buffer': require.resolve('buffer/'),
+        'util': require.resolve('util/')
     }
     const filter = RegExp(`^(${Object.keys(replace).join("|")})$`);
     return {

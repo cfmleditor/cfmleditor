@@ -538,7 +538,7 @@ export async function getParsedComponentFromDocument(document: TextDocument, _to
 	const cfmlCompletionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.suggest", document.uri);
 	const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
-	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, replaceComments, _token);
+	const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, true, replaceComments, _token);
 	const parsedComponent: Component | undefined = await parseComponent(documentStateContext, _token);
 	return [documentStateContext, parsedComponent];
 }
@@ -640,7 +640,7 @@ async function cacheGivenApplicationCfms(applicationUris: Uri[], _token: Cancell
  * @param _token
  */
 export async function cacheApplicationFromDocument(document: TextDocument, _token: CancellationToken | undefined): Promise<void> {
-	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, true, true, _token);
+	const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, true, true, _token);
 	await cacheApplicationFromStateContext(documentStateContext, _token);
 }
 

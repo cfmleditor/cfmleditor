@@ -38,7 +38,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		const replaceComments = cfmlCompletionSettings.get<boolean>("replaceComments", true);
 
 		// Looks like this is the only place where we can't use "fast" parsing
-		const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
+		const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(document, position, false, replaceComments, _token, false);
 		if (documentPositionStateContext.positionInComment) {
 			return null;
 		}

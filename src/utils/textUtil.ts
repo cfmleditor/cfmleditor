@@ -99,7 +99,7 @@ export function replaceRangeWithSpaces(document: TextDocument, ranges: Range[]):
  * @param _token
  * @returns string
  */
-export function getSanitizedDocumentText(document: TextDocument, commentRanges: Range[], replaceComments: boolean = false, _token: CancellationToken | undefined): string {
+export async function getSanitizedDocumentText(document: TextDocument, commentRanges: Range[], replaceComments: boolean = false, _token: CancellationToken | undefined): Promise<string> {
 	if (replaceComments !== true) {
 		return document.getText();
 	}
@@ -109,7 +109,8 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges: 
 	}
 	else {
 		const docIsScript: boolean = (isCfcFile(document) && hasComponent(document.uri) && (getComponent(document.uri))?.isScript) ? true : false;
-		documentCommentRanges = getDocumentContextRanges(document, docIsScript, undefined, true, _token).commentRanges;
+		const documentRanges = await getDocumentContextRanges(document, docIsScript, undefined, true, _token);
+		documentCommentRanges = documentRanges.commentRanges;
 	}
 
 	return replaceRangeWithSpaces(document, documentCommentRanges);
@@ -123,10 +124,10 @@ export function getSanitizedDocumentText(document: TextDocument, commentRanges: 
  * @param _token
  * @returns string
  */
-export function getPrefixText(document: TextDocument, position: Position, replaceComments: boolean = false, _token: CancellationToken | undefined): string {
+export async function getPrefixText(document: TextDocument, position: Position, replaceComments: boolean = false, _token: CancellationToken | undefined): Promise<string> {
 	let documentText: string = document.getText();
 	if (replaceComments) {
-		documentText = getSanitizedDocumentText(document, [], false, _token);
+		documentText = await getSanitizedDocumentText(document, [], false, _token);
 	}
 
 	return documentText.slice(0, document.offsetAt(position));

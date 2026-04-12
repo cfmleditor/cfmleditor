@@ -18,7 +18,7 @@ import CFMLSignatureHelpProvider from "./features/signatureHelpProvider";
 import CFMLTypeDefinitionProvider from "./features/typeDefinitionProvider";
 import CFMLWorkspaceSymbolProvider from "./features/workspaceSymbolProvider";
 import CFDocsService from "./utils/cfdocs/cfDocsService";
-import { APPLICATION_CFM_GLOB, isApplicationFile, isCfcUri, shouldExcludeDocument } from "./utils/contextUtil";
+import { APPLICATION_CFM_GLOB, clearDocumentContextRangesCache, isApplicationFile, isCfcUri, shouldExcludeDocument } from "./utils/contextUtil";
 import { handleContentChanges } from "./features/autoclose";
 // import { CFMLFlatPackageProvider } from "./views/components";
 
@@ -119,13 +119,22 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	context.subscriptions.push(commands.registerCommand("cfml.refreshWorkspaceDefinitionCache", refreshWorkspaceDefinitionCache));
 	context.subscriptions.push(commands.registerCommand("cfml.copyPackage", copyPackage));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleLineComment", toggleLineComment));
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.insertSnippet", insertSnippet));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.insertSnippet", (editor, edit, ...args: unknown[]) => {
+		void insertSnippet(editor, edit, args[0] as Parameters<typeof insertSnippet>[2]);
+	}));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.toggleBlockComment", toggleBlockComment));
-	// eslint-disable-next-line @typescript-eslint/no-misused-promises
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openActiveApplicationFile", showApplicationDocument));
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToMatchingTag", goToMatchingTag));
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openCfDocs", CFDocsService.openCfDocsForCurrentWord.bind(CFDocsService)));
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openEngineDocs", CFDocsService.openEngineDocsForCurrentWord.bind(CFDocsService)));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openActiveApplicationFile", (editor) => {
+		void showApplicationDocument(editor);
+	}));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToMatchingTag", (editor, edit) => {
+		void goToMatchingTag(editor, edit, undefined);
+	}));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openCfDocs", (editor, edit) => {
+		void CFDocsService.openCfDocsForCurrentWord(editor, edit, undefined);
+	}));
+	context.subscriptions.push(commands.registerTextEditorCommand("cfml.openEngineDocs", (editor, edit) => {
+		void CFDocsService.openEngineDocsForCurrentWord(editor, edit, undefined);
+	}));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.foldAllFunctions", foldAllFunctions));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToRouteView", () => {
 		void goToRouteView();
@@ -208,8 +217,13 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	}));
 
 	workspace.onDidChangeTextDocument(async (event) => {
+		clearDocumentContextRangesCache(event.document.uri);
 		await handleContentChanges(event);
 	});
+
+	context.subscriptions.push(workspace.onDidCloseTextDocument((document: TextDocument) => {
+		clearDocumentContextRangesCache(document.uri);
+	}));
 
 	await commands.executeCommand("cfml.refreshGlobalDefinitionCache");
 	await commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");

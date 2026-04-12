@@ -107,9 +107,9 @@ interface SnippetArgs {
  * @param edit
  * @param args
  */
-export function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: SnippetArgs): void {
+export async function insertSnippet(editor: TextEditor, edit: TextEditorEdit, args: SnippetArgs): Promise<void> {
 	const position: Position = editor.selection.start;
-	const documentPositionStateContext: DocumentPositionStateContext = getDocumentPositionStateContext(editor.document, position, true, true, undefined, false);
+	const documentPositionStateContext: DocumentPositionStateContext = await getDocumentPositionStateContext(editor.document, position, true, true, undefined, false);
 
 	if (documentPositionStateContext.positionIsScript) {
 		commands.executeCommand("editor.action.insertSnippet", {

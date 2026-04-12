@@ -9,7 +9,7 @@ export default defineConfig({
 		ui: "bdd",
 		preload: ['source-map-support/register'],
 		...(isCI && {
-			reporter: "mocha-json-output-reporter",
+			reporter: "json",
 			reporterOptions: {
 				output: "test-results.json",
 			},

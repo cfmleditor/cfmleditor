@@ -38,7 +38,7 @@ export interface DocumentPositionStateContext extends DocumentStateContext {
  * @param exclDocumentRanges
  * @returns DocumentStateContext
  */
-export function getDocumentStateContext(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentStateContext {
+export async function getDocumentStateContext(document: TextDocument, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): Promise<DocumentStateContext> {
 	const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
 	const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
 	const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
@@ -51,11 +51,11 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
 	// If we've already cached the component we already know if it is a script component
 	const docIsScript: boolean = thisComponent ? thisComponent.isScript : ((docIsCfcFile && isScriptComponent(document)) || docIsCfsFile);
 
-	const documentRanges: DocumentContextRanges = getDocumentContextRanges(document, docIsScript, undefined, fast, _token, exclDocumentRanges);
+	const documentRanges: DocumentContextRanges = await getDocumentContextRanges(document, docIsScript, undefined, fast, _token, exclDocumentRanges);
 	const commentRanges: Range[] = documentRanges.commentRanges;
 	const stringRanges: Range[] | undefined = documentRanges.stringRanges;
 	const stringEmbeddedCfmlRanges: Range[] | undefined = documentRanges.stringEmbeddedCfmlRanges;
-	const sanitizedDocumentText: string = getSanitizedDocumentText(document, commentRanges, replaceComments, _token);
+	const sanitizedDocumentText: string = await getSanitizedDocumentText(document, commentRanges, replaceComments, _token);
 
 	return {
 		document,
@@ -81,10 +81,10 @@ export function getDocumentStateContext(document: TextDocument, fast: boolean = 
  * @param exclDocumentRanges
  * @returns DocumentPositionStateContext
  */
-export function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): DocumentPositionStateContext {
+export async function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): Promise<DocumentPositionStateContext> {
 	const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
 	const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
-	const documentStateContext: DocumentStateContext = getDocumentStateContext(document, fast, replaceComments, _token, exclDocumentRanges);
+	const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, fast, replaceComments, _token, exclDocumentRanges);
 	const docIsScript: boolean = documentStateContext.docIsScript;
 	const positionInComment: boolean = isInRanges(documentStateContext.commentRanges, position, false, _token);
 	const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token);
