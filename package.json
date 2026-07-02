@@ -723,7 +723,7 @@
 		"string-dedent": "^3.0.2",
 		"ts-loader": "^9.5.7",
 		"tsx": "^4.21.0",
-		"typescript": "^6.0.2",
+		"typescript": "^6.0.3",
 		"util": "^0.12.5"
 	},
 	"allowScripts": {
