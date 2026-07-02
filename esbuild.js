@@ -38,7 +38,7 @@ async function main() {
     sourcesContent: false,
     platform: 'browser',
     outfile: 'dist/web/extension.js',
-    external: ['vscode'],
+    external: ['vscode', 'fs', 'path', 'os', 'https', 'zlib', 'stream', 'stream/promises', 'child_process', 'net', 'tls', 'crypto', 'vscode-languageclient/node', 'tar-stream'],
     define: {
       global: 'globalThis'
     },

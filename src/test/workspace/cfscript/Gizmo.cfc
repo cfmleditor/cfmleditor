@@ -5,7 +5,7 @@ component extends="cfscript.Base" {
 		return this;
 	}
 
-	public cfscript.Gizmo fucntion compareTo(cfscript.Gizmo gizmo) {
+	public cfscript.Gizmo function compareTo(cfscript.Gizmo gizmo) {
 		return compare(variables.name, gizmo.name);
 	}
 

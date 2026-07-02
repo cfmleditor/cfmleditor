@@ -228,6 +228,14 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	await commands.executeCommand("cfml.refreshGlobalDefinitionCache");
 	await commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
 
+	try {
+		const { startLspClient } = await import("./lsp/cfmlLspClient");
+		await startLspClient(context);
+	}
+	catch {
+		// LSP module not available (e.g. web build)
+	}
+
 	const api: api = {
 		isBulkCaching(): boolean {
 			return bulkCaching;
@@ -284,5 +292,12 @@ export function getCurrentConfigIsTag(): boolean {
 /**
  * This method is called when the extension is deactivated.
  */
-export function deactivate(): void {
+export async function deactivate(): Promise<void> {
+	try {
+		const { stopLspClient } = await import("./lsp/cfmlLspClient");
+		await stopLspClient();
+	}
+	catch {
+		// LSP module not available
+	}
 }

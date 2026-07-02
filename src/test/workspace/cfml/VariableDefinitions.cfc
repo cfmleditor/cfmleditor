@@ -16,7 +16,7 @@
 		<cfset application["scopeBracketsVariable"]['bar']["qux"] = "foo">
 
 		<!--- Reference variables --->
-		<cfset var ref = "">>
+		<cfset var ref = "">
 		<cfset ref = argumentVariable>
 		<cfset ref = localVariable>
 		<cfset ref = varVariable>
@@ -28,9 +28,9 @@
 
 		<cfset application["argumentVariable"] = "foo">
 		<cfset application["localVariable"] = "foo">
-		
+
 	</cffunction>
-	
+
 	<cffunction name="test_">
 		<cfargument name="variableName">
 		<cfset local.variableName = "foo">

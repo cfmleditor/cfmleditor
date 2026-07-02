@@ -152,7 +152,7 @@ describe("provideDefinition", function () {
 		});
 
 		it("should get definition for component as part of method returntype (cfscript)", async function () {
-			const definition = await findDefinition(gizmoDoc, "|cfscript.Gizmo function");
+			const definition = await findDefinition(gizmoDoc, "|cfscript.Gizmo function init");
 			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfscript/Gizmo.cfc`);
 		});
 

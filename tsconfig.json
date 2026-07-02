@@ -21,7 +21,8 @@
 		"noImplicitReturns": true,
 		"noUnusedLocals": true,
 		"esModuleInterop": true,
-		"resolveJsonModule": true
+		"resolveJsonModule": true,
+		"skipLibCheck": false
 	},
 	"exclude": [
 		"node_modules",
