@@ -21,13 +21,13 @@ function declaredFormatSettings(): string[] {
 		.sort();
 }
 
-suite("LSP initializationOptions", () => {
+describe("LSP initializationOptions", function () {
 	// The key list and the declared settings are two hand-maintained lists of
 	// the same thing. A setting declared but not listed is one the user can set
 	// and the server never hears about; a key listed but not declared is one
 	// nobody can set. Neither fails at runtime — the payload is just quietly
 	// missing a value — so it is checked here.
-	test("every declared cfml.format setting is sent, and vice versa", () => {
+	it("sends every declared cfml.format setting, and vice versa", function () {
 		assert.deepStrictEqual([...FORMAT_KEYS].sort(), declaredFormatSettings());
 	});
 
@@ -35,11 +35,11 @@ suite("LSP initializationOptions", () => {
 	// every setting whether or not anyone chose it, so building the payload
 	// from values alone would have an untouched install assert twenty defaults
 	// over any a project's .cfmleditor.json did not name.
-	test("an untouched configuration sends nothing", () => {
+	it("sends nothing for an untouched configuration", function () {
 		assert.strictEqual(buildInitializationOptions(), undefined);
 	});
 
-	test("an explicitly set value is sent", async () => {
+	it("sends an explicitly set value", async function () {
 		const config = workspace.getConfiguration("cfml.format");
 		await config.update("braceStyle", "next-line", ConfigurationTarget.Global);
 
