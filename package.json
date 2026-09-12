@@ -502,6 +502,131 @@
 					"markdownDescription": "A setting to enable uncomment from anywhere within a comment block.",
 					"scope": "resource"
 				},
+				"cfml.format.enabled": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Enable the LSP formatter. When off, formatting requests are ignored. A project's `.cfmleditor.json` overrides this.",
+					"scope": "resource"
+				},
+				"cfml.format.selfCloseTags": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Convert void/implicit-end HTML tags to self-closing form (e.g. `<br>` \u2192 `<br />`).",
+					"scope": "resource"
+				},
+				"cfml.format.whitespaceOnly": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Reject formatting results that change non-whitespace content. This is the formatter's safety guard \u2014 turning it off lets a formatting defect rewrite your code.",
+					"scope": "resource"
+				},
+				"cfml.format.queryFormat": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Format `<cfquery>` content (SQL re-indentation, keyword casing). When off, query content is emitted verbatim.",
+					"scope": "resource"
+				},
+				"cfml.format.lowercaseTags": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Lowercase CF tag names (e.g. `<CFOUTPUT>` \u2192 `<cfoutput>`). When off, each tag keeps the casing it was written with, opening and closing halves independently.",
+					"scope": "resource"
+				},
+				"cfml.format.lowercaseAttributes": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Lowercase attribute names.",
+					"scope": "resource"
+				},
+				"cfml.format.doubleQuoteAttributes": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Normalize attribute values to double quotes.",
+					"scope": "resource"
+				},
+				"cfml.format.queryUppercaseKeywords": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Uppercase SQL keywords inside `<cfquery>` blocks.",
+					"scope": "resource"
+				},
+				"cfml.format.blankLinesInBlocks": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Pad a block's body with a blank line after the opening brace and before the closing one. Off gives compact blocks, and collapses an empty body from three lines to two.",
+					"scope": "resource"
+				},
+				"cfml.format.switchCaseIndent": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Indent `case` and `default` labels one level inside the switch, with their statements one further in. Off keeps the label at the `switch` keyword's own column.",
+					"scope": "resource"
+				},
+				"cfml.format.parenSpacing": {
+					"type": "string",
+					"enum": ["", "pad", "tight"],
+					"default": "",
+					"markdownDescription": "Padding inside parentheses. `pad` gives `if ( a )` and `foo( 1, 2 )`; `tight` gives `if (a)` and `foo(1, 2)`. Empty keeps the existing behaviour, which pads conditions and grouping but not argument lists.",
+					"scope": "resource"
+				},
+				"cfml.format.braceStyle": {
+					"type": "string",
+					"enum": ["same-line", "next-line"],
+					"default": "same-line",
+					"markdownDescription": "Where a block's opening brace goes. `same-line` (K&R) keeps `function f() {`; `next-line` (Allman) puts the brace alone on the line below, and moves `else`, `catch` and `finally` onto their own lines so their braces line up too.",
+					"scope": "resource"
+				},
+				"cfml.format.scopeCase": {
+					"type": "string",
+					"enum": ["upper", "lower", "leave"],
+					"default": "leave",
+					"markdownDescription": "Case for CFML scope names (`variables`, `arguments`, \u2026).",
+					"scope": "resource"
+				},
+				"cfml.format.commaPosition": {
+					"type": "string",
+					"enum": ["after", "before"],
+					"default": "after",
+					"markdownDescription": "Comma placement in multi-line argument lists: `after` (trailing) or `before` (leading).",
+					"scope": "resource"
+				},
+				"cfml.format.queryCommaPosition": {
+					"type": "string",
+					"enum": ["preserve", "after", "before"],
+					"default": "preserve",
+					"markdownDescription": "Comma placement in SQL SELECT lists: `preserve` (keep original position), `after` (trailing) or `before` (leading).",
+					"scope": "resource"
+				},
+				"cfml.format.lineWidth": {
+					"type": "integer",
+					"default": 100,
+					"markdownDescription": "Soft column limit \u2014 attributes expand to separate lines when a tag exceeds this width.",
+					"scope": "resource"
+				},
+				"cfml.format.paramBreakThreshold": {
+					"type": "integer",
+					"default": 0,
+					"markdownDescription": "Number of parameters above which a function declaration's parameter list is expanded onto separate lines. `0` expands every list that has parameters; raise it to keep short signatures on one line.",
+					"scope": "resource"
+				},
+				"cfml.format.attrBreakThreshold": {
+					"type": "integer",
+					"default": 4,
+					"markdownDescription": "Number of attributes above which they are always expanded onto separate lines.",
+					"scope": "resource"
+				},
+				"cfml.format.indentWidth": {
+					"type": "integer",
+					"default": 4,
+					"markdownDescription": "Spaces per indentation level. A workspace `.cfmleditor.json` value outranks the editor's `tabSize`.",
+					"scope": "resource"
+				},
+				"cfml.format.debug": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Enable formatter debug checks. The server re-formats its own output and warns when the result is not stable.",
+					"scope": "resource"
+				},
 				"cfml.lsp.enabled": {
 					"type": "boolean",
 					"default": false,

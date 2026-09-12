@@ -204,6 +204,69 @@ function findCachedBinary(storageDir: string, binaryName: string): string | unde
 	return undefined;
 }
 
+// The formatting keys the server accepts, mirrored as `cfml.format.*` settings.
+// Kept in the server's spelling so the payload needs no translation, and
+// checked against package.json by a test.
+export const FORMAT_KEYS = [
+	"enabled",
+	"selfCloseTags",
+	"whitespaceOnly",
+	"queryFormat",
+	"lowercaseTags",
+	"lowercaseAttributes",
+	"doubleQuoteAttributes",
+	"queryUppercaseKeywords",
+	"blankLinesInBlocks",
+	"switchCaseIndent",
+	"parenSpacing",
+	"braceStyle",
+	"scopeCase",
+	"commaPosition",
+	"queryCommaPosition",
+	"lineWidth",
+	"paramBreakThreshold",
+	"attrBreakThreshold",
+	"indentWidth",
+	"debug",
+] as const;
+
+/**
+ * Builds the `initializationOptions` payload, which the server reads as though
+ * it were a `.cfmleditor.json`. A project's own `.cfmleditor.json` still wins
+ * key by key, so this is the base an editor supplies rather than an override.
+ *
+ * Only settings the user has actually set are sent. The server distinguishes
+ * "set to false" from "not mentioned", and a VS Code setting always reads back
+ * a value whether or not anyone chose it — so sending every key would have an
+ * untouched install silently assert twenty defaults over any it did not name.
+ * An untouched install sends nothing at all, which is what it did before these
+ * settings existed.
+ * @returns the payload, or undefined when nothing is set
+ */
+export function buildInitializationOptions(): { formatting?: Record<string, unknown> } | undefined {
+	const config = workspace.getConfiguration("cfml.format");
+	const formatting: Record<string, unknown> = {};
+
+	for (const key of FORMAT_KEYS) {
+		const inspected = config.inspect(key);
+		if (!inspected) {
+			continue;
+		}
+
+		// First one wins, narrowest scope first, matching how VS Code itself
+		// resolves a setting.
+		const value = inspected.workspaceFolderValue
+			?? inspected.workspaceValue
+			?? inspected.globalValue;
+
+		if (value !== undefined) {
+			formatting[key] = value;
+		}
+	}
+
+	return Object.keys(formatting).length > 0 ? { formatting } : undefined;
+}
+
 /**
  *
  * @param context
@@ -235,6 +298,7 @@ export async function startLspClient(context: ExtensionContext): Promise<void> {
 			{ scheme: "file", language: "cfml" },
 			{ scheme: "file", language: "cfs" },
 		],
+		initializationOptions: buildInitializationOptions(),
 	};
 
 	client = new LanguageClient("cfmlLsp", "CFML LSP", serverOptions, clientOptions);
@@ -254,4 +318,16 @@ export async function stopLspClient(): Promise<void> {
 		await client.stop();
 		client = undefined;
 	}
+}
+
+/**
+ * Restarts the client so a changed setting takes effect.
+ *
+ * `initializationOptions` are read once, at initialize, so a running server
+ * keeps the payload it was started with however the settings change under it.
+ * @param context the extension context, needed to resolve the binary again
+ */
+export async function restartLspClient(context: ExtensionContext): Promise<void> {
+	await stopLspClient();
+	await startLspClient(context);
 }

@@ -214,6 +214,19 @@ export async function activate(context: ExtensionContext): Promise<api> {
 			// Refresh cached components so the config changes take effect
 			commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
 		}
+		if (evt.affectsConfiguration("cfml.format") || evt.affectsConfiguration("cfml.lsp")) {
+			// The server reads initializationOptions once, at initialize, so a
+			// changed formatting setting only reaches it through a restart.
+			void (async () => {
+				try {
+					const { restartLspClient } = await import("./lsp/cfmlLspClient");
+					await restartLspClient(context);
+				}
+				catch {
+					// LSP module not available (e.g. web build)
+				}
+			})();
+		}
 	}));
 
 	workspace.onDidChangeTextDocument(async (event) => {
