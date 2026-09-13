@@ -511,13 +511,13 @@
 				"cfml.format.selfCloseTags": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Convert void/implicit-end HTML tags to self-closing form (e.g. `<br>` \u2192 `<br />`).",
+					"markdownDescription": "Convert void/implicit-end HTML tags to self-closing form (e.g. `<br>` → `<br />`).",
 					"scope": "resource"
 				},
 				"cfml.format.whitespaceOnly": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Reject formatting results that change non-whitespace content. This is the formatter's safety guard \u2014 turning it off lets a formatting defect rewrite your code.",
+					"markdownDescription": "Reject formatting results that change non-whitespace content. This is the formatter's safety guard — turning it off lets a formatting defect rewrite your code.",
 					"scope": "resource"
 				},
 				"cfml.format.queryFormat": {
@@ -529,7 +529,7 @@
 				"cfml.format.lowercaseTags": {
 					"type": "boolean",
 					"default": true,
-					"markdownDescription": "Lowercase CF tag names (e.g. `<CFOUTPUT>` \u2192 `<cfoutput>`). When off, each tag keeps the casing it was written with, opening and closing halves independently.",
+					"markdownDescription": "Lowercase CF tag names (e.g. `<CFOUTPUT>` → `<cfoutput>`). When off, each tag keeps the casing it was written with, opening and closing halves independently.",
 					"scope": "resource"
 				},
 				"cfml.format.lowercaseAttributes": {
@@ -564,35 +564,53 @@
 				},
 				"cfml.format.parenSpacing": {
 					"type": "string",
-					"enum": ["", "pad", "tight"],
+					"enum": [
+						"",
+						"pad",
+						"tight"
+					],
 					"default": "",
 					"markdownDescription": "Padding inside parentheses. `pad` gives `if ( a )` and `foo( 1, 2 )`; `tight` gives `if (a)` and `foo(1, 2)`. Empty keeps the existing behaviour, which pads conditions and grouping but not argument lists.",
 					"scope": "resource"
 				},
 				"cfml.format.braceStyle": {
 					"type": "string",
-					"enum": ["same-line", "next-line"],
+					"enum": [
+						"same-line",
+						"next-line"
+					],
 					"default": "same-line",
 					"markdownDescription": "Where a block's opening brace goes. `same-line` (K&R) keeps `function f() {`; `next-line` (Allman) puts the brace alone on the line below, and moves `else`, `catch` and `finally` onto their own lines so their braces line up too.",
 					"scope": "resource"
 				},
 				"cfml.format.scopeCase": {
 					"type": "string",
-					"enum": ["upper", "lower", "leave"],
+					"enum": [
+						"upper",
+						"lower",
+						"leave"
+					],
 					"default": "leave",
-					"markdownDescription": "Case for CFML scope names (`variables`, `arguments`, \u2026).",
+					"markdownDescription": "Case for CFML scope names (`variables`, `arguments`, …).",
 					"scope": "resource"
 				},
 				"cfml.format.commaPosition": {
 					"type": "string",
-					"enum": ["after", "before"],
+					"enum": [
+						"after",
+						"before"
+					],
 					"default": "after",
 					"markdownDescription": "Comma placement in multi-line argument lists: `after` (trailing) or `before` (leading).",
 					"scope": "resource"
 				},
 				"cfml.format.queryCommaPosition": {
 					"type": "string",
-					"enum": ["preserve", "after", "before"],
+					"enum": [
+						"preserve",
+						"after",
+						"before"
+					],
 					"default": "preserve",
 					"markdownDescription": "Comma placement in SQL SELECT lists: `preserve` (keep original position), `after` (trailing) or `before` (leading).",
 					"scope": "resource"
@@ -600,7 +618,7 @@
 				"cfml.format.lineWidth": {
 					"type": "integer",
 					"default": 100,
-					"markdownDescription": "Soft column limit \u2014 attributes expand to separate lines when a tag exceeds this width.",
+					"markdownDescription": "Soft column limit — attributes expand to separate lines when a tag exceeds this width.",
 					"scope": "resource"
 				},
 				"cfml.format.paramBreakThreshold": {
@@ -838,7 +856,7 @@
 		"@typescript-eslint/eslint-plugin": "^8.58.1",
 		"@typescript-eslint/parser": "^8.58.1",
 		"@vscode/test-cli": "^0.0.15",
-		"@vscode/test-electron": "^3.0.0",
+		"@vscode/test-electron": "^3.1.0",
 		"@vscode/test-web": "^0.0.81",
 		"@vscode/vsce": "^3.7.1",
 		"esbuild": "^0.28.0",
