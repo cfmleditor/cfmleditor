@@ -2,6 +2,10 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [Unreleased]
+
+- Expose the language server's formatter settings as `cfml.format.*`, and send them to the server as `initializationOptions`. The extension previously sent none, so every formatter setting — including `braceStyle`, `parenSpacing`, `paramBreakThreshold`, `blankLinesInBlocks` and `switchCaseIndent` — could only be reached by hand-editing a `.cfmleditor.json` in the project. Only settings you have actually set are sent, so an untouched install behaves exactly as before and a project's own `.cfmleditor.json` still wins key by key. Changing one restarts the server, since it reads these once at startup.
+
 ## [0.7.1] - 2026-04-01
 
 - Update Minimum version of VSCode to `1.105.1`
