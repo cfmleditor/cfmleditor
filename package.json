@@ -730,6 +730,11 @@
 				"command": "cfml.showCodeMapStats",
 				"category": "CFML",
 				"title": "Show Code Map Statistics"
+			},
+			{
+				"command": "cfml.restartLspServer",
+				"category": "CFML",
+				"title": "Restart Language Server"
 			}
 		],
 		"menus": {
