@@ -4,7 +4,7 @@ import * as os from "os";
 import * as path from "path";
 import * as zlib from "zlib";
 import { ExtensionContext, ProgressLocation, window, workspace } from "vscode";
-import { LanguageClient, LanguageClientOptions, ServerOptions } from "vscode-languageclient/node";
+import { CloseAction, CloseHandlerResult, ErrorAction, ErrorHandlerResult, LanguageClient, LanguageClientOptions, Message, ServerOptions } from "vscode-languageclient/node";
 
 const GITHUB_REPO = "cfmleditor/cfmleditor-lsp";
 const BINARY_NAME = "cfmleditor-lsp";
@@ -327,16 +327,52 @@ export async function startLspClient(context: ExtensionContext): Promise<void> {
 	}
 
 	const serverOptions: ServerOptions = { command: binaryPath, args: [] };
+	// How many times a server that keeps dying is restarted before the extension
+	// stops and asks. High enough to ride out a crash on a single bad file, low
+	// enough that a server failing on every start does not spin.
+	const maxRestarts = 4;
+	let restarts = 0;
+
 	const clientOptions: LanguageClientOptions = {
 		documentSelector: [
 			{ scheme: "file", language: "cfml" },
 			{ scheme: "file", language: "cfs" },
 		],
 		initializationOptions: buildInitializationOptions(),
+
+		// The default handler gives up permanently, and the extension offered no
+		// way back: "Server will not be restarted" left reloading the window as
+		// the only cure, with nothing on screen saying so. Language features are
+		// gone until then, because the extension's own providers stand down while
+		// the server is meant to be running.
+		errorHandler: {
+			error: (error: Error, message: Message | undefined, count: number | undefined): ErrorHandlerResult => {
+				// A message that failed to parse or dispatch is not a dead server;
+				// shutting one down over it loses everything else it was doing.
+				if ((count ?? 0) <= 3) {
+					return { action: ErrorAction.Continue };
+				}
+
+				return { action: ErrorAction.Shutdown, message: `CFML LSP: ${error.message}` };
+			},
+			closed: (): CloseHandlerResult => {
+				restarts++;
+
+				if (restarts > maxRestarts) {
+					return {
+						action: CloseAction.DoNotRestart,
+						message: "CFML LSP stopped restarting after repeated failures. Run \u201cCFML: Restart Language Server\u201d to try again.",
+					};
+				}
+
+				return { action: CloseAction.Restart };
+			},
+		},
 	};
 
 	client = new LanguageClient("cfmlLsp", "CFML LSP", serverOptions, clientOptions);
 	await client.start();
+	notifyLspStateChange();
 	context.subscriptions.push({
 		dispose: () => {
 			void stopLspClient();
@@ -350,6 +386,36 @@ export async function startLspClient(context: ExtensionContext): Promise<void> {
  */
 export function isLspRunning(): boolean {
 	return client !== undefined && client.needsStart() === false;
+}
+
+/** Called whenever the server starts or stops. */
+type LspStateListener = () => void;
+
+const stateListeners: LspStateListener[] = [];
+
+/**
+ * Registers a listener for the server coming up or going away.
+ *
+ * It exists so the extension's own language providers can stand down while the
+ * server is answering. VS Code merges the results of every registered provider,
+ * so with both live a completion list comes back doubled and go-to-definition
+ * offers two entries for one symbol — and the two disagree, because the
+ * extension resolves from `cfml.mappings` while the server resolves from
+ * `.cfmleditor.json`.
+ *
+ * A listener rather than a check at activation time, because the server can
+ * start and stop while the window stays open: enabling the setting restarts it,
+ * and a crash takes it away without one.
+ * @param listener called after the state has changed
+ */
+export function onLspStateChange(listener: LspStateListener): void {
+	stateListeners.push(listener);
+}
+
+function notifyLspStateChange(): void {
+	for (const listener of stateListeners) {
+		listener();
+	}
 }
 
 /**
@@ -378,6 +444,7 @@ export async function stopLspClient(): Promise<void> {
 	if (client) {
 		await client.stop();
 		client = undefined;
+		notifyLspStateChange();
 	}
 }
 

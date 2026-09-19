@@ -1,7 +1,8 @@
 import {
-	commands, ConfigurationChangeEvent, DocumentSelector, Extension, ExtensionContext, extensions,
+	commands, ConfigurationChangeEvent, Disposable, DocumentSelector, Extension, ExtensionContext, extensions,
 	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace,
 } from "vscode";
+import { isLspRunning, onLspStateChange } from "./lsp/cfmlLspClient";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./entities/tag";
 import { cacheComponentFromDocument, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri, cacheApplicationFromDocument } from "./features/cachedEntities";
@@ -56,6 +57,79 @@ let currentConfigIsTag: boolean = false;
 export type api = {
 	isBulkCaching(): boolean;
 };
+
+/**
+ * This method is called when the extension is activated.
+ * @param context The context object for this extension.
+ * @returns
+ */
+/**
+ * The extension's own language providers, held here rather than in the
+ * extension's subscriptions so they can be dropped while the server is running.
+ *
+ * VS Code merges the results of every registered provider, so with both live a
+ * completion list comes back doubled, go-to-definition offers two entries for
+ * one symbol, and two hover cards stack. Worse than the noise, the two disagree:
+ * these resolve component paths from `cfml.mappings` in VS Code settings, the
+ * server from the project's own `.cfmleditor.json`, and nothing in a merged
+ * result says which produced which half.
+ *
+ * All of them stand down, not only the seven the server currently answers. The
+ * rule is that enabling the server hands it the language, which is a rule a
+ * reader can hold; "all except type definition, docblock completion and
+ * document colours" is a list that has to be rechecked against the server's
+ * capabilities every time either side changes. The cost is those three
+ * capabilities going quiet until the server grows them.
+ */
+let ownProviders: Disposable[] = [];
+
+/**
+ * Registers the extension's own language providers.
+ * @returns their disposables, in registration order
+ */
+function registerOwnProviders(): Disposable[] {
+	return [
+		languages.registerHoverProvider(DOCUMENT_SELECTOR, new CFMLHoverProvider()),
+		languages.registerDocumentSymbolProvider(DOCUMENT_SELECTOR, new CFMLDocumentSymbolProvider()),
+		languages.registerSignatureHelpProvider(DOCUMENT_SELECTOR, new CFMLSignatureHelpProvider(), "(", ","),
+		languages.registerDocumentLinkProvider(DOCUMENT_SELECTOR, new CFMLDocumentLinkProvider()),
+		languages.registerWorkspaceSymbolProvider(new CFMLWorkspaceSymbolProvider()),
+		languages.registerCompletionItemProvider(DOCUMENT_SELECTOR, new CFMLCompletionItemProvider(), "."),
+		languages.registerCompletionItemProvider(DOCUMENT_SELECTOR, new DocBlockCompletions(), "*", "@", "."),
+		languages.registerDefinitionProvider(DOCUMENT_SELECTOR, new CFMLDefinitionProvider()),
+		languages.registerTypeDefinitionProvider(DOCUMENT_SELECTOR, new CFMLTypeDefinitionProvider()),
+		languages.registerColorProvider(DOCUMENT_SELECTOR, new CFMLDocumentColorProvider()),
+	];
+}
+
+/** Drops every provider this extension registered, if any are live. */
+function disposeOwnProviders(): void {
+	for (const provider of ownProviders) {
+		provider.dispose();
+	}
+
+	ownProviders = [];
+}
+
+/**
+ * Registers or drops them to match whether the server is answering.
+ *
+ * Safe to call repeatedly and in either direction, which matters because the
+ * server can start and stop while the window stays open: enabling the setting
+ * restarts it, and a crash takes it away without one. Dropping them permanently
+ * would leave a window with no language features at all after a server failure.
+ */
+function syncOwnProviders(): void {
+	if (isLspRunning()) {
+		disposeOwnProviders();
+
+		return;
+	}
+
+	if (ownProviders.length === 0) {
+		ownProviders = registerOwnProviders();
+	}
+}
 
 /**
  * This method is called when the extension is activated.
@@ -143,16 +217,18 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		void showCodeMapStats();
 	}));
 
-	context.subscriptions.push(languages.registerHoverProvider(DOCUMENT_SELECTOR, new CFMLHoverProvider()));
-	context.subscriptions.push(languages.registerDocumentSymbolProvider(DOCUMENT_SELECTOR, new CFMLDocumentSymbolProvider()));
-	context.subscriptions.push(languages.registerSignatureHelpProvider(DOCUMENT_SELECTOR, new CFMLSignatureHelpProvider(), "(", ","));
-	context.subscriptions.push(languages.registerDocumentLinkProvider(DOCUMENT_SELECTOR, new CFMLDocumentLinkProvider()));
-	context.subscriptions.push(languages.registerWorkspaceSymbolProvider(new CFMLWorkspaceSymbolProvider()));
-	context.subscriptions.push(languages.registerCompletionItemProvider(DOCUMENT_SELECTOR, new CFMLCompletionItemProvider(), "."));
-	context.subscriptions.push(languages.registerCompletionItemProvider(DOCUMENT_SELECTOR, new DocBlockCompletions(), "*", "@", "."));
-	context.subscriptions.push(languages.registerDefinitionProvider(DOCUMENT_SELECTOR, new CFMLDefinitionProvider()));
-	context.subscriptions.push(languages.registerTypeDefinitionProvider(DOCUMENT_SELECTOR, new CFMLTypeDefinitionProvider()));
-	context.subscriptions.push(languages.registerColorProvider(DOCUMENT_SELECTOR, new CFMLDocumentColorProvider()));
+	// The one way back from a server the client has given up on. Without it,
+	// reloading the window was the only cure — and the extension's own providers
+	// stand down while the server is meant to be answering, so the editor has no
+	// language features at all until someone works that out.
+	context.subscriptions.push(commands.registerCommand("cfml.restartLspServer", async () => {
+		const { restartLspClient } = await import("./lsp/cfmlLspClient");
+		await restartLspClient(context);
+	}));
+
+	syncOwnProviders();
+	onLspStateChange(syncOwnProviders);
+	context.subscriptions.push({ dispose: disposeOwnProviders });
 
 	context.subscriptions.push(workspace.onDidSaveTextDocument(async (document: TextDocument) => {
 		if (!document || shouldExcludeDocument(document.uri)) {
