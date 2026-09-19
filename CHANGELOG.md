@@ -2,6 +2,14 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [0.7.4] - 2026-09-19
+
+- **The extension stands down while the language server is running.** With `cfml.lsp.enabled` on, both sides answered the same requests: VS Code merges every registered provider's results, so completion came back doubled and go-to-definition offered two entries for one symbol — and the two disagreed, because the extension resolves from `cfml.mappings` while the server resolves from `.cfmleditor.json`. All ten of the extension's own providers now unregister when the server starts and come back if it stops, so a server that dies mid-session does not leave the window with no language features.
+- **The extension no longer keeps its own copy of the component cache while the server is running.** The bulk scan of every `.cfc` at startup, and the two file-system watchers that kept it current, duplicated the index the server maintains through `didOpen`/`didChange`/`didSave` and `workspace/didChangeWatchedFiles` — on a large workspace, thousands of files parsed to answer nothing, since every provider that reads the cache has already stood down. Documents you have open are still cached, because the comment-toggle commands ask the cache whether a `.cfc` is script-syntax and those commands stay registered.
+- **Added `CFML: Restart Language Server`.** A client that has given up on a repeatedly-failing server previously needed a window reload to recover, which was hard to guess at given the extension's own providers were standing down for it.
+- Fixed `HTTP 403` when downloading the server binary. The release lookup used the GitHub API unauthenticated, which is rate-limited to 60 requests per hour per IP address and is routinely exhausted on shared or corporate addresses; it now reads the redirect from the `releases/latest` URL, which is not rate-limited.
+- Server messages are no longer all logged as errors. `vscode-languageclient` reports everything a server writes to stderr at error level, so an ordinary startup line appeared in the log as `[error] cfmleditor-lsp dev`.
+
 ## [0.7.3] - 2026-09-19
 
 - Expose the language server's formatter settings as `cfml.format.*`, and send them to the server as `initializationOptions`. The extension previously sent none, so every formatter setting — including `braceStyle`, `parenSpacing`, `paramBreakThreshold`, `blankLinesInBlocks` and `switchCaseIndent` — could only be reached by hand-editing a `.cfmleditor.json` in the project. Only settings you have actually set are sent, so an untouched install behaves exactly as before and a project's own `.cfmleditor.json` still wins key by key. Changing one restarts the server, since it reads these once at startup.

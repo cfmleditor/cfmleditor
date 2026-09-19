@@ -5,7 +5,7 @@ import {
 import { isLspRunning, onLspStateChange } from "./lsp/cfmlLspClient";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./entities/tag";
-import { cacheComponentFromDocument, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri, cacheApplicationFromDocument } from "./features/cachedEntities";
+import { cacheComponentFromDocument, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri, cacheApplicationFromDocument, hasComponent } from "./features/cachedEntities";
 import CFMLDocumentColorProvider from "./features/colorProvider";
 import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache, insertSnippet, copyPackage, generateCodeMap, showCodeMapStats } from "./features/commands";
 import { cfmlCommentRules, toggleBlockComment, toggleLineComment } from "./features/comment";
@@ -132,6 +132,133 @@ function syncOwnProviders(): void {
 }
 
 /**
+ * The workspace-wide half of this extension's component cache: the bulk scan of
+ * every `.cfc` at startup, and the two watchers that keep it current.
+ *
+ * It stands down while the server is answering, for the reason the providers do.
+ * The server keeps an index of exactly these files, maintained by
+ * `didOpen`/`didChange`/`didSave` and `workspace/didChangeWatchedFiles`, so a
+ * second copy is a second full parse of every component in the workspace and a
+ * second watcher over the same glob — on a large workspace, thousands of files
+ * read to answer nothing, since every provider that reads the cache has already
+ * stood down.
+ *
+ * What does *not* stand down is caching the documents the user has open, below.
+ * The comment-toggle commands ask the cache whether a `.cfc` is script-syntax to
+ * choose `//` over `<!--- --->`, and those commands stay registered whatever the
+ * server is doing. Standing the whole cache down would leave them silently
+ * picking tag comments inside every script component — a wrong answer rather
+ * than an absent one.
+ */
+let ownCaching: Disposable[] = [];
+
+/**
+ * Registers the workspace-wide cache: the two file-system watchers.
+ * @returns their disposables
+ */
+function registerOwnCaching(): Disposable[] {
+	const componentWatcher: FileSystemWatcher = workspace.createFileSystemWatcher(COMPONENT_FILE_GLOB, false, true, false);
+	componentWatcher.onDidCreate((componentUri: Uri) => {
+		if (shouldExcludeDocument(componentUri)) {
+			return;
+		}
+
+		void cacheComponentFromUri(componentUri, undefined);
+	});
+	componentWatcher.onDidDelete((componentUri: Uri) => {
+		if (shouldExcludeDocument(componentUri)) {
+			return;
+		}
+
+		clearCachedComponent(componentUri);
+
+		if (isApplicationFile(componentUri)) {
+			removeApplicationVariables(componentUri);
+		}
+	});
+
+	const applicationCfmWatcher: FileSystemWatcher = workspace.createFileSystemWatcher(APPLICATION_CFM_GLOB, false, true, false);
+	applicationCfmWatcher.onDidCreate((applicationUri: Uri) => {
+		if (shouldExcludeDocument(applicationUri)) {
+			return;
+		}
+
+		void workspace.openTextDocument(applicationUri).then(async (document: TextDocument) => {
+			await cacheApplicationFromDocument(document, undefined);
+		});
+	});
+	applicationCfmWatcher.onDidDelete((applicationUri: Uri) => {
+		if (shouldExcludeDocument(applicationUri)) {
+			return;
+		}
+
+		removeApplicationVariables(applicationUri);
+	});
+
+	return [componentWatcher, applicationCfmWatcher];
+}
+
+/** Drops the workspace-wide cache's watchers, if any are live. */
+function disposeOwnCaching(): void {
+	for (const watcher of ownCaching) {
+		watcher.dispose();
+	}
+
+	ownCaching = [];
+}
+
+/**
+ * Registers or drops the workspace-wide cache to match whether the server is
+ * answering.
+ *
+ * Taking it up again runs the bulk scan, because the cache the watchers maintain
+ * is only current if something filled it first: a server that dies mid-session
+ * hands the workspace back to providers reading an empty cache, which answers
+ * "no such component" rather than declining to answer. Dropping it does not
+ * clear what was cached — nothing reads it while the server is up, and keeping it
+ * makes the way back cheap.
+ * @returns once the scan has finished, so activation can wait for it as it
+ * always has; the state-change listener does not
+ */
+async function syncOwnCaching(): Promise<void> {
+	if (isLspRunning()) {
+		disposeOwnCaching();
+
+		return;
+	}
+
+	if (ownCaching.length === 0) {
+		ownCaching = registerOwnCaching();
+		await commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
+	}
+}
+
+/**
+ * Caches one open document, whatever the server is doing.
+ *
+ * Scoped to documents the editor has open so it stays a per-file cost rather
+ * than a workspace one, and skips a component already cached so the bulk scan
+ * and this do not each parse the same file.
+ * @param document the document to cache
+ * @param force re-cache even when it is already cached (a save changed it)
+ */
+async function cacheOpenDocument(document: TextDocument, force: boolean): Promise<void> {
+	if (!document || shouldExcludeDocument(document.uri)) {
+		return;
+	}
+
+	if (!isCfcUri(document.uri) && !isApplicationFile(document.uri)) {
+		return;
+	}
+
+	if (!force && hasComponent(document.uri)) {
+		return;
+	}
+
+	await cacheComponentFromDocument(document, undefined);
+}
+
+/**
  * This method is called when the extension is activated.
  * @param context The context object for this extension.
  * @returns
@@ -228,67 +355,31 @@ export async function activate(context: ExtensionContext): Promise<api> {
 
 	syncOwnProviders();
 	onLspStateChange(syncOwnProviders);
+	onLspStateChange(() => void syncOwnCaching());
 	context.subscriptions.push({ dispose: disposeOwnProviders });
 
 	context.subscriptions.push(workspace.onDidSaveTextDocument(async (document: TextDocument) => {
-		if (!document || shouldExcludeDocument(document.uri)) {
-			return;
-		}
-
-		if (isCfcUri(document.uri)) {
-			await cacheComponentFromDocument(document, undefined);
-		}
-		else if (isApplicationFile(document.uri)) {
-			await cacheComponentFromDocument(document, undefined);
-		}
+		await cacheOpenDocument(document, true);
 	}));
 
-	const componentWatcher: FileSystemWatcher = workspace.createFileSystemWatcher(COMPONENT_FILE_GLOB, false, true, false);
-	componentWatcher.onDidCreate((componentUri: Uri) => {
-		if (shouldExcludeDocument(componentUri)) {
-			return;
-		}
-		void cacheComponentFromUri(componentUri, undefined);
-	});
-	componentWatcher.onDidDelete((componentUri: Uri) => {
-		if (shouldExcludeDocument(componentUri)) {
-			return;
-		}
+	context.subscriptions.push(workspace.onDidOpenTextDocument(async (document: TextDocument) => {
+		await cacheOpenDocument(document, false);
+	}));
 
-		clearCachedComponent(componentUri);
-
-		if (isApplicationFile(componentUri)) {
-			removeApplicationVariables(componentUri);
-		}
-	});
-	context.subscriptions.push(componentWatcher);
-
-	const applicationCfmWatcher: FileSystemWatcher = workspace.createFileSystemWatcher(APPLICATION_CFM_GLOB, false, true, false);
-	context.subscriptions.push(applicationCfmWatcher);
-	applicationCfmWatcher.onDidCreate((applicationUri: Uri) => {
-		if (shouldExcludeDocument(applicationUri)) {
-			return;
-		}
-
-		workspace.openTextDocument(applicationUri).then(async (document: TextDocument) => {
-			await cacheApplicationFromDocument(document, undefined);
-		});
-	});
-	applicationCfmWatcher.onDidDelete((applicationUri: Uri) => {
-		if (shouldExcludeDocument(applicationUri)) {
-			return;
-		}
-
-		removeApplicationVariables(applicationUri);
-	});
+	context.subscriptions.push({ dispose: disposeOwnCaching });
 
 	context.subscriptions.push(workspace.onDidChangeConfiguration((evt: ConfigurationChangeEvent) => {
 		if (evt.affectsConfiguration("cfml.globalDefinitions") || evt.affectsConfiguration("cfml.cfDocs") || evt.affectsConfiguration("cfml.engine")) {
 			commands.executeCommand("cfml.refreshGlobalDefinitionCache");
 		}
 		if (evt.affectsConfiguration("cfml.mappings") || evt.affectsConfiguration("cfml.webroot")) {
-			// Refresh cached components so the config changes take effect
-			commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
+			// Refresh cached components so the config changes take effect — but
+			// only when this extension still owns the cache. With the server up,
+			// nothing reads it, and `cfml.mappings` is not even the setting the
+			// server resolves from.
+			if (!isLspRunning()) {
+				commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
+			}
 		}
 		if (evt.affectsConfiguration("cfml.format") || evt.affectsConfiguration("cfml.lsp")) {
 			// The server reads initializationOptions once, at initialize, so a
@@ -314,8 +405,10 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		clearDocumentContextRangesCache(document.uri);
 	}));
 
+	// The global cache is CFDocs, not the workspace: `cfml.openCfDocs` and
+	// `cfml.openEngineDocs` stay registered whatever the server is doing, and it
+	// is a bundled-JSON load rather than a scan. It is not gated.
 	await commands.executeCommand("cfml.refreshGlobalDefinitionCache");
-	await commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
 
 	try {
 		const { startLspClient } = await import("./lsp/cfmlLspClient");
@@ -324,6 +417,13 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	catch {
 		// LSP module not available (e.g. web build)
 	}
+
+	// After the server has had its chance to start, not before: the workspace
+	// scan is the expensive half of activation, and whether it is needed is not
+	// known until the server is either answering or has failed to. A server
+	// enabled in settings but unable to fetch its binary leaves `isLspRunning()`
+	// false, and this is what hands the workspace back to the extension.
+	await syncOwnCaching();
 
 	const api: api = {
 		isBulkCaching(): boolean {
