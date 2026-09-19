@@ -311,6 +311,33 @@ export async function startLspClient(context: ExtensionContext): Promise<void> {
 }
 
 /**
+ * Whether a language server is running and can answer a request.
+ * @returns true when a request will reach a server
+ */
+export function isLspRunning(): boolean {
+	return client !== undefined && client.needsStart() === false;
+}
+
+/**
+ * Runs one of the server's `workspace/executeCommand` commands.
+ *
+ * Commands that resolve a route or build a code map live on the server because
+ * that is where the workspace configuration, the index and the convention are.
+ * Re-implementing any of it here would mean two answers to the same question,
+ * and the wrong one still opens a file — just not the right one.
+ * @param command the server command name, e.g. `cfmleditor.resolveRoute`
+ * @param args the command arguments
+ * @returns the server's result, or undefined when no server is running
+ */
+export async function executeLspCommand<T>(command: string, args: unknown[] = []): Promise<T | undefined> {
+	if (!client || !isLspRunning()) {
+		return undefined;
+	}
+
+	return client.sendRequest<T>("workspace/executeCommand", { command, arguments: args });
+}
+
+/**
  *
  */
 export async function stopLspClient(): Promise<void> {
