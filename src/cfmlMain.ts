@@ -3,6 +3,7 @@ import {
 	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace,
 } from "vscode";
 import { isLspRunning, onLspStateChange } from "./lsp/cfmlLspClient";
+import { GatedRegistration } from "./lsp/gatedRegistration";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./entities/tag";
 import { cacheComponentFromDocument, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri, cacheApplicationFromDocument, hasComponent } from "./features/cachedEntities";
@@ -81,7 +82,7 @@ export type api = {
  * capabilities every time either side changes. The cost is those three
  * capabilities going quiet until the server grows them.
  */
-let ownProviders: Disposable[] = [];
+const ownProviders = new GatedRegistration(registerOwnProviders);
 
 /**
  * Registers the extension's own language providers.
@@ -100,35 +101,6 @@ function registerOwnProviders(): Disposable[] {
 		languages.registerTypeDefinitionProvider(DOCUMENT_SELECTOR, new CFMLTypeDefinitionProvider()),
 		languages.registerColorProvider(DOCUMENT_SELECTOR, new CFMLDocumentColorProvider()),
 	];
-}
-
-/** Drops every provider this extension registered, if any are live. */
-function disposeOwnProviders(): void {
-	for (const provider of ownProviders) {
-		provider.dispose();
-	}
-
-	ownProviders = [];
-}
-
-/**
- * Registers or drops them to match whether the server is answering.
- *
- * Safe to call repeatedly and in either direction, which matters because the
- * server can start and stop while the window stays open: enabling the setting
- * restarts it, and a crash takes it away without one. Dropping them permanently
- * would leave a window with no language features at all after a server failure.
- */
-function syncOwnProviders(): void {
-	if (isLspRunning()) {
-		disposeOwnProviders();
-
-		return;
-	}
-
-	if (ownProviders.length === 0) {
-		ownProviders = registerOwnProviders();
-	}
 }
 
 /**
@@ -150,7 +122,16 @@ function syncOwnProviders(): void {
  * picking tag comments inside every script component — a wrong answer rather
  * than an absent one.
  */
-let ownCaching: Disposable[] = [];
+const ownCaching = new GatedRegistration(
+	registerOwnCaching,
+	// Taking it up again runs the scan, because the watchers only keep current
+	// what something filled first: a server that dies mid-session otherwise hands
+	// the workspace back to providers reading an empty cache, which answers "no
+	// such component" rather than declining to answer.
+	async () => {
+		await commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
+	},
+);
 
 /**
  * Registers the workspace-wide cache: the two file-system watchers.
@@ -198,15 +179,6 @@ function registerOwnCaching(): Disposable[] {
 	return [componentWatcher, applicationCfmWatcher];
 }
 
-/** Drops the workspace-wide cache's watchers, if any are live. */
-function disposeOwnCaching(): void {
-	for (const watcher of ownCaching) {
-		watcher.dispose();
-	}
-
-	ownCaching = [];
-}
-
 /**
  * Registers or drops the workspace-wide cache to match whether the server is
  * answering.
@@ -221,16 +193,14 @@ function disposeOwnCaching(): void {
  * always has; the state-change listener does not
  */
 async function syncOwnCaching(): Promise<void> {
-	if (isLspRunning()) {
-		disposeOwnCaching();
+	await ownCaching.sync(isLspRunning());
+}
 
-		return;
-	}
-
-	if (ownCaching.length === 0) {
-		ownCaching = registerOwnCaching();
-		await commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
-	}
+/**
+ * Registers or drops the extension's own providers to match the server.
+ */
+function syncOwnProviders(): void {
+	void ownProviders.sync(isLspRunning());
 }
 
 /**
@@ -356,7 +326,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	syncOwnProviders();
 	onLspStateChange(syncOwnProviders);
 	onLspStateChange(() => void syncOwnCaching());
-	context.subscriptions.push({ dispose: disposeOwnProviders });
+	context.subscriptions.push({ dispose: () => ownProviders.dispose() });
 
 	context.subscriptions.push(workspace.onDidSaveTextDocument(async (document: TextDocument) => {
 		await cacheOpenDocument(document, true);
@@ -366,7 +336,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		await cacheOpenDocument(document, false);
 	}));
 
-	context.subscriptions.push({ dispose: disposeOwnCaching });
+	context.subscriptions.push({ dispose: () => ownCaching.dispose() });
 
 	context.subscriptions.push(workspace.onDidChangeConfiguration((evt: ConfigurationChangeEvent) => {
 		if (evt.affectsConfiguration("cfml.globalDefinitions") || evt.affectsConfiguration("cfml.cfDocs") || evt.affectsConfiguration("cfml.engine")) {
