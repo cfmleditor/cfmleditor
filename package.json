@@ -722,14 +722,14 @@
 				"title": "Copy CFC Package Path"
 			},
 			{
-				"command": "cfml.goToRouteView",
+				"command": "cfml.generateCodeMap",
 				"category": "CFML",
-				"title": "Go to Route View"
+				"title": "Generate Code Map"
 			},
 			{
-				"command": "cfml.goToRouteController",
+				"command": "cfml.showCodeMapStats",
 				"category": "CFML",
-				"title": "Go to Route Controller"
+				"title": "Show Code Map Statistics"
 			}
 		],
 		"menus": {

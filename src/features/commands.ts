@@ -1,4 +1,5 @@
-import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, TextEditorEdit, Position, CancellationTokenSource, env, Location } from "vscode";
+import { commands, TextDocument, Uri, window, workspace, WorkspaceConfiguration, TextEditor, TextEditorEdit, Position, CancellationTokenSource, env } from "vscode";
+import { executeLspCommand, isLspRunning } from "../lsp/cfmlLspClient";
 import { Component, getApplicationUri, getWebroot } from "../entities/component";
 import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
@@ -7,7 +8,6 @@ import { clearAllGlobalFunctions, clearAllGlobalTags, clearAllGlobalEntityDefini
 import SnippetService from "../utils/snippetService";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { convertPathToPackageName } from "../utils/cfcPackages";
-import { resolveRouteControllerPath, resolveRouteTemplatePath } from "../utils/fileUtil";
 
 /**
  * Refreshes (clears and retrieves) all CFML global definitions
@@ -166,96 +166,73 @@ export function copyPackage(selectedFileUri?: Uri) {
 }
 
 /**
- * Determine the path and function for the `view` using `resolveRouteTemplatePath` then open editor
+ * Builds a code map of the workspace through the language server.
+ *
+ * The server builds it rather than the extension because the server already has
+ * the workspace indexed, and that index is the expensive half of the work — it is
+ * kept current by didChange and the watched-file handler, so a map built here
+ * would be rebuilding what is already in memory next door.
+ *
+ * It returns as soon as the build starts and reports through window/showMessage,
+ * because a map of a large workspace takes ten seconds or more.
  */
-export async function goToRouteView() {
-	// Prompt the user for input
-	const userInput = await window.showInputBox({
-		prompt: "Enter the route",
-		placeHolder: "Type something here...",
-	});
-
-	// Check if the user canceled the input
-	if (!userInput) {
-		window.showInformationMessage("No input provided. Command canceled.");
+export async function generateCodeMap(): Promise<void> {
+	if (!isLspRunning()) {
+		void window.showWarningMessage("CFML: the code map needs the language server. Enable cfml.lsp.enabled.");
 		return;
 	}
 
-	const route: string = userInput;
+	const level = await window.showQuickPick(
+		[
+			{ label: "function", description: "functions and files, with every relationship" },
+			{ label: "call", description: "only functions and the calls between them" },
+			{ label: "file", description: "one node per file" },
+			{ label: "package", description: "one node per directory" },
+		],
+		{ placeHolder: "Level of detail" },
+	);
 
-	// Determine the base URI
-	const activeEditor = window.activeTextEditor;
-	const baseUri = activeEditor ? activeEditor.document.uri : undefined;
-
-	// Resolve the template paths
-	const customMappingPaths: string[] = await resolveRouteTemplatePath(baseUri, route);
-
-	if (customMappingPaths.length === 0) {
-		window.showErrorMessage("No matching files found for the given route.");
+	if (!level) {
 		return;
 	}
 
-	// Show a list of resolved paths for the user to select
-	const selectedPath = customMappingPaths.length === 1
-		? customMappingPaths[0]
-		: await window.showQuickPick(customMappingPaths, {
-				placeHolder: "Select a file to open",
-			});
+	const scope = await window.showQuickPick(
+		[
+			{ label: "everything", description: "the whole workspace" },
+			{ label: "reachable", description: "only what an entry point reaches" },
+			{ label: "detached", description: "only what no entry point reaches" },
+		],
+		{ placeHolder: "Scope" },
+	);
 
-	// Check if the user canceled the selection
-	if (!selectedPath) {
-		window.showInformationMessage("No file selected. Command canceled.");
+	if (!scope) {
 		return;
 	}
 
-	// Open the selected file
-	const document = await workspace.openTextDocument(Uri.file(selectedPath));
-	await window.showTextDocument(document);
+	// The server refuses to write outside the workspace, so the default output
+	// path is left to it rather than asked for here.
+	await executeLspCommand("cfmleditor.generateCodeMap", [{
+		level: level.label,
+		format: "html",
+		live: scope.label === "reachable",
+		detached: scope.label === "detached",
+		open: true,
+	}]);
 }
 
 /**
- * Determine the path and function for the controller using `resolveRouteControllerPath` then open editor / reveal range
+ * Reports what the code map resolves in this workspace, writing nothing.
+ *
+ * The cheap half of the same question, and the one worth asking first: a map is
+ * worth what its resolution rate says it is, and an empty caller list means much
+ * less in a workspace resolving half its call sites than in one resolving all of
+ * them.
  */
-export async function goToRouteController() {
-	// Prompt the user for input
-	const userInput = await window.showInputBox({
-		prompt: "Enter the route",
-		placeHolder: "Type something here...",
-	});
-
-	// Check if the user canceled the input
-	if (!userInput) {
-		window.showInformationMessage("No input provided. Command canceled.");
+export async function showCodeMapStats(): Promise<void> {
+	if (!isLspRunning()) {
+		void window.showWarningMessage("CFML: the code map needs the language server. Enable cfml.lsp.enabled.");
 		return;
 	}
 
-	const route: string = userInput;
-
-	// Determine the base URI
-	const activeEditor = window.activeTextEditor;
-	const baseUri = activeEditor ? activeEditor.document.uri : undefined;
-
-	const [uri, fn]: [Uri | undefined, UserFunction | undefined] = await resolveRouteControllerPath(baseUri, route);
-
-	if (!uri) {
-		window.showErrorMessage("No matching files found for the given route.");
-		return;
-	}
-
-	const document = await workspace.openTextDocument(uri);
-	const editor = await window.showTextDocument(document);
-
-	if (!fn) {
-		window.showErrorMessage("No matching function found for the given route.");
-		return;
-	}
-
-	const location: Location = fn.location;
-
-	if (!location) {
-		return;
-	}
-
-	// Reveal the range in the editor
-	editor.revealRange(location.range);
+	await executeLspCommand("cfmleditor.showCodeMapStats", [{}]);
 }

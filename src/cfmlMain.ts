@@ -6,7 +6,7 @@ import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./entities/tag";
 import { cacheComponentFromDocument, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri, cacheApplicationFromDocument } from "./features/cachedEntities";
 import CFMLDocumentColorProvider from "./features/colorProvider";
-import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache, insertSnippet, copyPackage, goToRouteController, goToRouteView } from "./features/commands";
+import { foldAllFunctions, showApplicationDocument, refreshGlobalDefinitionCache, refreshWorkspaceDefinitionCache, insertSnippet, copyPackage, generateCodeMap, showCodeMapStats } from "./features/commands";
 import { cfmlCommentRules, toggleBlockComment, toggleLineComment } from "./features/comment";
 import CFMLCompletionItemProvider from "./features/completionItemProvider";
 import CFMLDefinitionProvider from "./features/definitionProvider";
@@ -136,11 +136,11 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		void CFDocsService.openEngineDocsForCurrentWord(editor, edit, undefined);
 	}));
 	context.subscriptions.push(commands.registerTextEditorCommand("cfml.foldAllFunctions", foldAllFunctions));
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToRouteView", () => {
-		void goToRouteView();
+	context.subscriptions.push(commands.registerCommand("cfml.generateCodeMap", () => {
+		void generateCodeMap();
 	}));
-	context.subscriptions.push(commands.registerTextEditorCommand("cfml.goToRouteController", () => {
-		void goToRouteController();
+	context.subscriptions.push(commands.registerCommand("cfml.showCodeMapStats", () => {
+		void showCodeMapStats();
 	}));
 
 	context.subscriptions.push(languages.registerHoverProvider(DOCUMENT_SELECTOR, new CFMLHoverProvider()));

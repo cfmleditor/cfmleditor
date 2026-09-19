@@ -27,28 +27,6 @@ function getPlatformAsset(): { assetName: string; binaryName: string } {
 	return { assetName: `${BINARY_NAME}-${osStr}-${archStr}.${ext}`, binaryName };
 }
 
-async function fetchJson(url: string): Promise<unknown> {
-	return new Promise((resolve, reject) => {
-		const get = (u: string) => {
-			https.get(u, { headers: { "User-Agent": "cfmleditor-vscode" } }, (res) => {
-				if (res.statusCode === 301 || res.statusCode === 302) {
-					get(res.headers.location!);
-					return;
-				}
-				if (res.statusCode !== 200) {
-					reject(new Error(`HTTP ${res.statusCode} fetching ${u}`));
-					return;
-				}
-				let data = "";
-				res.on("data", chunk => data += chunk);
-				res.on("end", () => resolve(JSON.parse(data)));
-				res.on("error", reject);
-			}).on("error", reject);
-		};
-		get(url);
-	});
-}
-
 async function downloadFile(url: string, dest: string): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const get = (u: string) => {
@@ -102,16 +80,67 @@ async function extractTarGz(archivePath: string, destDir: string, binaryName: st
 	});
 }
 
-interface GithubRelease {
-	tag_name: string;
-	assets: { name: string; browser_download_url: string }[];
+/**
+ * Reads the tag `latest` currently points at, from GitHub's own redirect.
+ *
+ * Deliberately not the releases API. That endpoint is rate limited to 60
+ * requests an hour *per IP* for unauthenticated callers, which is shared by
+ * everyone behind one NAT — a single office hits it in an afternoon, and the
+ * extension asked on every server start. The failure is an HTTP 403 that reads
+ * like a permissions problem and tells a first-time user nothing.
+ *
+ * `/releases/latest` redirects to `/releases/tag/<tag>` with no API involved and
+ * no rate limit, which is the same route the IntelliJ plugin takes.
+ * @returns the tag name, e.g. `v0.3.1`
+ */
+async function resolveLatestTag(): Promise<string> {
+	const url = `https://github.com/${GITHUB_REPO}/releases/latest`;
+
+	const location = await new Promise<string>((resolve, reject) => {
+		https.get(url, { headers: { "User-Agent": "cfmleditor-vscode" } }, (res) => {
+			// The redirect is the answer here, so it is read rather than followed.
+			if (res.statusCode === 301 || res.statusCode === 302) {
+				res.resume();
+				resolve(res.headers.location ?? "");
+				return;
+			}
+			res.resume();
+			reject(new Error(`HTTP ${res.statusCode} resolving the latest release`));
+		}).on("error", reject);
+	});
+
+	return tagFromReleaseRedirect(location);
 }
 
-async function resolveRelease(version: string): Promise<GithubRelease> {
-	const url = version === "latest"
-		? `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`
-		: `https://api.github.com/repos/${GITHUB_REPO}/releases/tags/v${version}`;
-	return await fetchJson(url) as GithubRelease;
+/**
+ * Pulls the tag out of the URL `/releases/latest` redirects to.
+ *
+ * Separate from the request so it can be tested without one — the shapes that
+ * matter (an empty Location, a redirect somewhere unexpected) are exactly the
+ * ones a live call will not produce on demand.
+ * @param location the redirect target
+ * @returns the tag name
+ */
+export function tagFromReleaseRedirect(location: string): string {
+	const tag = /\/releases\/tag\/([^/?#]+)/.exec(location)?.[1];
+	if (!tag) {
+		throw new Error(`Could not read a release tag from ${location || "an empty redirect"}`);
+	}
+
+	return decodeURIComponent(tag);
+}
+
+/**
+ * The tag a configured version means, without asking anything.
+ * @param version the `cfml.lsp.version` setting
+ * @returns the tag, or undefined for `latest`, which has to be resolved
+ */
+export function pinnedTag(version: string): string | undefined {
+	if (!version || version === "latest") {
+		return undefined;
+	}
+
+	return version.startsWith("v") ? version : `v${version}`;
 }
 
 async function ensureBinary(context: ExtensionContext): Promise<string | undefined> {
@@ -125,10 +154,20 @@ async function ensureBinary(context: ExtensionContext): Promise<string | undefin
 	const storageDir = context.globalStorageUri.fsPath;
 	const { assetName, binaryName } = getPlatformAsset();
 
-	// Resolve the actual version tag
-	let release: GithubRelease;
+	// A pinned version already on disk needs no network at all. Asking first and
+	// checking the cache only on failure meant a request per server start for a
+	// binary that was never going to change.
+	const pinned = pinnedTag(version);
+	if (pinned) {
+		const cached = path.join(storageDir, `cfmleditor-lsp-${pinned}`, binaryName);
+		if (fs.existsSync(cached)) {
+			return cached;
+		}
+	}
+
+	let tag: string;
 	try {
-		release = await resolveRelease(version);
+		tag = pinned ?? await resolveLatestTag();
 	}
 	catch (e) {
 		// If we can't reach GitHub, try to use whatever we have cached
@@ -139,7 +178,6 @@ async function ensureBinary(context: ExtensionContext): Promise<string | undefin
 		throw e;
 	}
 
-	const tag = release.tag_name;
 	const versionDir = path.join(storageDir, `cfmleditor-lsp-${tag}`);
 	const binaryPath = path.join(versionDir, binaryName);
 
@@ -148,11 +186,7 @@ async function ensureBinary(context: ExtensionContext): Promise<string | undefin
 		return binaryPath;
 	}
 
-	// Find the asset
-	const asset = release.assets.find(a => a.name === assetName);
-	if (!asset) {
-		throw new Error(`No release asset found for this platform: ${assetName}`);
-	}
+	const assetUrl = `https://github.com/${GITHUB_REPO}/releases/download/${tag}/${assetName}`;
 
 	// Download with progress
 	await window.withProgress(
@@ -162,7 +196,7 @@ async function ensureBinary(context: ExtensionContext): Promise<string | undefin
 			fs.mkdirSync(versionDir, { recursive: true });
 			const archivePath = path.join(versionDir, assetName);
 
-			await downloadFile(asset.browser_download_url, archivePath);
+			await downloadFile(assetUrl, archivePath);
 
 			progress.report({ message: "Extracting..." });
 			if (assetName.endsWith(".tar.gz")) {
@@ -308,6 +342,33 @@ export async function startLspClient(context: ExtensionContext): Promise<void> {
 			void stopLspClient();
 		},
 	});
+}
+
+/**
+ * Whether a language server is running and can answer a request.
+ * @returns true when a request will reach a server
+ */
+export function isLspRunning(): boolean {
+	return client !== undefined && client.needsStart() === false;
+}
+
+/**
+ * Runs one of the server's `workspace/executeCommand` commands.
+ *
+ * Commands that resolve a route or build a code map live on the server because
+ * that is where the workspace configuration, the index and the convention are.
+ * Re-implementing any of it here would mean two answers to the same question,
+ * and the wrong one still opens a file — just not the right one.
+ * @param command the server command name, e.g. `cfmleditor.resolveRoute`
+ * @param args the command arguments
+ * @returns the server's result, or undefined when no server is running
+ */
+export async function executeLspCommand<T>(command: string, args: unknown[] = []): Promise<T | undefined> {
+	if (!client || !isLspRunning()) {
+		return undefined;
+	}
+
+	return client.sendRequest<T>("workspace/executeCommand", { command, arguments: args });
 }
 
 /**

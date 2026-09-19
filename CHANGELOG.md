@@ -9,6 +9,8 @@ All notable changes to the CFML extension will be documented in this file.
 ## [0.7.2] - 2026-07-02
 
 - Added experimental CFML Language Server (LSP) client support (`cfml.lsp.enabled`, `cfml.lsp.path`, `cfml.lsp.version`) -- auto-downloads the `cfmleditor-lsp` binary from GitHub releases when enabled
+- **Routes now resolve through the language server.** `Go to Route View` and `Go to Route Controller` are removed. The extension resolved routes itself, from `cfml.mappings` in VS Code settings, with the controller-naming convention hardcoded — while the server resolved them from the `routes` block in `.cfmleditor.json`. Two resolvers reading two config sources cannot agree, and the one that is wrong still opens a file, just not the right one. Ctrl-click a route in source instead: go-to-definition and document links both go through the server, which reads routes written as HTML attributes, `?do=` query parameters, JavaScript object keys and function arguments — none of which the removed commands understood.
+- **Added `Generate Code Map` and `Show Code Map Statistics`.** The first writes a self-contained interactive report of every function and file in the workspace and the calls, routes, instantiations and includes between them; the second reports how much of the workspace resolves, without writing anything. Both need `cfml.lsp.enabled`, and say so rather than failing when the server is not running.
 - Fixed web extension build failing to resolve `vscode-languageclient/node` and `tar-stream`
 - Update dependencies
 
