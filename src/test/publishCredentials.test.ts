@@ -1,6 +1,12 @@
 import * as assert from "assert";
+import * as path from "path";
 
 import { credentialFor } from "../scripts/publish-targets";
+
+// The repository root, not `process.cwd()`: the test host runs from wherever
+// VS Code was unpacked, which on Windows is the downloaded editor rather than
+// this checkout.
+const ROOT_DIR = path.join(__dirname, "..", "..");
 
 const MARKETPLACE = { name: "VS Marketplace", command: "vsce", tokenVar: "VSCE_PAT" };
 const OPEN_VSX = { name: "Open VSX", command: "ovsx", tokenVar: "OVSX_PAT" };
@@ -14,7 +20,7 @@ describe("Publish credentials", function () {
 		process.env.OVSX_PAT = "a-token";
 
 		try {
-			assert.strictEqual(credentialFor(OPEN_VSX, process.cwd()), "OVSX_PAT");
+			assert.strictEqual(credentialFor(OPEN_VSX, ROOT_DIR), "OVSX_PAT");
 		}
 		finally {
 			if (prior === undefined) {
@@ -33,7 +39,7 @@ describe("Publish credentials", function () {
 		delete process.env.OVSX_PAT;
 
 		try {
-			assert.strictEqual(credentialFor(OPEN_VSX, process.cwd()), undefined);
+			assert.strictEqual(credentialFor(OPEN_VSX, ROOT_DIR), undefined);
 		}
 		finally {
 			if (prior !== undefined) {
@@ -47,7 +53,7 @@ describe("Publish credentials", function () {
 	// turned a machine that was already logged in away at the door. Which of
 	// the two this machine has is not the point; that it is one of them is.
 	it("accepts either a token or a stored vsce login", function () {
-		const source = credentialFor(MARKETPLACE, process.cwd());
+		const source = credentialFor(MARKETPLACE, ROOT_DIR);
 
 		assert.ok(
 			source === undefined || source === "VSCE_PAT" || source.startsWith("vsce login "),
