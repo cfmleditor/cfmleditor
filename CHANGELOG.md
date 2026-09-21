@@ -2,7 +2,12 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
-## [Unreleased]
+## [0.7.6] - 2026-09-21
+
+- **What the extension stands down for is now `cfml.lsp.enabled`, not whether a server is currently answering.** The language moved back and forth underneath the editor while a server was starting, restarting for a changed setting, or coming back from a crash — ten providers re-registered and the whole workspace re-scanned each time, with both resolvers answering in between. It follows the setting now, so it is decided by what you asked for and stays decided. A server that is enabled but cannot run therefore leaves the language unanswered, and says so.
+- The bundled CFLint is 1.5.17, which is also the first release to publish a compressed asset for every platform: packaging one now moves ~28 MB rather than ~90 MB, and an Intel Mac has a native build for the first time.
+
+## [0.7.5] - 2026-09-21
 
 - **The language server now ships with the extension.** Platform-specific packages carry the `cfmleditor-lsp` binary for their own platform, so enabling `cfml.lsp.enabled` needs no network at all on a first run. The download path stays, but only ever fetches a *newer* server than the one that shipped — a GitHub nobody at your site can reach now costs an upgrade rather than every language feature. Platforms without a published server still install the universal package and download as before.
 - **Fixed the server never installing on Windows.** Extracting the release zip shelled out to `unzip`, which stock Windows does not have — so the only platform that was handed a zip was the only one that could not open it. All platforms now take the `.tar.gz`, which extracts in-process; the zip stays as a fallback for pinned versions older than v0.2.6, and is unpacked in-process too.
@@ -10,7 +15,6 @@ All notable changes to the CFML extension will be documented in this file.
 - **Downloads time out, and go through your proxy even when VS Code is not doing it for you.** Nothing set a timeout, so a network that black-holes packets rather than refusing them hung activation indefinitely — and because the extension's own providers stand down for a server that was never going to arrive, that left the editor with no CFML features at all and nothing on screen to say why. Every request now gives up after 30 seconds of silence. Proxies were only ever handled by VS Code's own `http.proxySupport`, so turning that off meant no proxy support at all; `http.proxy`, `https_proxy`/`http_proxy` and `no_proxy` are read directly now, with the tunnel VS Code substitutes its own for at the default `override` setting.
 - **A server that fails to start now says so.** The error was swallowed by a catch meant for the web build, where the module does not load at all, so a binary that would not execute produced no message anywhere. `CFML: Restart Language Server` also works after a failed start, rather than reporting that the previous start failed for as long as the window stayed open.
 - The newest downloaded server is picked by version rather than by sorting directory names, which would have preferred v0.9.0 over v0.10.0.
-- **What the extension stands down for is now `cfml.lsp.enabled`, not whether a server is currently answering.** The language moved back and forth underneath the editor while a server was starting, restarting for a changed setting, or coming back from a crash — ten providers re-registered and the whole workspace re-scanned each time, with both resolvers answering in between. It follows the setting now, so it is decided by what you asked for and stays decided. A server that is enabled but cannot run therefore leaves the language unanswered, and says so.
 - **CFLint ships with the extension too.** The language server runs CFLint for diagnostics and fetched a ~90 MB native binary the first time it linted anything. Platform-specific packages now carry it beside the server, so that download happens only on platforms CFLint publishes no build for — and a `cflint` you installed yourself is still the one that runs.
 
 ## [0.7.4] - 2026-09-19

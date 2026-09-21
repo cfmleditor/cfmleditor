@@ -94,9 +94,10 @@ async function main(): Promise<void> {
  * door. Open VSX has no equivalent — `ovsx` reads `OVSX_PAT` or takes `-p`.
  * @param registry the registry to check
  * @param rootDir the repository root
+ * @param publishers reads the publishers stored on this machine; injectable so the rule can be tested without shelling out
  * @returns where the credential comes from, or undefined when there is none
  */
-export function credentialFor(registry: Registry, rootDir: string): string | undefined {
+export function credentialFor(registry: Registry, rootDir: string, publishers: (rootDir: string) => string[] = storedPublishers): string | undefined {
 	if (process.env[registry.tokenVar]) {
 		return registry.tokenVar;
 	}
@@ -106,8 +107,11 @@ export function credentialFor(registry: Registry, rootDir: string): string | und
 	}
 
 	const publisher = readPublisher(rootDir);
+	if (!publisher) {
+		return undefined;
+	}
 
-	return storedPublishers(rootDir).includes(publisher) ? `vsce login ${publisher}` : undefined;
+	return publishers(rootDir).includes(publisher) ? `vsce login ${publisher}` : undefined;
 }
 
 /**
@@ -119,7 +123,7 @@ export function credentialFor(registry: Registry, rootDir: string): string | und
  */
 function describeMissing(registry: Registry, rootDir: string): string {
 	if (registry.command === "vsce") {
-		return `${registry.name} (set ${registry.tokenVar}, or run \`npx vsce login ${readPublisher(rootDir)}\`)`;
+		return `${registry.name} (set ${registry.tokenVar}, or run \`npx vsce login ${readPublisher(rootDir) ?? "<publisher>"}\`)`;
 	}
 
 	return `${registry.name} (set ${registry.tokenVar})`;
@@ -139,10 +143,18 @@ function storedPublishers(rootDir: string): string[] {
 	return result.stdout.split("\n").map(line => line.trim()).filter(Boolean);
 }
 
-function readPublisher(rootDir: string): string {
-	const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "package.json"), "utf8")) as { publisher: string };
+function readPublisher(rootDir: string): string | undefined {
+	try {
+		const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "package.json"), "utf8")) as { publisher?: string };
 
-	return manifest.publisher;
+		return manifest.publisher;
+	}
+	catch {
+		// A manifest that cannot be read is not something a credential check
+		// should throw over — it means no stored login can be matched to a
+		// publisher, which is the same answer as not having one.
+		return undefined;
+	}
 }
 
 /**
