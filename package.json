@@ -2,7 +2,7 @@
 	"name": "cfmleditor",
 	"displayName": "CFML Editor",
 	"description": "CFML Language Editor",
-	"version": "0.7.4",
+	"version": "0.7.5",
 	"cfmlLspVersion": "0.3.2",
 	"cflintVersion": "1.5.16",
 	"preview": true,
