@@ -27,11 +27,20 @@ its own platform in `server/`, so a first run needs no network and the download
 path only ever fetches a *newer* server than the one that shipped. The version
 that ships is `cfmlLspVersion` in `package.json`.
 
-- **`npm run package-targets` builds the lot** into `packages/`: one VSIX per
-  platform with that platform's server inside, then a universal one with no
-  server. Takes about a minute and a half. `--targets linux-x64,darwin-arm64`
-  narrows it, `--no-universal` skips the fallback package, `--out <dir>` moves
-  the output. It prints the publish loop to run when you are ready.
+- **`npm run publish` does a whole release**: builds every platform package
+  plus the universal one, then sends all of them to the VS Marketplace and Open
+  VSX in one call each. It reads `VSCE_PAT` and `OVSX_PAT` from the environment
+  and checks both are there before it starts building, rather than after the
+  minute and a half that takes. `--dry-run` prints what it would publish,
+  `--only vsce` or `--only ovsx` picks one registry, `--skip-build` publishes
+  what is already in `packages/`, and `--targets`/`--no-universal` narrow what
+  gets built. Publishing the same version twice is not an error — it skips what
+  is already up, so a release that fell over half way through is finished by
+  running it again.
+- **`npm run pack` builds the same packages without publishing anything**, into
+  `packages/`: one VSIX per platform with that platform's server inside, then a
+  universal one with no server. About a minute and a half. Same
+  `--targets`, `--no-universal`, `--out` and `--version` flags.
 - To do one target by hand: `npm run bundle-server -- --target darwin-arm64`
   puts that platform's binary in `server/`, then `npx vsce package --target
   darwin-arm64`. Targets are the [`vsce` ones](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#platformspecific-extensions):
@@ -39,7 +48,7 @@ that ships is `cfmlLspVersion` in `package.json`.
   Bundle before every package: `vsce package --target` does not check that
   `server/` holds that target's binary, and will happily ship whichever one was
   left there. Delete `server/` before building a universal package, or it goes
-  to everyone. `package-targets` handles both, which is why it is the easier path.
+  to everyone. `npm run pack` handles both, which is why it is the easier path.
 - The release workflow does the same thing, one target per job, and publishes
   every package to the Marketplace, OpenVSX and the GitHub release under one
   version. The universal package is the fallback the Marketplace serves to
