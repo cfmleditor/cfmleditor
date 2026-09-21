@@ -11,10 +11,10 @@ on:
         required: true
         default: true
       publishOVSX:
-        description: 'Publish to OpenVSX'
+        description: 'Publish to OpenVSX (paused: off unless ticked)'
         type: boolean
         required: true
-        default: true
+        default: false
       publishGH:
         description: 'Publish to GitHub Releases'
         type: boolean
@@ -135,7 +135,10 @@ jobs:
     name: Publish to OpenVSX
     runs-on: ubuntu-latest
     needs: [meta, package]
-    if: needs.meta.outputs.marketplaces == 'true' || github.event.inputs.publishOVSX == 'true'
+    # Open VSX is paused. A published release goes to the VS Marketplace only;
+    # this still runs when a manual dispatch asks for it, so turning it back on
+    # is ticking a box rather than restoring a job.
+    if: github.event.inputs.publishOVSX == 'true'
     steps:
       - uses: actions/download-artifact@v4
         with:
