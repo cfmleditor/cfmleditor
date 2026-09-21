@@ -51,9 +51,12 @@ that ships is `cfmlLspVersion` in `package.json`.
   to everyone. `npm run pack` handles both, which is why it is the easier path.
 - The release workflow does the same thing, one target per job, and publishes
   every package to the Marketplace, OpenVSX and the GitHub release under one
-  version. The universal package is the fallback the Marketplace serves to
-  platforms with no package of their own — armhf, alpine, web — and it
-  downloads a server on demand.
+  version. Publishing a GitHub release runs it; a pre-release is packaged and
+  its assets attached, but nothing goes to the marketplaces, since a
+  pre-release sent to the stable channel cannot be taken back. **Run workflow**
+  does whichever parts its inputs ask for. The universal package is the
+  fallback the Marketplace serves to platforms with no package of their own —
+  armhf, alpine, web — and it downloads a server on demand.
 
 `server/` and `packages/` are generated and git-ignored; nothing needs them to
 run the extension from source, which downloads a server the first time one is
