@@ -12,6 +12,13 @@ interface Registry {
 	tokenVar: string;
 }
 
+/** A registry and how this machine is authenticated to it, if it is. */
+interface Credential {
+	registry: Registry;
+	/** Where the credential comes from, or undefined when there is none. */
+	source: string | undefined;
+}
+
 const REGISTRIES: Registry[] = [
 	{ name: "VS Marketplace", command: "vsce", tokenVar: "VSCE_PAT" },
 	{ name: "Open VSX", command: "ovsx", tokenVar: "OVSX_PAT" },
@@ -39,12 +46,18 @@ async function main(): Promise<void> {
 		throw new Error(`--only takes one of ${REGISTRIES.map(r => r.command).join(", ")}`);
 	}
 
-	// Before the build, not after: the build takes a minute and a half, and
-	// finding out then that half the release cannot go anywhere is a waste of
-	// it — and leaves a half-published release if the other half succeeds.
-	const missing = registries.filter(registry => !process.env[registry.tokenVar]);
+	// Checked before the build, not after: the build takes a minute and a half,
+	// and finding out then that half the release cannot go anywhere wastes it —
+	// and leaves a half-published release if the other half succeeds.
+	const credentials: Credential[] = registries.map(registry => ({ registry, source: credentialFor(registry, rootDir) }));
+
+	for (const credential of credentials) {
+		console.log("Credential".padEnd(26), "=>", `${credential.registry.name}: ${credential.source ?? "none"}`);
+	}
+
+	const missing = credentials.filter(credential => !credential.source);
 	if (missing.length > 0 && !args.dryRun) {
-		throw new Error(`No token for ${missing.map(r => `${r.name} (set ${r.tokenVar})`).join(" or ")}`);
+		throw new Error(`No credential for ${missing.map(m => describeMissing(m.registry, rootDir)).join(" or ")}`);
 	}
 
 	console.log("Publishing".padEnd(26), "=>", `${readExtensionVersion(rootDir)} to ${registries.map(r => r.name).join(" and ")}`);
@@ -63,6 +76,66 @@ async function main(): Promise<void> {
 
 	console.log("");
 	console.log(args.dryRun ? "Dry run: nothing was published." : `Published ${packages.length} package${packages.length === 1 ? "" : "s"}.`);
+}
+
+/**
+ * How this machine is authenticated to a registry, if it is.
+ *
+ * An environment variable is not the only way: `vsce login <publisher>` puts a
+ * token in the OS keychain and `vsce publish` uses it when none is passed, so
+ * demanding `VSCE_PAT` turned a machine that was already logged in away at the
+ * door. Open VSX has no equivalent — `ovsx` reads `OVSX_PAT` or takes `-p`.
+ * @param registry the registry to check
+ * @param rootDir the repository root
+ * @returns where the credential comes from, or undefined when there is none
+ */
+export function credentialFor(registry: Registry, rootDir: string): string | undefined {
+	if (process.env[registry.tokenVar]) {
+		return registry.tokenVar;
+	}
+
+	if (registry.command !== "vsce") {
+		return undefined;
+	}
+
+	const publisher = readPublisher(rootDir);
+
+	return storedPublishers(rootDir).includes(publisher) ? `vsce login ${publisher}` : undefined;
+}
+
+/**
+ * Names both ways of supplying a registry's credential, for the error a
+ * machine with neither is going to see.
+ * @param registry the registry with no credential
+ * @param rootDir the repository root
+ * @returns the registry and what to do about it
+ */
+function describeMissing(registry: Registry, rootDir: string): string {
+	if (registry.command === "vsce") {
+		return `${registry.name} (set ${registry.tokenVar}, or run \`npx vsce login ${readPublisher(rootDir)}\`)`;
+	}
+
+	return `${registry.name} (set ${registry.tokenVar})`;
+}
+
+/**
+ * The publishers `vsce login` has stored on this machine.
+ * @param rootDir the repository root
+ * @returns the publisher names, or an empty list when none are stored
+ */
+function storedPublishers(rootDir: string): string[] {
+	const result = spawnSync("npx", ["vsce", "ls-publishers"], { cwd: rootDir, encoding: "utf8" });
+	if (result.status !== 0 || !result.stdout) {
+		return [];
+	}
+
+	return result.stdout.split("\n").map(line => line.trim()).filter(Boolean);
+}
+
+function readPublisher(rootDir: string): string {
+	const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "package.json"), "utf8")) as { publisher: string };
+
+	return manifest.publisher;
 }
 
 /**
@@ -87,8 +160,9 @@ function publish(registry: Registry, packages: string[], rootDir: string, dryRun
 		return;
 	}
 
-	// The token comes from the environment the registry's own CLI reads, so it
-	// stays out of the argument list and out of any process listing.
+	// The credential is left to the registry's own CLI — an environment
+	// variable it reads itself, or the keychain entry `vsce login` wrote — so
+	// no token passes through this script's arguments or any process listing.
 	const result = spawnSync("npx", args, { cwd: rootDir, stdio: "inherit" });
 	if (result.status !== 0) {
 		throw new Error(`${registry.name} publish exited with ${result.status ?? "a signal"}`);
