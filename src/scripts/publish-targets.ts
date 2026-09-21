@@ -24,6 +24,10 @@ const REGISTRIES: Registry[] = [
 	{ name: "Open VSX", command: "ovsx", tokenVar: "OVSX_PAT" },
 ];
 
+// Open VSX is paused: it is still wired up and one `--registries vsce,ovsx`
+// away, but a plain release does not go there.
+const DEFAULT_REGISTRIES = ["vsce"];
+
 /**
  * Builds and publishes a release: every platform package, plus the universal
  * fallback, to every registry.
@@ -34,17 +38,20 @@ const REGISTRIES: Registry[] = [
  * step away from publishing a Windows package with a macOS server inside it,
  * or leaving a platform on the previous version.
  *
- * Usage: `npm run publish [-- --dry-run] [--skip-build] [--only vsce] [--targets linux-x64,darwin-arm64]`
+ * Usage: `npm run publish [-- --dry-run] [--skip-build] [--registries vsce,ovsx] [--targets linux-x64,darwin-arm64]`
  */
 async function main(): Promise<void> {
 	const args = parseArgs(process.argv.slice(2));
 	const rootDir = repositoryRoot();
 	const outDir = path.resolve(rootDir, args.out ?? "packages");
-	const registries = REGISTRIES.filter(registry => !args.only || args.only === registry.command);
+	const wanted = args.registries ?? DEFAULT_REGISTRIES;
+	const unknown = wanted.filter(name => !REGISTRIES.some(registry => registry.command === name));
 
-	if (registries.length === 0) {
-		throw new Error(`--only takes one of ${REGISTRIES.map(r => r.command).join(", ")}`);
+	if (unknown.length > 0) {
+		throw new Error(`--registries takes ${REGISTRIES.map(r => r.command).join(" and ")}, not ${unknown.join(", ")}`);
 	}
+
+	const registries = REGISTRIES.filter(registry => wanted.includes(registry.command));
 
 	// Checked before the build, not after: the build takes a minute and a half,
 	// and finding out then that half the release cannot go anywhere wastes it —
@@ -179,8 +186,8 @@ function existingPackages(outDir: string): string[] {
 		.map(file => path.join(outDir, file));
 }
 
-function parseArgs(argv: string[]): { targets?: string[]; out?: string; version?: string; universal?: boolean; only?: string; dryRun: boolean; skipBuild: boolean } {
-	const args: { targets?: string[]; out?: string; version?: string; universal?: boolean; only?: string; dryRun: boolean; skipBuild: boolean } = {
+function parseArgs(argv: string[]): { targets?: string[]; out?: string; version?: string; universal?: boolean; registries?: string[]; dryRun: boolean; skipBuild: boolean } {
+	const args: { targets?: string[]; out?: string; version?: string; universal?: boolean; registries?: string[]; dryRun: boolean; skipBuild: boolean } = {
 		dryRun: false,
 		skipBuild: false,
 	};
@@ -199,8 +206,8 @@ function parseArgs(argv: string[]): { targets?: string[]; out?: string; version?
 			case "--no-universal":
 				args.universal = false;
 				break;
-			case "--only":
-				args.only = argv[++i];
+			case "--registries":
+				args.registries = argv[++i].split(",").map(name => name.trim()).filter(Boolean);
 				break;
 			case "--dry-run":
 				args.dryRun = true;

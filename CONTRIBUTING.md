@@ -38,14 +38,14 @@ so it is most of a platform package's ~37 MB.
 
 - **`npm run publish` does a whole release**: builds every platform package
   plus the universal one, then sends all of them to the VS Marketplace and Open
-  VSX in one call each. The Marketplace credential is either `VSCE_PAT` or a
-  `npx vsce login <publisher>` already in the OS keychain; Open VSX has no
-  login of its own, so it needs `OVSX_PAT`. Both are checked before the build
-  starts rather than after the minute and a half it takes, and `--dry-run`
-  prints which credential it found for each. `--dry-run` prints what it would publish,
-  `--only vsce` or `--only ovsx` picks one registry, `--skip-build` publishes
-  what is already in `packages/`, and `--targets`/`--no-universal` narrow what
-  gets built. Publishing the same version twice is not an error — it skips what
+  Marketplace in one call. The credential is either `VSCE_PAT` or a
+  `npx vsce login <publisher>` already in the OS keychain, checked before the
+  build starts rather than after the minute and a half it takes; `--dry-run`
+  prints which one it found. Open VSX is paused — `--registries vsce,ovsx`
+  includes it again, and it needs `OVSX_PAT` because `ovsx` has no login of
+  its own. `--dry-run` prints what it would publish,
+  `--registries` picks where it goes, `--skip-build` publishes what is already
+  in `packages/`, and `--targets`/`--no-universal` narrow what gets built. Publishing the same version twice is not an error — it skips what
   is already up, so a release that fell over half way through is finished by
   running it again.
 - **`npm run pack` builds the same packages without publishing anything**, into
