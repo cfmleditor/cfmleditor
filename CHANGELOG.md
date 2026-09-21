@@ -2,6 +2,15 @@
 
 All notable changes to the CFML extension will be documented in this file.
 
+## [Unreleased]
+
+- **The language server now ships with the extension.** Platform-specific packages carry the `cfmleditor-lsp` binary for their own platform, so enabling `cfml.lsp.enabled` needs no network at all on a first run. The download path stays, but only ever fetches a *newer* server than the one that shipped — a GitHub nobody at your site can reach now costs an upgrade rather than every language feature. Platforms without a published server still install the universal package and download as before.
+- **Fixed the server never installing on Windows.** Extracting the release zip shelled out to `unzip`, which stock Windows does not have — so the only platform that was handed a zip was the only one that could not open it. All platforms now take the `.tar.gz`, which extracts in-process; the zip stays as a fallback for pinned versions older than v0.2.6, and is unpacked in-process too.
+- **Fixed Windows on ARM asking for a binary that does not exist.** It requested `windows-arm64`, which has not been published since v0.1.12, and got an HTTP 404 that read like a broken release. It now runs the amd64 build, as Windows does for any other x64 program.
+- **Downloads time out, and go through your proxy even when VS Code is not doing it for you.** Nothing set a timeout, so a network that black-holes packets rather than refusing them hung activation indefinitely — and because the extension's own providers stand down for a server that was never going to arrive, that left the editor with no CFML features at all and nothing on screen to say why. Every request now gives up after 30 seconds of silence. Proxies were only ever handled by VS Code's own `http.proxySupport`, so turning that off meant no proxy support at all; `http.proxy`, `https_proxy`/`http_proxy` and `no_proxy` are read directly now, with the tunnel VS Code substitutes its own for at the default `override` setting.
+- **A server that fails to start now says so.** The error was swallowed by a catch meant for the web build, where the module does not load at all, so a binary that would not execute produced no message anywhere. `CFML: Restart Language Server` also works after a failed start, rather than reporting that the previous start failed for as long as the window stayed open.
+- The newest downloaded server is picked by version rather than by sorting directory names, which would have preferred v0.9.0 over v0.10.0.
+
 ## [0.7.4] - 2026-09-19
 
 - **The extension stands down while the language server is running.** With `cfml.lsp.enabled` on, both sides answered the same requests: VS Code merges every registered provider's results, so completion came back doubled and go-to-definition offered two entries for one symbol — and the two disagreed, because the extension resolves from `cfml.mappings` while the server resolves from `.cfmleditor.json`. All ten of the extension's own providers now unregister when the server starts and come back if it stops, so a server that dies mid-session does not leave the window with no language features.

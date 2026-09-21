@@ -3,6 +3,7 @@
 	"displayName": "CFML Editor",
 	"description": "CFML Language Editor",
 	"version": "0.7.4",
+	"cfmlLspVersion": "0.3.2",
 	"preview": true,
 	"author": "cfmleditor",
 	"publisher": "cfmleditor",
@@ -648,7 +649,7 @@
 				"cfml.lsp.enabled": {
 					"type": "boolean",
 					"default": false,
-					"markdownDescription": "Enable the CFML Language Server (cfmleditor-lsp). When enabled, the binary is automatically downloaded from GitHub releases.",
+					"markdownDescription": "Enable the CFML Language Server (cfmleditor-lsp). Platform-specific builds of this extension ship the server; anything newer, and every other build, is downloaded from GitHub releases.",
 					"scope": "machine-overridable"
 				},
 				"cfml.lsp.path": {
@@ -660,7 +661,7 @@
 				"cfml.lsp.version": {
 					"type": "string",
 					"default": "latest",
-					"markdownDescription": "Version of cfmleditor-lsp to download (e.g. `0.1.12`). Use `latest` for the most recent release.",
+					"markdownDescription": "Version of cfmleditor-lsp to run (e.g. `0.1.12`), downloaded unless the extension already ships it. Use `latest` for the most recent release, which falls back to the newest copy on this machine when GitHub cannot be reached.",
 					"scope": "machine-overridable"
 				}
 			}
@@ -818,6 +819,7 @@
 		"lint": "eslint src",
 		"lint:fix": "eslint src --fix",
 		"download-docs": "tsx ./src/scripts/download-docs.ts",
+		"bundle-server": "tsx ./src/scripts/download-server.ts",
 		"validate-docs": "tsx ./src/scripts/validate-docs.ts",
 		"package": "npm run check-types && node esbuild.js --production && npm run download-docs && npm run validate-docs",
 		"pack": "vsce package",
