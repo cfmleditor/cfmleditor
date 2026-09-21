@@ -108,14 +108,12 @@ jobs:
           pattern: '*.vsix'
           merge-multiple: true
       - name: Publish to VS marketplace
-        # Every package goes up in one run: the marketplace serves each install
+        # Every package goes up in one call: the marketplace serves each install
         # the one for its platform, and a release missing a platform leaves
-        # those users on the previous version.
-        run: |
-          for vsix in packages/*.vsix; do
-            echo "Publishing $vsix"
-            npx vsce publish --packagePath "$vsix" -p ${{ secrets.VSCE_PAT }}
-          done
+        # those users on the previous version. `--skip-duplicate` makes a re-run
+        # after a half-finished release pick up where it stopped rather than
+        # failing on the packages that already went up.
+        run: npx vsce publish --packagePath packages/*.vsix --skip-duplicate -p ${{ secrets.VSCE_PAT }}
 
   publishOVSX:
     name: Publish to OpenVSX
@@ -129,11 +127,7 @@ jobs:
           pattern: '*.vsix'
           merge-multiple: true
       - name: Publish to OpenVSX
-        run: |
-          for vsix in packages/*.vsix; do
-            echo "Publishing $vsix"
-            npx ovsx publish "$vsix" -p ${{ secrets.OVSX_PAT }}
-          done
+        run: npx ovsx publish --packagePath packages/*.vsix --skip-duplicate -p ${{ secrets.OVSX_PAT }}
 
   publishGH:
     name: Publish to GitHub releases
