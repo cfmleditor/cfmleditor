@@ -145,6 +145,47 @@ function pathForChoice(choice: ServerChoice, bundled: { path: string; tag: strin
 	return path.join(versionDirFor(storageDir, choice.tag), binaryName);
 }
 
+/**
+ * The environment the server runs in, with the bundled tools on PATH.
+ *
+ * The server runs CFLint itself, and looks for `cflint` on PATH before its own
+ * cache or a download. Putting the directory the extension ships there is the
+ * whole handshake: no setting, no protocol, and a platform package that
+ * carries CFLint never has to fetch 90 MB at first lint.
+ *
+ * Appended rather than prepended, so a `cflint` the user installed themselves
+ * still wins — that is the order the server already prefers, and this is meant
+ * to be the floor under it rather than an override.
+ * @param context the extension context, for the install directory
+ * @returns the environment overrides, or undefined when this build bundles nothing
+ */
+function serverEnvironment(context: ExtensionContext): Record<string, string> | undefined {
+	const bundledDir = path.join(context.extensionPath, "server");
+	if (!fs.existsSync(bundledDir)) {
+		return undefined;
+	}
+
+	return pathWithBundledTools(process.env, bundledDir);
+}
+
+/**
+ * Adds a directory to the end of PATH, under the name the environment already
+ * uses for it.
+ *
+ * Windows spells it `Path`, and the client copies the environment key by key
+ * into a plain object before applying these — so a `PATH` of our own would
+ * leave the process carrying two path variables and no say in which one wins.
+ * @param env the environment to extend
+ * @param directory the directory to add
+ * @returns the single variable to override
+ */
+export function pathWithBundledTools(env: NodeJS.ProcessEnv, directory: string): Record<string, string> {
+	const pathKey = Object.keys(env).find(key => key.toLowerCase() === "path") ?? "PATH";
+	const current = env[pathKey];
+
+	return { [pathKey]: current ? `${current}${path.delimiter}${directory}` : directory };
+}
+
 async function ensureBinary(context: ExtensionContext): Promise<string | undefined> {
 	// If user set an explicit path, use it directly
 	const manualPath = getConfig().get<string>("path");
@@ -368,7 +409,7 @@ export async function startLspClient(context: ExtensionContext): Promise<void> {
 		return;
 	}
 
-	const serverOptions: ServerOptions = { command: binaryPath, args: [] };
+	const serverOptions: ServerOptions = { command: binaryPath, args: [], options: { env: serverEnvironment(context) } };
 	// How many times a server that keeps dying is restarted before the extension
 	// stops and asks. High enough to ride out a crash on a single bad file, low
 	// enough that a server failing on every start does not spin.
