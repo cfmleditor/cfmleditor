@@ -94,9 +94,10 @@ async function main(): Promise<void> {
  * door. Open VSX has no equivalent — `ovsx` reads `OVSX_PAT` or takes `-p`.
  * @param registry the registry to check
  * @param rootDir the repository root
+ * @param publishers reads the publishers stored on this machine; injectable so the rule can be tested without shelling out
  * @returns where the credential comes from, or undefined when there is none
  */
-export function credentialFor(registry: Registry, rootDir: string): string | undefined {
+export function credentialFor(registry: Registry, rootDir: string, publishers: (rootDir: string) => string[] = storedPublishers): string | undefined {
 	if (process.env[registry.tokenVar]) {
 		return registry.tokenVar;
 	}
@@ -110,7 +111,7 @@ export function credentialFor(registry: Registry, rootDir: string): string | und
 		return undefined;
 	}
 
-	return storedPublishers(rootDir).includes(publisher) ? `vsce login ${publisher}` : undefined;
+	return publishers(rootDir).includes(publisher) ? `vsce login ${publisher}` : undefined;
 }
 
 /**
