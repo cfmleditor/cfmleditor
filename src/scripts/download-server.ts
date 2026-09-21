@@ -3,7 +3,7 @@ import path from "path";
 import { rimrafSync } from "rimraf";
 
 import { extractArchive } from "../lsp/extractServer";
-import { BINARY_NAME, GITHUB_REPO, assetCandidates, pinnedTag, platformForTarget, tagFromReleaseRedirect } from "../lsp/serverAsset";
+import { BINARY_NAME, CFLINT_REPO, GITHUB_REPO, assetCandidates, cflintAssetCandidates, pinnedTag, platformForTarget, tagFromReleaseRedirect } from "../lsp/serverAsset";
 
 /**
  * The repository root, from this script's location.
@@ -83,6 +83,8 @@ export async function bundleServer(target: string, version?: string): Promise<st
 
 		console.log("Bundled".padEnd(26), "=>", `${path.relative(rootDir, binaryPath)} (${(fs.statSync(binaryPath).size / 1024 / 1024).toFixed(1)} MB)`);
 
+		await bundleCflint(target, serverDir, rootDir);
+
 		return tag;
 	}
 
@@ -134,6 +136,73 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 	}
 
 	fs.writeFileSync(dest, Buffer.from(await response.arrayBuffer()));
+}
+
+/**
+ * Puts CFLint beside the server, when a native build exists for the platform.
+ *
+ * The server runs CFLint itself and looks for `cflint` on PATH before anything
+ * else, so the extension only has to put this directory on the server's PATH —
+ * no setting, and no agreement between the two beyond the name.
+ *
+ * A platform with no published build is not an error: CFLint has no macOS
+ * Intel binary yet, and the server downloads one at first use anyway. Those
+ * packages simply ship without it, and pick it up the day the build appears.
+ * @param target the VS Code packaging target
+ * @param serverDir where the server was bundled
+ * @param rootDir the repository root
+ */
+async function bundleCflint(target: string, serverDir: string, rootDir: string): Promise<void> {
+	const version = readCflintVersion(rootDir);
+	const { platform, arch } = platformForTarget(target);
+	const { assetNames, binaryName } = cflintAssetCandidates(platform, arch);
+	const binaryPath = path.join(serverDir, binaryName);
+
+	for (const assetName of assetNames) {
+		const url = `https://github.com/${CFLINT_REPO}/releases/download/${version}/${assetName}`;
+		const downloadPath = path.join(serverDir, assetName);
+
+		console.log("Downloading CFLint".padEnd(26), "=>", url);
+		try {
+			await downloadFile(url, downloadPath);
+		}
+		catch (e: unknown) {
+			console.log("Not available".padEnd(26), "=>", e instanceof Error ? e.message : String(e));
+			continue;
+		}
+
+		// The compressed assets hold the binary under its plain name; the raw
+		// ones are the binary, already downloaded to the wrong name.
+		if (assetName.endsWith(".tar.gz") || assetName.endsWith(".zip")) {
+			await extractArchive(downloadPath, serverDir, binaryName);
+			fs.rmSync(downloadPath, { force: true });
+		}
+		else if (downloadPath !== binaryPath) {
+			fs.renameSync(downloadPath, binaryPath);
+		}
+
+		if (!fs.existsSync(binaryPath)) {
+			throw new Error(`${assetName} did not contain ${binaryName}`);
+		}
+
+		fs.chmodSync(binaryPath, 0o755);
+		console.log("Bundled CFLint".padEnd(26), "=>", `${path.relative(rootDir, binaryPath)} (${(fs.statSync(binaryPath).size / 1024 / 1024).toFixed(1)} MB)`);
+
+		return;
+	}
+
+	console.log("No CFLint build".padEnd(26), "=>", `${target} ships without one; the server downloads it at first use`);
+}
+
+/**
+ * The CFLint version this extension ships, from package.json.
+ * @param rootDir the repository root
+ * @returns the configured version
+ */
+function readCflintVersion(rootDir: string): string {
+	const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "package.json"), "utf8")) as { cflintVersion?: string };
+
+	return manifest.cflintVersion ?? "1.5.16";
 }
 
 /**

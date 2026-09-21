@@ -22,10 +22,19 @@ If you would like to contribute enhancements or fixes, please read this document
 
 ## Packaging the language server
 
-Released packages are platform-specific: each carries the `cfmleditor-lsp` binary for
-its own platform in `server/`, so a first run needs no network and the download
-path only ever fetches a *newer* server than the one that shipped. The version
-that ships is `cfmlLspVersion` in `package.json`.
+Released packages are platform-specific: each carries the `cfmleditor-lsp` binary
+for its own platform in `server/`, so a first run needs no network and the
+download path only ever fetches a *newer* server than the one that shipped. The
+version that ships is `cfmlLspVersion` in `package.json`.
+
+CFLint goes in the same directory, pinned by `cflintVersion`. The server runs
+CFLint itself and looks for `cflint` on PATH before its own cache or a
+download, so the extension puts `server/` on the PATH of the server it spawns
+and the two need no other arrangement — appended, so a `cflint` the user
+installed themselves still wins. A platform CFLint publishes no build for ships
+without it and the server downloads one at first lint, which is also what the
+universal package does. CFLint is a ~90 MB native image that deflates to ~28 MB,
+so it is most of a platform package's ~37 MB.
 
 - **`npm run publish` does a whole release**: builds every platform package
   plus the universal one, then sends all of them to the VS Marketplace and Open

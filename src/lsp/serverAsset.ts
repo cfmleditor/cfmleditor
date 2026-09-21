@@ -42,6 +42,46 @@ export function assetCandidates(platform: string, arch: string): { assetNames: s
 	};
 }
 
+/** CFLint's executable name, without the Windows extension. */
+export const CFLINT_BINARY_NAME = "cflint";
+
+/** The repository CFLint's native binaries are released from. */
+export const CFLINT_REPO = "cfmleditor/CFLint";
+
+/**
+ * The CFLint assets that could carry the linter for a platform, best first.
+ *
+ * The language server runs CFLint itself and looks for `cflint` on PATH before
+ * anything else, so a copy shipped beside the server is found with no
+ * arrangement between them. It is a GraalVM native image: no JRE, and about
+ * 90 MB raw against 28 MB compressed, which is why the compressed asset is
+ * preferred and the raw binary is only the fallback for releases that predate
+ * it.
+ *
+ * CFLint names its platforms differently from the server — `macos` rather than
+ * `darwin`, `aarch64` rather than `arm64` — so this is its own mapping rather
+ * than a tweak of the server's.
+ * @param platform an `os.platform()` value
+ * @param arch an `os.arch()` value
+ * @returns the asset names to try in order, and the binary they contain
+ */
+export function cflintAssetCandidates(platform: string, arch: string): { assetNames: string[]; binaryName: string } {
+	const osStr = platform === "win32" ? "windows" : platform === "darwin" ? "macos" : "linux";
+
+	// Only an amd64 build is published for Windows, and Windows on ARM runs it
+	// under emulation.
+	const archStr = arch === "arm64" && platform !== "win32" ? "aarch64" : "amd64";
+	const binaryName = platform === "win32" ? `${CFLINT_BINARY_NAME}.exe` : CFLINT_BINARY_NAME;
+	const base = `${CFLINT_BINARY_NAME}-${osStr}-${archStr}`;
+
+	return {
+		assetNames: platform === "win32"
+			? [`${base}.zip`, `${base}.exe`]
+			: [`${base}.tar.gz`, base],
+		binaryName,
+	};
+}
+
 /**
  * Turns a VS Code packaging target into the platform pair `assetCandidates`
  * reads, so `vsce package --target win32-arm64` and a user running Windows on
