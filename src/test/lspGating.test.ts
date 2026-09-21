@@ -20,8 +20,8 @@ describe("LSP gating", function () {
 	// VS Code merges the results of every registered provider, so the extension's
 	// own providers and the server both answering is not redundancy — completion
 	// comes back doubled and go-to-definition offers two entries for one symbol.
-	// The group must therefore be down whenever the server is up.
-	it("stands the group down while the server is running", async function () {
+	// The group must therefore be down whenever the server owns the language.
+	it("stands the group down while the server owns the language", async function () {
 		const gate = new GatedRegistration(() => [fakeDisposable()]);
 
 		await gate.sync(false);
@@ -46,8 +46,9 @@ describe("LSP gating", function () {
 		assert.deepStrictEqual(registered.map(d => d.disposed), [1, 1]);
 	});
 
-	// The reason `sync` is safe to call repeatedly: it is called from a state-change
-	// listener that fires on every start and stop, and once more at activation.
+	// The reason `sync` is safe to call repeatedly: it is called at activation
+	// and again whenever `cfml.lsp.enabled` changes, which a settings file being
+	// saved can report more than once.
 	it("does not register a second set when already up", async function () {
 		let registrations = 0;
 		const gate = new GatedRegistration(() => {
@@ -63,10 +64,10 @@ describe("LSP gating", function () {
 		assert.strictEqual(registrations, 1);
 	});
 
-	// A server that dies mid-session hands the workspace back. Without this the
-	// window has no language features at all until it is reloaded, and no cache
-	// for the providers that come back to read.
-	it("comes back after the server goes away", async function () {
+	// Turning the server off hands the workspace back. Without this the window
+	// has no language features at all until it is reloaded, and no cache for the
+	// providers that come back to read.
+	it("comes back after the server is turned off", async function () {
 		let registrations = 0;
 		const gate = new GatedRegistration(() => {
 			registrations++;

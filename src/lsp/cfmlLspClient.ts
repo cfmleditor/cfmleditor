@@ -471,12 +471,10 @@ export async function startLspClient(context: ExtensionContext): Promise<void> {
 		// with "Previous start failed" for as long as the window stays open.
 		client = undefined;
 		window.showErrorMessage(`CFML LSP: the server failed to start: ${msg}. Run “CFML: Restart Language Server” to try again.`);
-		notifyLspStateChange();
 
 		return;
 	}
 
-	notifyLspStateChange();
 	context.subscriptions.push({
 		dispose: () => {
 			void stopLspClient();
@@ -490,36 +488,6 @@ export async function startLspClient(context: ExtensionContext): Promise<void> {
  */
 export function isLspRunning(): boolean {
 	return client !== undefined && client.needsStart() === false;
-}
-
-/** Called whenever the server starts or stops. */
-type LspStateListener = () => void;
-
-const stateListeners: LspStateListener[] = [];
-
-/**
- * Registers a listener for the server coming up or going away.
- *
- * It exists so the extension's own language providers can stand down while the
- * server is answering. VS Code merges the results of every registered provider,
- * so with both live a completion list comes back doubled and go-to-definition
- * offers two entries for one symbol — and the two disagree, because the
- * extension resolves from `cfml.mappings` while the server resolves from
- * `.cfmleditor.json`.
- *
- * A listener rather than a check at activation time, because the server can
- * start and stop while the window stays open: enabling the setting restarts it,
- * and a crash takes it away without one.
- * @param listener called after the state has changed
- */
-export function onLspStateChange(listener: LspStateListener): void {
-	stateListeners.push(listener);
-}
-
-function notifyLspStateChange(): void {
-	for (const listener of stateListeners) {
-		listener();
-	}
 }
 
 /**
@@ -556,7 +524,6 @@ export async function stopLspClient(): Promise<void> {
 			// server the client gave up on — failing before it started anything.
 		}
 		client = undefined;
-		notifyLspStateChange();
 	}
 }
 

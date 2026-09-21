@@ -2,7 +2,6 @@ import {
 	commands, ConfigurationChangeEvent, Disposable, DocumentSelector, Extension, ExtensionContext, extensions,
 	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace,
 } from "vscode";
-import { isLspRunning, onLspStateChange } from "./lsp/cfmlLspClient";
 import { GatedRegistration } from "./lsp/gatedRegistration";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./entities/tag";
@@ -193,14 +192,34 @@ function registerOwnCaching(): Disposable[] {
  * always has; the state-change listener does not
  */
 async function syncOwnCaching(): Promise<void> {
-	await ownCaching.sync(isLspRunning());
+	await ownCaching.sync(lspOwnsTheLanguage());
 }
 
 /**
  * Registers or drops the extension's own providers to match the server.
  */
 function syncOwnProviders(): void {
-	void ownProviders.sync(isLspRunning());
+	void ownProviders.sync(lspOwnsTheLanguage());
+}
+
+/**
+ * Whether the language server owns the language, from `cfml.lsp.enabled`.
+ *
+ * The setting rather than whether a server happens to be answering: what stands
+ * down is decided by what the user asked for, and stays decided. A server that
+ * is slow to start, restarting after a crash, or being restarted for a changed
+ * setting does not hand the language back and forth underneath the editor —
+ * which meant re-registering ten providers and re-running the workspace scan
+ * each time it went down, and answering from two resolvers in between.
+ *
+ * The cost is that a server enabled but unable to run leaves the language
+ * unanswered, so the failures that get there say so: a binary that cannot be
+ * fetched or will not start both report, and `CFML: Restart Language Server`
+ * is the way back.
+ * @returns true when the extension's own language features should stand down
+ */
+function lspOwnsTheLanguage(): boolean {
+	return workspace.getConfiguration("cfml.lsp").get<boolean>("enabled", false);
 }
 
 /**
@@ -324,8 +343,6 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	}));
 
 	syncOwnProviders();
-	onLspStateChange(syncOwnProviders);
-	onLspStateChange(() => void syncOwnCaching());
 	context.subscriptions.push({ dispose: () => ownProviders.dispose() });
 
 	context.subscriptions.push(workspace.onDidSaveTextDocument(async (document: TextDocument) => {
@@ -344,13 +361,20 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		}
 		if (evt.affectsConfiguration("cfml.mappings") || evt.affectsConfiguration("cfml.webroot")) {
 			// Refresh cached components so the config changes take effect — but
-			// only when this extension still owns the cache. With the server up,
-			// nothing reads it, and `cfml.mappings` is not even the setting the
-			// server resolves from.
-			if (!isLspRunning()) {
+			// only when this extension still owns the cache. With the server
+			// enabled, nothing reads it, and `cfml.mappings` is not even the
+			// setting the server resolves from.
+			if (!lspOwnsTheLanguage()) {
 				commands.executeCommand("cfml.refreshWorkspaceDefinitionCache");
 			}
 		}
+		if (evt.affectsConfiguration("cfml.lsp.enabled")) {
+			// Turning the server on or off is what moves the language between
+			// the two, so it is what the groups follow.
+			syncOwnProviders();
+			void syncOwnCaching();
+		}
+
 		if (evt.affectsConfiguration("cfml.format") || evt.affectsConfiguration("cfml.lsp")) {
 			// The server reads initializationOptions once, at initialize, so a
 			// changed formatting setting only reaches it through a restart.
@@ -399,10 +423,8 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	}
 
 	// After the server has had its chance to start, not before: the workspace
-	// scan is the expensive half of activation, and whether it is needed is not
-	// known until the server is either answering or has failed to. A server
-	// enabled in settings but unable to fetch its binary leaves `isLspRunning()`
-	// false, and this is what hands the workspace back to the extension.
+	// scan is the expensive half of activation, and running it first would hold
+	// up a server that may be about to take the work over anyway.
 	await syncOwnCaching();
 
 	const api: api = {
