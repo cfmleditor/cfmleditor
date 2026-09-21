@@ -355,13 +355,15 @@ export async function activate(context: ExtensionContext): Promise<api> {
 			// The server reads initializationOptions once, at initialize, so a
 			// changed formatting setting only reaches it through a restart.
 			void (async () => {
+				let restartLspClient: ((context: ExtensionContext) => Promise<void>) | undefined;
 				try {
-					const { restartLspClient } = await import("./lsp/cfmlLspClient");
-					await restartLspClient(context);
+					({ restartLspClient } = await import("./lsp/cfmlLspClient"));
 				}
 				catch {
 					// LSP module not available (e.g. web build)
 				}
+
+				await restartLspClient?.(context);
 			})();
 		}
 	}));
@@ -380,12 +382,20 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	// is a bundled-JSON load rather than a scan. It is not gated.
 	await commands.executeCommand("cfml.refreshGlobalDefinitionCache");
 
+	// The catch covers the import alone. Wrapping the call in it too meant a
+	// server that failed to start was indistinguishable from a build where the
+	// module does not exist, and both passed in silence — `startLspClient`
+	// reports its own failures now, so anything reaching here is a real fault.
+	let startLspClient: ((context: ExtensionContext) => Promise<void>) | undefined;
 	try {
-		const { startLspClient } = await import("./lsp/cfmlLspClient");
-		await startLspClient(context);
+		({ startLspClient } = await import("./lsp/cfmlLspClient"));
 	}
 	catch {
 		// LSP module not available (e.g. web build)
+	}
+
+	if (startLspClient) {
+		await startLspClient(context);
 	}
 
 	// After the server has had its chance to start, not before: the workspace

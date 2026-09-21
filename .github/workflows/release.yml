@@ -22,13 +22,61 @@ on:
         default: true
 
 jobs:
-  package:
-    name: Package
+  meta:
+    name: Read version
     runs-on: ubuntu-latest
     outputs:
-      packageName: ${{ steps.setup.outputs.packageName }}
       tag: ${{ steps.setup-tag.outputs.tag }}
       version: ${{ steps.setup-tag.outputs.version }}
+      marketplaces: ${{ steps.gate.outputs.marketplaces }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup tag
+        id: setup-tag
+        run: |
+          version=$(node -e "console.log(require('./package.json').version)")
+          echo "tag=release/$version" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # A published release publishes. `github.event.inputs` is empty on a
+      # release event, so gating on the inputs alone meant publishing a release
+      # built seven packages and then sent them nowhere.
+      #
+      # Decided here and passed on as an output because a job's `if` can read
+      # `needs` but not `env`, where the same expression would have evaluated to
+      # nothing at all and skipped every publish exactly as before.
+      - name: Decide whether the marketplaces publish
+        id: gate
+        run: echo "marketplaces=${{ github.event_name == 'release' && github.event.release.prerelease == false }}" >> "$GITHUB_OUTPUT"
+
+  package:
+    # One package per platform, each carrying the language server for that
+    # platform, so a first run needs no network and a blocked GitHub costs an
+    # upgrade rather than every language feature. The universal package ships
+    # no server and downloads one on demand — it is what installs on the
+    # platforms the server is not built for, and on any editor that asks for a
+    # target we do not publish.
+    name: Package ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    needs: meta
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: win32-x64
+            target: win32-x64
+          - label: win32-arm64
+            target: win32-arm64
+          - label: linux-x64
+            target: linux-x64
+          - label: linux-arm64
+            target: linux-arm64
+          - label: darwin-x64
+            target: darwin-x64
+          - label: darwin-arm64
+            target: darwin-arm64
+          - label: universal
+            target: ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,13 +87,20 @@ jobs:
       - name: Install dependencies
         run: npm i
 
+      - name: Bundle the language server
+        if: matrix.target != ''
+        run: npm run bundle-server -- --target ${{ matrix.target }}
+
       - name: Setup package path
         id: setup
-        run: echo "::set-output name=packageName::$(node -e "console.log(require('./package.json').name + '-' + require('./package.json').version + '.vsix')")"
+        run: |
+          suffix=$([ -n "${{ matrix.target }}" ] && echo "-${{ matrix.target }}" || echo "")
+          echo "packageName=cfmleditor-${{ needs.meta.outputs.version }}$suffix.vsix" >> "$GITHUB_OUTPUT"
 
       - name: Package
         run: |
-          npx vsce package --out ${{ steps.setup.outputs.packageName }}
+          target=$([ -n "${{ matrix.target }}" ] && echo "--target ${{ matrix.target }}" || echo "")
+          npx vsce package $target --out ${{ steps.setup.outputs.packageName }}
 
       - uses: actions/upload-artifact@v4
         with:
@@ -53,65 +108,73 @@ jobs:
           path: ./${{ steps.setup.outputs.packageName }}
           if-no-files-found: error
 
-      - name: Setup tag
-        id: setup-tag
-        run: |
-          $version = (Get-Content ./package.json -Raw | ConvertFrom-Json).version
-          Write-Host "tag: release/$version"
-          Write-Host "::set-output name=tag::release/$version"
-          Write-Host "::set-output name=version::$version"
-        shell: pwsh
-
   publishMS:
     name: Publish to VS marketplace
     runs-on: ubuntu-latest
-    needs: package
-    if: github.event.inputs.publishMS == 'true'
+    needs: [meta, package]
+    # Pre-releases are packaged and attached to the GitHub release, but not sent
+    # to the marketplaces: a pre-release published to the stable channel is not
+    # something you can take back. Publishing those needs `--pre-release` and a
+    # version scheme to match, which is a decision, not a default.
+    if: needs.meta.outputs.marketplaces == 'true' || github.event.inputs.publishMS == 'true'
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.package.outputs.packageName }}
+          path: packages
+          pattern: '*.vsix'
+          merge-multiple: true
       - name: Publish to VS marketplace
-        run: npx vsce publish --packagePath ./${{ needs.package.outputs.packageName }} -p ${{ secrets.VSCE_PAT }}
+        # Every package goes up in one call: the marketplace serves each install
+        # the one for its platform, and a release missing a platform leaves
+        # those users on the previous version. `--skip-duplicate` makes a re-run
+        # after a half-finished release pick up where it stopped rather than
+        # failing on the packages that already went up.
+        run: npx vsce publish --packagePath packages/*.vsix --skip-duplicate -p ${{ secrets.VSCE_PAT }}
 
   publishOVSX:
     name: Publish to OpenVSX
     runs-on: ubuntu-latest
-    needs: package
-    if: github.event.inputs.publishOVSX == 'true'
+    needs: [meta, package]
+    if: needs.meta.outputs.marketplaces == 'true' || github.event.inputs.publishOVSX == 'true'
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.package.outputs.packageName }}
+          path: packages
+          pattern: '*.vsix'
+          merge-multiple: true
       - name: Publish to OpenVSX
-        run: npx ovsx publish ./${{ needs.package.outputs.packageName }} -p ${{ secrets.OVSX_PAT }}
+        run: npx ovsx publish --packagePath packages/*.vsix --skip-duplicate -p ${{ secrets.OVSX_PAT }}
 
   publishGH:
     name: Publish to GitHub releases
     runs-on: ubuntu-latest
-    needs: package
-    if: github.event.inputs.publishGH == 'true'
+    needs: [meta, package]
+    # Every release gets the packages attached, pre-release or not.
+    if: github.event_name == 'release' || github.event.inputs.publishGH == 'true'
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.package.outputs.packageName }}
+          path: packages
+          pattern: '*.vsix'
+          merge-multiple: true
 
+      # Only a manual dispatch has to make the release. A release event already
+      # has one — the one that started this — and the assets go on to that.
       - name: Create Release
+        if: github.event_name == 'workflow_dispatch'
         id: create-release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ needs.package.outputs.tag }}
-          release_name: Release ${{ needs.package.outputs.version }}
+          tag_name: ${{ needs.meta.outputs.tag }}
+          release_name: Release ${{ needs.meta.outputs.version }}
           draft: false
           prerelease: false
 
       - name: Upload assets to a Release
         uses: AButler/upload-release-assets@v3.0
         with:
-          files: ${{ needs.package.outputs.packageName }}
-          release-tag: ${{ needs.package.outputs.tag }}
+          files: 'packages/*.vsix'
+          release-tag: ${{ github.event_name == 'release' && github.event.release.tag_name || needs.meta.outputs.tag }}
           repo-token: ${{ secrets.GITHUB_TOKEN }}
