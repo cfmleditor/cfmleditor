@@ -222,7 +222,11 @@ function readExtensionVersion(rootDir: string): string {
 	return manifest.version;
 }
 
-main().catch((e: unknown) => {
-	console.error("Failed to publish:", e instanceof Error ? e.message : e);
-	process.exit(1);
-});
+// Only when run as a script, so the credential rules can be tested without
+// publishing anything.
+if (require.main === module) {
+	main().catch((e: unknown) => {
+		console.error("Failed to publish:", e instanceof Error ? e.message : e);
+		process.exit(1);
+	});
+}

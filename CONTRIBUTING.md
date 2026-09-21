@@ -38,9 +38,11 @@ so it is most of a platform package's ~37 MB.
 
 - **`npm run publish` does a whole release**: builds every platform package
   plus the universal one, then sends all of them to the VS Marketplace and Open
-  VSX in one call each. It reads `VSCE_PAT` and `OVSX_PAT` from the environment
-  and checks both are there before it starts building, rather than after the
-  minute and a half that takes. `--dry-run` prints what it would publish,
+  VSX in one call each. The Marketplace credential is either `VSCE_PAT` or a
+  `npx vsce login <publisher>` already in the OS keychain; Open VSX has no
+  login of its own, so it needs `OVSX_PAT`. Both are checked before the build
+  starts rather than after the minute and a half it takes, and `--dry-run`
+  prints which credential it found for each. `--dry-run` prints what it would publish,
   `--only vsce` or `--only ovsx` picks one registry, `--skip-build` publishes
   what is already in `packages/`, and `--targets`/`--no-universal` narrow what
   gets built. Publishing the same version twice is not an error — it skips what
