@@ -6,35 +6,51 @@ import { extractArchive } from "../lsp/extractServer";
 import { BINARY_NAME, GITHUB_REPO, assetCandidates, pinnedTag, platformForTarget, tagFromReleaseRedirect } from "../lsp/serverAsset";
 
 /**
+ * The repository root, from this script's location.
+ * @returns the absolute path to the repository root
+ */
+export function repositoryRoot(): string {
+	return path.join(__dirname, "..", "..");
+}
+
+/**
+ * Removes a bundled server, so the next package built is a universal one.
+ *
+ * Worth doing after building a platform package: a `server/` left behind is
+ * one platform's binary that a later `vsce package` with no target would ship
+ * to everybody.
+ */
+export function removeBundledServer(): void {
+	const serverDir = path.join(repositoryRoot(), "server");
+
+	if (fs.existsSync(serverDir) && !rimrafSync(serverDir)) {
+		throw new Error(`Failed to clean "${serverDir}"`);
+	}
+}
+
+/**
  * Puts a language server binary in `server/`, ready to be packaged into a
  * platform-specific VSIX.
  *
  * Every published extension then carries the server for the platform it is
  * published for, so a first run needs no network: the download path stays, but
  * only as a way to move to a newer server than the one that shipped.
- *
- * Usage: `npm run bundle-server -- --target darwin-arm64 [--version 0.3.2]`
+ * @param target the VS Code packaging target, e.g. `darwin-arm64`
+ * @param version the server version to bundle, defaulting to `cfmlLspVersion`
+ * @returns the tag that was bundled
  */
-async function main(): Promise<void> {
-	const args = parseArgs(process.argv.slice(2));
-	const rootDir = path.join(__dirname, "..", "..");
+export async function bundleServer(target: string, version?: string): Promise<string> {
+	const rootDir = repositoryRoot();
 	const serverDir = path.join(rootDir, "server");
 
-	const target = args.target;
-	if (!target) {
-		throw new Error("--target is required, e.g. --target darwin-arm64");
-	}
-
-	const configuredVersion = args.version ?? readBundledVersion(rootDir);
+	const configuredVersion = version ?? readBundledVersion(rootDir);
 	const tag = pinnedTag(configuredVersion) ?? await resolveLatestTag();
 	const { platform, arch } = platformForTarget(target);
 	const { assetNames, binaryName } = assetCandidates(platform, arch);
 
 	console.log("Bundling server".padEnd(26), "=>", `${tag} for ${target} (${platform}-${arch})`);
 
-	if (fs.existsSync(serverDir) && !rimrafSync(serverDir)) {
-		throw new Error(`Failed to clean "${serverDir}"`);
-	}
+	removeBundledServer();
 	fs.mkdirSync(serverDir, { recursive: true });
 
 	// The same candidate list the extension uses at runtime, so a target that
@@ -67,7 +83,7 @@ async function main(): Promise<void> {
 
 		console.log("Bundled".padEnd(26), "=>", `${path.relative(rootDir, binaryPath)} (${(fs.statSync(binaryPath).size / 1024 / 1024).toFixed(1)} MB)`);
 
-		return;
+		return tag;
 	}
 
 	throw new Error(`No server asset for ${target} in ${tag}: ${lastError?.message ?? "none of the candidates existed"}`);
@@ -120,7 +136,23 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 	fs.writeFileSync(dest, Buffer.from(await response.arrayBuffer()));
 }
 
-main().catch((e: unknown) => {
-	console.error(`Failed to bundle ${BINARY_NAME}:`, e instanceof Error ? e.message : e);
-	process.exit(1);
-});
+/**
+ * Usage: `npm run bundle-server -- --target darwin-arm64 [--version 0.3.2]`
+ */
+async function main(): Promise<void> {
+	const args = parseArgs(process.argv.slice(2));
+
+	if (!args.target) {
+		throw new Error("--target is required, e.g. --target darwin-arm64");
+	}
+
+	await bundleServer(args.target, args.version);
+}
+
+// Only when run as a script: `package-targets` imports `bundleServer` instead.
+if (require.main === module) {
+	main().catch((e: unknown) => {
+		console.error(`Failed to bundle ${BINARY_NAME}:`, e instanceof Error ? e.message : e);
+		process.exit(1);
+	});
+}

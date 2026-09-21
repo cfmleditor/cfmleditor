@@ -820,6 +820,7 @@
 		"lint:fix": "eslint src --fix",
 		"download-docs": "tsx ./src/scripts/download-docs.ts",
 		"bundle-server": "tsx ./src/scripts/download-server.ts",
+		"package-targets": "tsx ./src/scripts/package-targets.ts",
 		"validate-docs": "tsx ./src/scripts/validate-docs.ts",
 		"package": "npm run check-types && node esbuild.js --production && npm run download-docs && npm run validate-docs",
 		"pack": "vsce package",

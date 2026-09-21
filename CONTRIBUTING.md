@@ -27,18 +27,28 @@ its own platform in `server/`, so a first run needs no network and the download
 path only ever fetches a *newer* server than the one that shipped. The version
 that ships is `cfmlLspVersion` in `package.json`.
 
-- `npm run bundle-server -- --target darwin-arm64` puts that platform's binary in
-  `server/`. Targets are the [`vsce` ones](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#platformspecific-extensions):
+- **`npm run package-targets` builds the lot** into `packages/`: one VSIX per
+  platform with that platform's server inside, then a universal one with no
+  server. Takes about a minute and a half. `--targets linux-x64,darwin-arm64`
+  narrows it, `--no-universal` skips the fallback package, `--out <dir>` moves
+  the output. It prints the publish loop to run when you are ready.
+- To do one target by hand: `npm run bundle-server -- --target darwin-arm64`
+  puts that platform's binary in `server/`, then `npx vsce package --target
+  darwin-arm64`. Targets are the [`vsce` ones](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#platformspecific-extensions):
   `win32-x64`, `win32-arm64`, `linux-x64`, `linux-arm64`, `darwin-x64`, `darwin-arm64`.
-- `npx vsce package --target darwin-arm64` then builds that platform's package.
-- The release workflow does both for every target, plus one universal package
-  built from a clean checkout with no `server/` — that is what installs on
-  platforms the server is not built for, and it downloads a binary on demand.
-  Delete `server/` before building a universal package by hand, or it will ship
-  one platform's binary to everyone.
+  Bundle before every package: `vsce package --target` does not check that
+  `server/` holds that target's binary, and will happily ship whichever one was
+  left there. Delete `server/` before building a universal package, or it goes
+  to everyone. `package-targets` handles both, which is why it is the easier path.
+- The release workflow does the same thing, one target per job, and publishes
+  every package to the Marketplace, OpenVSX and the GitHub release under one
+  version. The universal package is the fallback the Marketplace serves to
+  platforms with no package of their own — armhf, alpine, web — and it
+  downloads a server on demand.
 
-`server/` is generated and git-ignored; nothing needs it to run the extension
-from source, which downloads a server the first time one is enabled.
+`server/` and `packages/` are generated and git-ignored; nothing needs them to
+run the extension from source, which downloads a server the first time one is
+enabled.
 
 ## Guidelines
 

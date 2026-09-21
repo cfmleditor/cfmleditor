@@ -25,3 +25,4 @@ resources/docs/
 
 # Language server binary fetched by `npm run bundle-server` for a platform package
 server/
+packages/
