@@ -3,43 +3,22 @@
   "scopeName": "embedding.cfml",
   "patterns": [
     {
-      "begin": "(?i)(?=^\\s*(/\\*|//|import\\b|(component|abstract\\s*component|final\\s*component|interface)(\\s+|{)))",
-      "contentName": "source.cfml.script",
-      "end": "(?=not)possible",
-      "patterns": [
-        {
-          "include": "#source-cfml-script"
-        }
-      ]
-    },
-    {
       "include": "#source-cfml-tag-comments"
     },
     {
-      "begin": "(?i)(?=<cf(component|interface)\\b)",
-      "contentName": "source.cfml",
-      "end": "(?=not)possible",
-      "patterns": [
-        {
-          "include": "#cfcomponent"
-        },
-        {
-          "include": "#cfinterface"
-        }
-      ]
+      "include": "#cfcomponent"
     },
     {
-      "begin": "(?=\\S)",
-      "contentName": "text.html.cfml",
-      "end": "(?=not)possible",
-      "patterns": [
-        {
-          "include": "#cfml-tags"
-        },
-        {
-          "include": "#text-html-cfml"
-        }
-      ]
+      "include": "#cfinterface"
+    },
+    {
+      "include": "#cfml-tags"
+    },
+    {
+      "include": "#text-html-cfml"
+    },
+    {
+      "include": "#source-cfml-script"
     }
   ],
   "repository": {
