@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { rimrafSync } from "rimraf";
 
-import { extractArchive } from "../lsp/extractServer";
+import { extractArchive, extractServerAsset } from "../lsp/extractServer";
 import { BINARY_NAME, CFLINT_REPO, GITHUB_REPO, assetCandidates, cflintAssetCandidates, pinnedTag, platformForTarget, tagFromReleaseRedirect } from "../lsp/serverAsset";
 
 /**
@@ -46,7 +46,7 @@ export async function bundleServer(target: string, version?: string): Promise<st
 	const configuredVersion = version ?? readBundledVersion(rootDir);
 	const tag = pinnedTag(configuredVersion) ?? await resolveLatestTag();
 	const { platform, arch } = platformForTarget(target);
-	const { assetNames, binaryName } = assetCandidates(platform, arch);
+	const { assets, binaryName } = assetCandidates(platform, arch);
 
 	console.log("Bundling server".padEnd(26), "=>", `${tag} for ${target} (${platform}-${arch})`);
 
@@ -56,7 +56,8 @@ export async function bundleServer(target: string, version?: string): Promise<st
 	// The same candidate list the extension uses at runtime, so a target that
 	// has no asset fails here — in a build — rather than on a user's machine.
 	let lastError: Error | undefined;
-	for (const assetName of assetNames) {
+	for (const asset of assets) {
+		const assetName = asset.name;
 		const url = `https://github.com/${GITHUB_REPO}/releases/download/${tag}/${assetName}`;
 		const archivePath = path.join(serverDir, assetName);
 
@@ -70,7 +71,7 @@ export async function bundleServer(target: string, version?: string): Promise<st
 			continue;
 		}
 
-		await extractArchive(archivePath, serverDir, binaryName);
+		await extractServerAsset(archivePath, serverDir, asset.binary, binaryName);
 		fs.rmSync(archivePath, { force: true });
 
 		const binaryPath = path.join(serverDir, binaryName);

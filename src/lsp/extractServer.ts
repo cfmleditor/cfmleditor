@@ -22,6 +22,25 @@ export async function extractArchive(archivePath: string, destDir: string, binar
 	await extractTarGz(archivePath, destDir, binaryName);
 }
 
+/**
+ * Unpacks a server asset and installs its executable as `binaryName`.
+ *
+ * A release from before the rename holds `cfmleditor-lsp`, and the extension
+ * runs whatever it found as `clif`, so one name is looked for everywhere else.
+ * @param archivePath the downloaded archive
+ * @param destDir where the binary should land
+ * @param assetBinary the executable inside the archive
+ * @param binaryName the name to install it as
+ */
+export async function extractServerAsset(archivePath: string, destDir: string, assetBinary: string, binaryName: string): Promise<void> {
+	await extractArchive(archivePath, destDir, assetBinary);
+
+	const extracted = path.join(destDir, assetBinary);
+	if (assetBinary !== binaryName && fs.existsSync(extracted)) {
+		fs.renameSync(extracted, path.join(destDir, binaryName));
+	}
+}
+
 async function extractZip(archivePath: string, destDir: string, binaryName: string): Promise<void> {
 	const zip = await JSZip.loadAsync(fs.readFileSync(archivePath));
 	const entry = Object.values(zip.files).find(file => !file.dir && path.basename(file.name) === binaryName);

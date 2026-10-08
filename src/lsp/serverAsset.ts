@@ -1,10 +1,25 @@
 import { coerce, gt } from "semver";
 
 /** The repository the language server is released from. */
-export const GITHUB_REPO = "cfmleditor/cfmleditor-lsp";
+export const GITHUB_REPO = "cfmleditor/clif";
 
 /** The server executable's name, without the Windows extension. */
-export const BINARY_NAME = "cfmleditor-lsp";
+export const BINARY_NAME = "clif";
+
+/**
+ * The server's name before it was clif. Releases from before the rename
+ * publish only assets of this name, and every release since publishes them
+ * too, so a pinned older version still downloads and a cached one still runs.
+ */
+export const LEGACY_BINARY_NAME = "cfmleditor-lsp";
+
+/** A release asset, and the executable inside it. */
+export interface ServerAsset {
+	/** The asset's file name on the release. */
+	name: string;
+	/** The executable the archive holds, which is installed as `binaryName`. */
+	binary: string;
+}
 
 /**
  * Everything here is deliberately free of `vscode`, because the packaging
@@ -22,24 +37,41 @@ export const BINARY_NAME = "cfmleditor-lsp";
  * Windows does not have, so the single platform that took that branch was the
  * one platform that could not follow it. The zip stays as a fallback for pinned
  * versions older than v0.2.6, which ship nothing else.
+ *
+ * The clif assets come first and the cfmleditor-lsp ones after them: a release
+ * from before the rename has only the second, and whichever is found is
+ * installed as `binaryName`.
  * @param platform an `os.platform()` value
  * @param arch an `os.arch()` value
- * @returns the asset names to try in order, and the binary they contain
+ * @returns the assets to try in order, and the name the binary is installed as
  */
-export function assetCandidates(platform: string, arch: string): { assetNames: string[]; binaryName: string } {
+export function assetCandidates(platform: string, arch: string): { assets: ServerAsset[]; binaryName: string } {
 	const osStr = platform === "win32" ? "windows" : platform === "darwin" ? "darwin" : "linux";
 
 	// Windows releases are amd64 only, and Windows on ARM runs an amd64 binary
 	// under emulation. Asking for a windows-arm64 asset only ever produced a 404
 	// that read like the release itself was broken.
 	const archStr = arch === "arm64" && platform !== "win32" ? "arm64" : "amd64";
-	const binaryName = platform === "win32" ? `${BINARY_NAME}.exe` : BINARY_NAME;
-	const base = `${BINARY_NAME}-${osStr}-${archStr}`;
+	const exe = platform === "win32" ? ".exe" : "";
 
-	return {
-		assetNames: platform === "win32" ? [`${base}.tar.gz`, `${base}.zip`] : [`${base}.tar.gz`],
-		binaryName,
-	};
+	const assets = [BINARY_NAME, LEGACY_BINARY_NAME].flatMap((name) => {
+		const base = `${name}-${osStr}-${archStr}`;
+		const formats = platform === "win32" ? [".tar.gz", ".zip"] : [".tar.gz"];
+
+		return formats.map(ext => ({ name: `${base}${ext}`, binary: `${name}${exe}` }));
+	});
+
+	return { assets, binaryName: `${BINARY_NAME}${exe}` };
+}
+
+/**
+ * The executable a downloaded or bundled server was installed as before the
+ * rename, so a copy already on this machine is still found.
+ * @param platform an `os.platform()` value
+ * @returns the legacy name on this platform
+ */
+export function legacyBinaryName(platform: string): string {
+	return platform === "win32" ? `${LEGACY_BINARY_NAME}.exe` : LEGACY_BINARY_NAME;
 }
 
 /** CFLint's executable name, without the Windows extension. */
@@ -107,12 +139,34 @@ export function platformForTarget(target: string): { platform: string; arch: str
  * @returns the tag name
  */
 export function tagFromReleaseRedirect(location: string): string {
-	const tag = /\/releases\/tag\/([^/?#]+)/.exec(location)?.[1];
-	if (!tag) {
+	const next = nextReleaseRedirect(location);
+	if (next.tag === undefined) {
 		throw new Error(`Could not read a release tag from ${location || "an empty redirect"}`);
 	}
 
-	return decodeURIComponent(tag);
+	return next.tag;
+}
+
+/**
+ * What a redirect from `/releases/latest` says: the tag, or another
+ * `/releases/latest` to ask. The second is what a renamed repository answers —
+ * GitHub sends `cfmleditor-lsp/releases/latest` to `clif/releases/latest`
+ * before that sends on to the tag — and reading only the first redirect read
+ * no tag, so the rename would have stopped every upgrade.
+ * @param location the redirect target
+ * @returns the tag, or the URL to ask next
+ */
+export function nextReleaseRedirect(location: string): { tag?: string; follow?: string } {
+	const tag = /\/releases\/tag\/([^/?#]+)/.exec(location)?.[1];
+	if (tag) {
+		return { tag: decodeURIComponent(tag) };
+	}
+
+	if (/^https:\/\/github\.com\/[^/]+\/[^/]+\/releases\/latest\/?$/.test(location)) {
+		return { follow: location };
+	}
+
+	return {};
 }
 
 /**

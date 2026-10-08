@@ -71,7 +71,7 @@ export type api = {
  * completion list comes back doubled, go-to-definition offers two entries for
  * one symbol, and two hover cards stack. Worse than the noise, the two disagree:
  * these resolve component paths from `cfml.mappings` in VS Code settings, the
- * server from the project's own `.cfmleditor.json`, and nothing in a merged
+ * server from the project's own `.clif.json` (or `.cfmleditor.json`), and nothing in a merged
  * result says which produced which half.
  *
  * All of them stand down, not only the seven the server currently answers. The

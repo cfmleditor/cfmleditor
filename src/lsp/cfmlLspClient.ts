@@ -3,9 +3,9 @@ import * as os from "os";
 import * as path from "path";
 import { ExtensionContext, ProgressLocation, window, workspace } from "vscode";
 import { CloseAction, CloseHandlerResult, ErrorAction, ErrorHandlerResult, LanguageClient, LanguageClientOptions, Message, ServerOptions } from "vscode-languageclient/node";
-import { extractArchive } from "./extractServer";
+import { extractServerAsset } from "./extractServer";
 import { HttpStatusError, requestFollowingRedirects, requestOnce } from "./httpRequest";
-import { BINARY_NAME, GITHUB_REPO, ServerChoice, assetCandidates, chooseServer, pinnedTag, tagFromReleaseRedirect } from "./serverAsset";
+import { BINARY_NAME, GITHUB_REPO, LEGACY_BINARY_NAME, ServerAsset, ServerChoice, assetCandidates, chooseServer, legacyBinaryName, nextReleaseRedirect, pinnedTag } from "./serverAsset";
 
 // Re-exported so the naming and choice rules have one home, shared with the
 // packaging script, without every caller needing to know where that is.
@@ -53,18 +53,33 @@ async function downloadFile(url: string, dest: string): Promise<void> {
  * @returns the tag name, e.g. `v0.3.1`
  */
 async function resolveLatestTag(): Promise<string> {
-	const url = `https://github.com/${GITHUB_REPO}/releases/latest`;
+	let url = `https://github.com/${GITHUB_REPO}/releases/latest`;
 
-	// The redirect is the answer here, so it is read rather than followed.
-	const response = await requestOnce(url);
-	response.resume();
+	// The redirect is the answer here, so it is read rather than followed. A
+	// renamed repository adds one to its new name first, so a few are read.
+	for (let hop = 0; hop < 3; hop++) {
+		const response = await requestOnce(url);
+		response.resume();
 
-	const status = response.statusCode ?? 0;
-	if (status < 300 || status >= 400) {
-		throw new Error(`HTTP ${status} resolving the latest release`);
+		const status = response.statusCode ?? 0;
+		if (status < 300 || status >= 400) {
+			throw new Error(`HTTP ${status} resolving the latest release`);
+		}
+
+		const location = response.headers.location ?? "";
+		const next = nextReleaseRedirect(location);
+		if (next.tag !== undefined) {
+			return next.tag;
+		}
+
+		if (next.follow === undefined) {
+			throw new Error(`Could not read a release tag from ${location || "an empty redirect"}`);
+		}
+
+		url = next.follow;
 	}
 
-	return tagFromReleaseRedirect(response.headers.location ?? "");
+	throw new Error("Too many redirects resolving the latest release");
 }
 
 /**
@@ -75,6 +90,21 @@ async function resolveLatestTag(): Promise<string> {
  */
 function versionDirFor(storageDir: string, tag: string): string {
 	return path.join(storageDir, `${BINARY_NAME}-${tag}`);
+}
+
+/**
+ * A downloaded server for a tag: under clif, or where a release from before the
+ * rename put it, as `cfmleditor-lsp-<tag>/cfmleditor-lsp`.
+ * @param storageDir the extension's global storage directory
+ * @param tag the release tag
+ * @param binaryName the executable's name on this platform
+ * @returns the binary's path, whether or not it exists
+ */
+function cachedBinaryFor(storageDir: string, tag: string, binaryName: string): string {
+	const current = path.join(versionDirFor(storageDir, tag), binaryName);
+	const legacy = path.join(storageDir, `${LEGACY_BINARY_NAME}-${tag}`, legacyBinaryName(os.platform()));
+
+	return !fs.existsSync(current) && fs.existsSync(legacy) ? legacy : current;
 }
 
 /**
@@ -112,10 +142,22 @@ function cachedTags(storageDir: string, binaryName: string): string[] {
 		return [];
 	}
 
-	return fs.readdirSync(storageDir)
-		.filter(dir => dir.startsWith(`${BINARY_NAME}-v`))
-		.filter(dir => fs.existsSync(path.join(storageDir, dir, binaryName)))
-		.map(dir => dir.slice(`${BINARY_NAME}-`.length));
+	const tags = new Set<string>();
+
+	for (const dir of fs.readdirSync(storageDir)) {
+		for (const name of [BINARY_NAME, LEGACY_BINARY_NAME]) {
+			if (!dir.startsWith(`${name}-v`)) {
+				continue;
+			}
+
+			const tag = dir.slice(`${name}-`.length);
+			if (fs.existsSync(cachedBinaryFor(storageDir, tag, binaryName))) {
+				tags.add(tag);
+			}
+		}
+	}
+
+	return [...tags];
 }
 
 /**
@@ -142,7 +184,10 @@ function pathForChoice(choice: ServerChoice, bundled: { path: string; tag: strin
 		return bundled.path;
 	}
 
-	return path.join(versionDirFor(storageDir, choice.tag), binaryName);
+	const binaryPath = cachedBinaryFor(storageDir, choice.tag, binaryName);
+	ensureExecutable(binaryPath);
+
+	return binaryPath;
 }
 
 /**
@@ -195,7 +240,7 @@ async function ensureBinary(context: ExtensionContext): Promise<string | undefin
 
 	const version = getConfig().get<string>("version", "latest");
 	const storageDir = context.globalStorageUri.fsPath;
-	const { assetNames, binaryName } = assetCandidates(os.platform(), os.arch());
+	const { assets, binaryName } = assetCandidates(os.platform(), os.arch());
 	const bundled = bundledServer(context, binaryName);
 	const cached = cachedTags(storageDir, binaryName);
 
@@ -225,7 +270,7 @@ async function ensureBinary(context: ExtensionContext): Promise<string | undefin
 	}
 
 	try {
-		await fetchBinary(choice.tag, assetNames, versionDirFor(storageDir, choice.tag), binaryName);
+		await fetchBinary(choice.tag, assets, versionDirFor(storageDir, choice.tag), binaryName);
 
 		return pathForChoice(choice, bundled, storageDir, binaryName);
 	}
@@ -264,11 +309,11 @@ function warnIfNotWhatWasAsked(running: string, pinned: string | undefined): voi
  * Downloads and unpacks the server for a tag, trying each asset the platform
  * could use until one is there.
  * @param tag the release tag
- * @param assetNames the candidate asset names, best first
+ * @param assets the candidate assets, best first
  * @param versionDir the directory the binary belongs in
- * @param binaryName the binary's name inside the archive
+ * @param binaryName the name the binary is installed as
  */
-async function fetchBinary(tag: string, assetNames: string[], versionDir: string, binaryName: string): Promise<void> {
+async function fetchBinary(tag: string, assets: ServerAsset[], versionDir: string, binaryName: string): Promise<void> {
 	await window.withProgress(
 		{ location: ProgressLocation.Notification, title: "CFML LSP", cancellable: false },
 		async (progress) => {
@@ -276,7 +321,8 @@ async function fetchBinary(tag: string, assetNames: string[], versionDir: string
 			const binaryPath = path.join(versionDir, binaryName);
 
 			let notFound: Error | undefined;
-			for (const assetName of assetNames) {
+			for (const asset of assets) {
+				const assetName = asset.name;
 				const archivePath = path.join(versionDir, assetName);
 
 				try {
@@ -284,7 +330,7 @@ async function fetchBinary(tag: string, assetNames: string[], versionDir: string
 					await downloadFile(`https://github.com/${GITHUB_REPO}/releases/download/${tag}/${assetName}`, archivePath);
 
 					progress.report({ message: "Extracting..." });
-					await extractArchive(archivePath, versionDir, binaryName);
+					await extractServerAsset(archivePath, versionDir, asset.binary, binaryName);
 				}
 				catch (e) {
 					fs.rmSync(archivePath, { force: true });
@@ -349,7 +395,7 @@ export const FORMAT_KEYS = [
 
 /**
  * Builds the `initializationOptions` payload, which the server reads as though
- * it were a `.cfmleditor.json`. A project's own `.cfmleditor.json` still wins
+ * it were a `.cfmleditor.json`. A project's own `.clif.json` (or `.cfmleditor.json`) still wins
  * key by key, so this is the base an editor supplies rather than an override.
  *
  * Only settings the user has actually set are sent. The server distinguishes
@@ -497,7 +543,7 @@ export function isLspRunning(): boolean {
  * that is where the workspace configuration, the index and the convention are.
  * Re-implementing any of it here would mean two answers to the same question,
  * and the wrong one still opens a file — just not the right one.
- * @param command the server command name, e.g. `cfmleditor.resolveRoute`
+ * @param command the server command name, e.g. `cfmleditor.resolveRoute`; the server runs both the cfmleditor. and clif. names, so the old one reaches every server version
  * @param args the command arguments
  * @returns the server's result, or undefined when no server is running
  */
