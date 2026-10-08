@@ -4,7 +4,7 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
-- **The language server is now clif** (formerly cfmleditor-lsp), released from `cfmleditor/clif`. The extension downloads `clif` assets and falls back to the `cfmleditor-lsp` ones, so `cfml.lsp.version` can still pin a release from before the rename, and a server already downloaded under the old name is still found. Resolving `latest` now follows a renamed repository's redirect; reading only the first one would have found no tag and stopped every upgrade.
+- **The language server is now clif** (formerly cfmleditor-lsp), released from `cfmleditor/clif`. Platform packages bundle clif 0.5.0. The extension downloads `clif` assets and falls back to the `cfmleditor-lsp` ones, so `cfml.lsp.version` can still pin a release from before the rename, and a server already downloaded under the old name is still found. Resolving `latest` now follows a renamed repository's redirect; reading only the first one would have found no tag and stopped every upgrade.
 
 ## [0.7.6] - 2026-09-21
 
