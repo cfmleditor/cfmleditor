@@ -1,6 +1,7 @@
 import * as assert from "assert";
 
 import { pinnedTag, tagFromReleaseRedirect } from "../lsp/cfmlLspClient";
+import { nextReleaseRedirect } from "../lsp/serverAsset";
 
 describe("LSP release resolution", function () {
 	// The releases API is rate limited to 60 requests an hour per IP for
@@ -12,6 +13,21 @@ describe("LSP release resolution", function () {
 			tagFromReleaseRedirect("https://github.com/cfmleditor/cfmleditor-lsp/releases/tag/v0.3.1"),
 			"v0.3.1"
 		);
+	});
+
+	// A renamed repository first redirects to /releases/latest under its new
+	// name. Reading only that redirect found no tag, which would have stopped
+	// every upgrade the day cfmleditor-lsp became clif.
+	it("follows a renamed repository's redirect to its new name", function () {
+		assert.deepStrictEqual(
+			nextReleaseRedirect("https://github.com/cfmleditor/clif/releases/latest"),
+			{ follow: "https://github.com/cfmleditor/clif/releases/latest" }
+		);
+		assert.deepStrictEqual(
+			nextReleaseRedirect("https://github.com/cfmleditor/clif/releases/tag/v0.5.0"),
+			{ tag: "v0.5.0" }
+		);
+		assert.deepStrictEqual(nextReleaseRedirect("https://example.com/releases/latest"), {});
 	});
 
 	it("ignores a query string or fragment on the redirect", function () {

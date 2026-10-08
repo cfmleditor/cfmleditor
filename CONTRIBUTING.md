@@ -22,7 +22,7 @@ If you would like to contribute enhancements or fixes, please read this document
 
 ## Packaging the language server
 
-Released packages are platform-specific: each carries the `cfmleditor-lsp` binary
+Released packages are platform-specific: each carries the `clif` binary (formerly `cfmleditor-lsp`)
 for its own platform in `server/`, so a first run needs no network and the
 download path only ever fetches a *newer* server than the one that shipped. The
 version that ships is `cfmlLspVersion` in `package.json`.

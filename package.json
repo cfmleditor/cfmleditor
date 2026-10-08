@@ -3,7 +3,7 @@
 	"displayName": "CFML Editor",
 	"description": "CFML Language Editor",
 	"version": "0.7.6",
-	"cfmlLspVersion": "0.3.3",
+	"cfmlLspVersion": "0.5.0",
 	"cflintVersion": "1.5.17",
 	"preview": true,
 	"author": "cfmleditor",
@@ -507,7 +507,7 @@
 				"cfml.format.enabled": {
 					"type": "boolean",
 					"default": false,
-					"markdownDescription": "Enable the LSP formatter. When off, formatting requests are ignored. A project's `.cfmleditor.json` overrides this.",
+					"markdownDescription": "Enable the LSP formatter. When off, formatting requests are ignored. A project's `.clif.json` (or `.cfmleditor.json`) overrides this.",
 					"scope": "resource"
 				},
 				"cfml.format.selfCloseTags": {
@@ -638,7 +638,7 @@
 				"cfml.format.indentWidth": {
 					"type": "integer",
 					"default": 4,
-					"markdownDescription": "Spaces per indentation level. A workspace `.cfmleditor.json` value outranks the editor's `tabSize`.",
+					"markdownDescription": "Spaces per indentation level. A workspace `.clif.json` (or `.cfmleditor.json`) value outranks the editor's `tabSize`.",
 					"scope": "resource"
 				},
 				"cfml.format.debug": {
@@ -650,19 +650,19 @@
 				"cfml.lsp.enabled": {
 					"type": "boolean",
 					"default": false,
-					"markdownDescription": "Enable the CFML Language Server (cfmleditor-lsp). Platform-specific builds of this extension ship the server; anything newer, and every other build, is downloaded from GitHub releases.",
+					"markdownDescription": "Enable the CFML Language Server (clif, formerly cfmleditor-lsp). Platform-specific builds of this extension ship the server; anything newer, and every other build, is downloaded from GitHub releases.",
 					"scope": "machine-overridable"
 				},
 				"cfml.lsp.path": {
 					"type": "string",
 					"default": "",
-					"markdownDescription": "Path to a local `cfmleditor-lsp` binary. When set, auto-download is skipped.",
+					"markdownDescription": "Path to a local `clif` (formerly `cfmleditor-lsp`) binary. When set, auto-download is skipped.",
 					"scope": "machine-overridable"
 				},
 				"cfml.lsp.version": {
 					"type": "string",
 					"default": "latest",
-					"markdownDescription": "Version of cfmleditor-lsp to run (e.g. `0.1.12`), downloaded unless the extension already ships it. Use `latest` for the most recent release, which falls back to the newest copy on this machine when GitHub cannot be reached.",
+					"markdownDescription": "Version of clif to run (e.g. `0.1.12`), downloaded unless the extension already ships it. Use `latest` for the most recent release, which falls back to the newest copy on this machine when GitHub cannot be reached.",
 					"scope": "machine-overridable"
 				}
 			}
