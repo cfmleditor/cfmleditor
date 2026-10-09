@@ -4,7 +4,7 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
-- **CFLint now comes inside the language server, so the extension no longer ships its own.** clif carries the CFLint it lints with and unpacks it on first use, so its version follows the clif release rather than a second pin here, and platform packages lose the ~90 MB `cflint` that sat beside the server. A `cflint` you installed yourself on PATH still wins. Needs a bundled clif that embeds CFLint (the release after 0.5.1); with an older one, CFLint is downloaded at first lint as before 0.7.5.
+- **CFLint now comes inside the language server, so the extension no longer ships its own.** clif carries the CFLint it lints with and unpacks it on first use, so its version follows the clif release rather than a second pin here, and platform packages lose the ~90 MB `cflint` that sat beside the server. A `cflint` you installed yourself on PATH still wins. Platform packages bundle clif 0.5.2, the first release to carry CFLint; pinning an older server with `cfml.lsp.version` downloads CFLint at first lint, as before 0.7.5.
 
 ## [0.7.7] - 2026-10-08
 
