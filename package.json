@@ -4,7 +4,6 @@
 	"description": "CFML Language Editor",
 	"version": "0.7.7",
 	"cfmlLspVersion": "0.5.0",
-	"cflintVersion": "1.5.17",
 	"preview": true,
 	"author": "cfmleditor",
 	"publisher": "cfmleditor",
