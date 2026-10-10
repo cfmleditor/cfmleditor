@@ -1,0 +1,65 @@
+{
+  "name": "CFML",
+  "displayName": "CFML",
+  "description": "ColdFusion Markup Language",
+  "version": "1.1.0",
+  "contributes": {
+    "languages": [
+      {
+        "id": "cfml",
+        "aliases": ["CFML","cfml","coldfusion","ColdFusion"],
+        "extensions": [".cfm",".cfc",".cfml"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "cfs",
+        "extensions": [
+          ".cfs"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "cfml",
+        "scopeName": "embedding.cfml",
+        "path": "./cfml.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.css": "css",
+          "meta.embedded.block.css": "css",
+          "source.js": "javascript",
+          "meta.embedded.block.js": "javascript",
+          "meta.embedded.line.js": "javascript",
+          "source.sql": "sql",
+          "meta.embedded.block.sql": "sql",
+          "meta.tag.cfml": "cfml",
+          "constant.character.escape.hash.cfml": "cfml",
+          "punctuation.definition.template-expression.begin.cfml": "cfml",
+          "meta.embedded.line.cfml": "cfml",
+          "meta.embedded.block.cfml": "cfml",
+          "punctuation.definition.template-expression.end.cfml": "cfml"
+        }
+      },
+      {
+        "language": "cfs",
+        "scopeName": "embedding.cfml.cfs",
+        "path": "./cfml-cfs.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.css": "css",
+          "meta.embedded.block.css": "css",
+          "source.js": "javascript",
+          "meta.embedded.block.js": "javascript",
+          "meta.embedded.line.js": "javascript",
+          "source.sql": "sql",
+          "meta.embedded.block.sql": "sql",
+          "meta.tag.cfml": "cfml",
+          "constant.character.escape.hash.cfml": "cfml",
+          "punctuation.definition.template-expression.begin.cfml": "cfml",
+          "meta.embedded.line.cfml": "cfml",
+          "meta.embedded.block.cfml": "cfml",
+          "punctuation.definition.template-expression.end.cfml": "cfml"
+        }
+      }
+    ]
+  }
+}
