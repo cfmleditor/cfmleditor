@@ -14243,9 +14243,6 @@
         },
         {
           "include": "#source-cfml-script-statements"
-        },
-        {
-          "include": "#source-cfml-script-tagisland"
         }
       ]
     },
@@ -15350,6 +15347,9 @@
         },
         {
           "include": "#source-cfml-script-tag-in-script-cf"
+        },
+        {
+          "include": "#source-cfml-script-tagisland"
         },
         {
           "include": "#source-cfml-script-expressions"
