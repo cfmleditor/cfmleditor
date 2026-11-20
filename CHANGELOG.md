@@ -4,7 +4,7 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
-- Platform builds now ship clif 0.6.0 (was 0.5.2).
+- Platform builds now ship clif 0.7.0 (was 0.5.2).
 
 ## [0.7.8] - 2026-10-23
 
