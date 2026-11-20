@@ -14,7 +14,7 @@ async function main() {
 		We check that the number of documents is within a range, in case of large deviations.
 		Update the expectedDocCount param as needed when it naturally changes.
 	*/
-	await validateZip(path.join(docsFolder, "cfdocs.zip"), 978);
+	await validateZip(path.join(docsFolder, "cfdocs.zip"), 1276);
 	await validateZip(path.join(docsFolder, "lucee-docs.zip"), 890);
 	if (errorCount > 0) {
 		console.error(`\nValidation completed with ${errorCount} errors.`);
