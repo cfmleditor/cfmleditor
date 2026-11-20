@@ -1,16 +1,52 @@
-import fetch from "isomorphic-fetch";
 import path from "path";
 import fs from "fs";
 import { rimrafSync } from "rimraf";
 import JSZip from "jszip";
 import assert from "assert";
 
+/** Maximum time for the whole docs update before giving up and keeping the existing docs. */
+const TOTAL_TIMEOUT_MS = 3 * 60 * 1000;
+/** Maximum time for a single file download. */
+const REQUEST_TIMEOUT_MS = 30 * 1000;
+/** Maximum number of CFDocs files downloaded at once. */
+const MAX_CONCURRENT_DOWNLOADS = 10;
+
+const rootDir = path.join(__dirname, "..", "..");
+const downloadFolder = path.join(rootDir, "resources", ".docs-download");
+const totalAbort = new AbortController();
+
+async function run() {
+	const timer = setTimeout(() => totalAbort.abort(new Error(`timed out after ${TOTAL_TIMEOUT_MS / 1000}s`)), TOTAL_TIMEOUT_MS);
+	try {
+		await main();
+	}
+	catch (e) {
+		// Docs updates are best effort: keep the existing docs and let the build continue
+		const reason: unknown = totalAbort.signal.aborted ? totalAbort.signal.reason : e;
+		console.warn(`WARNING: Skipping docs update, ${describeError(reason)}`);
+		if (fs.existsSync(downloadFolder)) rimrafSync(downloadFolder);
+		const docsFolder = path.join(rootDir, "resources", "docs");
+		if (!fs.existsSync(docsFolder)) console.warn(`WARNING: No existing docs found at "${path.relative(rootDir, docsFolder)}"`);
+	}
+	finally {
+		clearTimeout(timer);
+	}
+	// Exit explicitly so lingering sockets from aborted downloads cannot keep the process alive
+	process.exit(0);
+}
+void run();
+
+/**
+ * Formats an error including its cause chain, since fetch reports network failures only as "fetch failed".
+ * @param e The error to describe
+ * @returns The error message followed by any nested causes
+ */
+function describeError(e: unknown): string {
+	if (!(e instanceof Error)) return String(e);
+	return e.cause === undefined ? e.message : `${e.message} (${describeError(e.cause)})`;
+}
+
 async function main() {
-	const rootDir = path.join(__dirname, "..", "..");
-
-	// Download documentation to a new folder
-	const downloadFolder = path.join(rootDir, "resources", ".docs-download");
-
 	// Delete the prevoius download folder if it exists
 	if (fs.existsSync(downloadFolder)) {
 		console.log("Cleaning up download folder".padEnd(26), "=>", path.relative(rootDir, downloadFolder));
@@ -55,11 +91,11 @@ async function main() {
 
 	console.log("Documentation updated.");
 }
-void main();
 
 async function downloadFile(url: string, localPath: string) {
-	// Download the file
-	const response = await fetch(url);
+	// Download the file, giving up if this request or the whole update takes too long
+	const signal = AbortSignal.any([totalAbort.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]);
+	const response = await fetch(url, { signal });
 	if (!response.ok) throw new Error(`Failed to download file "${url}": ${response.statusText}`);
 
 	// Create the directory if it doesn't exist
@@ -81,19 +117,23 @@ async function downloadDocsWebsite(baseUrl: string, localPath: string) {
 	const tagsList = await downloadList(baseUrl + "tags.json", path.join(tempFolder, "tags.json"));
 
 	const files = functionsList.concat(tagsList).map(file => `${file.toLowerCase()}.json`);
-	const promises = files.map(async (file) => {
-		const url = baseUrl + file;
-		const localFilePath = path.join(tempFolder, file);
-		try {
-			return await downloadFile(url, localFilePath);
+	const queue = [...files];
+	const worker = async () => {
+		for (let file = queue.shift(); file !== undefined; file = queue.shift()) {
+			const url = baseUrl + file;
+			const localFilePath = path.join(tempFolder, file);
+			try {
+				await downloadFile(url, localFilePath);
+			}
+			catch (e) {
+				if (totalAbort.signal.aborted) throw e;
+				// We're bulk downloading hundreds of files, so we can expect some to fail
+				console.error(` - Retrying failed download: ${url} (${(e instanceof Error ? e.message : String(e))})`);
+				await downloadFile(url, localFilePath);
+			}
 		}
-		catch (e) {
-			// We're bulk downloading hundreds of files, so we can expect some to fail
-			console.error(` - Retrying failed download: ${(e instanceof Error ? e.message : String(e))}`);
-			return await downloadFile(url, localFilePath);
-		}
-	});
-	await Promise.all(promises);
+	};
+	await Promise.all(Array.from({ length: MAX_CONCURRENT_DOWNLOADS }, worker));
 
 	await zipFolder(tempFolder, localPath);
 	if (!rimrafSync(tempFolder)) throw new Error(`Failed to clean temp folder: "${tempFolder}"`);
