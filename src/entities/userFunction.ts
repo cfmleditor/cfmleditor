@@ -178,14 +178,17 @@ export interface UserFunctionsByName {
  * Parses the CFScript function definitions and returns an array of UserFunction objects
  * @param documentStateContext The context information for a TextDocument in which to parse the CFScript functions
  * @param _token
+ * @param headerPosition Parse only a declaration whose header contains this position.
  * @returns
  */
-export async function parseScriptFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<UserFunction[]> {
+export async function parseScriptFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined, headerPosition?: Position): Promise<UserFunction[]> {
 	const document: TextDocument = documentStateContext.document;
 	const userFunctions: UserFunction[] = [];
 	const componentBody: string = documentStateContext.sanitizedDocumentText;
-	let scriptFunctionMatch: RegExpExecArray | null;
-	while ((scriptFunctionMatch = scriptFunctionPattern.exec(componentBody))) {
+	for (const scriptFunctionMatch of componentBody.matchAll(scriptFunctionPattern)) {
+		if (headerPosition?.isBefore(document.positionAt(scriptFunctionMatch.index))) {
+			break;
+		}
 		const fullMatch: string = scriptFunctionMatch[0];
 		const returnTypePrefix: string = scriptFunctionMatch[1];
 		const modifier1: string = scriptFunctionMatch[4];
@@ -215,6 +218,9 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 			|| equalsIgnoreCase(modifier1, "abstract") || equalsIgnoreCase(modifier2, "abstract")
 		) {
 			functionBodyStartPos = getNextCharacterPosition(documentStateContext, document.offsetAt(argumentsEndPosition), componentBody.length - 1, ";", false, _token);
+			if (headerPosition?.isAfter(functionBodyStartPos)) {
+				continue;
+			}
 			functionEndPosition = functionBodyStartPos;
 			functionAttributeRange = new Range(
 				argumentsEndPosition,
@@ -223,6 +229,9 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 		}
 		else {
 			functionBodyStartPos = getNextCharacterPosition(documentStateContext, document.offsetAt(argumentsEndPosition), componentBody.length - 1, "{", true, _token);
+			if (headerPosition?.isAfter(functionBodyStartPos)) {
+				continue;
+			}
 			functionEndPosition = getClosingPosition(documentStateContext, document.offsetAt(functionBodyStartPos), "}", _token);
 
 			try {
@@ -568,15 +577,19 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
  * Parses the tag function definitions and returns an array of UserFunction objects
  * @param documentStateContext The context information for a TextDocument in which to parse the tag functions
  * @param _token
+ * @param position Parse only a function containing this position.
  * @returns
  */
-export async function parseTagFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined): Promise<UserFunction[]> {
+export async function parseTagFunctions(documentStateContext: DocumentStateContext, _token: CancellationToken | undefined, position?: Position): Promise<UserFunction[]> {
 	const userFunctions: UserFunction[] = [];
 	const documentUri: Uri = documentStateContext.document.uri;
 
 	const parsedFunctionTags: Tag[] = parseTags(documentStateContext, "cffunction", undefined, _token);
 
 	await Promise.all(parsedFunctionTags.map(async (tag: Tag) => {
+		if (position && !tag.tagRange.contains(position)) {
+			return;
+		}
 		const functionRange: Range = tag.tagRange;
 		const functionBodyRange: Range | undefined = tag.bodyRange;
 		const parsedAttributes: Attributes = tag.attributes;

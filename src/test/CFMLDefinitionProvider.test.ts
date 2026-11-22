@@ -55,7 +55,7 @@ describe("provideDefinition", function () {
 			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 
-		it.skip("should get definition for cfparam type", async function () {
+		it("should get definition for cfparam type", async function () {
 			const definition = await findDefinition(widgetDoc, 'cfparam type="|cfml.WidgetFactory"');
 			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/WidgetFactory.cfc`);
 		});
@@ -65,7 +65,7 @@ describe("provideDefinition", function () {
 			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
 
-		it.skip("should get definition for component as part of static method call", async function () {
+		it("should get definition for component as part of static method call", async function () {
 			const definition = await findDefinition(widgetDoc, "|WidgetFactory::");
 			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/WidgetFactory.cfc`);
 		});
@@ -105,6 +105,26 @@ describe("provideDefinition", function () {
 			const definition = await findDefinition(widgetFactoryDoc, 'cfproperty type="|cfml.Widget"');
 			assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
 		});
+	});
+
+	describe("component references in a template", function () {
+		const references = [
+			'<cfparam name="request.widget" type="|cfml.Widget"',
+			'name="tagFactory" returntype="|cfml.Widget"',
+			'<cfargument name="widget" type="|cfml.Widget"',
+			"|cfml.Widget function scriptFactory",
+			"scriptFactory(|cfml.Widget widget)",
+			'createObject("|cfml.Widget")',
+			"cfml.|Widget::staticGenerateID()",
+		];
+
+		for (const reference of references) {
+			it(`resolves ${reference}`, async function () {
+				const document = await workspace.openTextDocument(`${root}/cfml/ComponentReferences.cfm`);
+				const definition = await findDefinition(document, reference);
+				assert.strictEqual(normalizePath(definition.targetUri.fsPath), `${root}/cfml/Widget.cfc`);
+			});
+		}
 	});
 
 	describe("component definitions (CFSCRIPT)", function () {

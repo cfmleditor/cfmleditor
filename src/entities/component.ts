@@ -29,6 +29,11 @@ export interface ReferencePattern {
 }
 
 export const objectReferencePatterns: ReferencePattern[] = [
+	// Package.Component::method()
+	{
+		pattern: /(?<![$\w.:])(?!(?:super|static)[\t ]*::)([a-zA-Z_$][$\w]*(?:\.[a-zA-Z_$][$\w]*)*)[\t ]*(?=::[\t ]*[a-zA-Z_$][$\w]*[\t ]*\()/gi,
+		refIndex: 1,
+	},
 	// new object
 	{
 		pattern: /\bnew\s+(?:component\s*:\s*)?(['"])?([^('":]+?)\1\(/gi,

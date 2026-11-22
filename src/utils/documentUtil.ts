@@ -87,7 +87,7 @@ export async function getDocumentPositionStateContext(document: TextDocument, po
 	const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, fast, replaceComments, _token, exclDocumentRanges);
 	const docIsScript: boolean = documentStateContext.docIsScript;
 	const positionInComment: boolean = isInRanges(documentStateContext.commentRanges, position, false, _token);
-	const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token);
+	const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token, documentStateContext.commentRanges, false, position, true);
 	const positionIsScript: boolean = docIsScript || isInRanges(cfscriptRanges, position, false, _token);
 
 	let wordRange: Range | undefined = document.getWordRangeAtPosition(position);

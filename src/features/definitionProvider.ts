@@ -2,13 +2,42 @@ import { DefinitionProvider, TextDocument, Position, CancellationToken, Definiti
 import { objectReferencePatterns, ReferencePattern, Component } from "../entities/component";
 import { cachedComponentPathToUri, getComponent, searchAllFunctionNames } from "./cachedEntities";
 import { Scope, getValidScopesPrefixPattern, getVariableScopePrefixPattern, unscopedPrecedence } from "../entities/scope";
-import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, getFunctionFromPrefix } from "../entities/userFunction";
+import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, getFunctionFromPrefix, parseScriptFunctions, parseTagFunctions } from "../entities/userFunction";
 import { Property } from "../entities/property";
+import { DataType } from "../entities/dataType";
+import { parseStartTags } from "../entities/tag";
 import { equalsIgnoreCase } from "../utils/textUtil";
 import { Variable, parseVariableAssignments, getApplicationVariables, getServerVariables } from "../entities/variable";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { SearchMode } from "../utils/collections";
 import { getFunctionSuffixPattern } from "../entities/function";
+
+/**
+ * Finds component definitions for a function's declared return and parameter types.
+ * @param func The parsed function.
+ * @param position The definition request position.
+ * @returns Definition links for the type under the cursor.
+ */
+function functionTypeDefinitions(func: UserFunction, position: Position): DefinitionLink[] {
+	const types = [
+		{ uri: func.returnTypeUri, range: func.returnTypeRange },
+		...func.signatures.flatMap(signature => signature.parameters.map(arg => ({
+			uri: arg.dataTypeComponentUri,
+			range: arg.dataTypeRange,
+		}))),
+	];
+	return types.flatMap(({ uri, range }) => {
+		const component = uri && range?.contains(position) ? getComponent(uri) : undefined;
+		return component
+			? [{
+					originSelectionRange: range,
+					targetUri: component.uri,
+					targetRange: component.declarationRange,
+					targetSelectionRange: component.declarationRange,
+				}]
+			: [];
+	});
+}
 
 export default class CFMLDefinitionProvider implements DefinitionProvider {
 	/**
@@ -88,6 +117,31 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 			}
 		});
 
+		if (!documentPositionStateContext.positionIsScript) {
+			const param = parseStartTags(documentPositionStateContext, "cfparam", false, undefined, _token)
+				.find(tag => tag.tagRange.contains(position));
+			const type = param?.attributes.get("type");
+			if (type?.valueRange.contains(position)) {
+				const [, uri] = await DataType.getDataTypeAndUri(type.value, document.uri, _token);
+				const component = uri && getComponent(uri);
+				if (component) {
+					results.push({
+						originSelectionRange: type.valueRange,
+						targetUri: component.uri,
+						targetRange: component.declarationRange,
+						targetSelectionRange: component.declarationRange,
+					});
+				}
+			}
+		}
+
+		if (!docIsCfcFile && (docIsCfmFile || documentPositionStateContext.docIsScript)) {
+			const parseFunctions = documentPositionStateContext.positionIsScript ? parseScriptFunctions : parseTagFunctions;
+			for (const func of await parseFunctions(documentPositionStateContext, _token, position)) {
+				results.push(...functionTypeDefinitions(func, position));
+			}
+		}
+
 		if (docIsCfcFile) {
 			const thisComponent: Component | undefined = documentPositionStateContext.component;
 			if (thisComponent) {
@@ -133,47 +187,7 @@ export default class CFMLDefinitionProvider implements DefinitionProvider {
 
 				// Component functions (related)
 				for (const [, func] of thisComponent.functions) {
-					/*
-					 * Function return types
-					 * - ComponentType function foo() {}
-					 * - <cffunction name="foo" returntype="ComponentType">
-					 */
-					if (func.returnTypeUri && func.returnTypeRange && func.returnTypeRange.contains(position)) {
-						const returnTypeComp: Component | undefined = getComponent(func.returnTypeUri);
-						if (returnTypeComp) {
-							results.push({
-								originSelectionRange: func.returnTypeRange,
-								targetUri: returnTypeComp.uri,
-								targetRange: returnTypeComp.declarationRange,
-								targetSelectionRange: returnTypeComp.declarationRange,
-							});
-						}
-					}
-
-					/*
-					 * Argument types
-					 * - function foo(ComponentType arg) {}
-					 * - <cfargument type="ComponentType">
-					 */
-					func.signatures.map((signature: UserFunctionSignature) => {
-						const parameters = signature.parameters.filter((arg: Argument) => {
-							return arg.dataTypeComponentUri && arg.dataTypeRange && arg.dataTypeRange.contains(position);
-						});
-
-						parameters.map((arg: Argument) => {
-							if (arg.dataTypeComponentUri) {
-								const argTypeComp: Component | undefined = getComponent(arg.dataTypeComponentUri);
-								if (argTypeComp) {
-									results.push({
-										originSelectionRange: arg.dataTypeRange,
-										targetUri: argTypeComp.uri,
-										targetRange: argTypeComp.declarationRange,
-										targetSelectionRange: argTypeComp.declarationRange,
-									});
-								}
-							}
-						});
-					});
+					results.push(...functionTypeDefinitions(func, position));
 
 					if (func.bodyRange && func.bodyRange.contains(position)) {
 						/*

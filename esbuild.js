@@ -2,6 +2,10 @@ const esbuild = require('esbuild');
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
 const polyfill = require('@esbuild-plugins/node-globals-polyfill');
+// Use the HTML service's ESM entry so esbuild can resolve its internal imports.
+const aliases = {
+  'vscode-html-languageservice': require.resolve('vscode-html-languageservice/lib/esm/htmlLanguageService.js'),
+};
 // const esbuildPluginTsc = require('esbuild-plugin-tsc');
 
 async function main() {
@@ -15,6 +19,7 @@ async function main() {
     platform: 'node',
     outfile: 'dist/desktop/extension.js',
     external: ['vscode'],
+    alias: aliases,
     logLevel: 'warning',
     plugins: [
       /* add to the end of plugins array */
@@ -39,6 +44,7 @@ async function main() {
     platform: 'browser',
     outfile: 'dist/web/extension.js',
     external: ['vscode', 'fs', 'path', 'os', 'https', 'zlib', 'stream', 'stream/promises', 'child_process', 'net', 'tls', 'crypto', 'vscode-languageclient/node', 'tar-stream'],
+    alias: aliases,
     define: {
       global: 'globalThis'
     },

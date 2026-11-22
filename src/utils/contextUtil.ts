@@ -314,33 +314,23 @@ export function isCfcUri(uri: Uri): boolean {
  * @param commentRanges check start and end tags are not inside the passed comment ranges
  * @param excludeTags exclude the cfscript tags from the ranges, false is the current and default behaviuor
  * @param stopAfterPosition
+ * @param includeUnclosed include a script block still being edited through the end of the range
  * @returns
  */
-export function getCfScriptRanges(document: TextDocument, range: Range | undefined, _token: CancellationToken | undefined, commentRanges: Range[] = [], excludeTags: boolean = false, stopAfterPosition?: Position): Range[] {
+export function getCfScriptRanges(document: TextDocument, range: Range | undefined, _token: CancellationToken | undefined, commentRanges: Range[] = [], excludeTags: boolean = false, stopAfterPosition?: Position, includeUnclosed: boolean = false): Range[] {
 	const ranges: Range[] = [];
 	const validRange = range && document.validateRange(range);
 	const documentText = validRange ? document.getText(range) : document.getText();
 	const textOffset = validRange ? document.offsetAt(range.start) : 0;
-	let match: RegExpExecArray | null;
 	let startOffset: number | undefined;
 	let startLength: number | undefined;
 
-	while ((match = cfscriptTagPattern.exec(documentText)) !== null) {
+	for (const match of documentText.matchAll(cfscriptTagPattern)) {
 		if (_token?.isCancellationRequested) {
 			return ranges;
 		}
 		const matchPosition: Position = document.positionAt(textOffset + match.index);
-		let inComment: boolean = false;
-
-		for (const commentRange of commentRanges) {
-			if (commentRange.contains(matchPosition)) {
-				inComment = true;
-				break;
-			}
-			if (matchPosition.isBefore(commentRange.start)) break;
-		}
-
-		if (!inComment) {
+		if (!isInRanges(commentRanges, matchPosition, false, _token)) {
 			// charCode 47 is forward slash '/'
 			if (match[0].charCodeAt(1) === 47) { // '</cfscript>'
 				if (startOffset !== undefined) {
@@ -351,7 +341,7 @@ export function getCfScriptRanges(document: TextDocument, range: Range | undefin
 						endPosition,
 					);
 					ranges.push(range);
-					// We don't need to keep going if the close comment is after the stopAfterPosition ( ie. current cursor )
+					// Stop after the block that reaches past the cursor.
 					if (stopAfterPosition?.isBefore(range.end)) {
 						return ranges;
 					}
@@ -364,6 +354,11 @@ export function getCfScriptRanges(document: TextDocument, range: Range | undefin
 				startLength = match[0].length;
 			}
 		}
+	}
+
+	if (includeUnclosed && startOffset !== undefined) {
+		const bodyStart = textOffset + startOffset + (excludeTags ? startLength ?? 0 : 0);
+		ranges.push(new Range(document.positionAt(bodyStart), document.positionAt(textOffset + documentText.length)));
 	}
 
 	return ranges;
@@ -466,7 +461,7 @@ function getCommentRanges(document: TextDocument, isScript: boolean = false, doc
 		const tagCommentRanges: Range[] = getTagCommentRanges(document, docRange, _token);
 		commentRanges = commentRanges.concat(tagCommentRanges);
 
-		const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token, commentRanges);
+		const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token, tagCommentRanges, true, undefined, true);
 		cfScriptRanges.forEach((range: Range) => {
 			const cfscriptCommentRanges: Range[] = getScriptCommentRanges(document, range, _token);
 			commentRanges = commentRanges.concat(cfscriptCommentRanges);

@@ -373,9 +373,8 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	}
 
 	// params
-	let paramMatch: RegExpExecArray | null;
 	const paramPattern: RegExp = isScript ? scriptParamPattern : tagParamPattern;
-	while ((paramMatch = paramPattern.exec(documentText))) {
+	for (const paramMatch of documentText.matchAll(paramPattern)) {
 		const paramPrefix: string = paramMatch[1];
 		const paramAttr: string = paramMatch[2];
 
@@ -456,9 +455,8 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	}
 
 	// variable assignments
-	let variableMatch: RegExpExecArray | null;
 	const variableAssignmentPattern: RegExp = isScript ? cfscriptVariableAssignmentPattern : tagVariableAssignmentPattern;
-	while ((variableMatch = variableAssignmentPattern.exec(documentText))) {
+	for (const variableMatch of documentText.matchAll(variableAssignmentPattern)) {
 		const initValuePrefix: string = variableMatch[1];
 		const varPrefix: string = variableMatch[2];
 		const varScope: string = variableMatch[3];
@@ -675,7 +673,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
 	if (!isScript) {
 		// Check cfscript sections
-		const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token);
+		const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token, documentStateContext.commentRanges, true, undefined, true);
 		for (const range of cfScriptRanges) {
 			const cfscriptVars: Variable[] = await parseVariableAssignments(documentStateContext, true, range, _token);
 
@@ -900,8 +898,8 @@ export function getServerVariables(baseUri: Uri): Variable[] {
 export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext, _token: CancellationToken | undefined): Promise<Variable[]> {
 	let allVariableAssignments: Variable[] = [];
 
-	if (documentPositionStateContext.isCfmFile) {
-		const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, false, undefined, _token);
+	if (documentPositionStateContext.isCfmFile || (!documentPositionStateContext.isCfcFile && documentPositionStateContext.docIsScript)) {
+		const docVariableAssignments: Variable[] = await parseVariableAssignments(documentPositionStateContext, documentPositionStateContext.docIsScript, undefined, _token);
 		allVariableAssignments = allVariableAssignments.concat(docVariableAssignments);
 	}
 	else if (documentPositionStateContext.isCfcFile) {
