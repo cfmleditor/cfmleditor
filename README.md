@@ -106,6 +106,7 @@ This extension contributes these settings to Visual Studio Code:
 - `cfml.suggest.scopes.case`: Whether the completed scopes should be uppercase or lowercase. [_Default_: `lowercase`]
 - `cfml.definition.enable`: Whether providing definitions is enabled. [_Default_: `true`]
 - `cfml.definition.userFunctions.search.enable`: Whether to search for matching functions throughout the workspace when a reliable match cannot be determined. Peek Definition will provide a list of all matches. [_Default_: `false`]
+- `cfml.outline.showImplicitFunctions`: Show generated property getters and setters in the built-in CFML Outline. [_Default_: `true`]
 - `cfml.indexComponents.enable`: Whether to index the components in workspace on startup. This is done on each startup and duration depends on number and complexity of components as well as hardware specifications. Editor may be unresponsive during this period. It is currently required for most features involving components to work properly. [_Default_: `true`]
 - `cfml.autoCloseTags.enable`: Whether to enable auto-closing tags for CFML. [_Default_: `true`]
 - `cfml.autoCloseTags.configurationTarget`: Auto-configuration target for auto-closing tags. [_Default_: `Global`]

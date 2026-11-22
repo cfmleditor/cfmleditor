@@ -384,6 +384,12 @@
 					"default": true,
 					"scope": "window"
 				},
+				"cfml.outline.showImplicitFunctions": {
+					"type": "boolean",
+					"description": "Show generated property getters and setters in the built-in CFML Outline.",
+					"default": true,
+					"scope": "resource"
+				},
 				"cfml.autoCloseTags.enable": {
 					"order": 2,
 					"type": "boolean",

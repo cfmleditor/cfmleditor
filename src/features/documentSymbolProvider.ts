@@ -97,8 +97,12 @@ export default class CFMLDocumentSymbolProvider implements DocumentSymbolProvide
 
 		// Component functions
 		const functionSymbols: DocumentSymbol[] = [];
+		const showImplicitFunctions = workspace.getConfiguration("cfml.outline", document.uri).get<boolean>("showImplicitFunctions", true);
 
 		for (const [functionKey, userFunction] of component.functions) {
+			if (userFunction.isImplicit && !showImplicitFunctions) {
+				continue;
+			}
 			const currFuncSymbol: DocumentSymbol = new DocumentSymbol(
 				userFunction.name,
 				"",
