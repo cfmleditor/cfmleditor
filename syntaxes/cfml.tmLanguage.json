@@ -6,22 +6,137 @@
       "include": "#source-cfml-tag-comments"
     },
     {
-      "include": "#cfcomponent"
+      "include": "#cfml-root-script-comment"
     },
     {
-      "include": "#cfinterface"
+      "comment": "A leading import can precede a script component or interface.",
+      "begin": "(?ix) ^[\\t ]* (?= import[\\t ]+\n  (?: \"[^\"\\n]+\" | '[^'\\n]+' | [\\w$]+ (?:[\\t ]*\\.[\\t ]*[\\w$]+)* (?:[\\t ]*\\.[\\t ]*\\*)? )\n  (?:[\\t ]+as[\\t ]+[\\w$]+)? [\\t ]* (?: ; | $ | // | /\\* )\n)",
+      "end": "(?=\\n)",
+      "patterns": [
+        {
+          "include": "#source-cfml-script-keywords-top-level"
+        },
+        {
+          "name": "comment.line.double-slash.cfml",
+          "match": "(//).*",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.comment.cfml"
+            }
+          }
+        },
+        {
+          "include": "#source-cfml-script-comments"
+        }
+      ]
     },
     {
-      "include": "#cfml-tags"
+      "comment": "An import may have comments or a line break before its path.",
+      "name": "meta.import.cfml",
+      "begin": "(?i)^[\\t ]*(import)\\b(?=[\\t ]*(?:/[/*]|$))",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.import.cfml"
+        }
+      },
+      "end": "(?ix) (?: \"([^\"\\n]+)\" | '([^'\\n]+)' | ([\\w$]+(?:[\\t ]*\\.[\\t ]*[\\w$]+)*)(?:[\\t ]*\\.[\\t ]*(\\*))? )\n  (?:[\\t ]+as[\\t ]+([\\w$]+))? [\\t ]* (?:;|(?=$|/[/*]))\n  | (?=\\S)",
+      "endCaptures": {
+        "1": {
+          "name": "string.quoted.double.cfml"
+        },
+        "2": {
+          "name": "string.quoted.single.cfml"
+        },
+        "3": {
+          "name": "variable.other.readwrite.alias.cfml"
+        },
+        "4": {
+          "name": "constant.language.import-all.cfml"
+        },
+        "5": {
+          "name": "variable.other.readwrite.alias.cfml"
+        }
+      },
+      "applyEndPatternLast": true,
+      "patterns": [
+        {
+          "include": "#source-cfml-script-comments"
+        }
+      ]
     },
     {
-      "include": "#text-html-cfml"
+      "begin": "(?ix) (?= (?:^|(?<=\\*/)|(?<=--->)) [\\t ]* (?:(?:(?:abstract|final)[\\t ]+)?component|interface)\\b\n  (?: [\\t ]*(?:\\{|/[/*]|$)\n    | [\\t ]+[\\w$-]+[\\t ]* (?: /\\*(?:[^*\\n]|\\*(?!/))*\\*/[\\t ]* )* (?: = | // | /\\*(?:[^*\\n]|\\*(?!/))*$ )\n    | [\\t ]+interface\\b[\\t ]*(?:\\{|$)\n  )\n)",
+      "contentName": "source.cfml.script",
+      "end": "(?!)",
+      "patterns": [
+        {
+          "include": "#source-cfml-script"
+        }
+      ]
     },
     {
-      "include": "#source-cfml-script"
+      "comment": "A two-word header needs an assignment on a later line to identify it as script.",
+      "begin": "(?ix) (?:^|(?<=\\*/)|(?<=--->)) [\\t ]* (?:(?:(?:abstract|final)[\\t ]+)?component|interface) [\\t ]+ [\\w$-]+ [\\t ]*\n  (?: /\\*(?:[^*\\n]|\\*(?!/))*\\*/[\\t ]* )* $",
+      "beginCaptures": {
+        "0": {
+          "name": "text.html.cfml"
+        }
+      },
+      "end": "(?!)",
+      "patterns": [
+        {
+          "include": "#cfml-root-script-comment"
+        },
+        {
+          "begin": "(?==)",
+          "contentName": "source.cfml.script",
+          "end": "(?!)",
+          "patterns": [
+            {
+              "include": "#source-cfml-script"
+            }
+          ]
+        },
+        {
+          "include": "#cfml-root-markup"
+        }
+      ]
+    },
+    {
+      "include": "#cfml-root-markup"
     }
   ],
   "repository": {
+    "cfml-root-script-comment": {
+      "comment": "Resume checking the file after a leading script comment ends.",
+      "begin": "(?:^|(?<=\\*/)|(?<=--->)|(?<=;))[\\t ]*(?=/[/*])",
+      "end": "(?=)",
+      "applyEndPatternLast": true,
+      "patterns": [
+        {
+          "include": "#source-cfml-script-comments"
+        }
+      ]
+    },
+    "cfml-root-markup": {
+      "begin": "(?=\\S)",
+      "contentName": "text.html.cfml",
+      "end": "(?!)",
+      "patterns": [
+        {
+          "include": "#cfcomponent"
+        },
+        {
+          "include": "#cfinterface"
+        },
+        {
+          "include": "#cfml-tags"
+        },
+        {
+          "include": "#text-html-cfml"
+        }
+      ]
+    },
     "text-html-cfml-character-reference": {
       "patterns": [
         {
@@ -9867,7 +9982,7 @@
     "source-cfml-script-component": {
       "patterns": [
         {
-          "begin": "(?i)^(?=\\s*(?:(abstract|final)\\s+)?(component)\\b)",
+          "begin": "(?i)(?:^|(?<=\\*/)|(?<=--->))(?=\\s*(?:(abstract|final)\\s+)?(component)\\b)",
           "end": "\\}",
           "endCaptures": {
             "0": {
@@ -9914,7 +10029,7 @@
           ]
         },
         {
-          "begin": "(?i)^(?=\\s*(interface)\\b)",
+          "begin": "(?i)(?:^|(?<=\\*/)|(?<=--->))(?=\\s*(interface)\\b)",
           "end": "\\}",
           "endCaptures": {
             "0": {

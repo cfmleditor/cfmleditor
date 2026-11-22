@@ -875,7 +875,9 @@
 		"ts-loader": "^9.6.2",
 		"tsx": "^4.23.15",
 		"typescript": "^6.0.3",
-		"util": "^0.12.5"
+		"util": "^0.12.5",
+		"vscode-oniguruma": "^2.0.1",
+		"vscode-textmate": "^9.2.0"
 	},
 	"allowScripts": {
 		"fsevents@2.3.3": true,
