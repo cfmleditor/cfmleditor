@@ -13,7 +13,20 @@ export interface Function {
 	name: string;
 	description: string;
 	returntype: DataType;
+	returnDescription?: string;
 	signatures: Signature[];
+}
+
+/**
+ * Shows the function description and any documented return value.
+ * @param func The documented function.
+ * @param description The description for the selected signature.
+ * @returns The Markdown documentation.
+ */
+export function getFunctionDocumentation(func: Function, description = func.description): string {
+	return func.returnDescription
+		? [description, "**Returns** " + func.returnDescription].filter(Boolean).join("\n\n")
+		: description;
 }
 
 export enum MemberType {

@@ -2,7 +2,7 @@
 import { CancellationToken, ParameterInformation, Position, Range, SignatureHelp, SignatureHelpProvider, SignatureInformation, TextDocument, Uri, workspace, WorkspaceConfiguration, SignatureHelpContext } from "vscode";
 import { Component, objectNewInstanceInitPrefix } from "../entities/component";
 import { DataType } from "../entities/dataType";
-import { constructSyntaxString, Function, getScriptFunctionArgRanges } from "../entities/function";
+import { constructSyntaxString, Function, getFunctionDocumentation, getScriptFunctionArgRanges } from "../entities/function";
 import { Parameter, namedParameterPattern } from "../entities/parameter";
 import { getVariableScopePrefixPattern, Scope, unscopedPrecedence } from "../entities/scope";
 import { constructSignatureLabelParamsPrefix, getSignatureParamsLabelOffsetTuples, Signature } from "../entities/signature";
@@ -159,7 +159,7 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		const sigHelp = new SignatureHelp();
 
 		entry.signatures.forEach((signature: Signature, sigIndex: number) => {
-			const sigDesc: string = signature.description ? signature.description : entry.description;
+			const sigDesc = getFunctionDocumentation(entry, signature.description || entry.description);
 			const sigLabel: string = constructSyntaxString(entry, sigIndex);
 			const signatureInfo = new SignatureInformation(sigLabel, textToMarkdownString(sigDesc));
 

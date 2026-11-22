@@ -1,7 +1,9 @@
 import * as assert from "node:assert/strict";
-import { commands, CompletionItemKind, CompletionList, ConfigurationTarget, DefinitionLink, Disposable, DocumentSymbol, extensions, InlayHint, InlayHintKind, Position, Range, Selection, Uri, window, workspace } from "vscode";
+import { commands, CompletionItemKind, CompletionList, ConfigurationTarget, DefinitionLink, Disposable, DocumentSymbol, extensions, Hover, InlayHint, InlayHintKind, MarkdownString, Position, Range, Selection, SignatureHelp, Uri, window, workspace } from "vscode";
+import { parseDocBlock } from "../entities/docblock";
 import { matchAutoCloseTag } from "../features/autoCloseTagMatch";
 import { detectUntitledLanguage } from "../features/untitledLanguageDetection";
+import { LSTextDocument } from "../utils/LSTextDocument";
 import { findDefinition, findPosition } from "./testUtils";
 
 describe("CFML editor features", function () {
@@ -57,6 +59,70 @@ describe("CFML editor features", function () {
 		const document = await workspace.openTextDocument({ language: "html", content: "<cfoutput>hello</cfoutput>" });
 		await detectUntitledLanguage(document);
 		assert.strictEqual(document.languageId, "html");
+	});
+
+	it("parses undelimited prose, independent annotations, and CRLF value ranges", function () {
+		const source = [
+			"/** Inline prose",
+			"    continuation",
+			"    @wirebox The Injector",
+			"    @wirebox.inject wirebox",
+			"         @return MyComponent",
+			"    @flag",
+			"    @param first First parameter.",
+			"    @param second Second parameter.",
+			"*/",
+		].join("\r\n");
+		const document = new LSTextDocument(Uri.parse("untitled:docblock-test"), "cfml", 1, source);
+		const range = new Range(document.positionAt(3), document.positionAt(source.length - 2));
+		const entries = parseDocBlock(document, range);
+		assert.deepStrictEqual(entries.map(({ key, subkey, value }) => [key, subkey, value]), [
+			["hint", undefined, "Inline prose\ncontinuation"],
+			["wirebox", undefined, "The Injector"],
+			["wirebox", "inject", "wirebox"],
+			["return", undefined, "MyComponent"],
+			["flag", undefined, ""],
+			["param", undefined, "first First parameter."],
+			["param", undefined, "second Second parameter."],
+		]);
+		const typeRange = entries[3].valueRange;
+		assert.ok(typeRange);
+		assert.strictEqual(document.getText(typeRange), "MyComponent");
+		assert.strictEqual(entries[4].valueRange, undefined);
+	});
+
+	it("renders multiline docblocks with parameter and return descriptions in signature help", async function () {
+		const document = await fixture("DocBlockExamples.cfc");
+		const result = await commands.executeCommand<SignatureHelp>(
+			"vscode.executeSignatureHelpProvider", document.uri, findPosition(document, "this.buildDocumentedGizmo(|\"template.cfm\", 42)"),
+		);
+		const signature = result.signatures[0];
+		assert.match(signature.label, /: Gizmo$/);
+		const documentation = (signature.documentation as MarkdownString).value;
+		assert.match(documentation, /\n- Template[ \t]*\n- Line number/);
+		assert.match(documentation, /\n {4}if \(example/);
+		assert.match(documentation, /\n {8}\/\/ Do something/);
+		assert.match(documentation, /\n {4}writeOutput\("example"\);[ \t]*\n@example inside the fence/);
+		assert.match(documentation, /\*\*Returns\*\* The new gizmo\./);
+		assert.match((signature.parameters[0].documentation as MarkdownString).value, /\[required\][ \t]*\nThe template string to be used\./);
+		assert.strictEqual((signature.parameters[1].documentation as MarkdownString).value, "The line number.");
+	});
+
+	it("shows returns in hover and preserves declared types and CF-style hints", async function () {
+		const document = await fixture("DocBlockExamples.cfc");
+		const hoverText = async (marker: string) => {
+			const results = await commands.executeCommand<Hover[]>("vscode.executeHoverProvider", document.uri, findPosition(document, marker));
+			return results.flatMap(result => result.contents).map(value => typeof value === "string" ? value : value.value).join("\n");
+		};
+		const boolean = await hoverText("this.|isDocumentedGizmoEnabled()");
+		assert.match(boolean, /isDocumentedGizmoEnabled\(\): boolean/);
+		assert.match(boolean, /\*\*Returns\*\* True when enabled\./);
+		const text = await hoverText("this.|describeDocumentedLabel(\"label\")");
+		assert.match(text, /describeDocumentedLabel\([^)]*\): string/);
+		assert.match(text, /Preferred hint\./);
+		assert.match(text, /Legacy name-based argument hint\./);
+		assert.match(text, /\*\*Returns\*\* An example documented return\./);
+		assert.doesNotMatch(text, /Additional prose|Fallback parameter text/);
 	});
 
 	it("labels positional arguments in nested calls and skips names, declarations, strings, and comments", async function () {
