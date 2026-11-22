@@ -43,6 +43,21 @@ describe("CFML editor features", function () {
 		});
 	}
 
+	it("uses the most recent component variable assignment before the cursor", async function () {
+		const document = await fixture("ReassignedMemberType.cfc");
+		for (const [cursor, expected] of [
+			["variables.later.ren|;", false],
+			["variables.mapper.re|;", false],
+			["variables.mapper.ren|;", true],
+			["variables.mapper.rend|;", false],
+		] as const) {
+			const result = await commands.executeCommand<CompletionList>("vscode.executeCompletionItemProvider", document.uri, findPosition(document, cursor));
+			const hasRender = result.items.some(item => item.kind === CompletionItemKind.Function
+				&& (typeof item.label === "string" ? item.label : item.label.label) === "render");
+			assert.strictEqual(hasRender, expected, cursor);
+		}
+	});
+
 	it("expands a word to its interpolation, tag contents, and full tag", async function () {
 		const document = await fixture("SelectionRanges.cfm");
 		const editor = await window.showTextDocument(document);

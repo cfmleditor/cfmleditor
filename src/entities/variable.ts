@@ -317,9 +317,10 @@ export function getVariableCallExpressionPrefixPattern() {
  * @param isScript Whether this document or range is defined entirely in CFScript
  * @param docRange Range within which to check
  * @param _token
+ * @param preferRecentAssignments Keep repeated assignments for cursor-based type inference.
  * @returns
  */
-export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range | undefined, _token: CancellationToken | undefined): Promise<Variable[]> {
+export async function parseVariableAssignments(documentStateContext: DocumentStateContext, isScript: boolean, docRange: Range | undefined, _token: CancellationToken | undefined, preferRecentAssignments = false): Promise<Variable[]> {
 	let variables: Variable[] = [];
 	const document: TextDocument = documentStateContext.document;
 	const documentUri: Uri = document.uri;
@@ -479,7 +480,7 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 			document.positionAt(varMatchStartOffset + varName.length)
 		);
 
-		const matchingVars: Variable[] = getMatchingVariables(variables, varName, scopeVal);
+		const matchingVars: Variable[] = preferRecentAssignments ? [] : getMatchingVariables(variables, varName, scopeVal);
 		if (matchingVars.length > 0) {
 			if (matchingVars.length > 1 || matchingVars[0].declarationLocation.range.start.isBefore(varRange.start)) {
 				continue;
@@ -675,7 +676,11 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 		// Check cfscript sections
 		const cfScriptRanges: Range[] = getCfScriptRanges(document, docRange, _token, documentStateContext.commentRanges, true, undefined, true);
 		for (const range of cfScriptRanges) {
-			const cfscriptVars: Variable[] = await parseVariableAssignments(documentStateContext, true, range, _token);
+			const cfscriptVars: Variable[] = await parseVariableAssignments(documentStateContext, true, range, _token, preferRecentAssignments);
+			if (preferRecentAssignments) {
+				variables.push(...cfscriptVars);
+				continue;
+			}
 
 			cfscriptVars.forEach((scriptVar: Variable) => {
 				const matchingVars: Variable[] = getMatchingVariables(variables, scriptVar.identifier, scriptVar.scope);
@@ -893,9 +898,10 @@ export function getServerVariables(baseUri: Uri): Variable[] {
  * Collects all variable assignments accessible based on the given documentPositionStateContext
  * @param documentPositionStateContext The contextual information of the state of a document and the cursor position
  * @param _token
+ * @param forMemberCompletion Prefer component variable assignments before the cursor in the active function.
  * @returns
  */
-export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext, _token: CancellationToken | undefined): Promise<Variable[]> {
+export async function collectDocumentVariableAssignments(documentPositionStateContext: DocumentPositionStateContext, _token: CancellationToken | undefined, forMemberCompletion = false): Promise<Variable[]> {
 	let allVariableAssignments: Variable[] = [];
 
 	if (documentPositionStateContext.isCfmFile || (!documentPositionStateContext.isCfcFile && documentPositionStateContext.docIsScript)) {
@@ -927,8 +933,10 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 				if (currComponent.functions.has(initMethod)) {
 					const currInitFunc: UserFunction | undefined = currComponent.functions.get(initMethod);
 
-					if (currInitFunc && currInitFunc.bodyRange) {
-						const currInitVariables: Variable[] = (await parseVariableAssignments(documentPositionStateContext, currComponent.isScript, currInitFunc.bodyRange, _token)).filter((variable: Variable) => {
+					const initBody = currInitFunc?.bodyRange;
+					const editingInit = forMemberCompletion && currComponent === thisComponent && initBody?.contains(documentPositionStateContext.position);
+					if (initBody && !editingInit) {
+						const currInitVariables: Variable[] = (await parseVariableAssignments(documentPositionStateContext, currComponent.isScript, initBody, _token)).filter((variable: Variable) => {
 							return [Scope.Variables, Scope.This].includes(variable.scope) && !componentVariables.some((existingVariable: Variable) => {
 								return existingVariable.scope === variable.scope && equalsIgnoreCase(existingVariable.identifier, variable.identifier);
 							});
@@ -965,6 +973,13 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 			});
 
 			for (const [, func] of filteredFunctions) {
+				if (forMemberCompletion && func.bodyRange) {
+					const precedingBody = new Range(func.bodyRange.start, documentPositionStateContext.position);
+					const assignments = await parseVariableAssignments(documentPositionStateContext, thisComponent.isScript, precedingBody, _token, true);
+					const componentAssignments = assignments.filter(variable => variable.scope === Scope.This || variable.scope === Scope.Variables);
+					componentAssignments.sort((left, right) => right.declarationLocation.range.start.compareTo(left.declarationLocation.range.start));
+					allVariableAssignments = componentAssignments.concat(allVariableAssignments);
+				}
 				const tmp = await getLocalVariables(func, documentPositionStateContext, thisComponent.isScript, _token);
 				localVariables = localVariables.concat(tmp);
 			}
