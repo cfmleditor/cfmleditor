@@ -1,7 +1,10 @@
 import { Range, TextDocument } from "vscode";
 
-// If the key has no value, the last letter is ignored
-const DOC_PATTERN: RegExp = /(\n\s*(?:\*[ \t]*)?(?:@(\w+)(?:\.(\w+))?)?[ \t]*)(\S.*)/gi;
+const annotationPattern = /^[ \t]*@([\w$]+)(?:\.([\w$]+))?(?:[ \t]+|$)/;
+const decorationPattern = /^[ \t]*\*[ \t]?/;
+const fencePattern = /^ {0,3}(?:`{3,}|~{3,})/;
+const indentedCodePattern = /^(?: {4}|\t)/;
+const multilineAnnotations = new Set(["hint", "description", "param", "return", "returns"]);
 
 export interface DocBlockKeyValue {
 	key: string; // lowercased
@@ -10,83 +13,74 @@ export interface DocBlockKeyValue {
 	valueRange?: Range;
 }
 
-/**
- * Parses a CFScript documentation block and returns an array of DocBlockKeyValue objects
- * @param document The document in which to parse
- * @param docRange The range within the document containing the docblock
- * @returns
- */
-export function parseDocBlock(document: TextDocument, docRange: Range): DocBlockKeyValue[] {
-	const docBlockStr: string = document.getText(docRange);
-	const docBlock: DocBlockKeyValue[] = [];
-	let prevKey = "hint";
-	let activeKey = "hint";
-	let prevSubkey: string | undefined;
-	let activeSubkey: string | undefined;
-	let activeValue: string | undefined;
-	let activeValueStartOffset = 0;
-	let activeValueEndOffset = 0;
-	let docBlockMatches: RegExpExecArray | null;
-	const docBlockOffset: number = document.offsetAt(docRange.start);
-	while ((docBlockMatches = DOC_PATTERN.exec(docBlockStr))) {
-		const valuePrefix: string = docBlockMatches[1];
-		const metadataKey: string = docBlockMatches[2];
-		const metadataSubkey: string = docBlockMatches[3];
-		const metadataValue: string = docBlockMatches[4];
-		const docValueOffset: number = docBlockOffset + docBlockMatches.index + valuePrefix.length;
-
-		if (metadataKey) {
-			activeKey = metadataKey.toLowerCase();
-			if (metadataSubkey) {
-				activeSubkey = metadataSubkey.toLowerCase();
-			}
-			else {
-				activeSubkey = undefined;
-			}
-		}
-		else if (metadataValue === "*") {
-			continue;
-		}
-
-		if ((activeKey !== prevKey || activeSubkey !== prevSubkey) && activeValue) {
-			docBlock.push({
-				key: prevKey,
-				subkey: prevSubkey,
-				value: activeValue,
-				valueRange: new Range(document.positionAt(activeValueStartOffset), document.positionAt(activeValueEndOffset)),
-			});
-			prevKey = activeKey;
-			prevSubkey = activeSubkey;
-			activeValue = undefined;
-		}
-
-		if (activeValue) {
-			activeValue += " " + metadataValue;
-		}
-		else {
-			activeValueStartOffset = docValueOffset;
-			activeValue = metadataValue;
-		}
-		activeValueEndOffset = docValueOffset + metadataValue.length;
-	}
-
-	if (activeValue) {
-		docBlock.push({
-			key: activeKey,
-			subkey: activeSubkey,
-			value: activeValue,
-			valueRange: new Range(document.positionAt(activeValueStartOffset), document.positionAt(activeValueEndOffset)),
-		});
-	}
-
-	return docBlock;
+interface DocBlockLine {
+	text: string;
+	offset: number;
 }
 
 /**
- * Gets a regular expression that matches a docblock key with the given name and captures its next word
- * @param keyName The tag key to match
- * @returns
+ * Parses a CFScript documentation block.
+ * @param document The document containing the block.
+ * @param docRange The block's content, excluding the comment delimiters.
+ * @returns Documentation and metadata with source ranges.
  */
-export function getKeyPattern(keyName: string): RegExp {
-	return new RegExp(`@${keyName}\\s+(\\S+)`, "i");
+export function parseDocBlock(document: TextDocument, docRange: Range): DocBlockKeyValue[] {
+	const lines = document.getText(docRange).split("\n");
+	const prose: DocBlockLine[] = [];
+	const annotations: { key: string; subkey?: string; lines: DocBlockLine[] }[] = [];
+	const unstarredLines = lines.slice(1).filter(line => line.trim() && !decorationPattern.test(line));
+	const indentation = unstarredLines.reduce((indent, line) => Math.min(indent, line.length - line.trimStart().length), Infinity);
+
+	let active = prose;
+	let offset = document.offsetAt(docRange.start);
+	let openFence: string | undefined;
+	let inIndentedCode = false;
+	for (const [index, raw] of lines.entries()) {
+		const decoration = decorationPattern.exec(raw)?.[0].length;
+		const prefix = decoration ?? (index === 0 ? raw.length - raw.trimStart().length : Math.min(indentation, raw.length));
+		const line = raw.slice(prefix).replace(/\r$/, "");
+		const lineOffset = offset + prefix;
+		offset += raw.length + 1;
+
+		const fence = fencePattern.exec(line)?.[0].trimStart();
+		const indented = indentedCodePattern.test(line);
+		const annotation = !openFence && !(inIndentedCode && indented) ? annotationPattern.exec(line) : null;
+		if (annotation) {
+			const key = annotation[1].toLowerCase();
+			const subkey = annotation[2]?.toLowerCase();
+			const valuePrefix = annotation[0].length;
+			const valueLines = [{ text: line.slice(valuePrefix), offset: lineOffset + valuePrefix }];
+			annotations.push({ key, subkey, lines: valueLines });
+			active = multilineAnnotations.has(key) || subkey === "hint" ? valueLines : prose;
+			inIndentedCode = false;
+			continue;
+		}
+
+		active.push({ text: line, offset: lineOffset });
+		if (fence && !openFence) {
+			openFence = fence;
+		}
+		else if (fence && openFence && fence.startsWith(openFence) && line.trim() === fence) {
+			openFence = undefined;
+		}
+		if (line.trim()) {
+			inIndentedCode = indented;
+		}
+	}
+
+	const entries = prose.some(line => line.text.trim()) ? [{ key: "hint", subkey: undefined, lines: prose }, ...annotations] : annotations;
+	return entries.map(({ key, subkey, lines }) => {
+		const first = lines.findIndex(line => line.text.trim());
+		if (first === -1) {
+			return { key, subkey, value: "" };
+		}
+		let last = lines.length - 1;
+		while (!lines[last].text.trim()) {
+			last--;
+		}
+		const endLength = lines[last].text.trimEnd().length;
+		const valueRange = new Range(document.positionAt(lines[first].offset), document.positionAt(lines[last].offset + endLength));
+		const value = lines.slice(first, last + 1).map(line => line.text).join("\n").trimEnd();
+		return { key, subkey, value, valueRange };
+	});
 }

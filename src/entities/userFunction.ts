@@ -6,7 +6,7 @@ import { Signature } from "./signature";
 import { Component, isSubcomponentOrEqual } from "./component";
 import { Variable, parseVariableAssignments, collectDocumentVariableAssignments, getApplicationVariables, getBestMatchingVariable, getVariableExpressionPrefixPattern, getVariableCallExpressionPrefixPattern } from "./variable";
 import { Scope } from "./scope";
-import { DocBlockKeyValue, parseDocBlock, getKeyPattern } from "./docblock";
+import { DocBlockKeyValue, parseDocBlock } from "./docblock";
 import { Attributes, Attribute, parseAttributes } from "./attribute";
 import { equalsIgnoreCase } from "../utils/textUtil";
 import { MyMap, MySet } from "../utils/collections";
@@ -19,6 +19,8 @@ import { uriBaseName } from "../utils/fileUtil";
 
 const scriptFunctionPattern: RegExp = /((\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?(?:\b(private|package|public|remote|static|final|abstract|default)\s+)?)(?:\b([A-Za-z0-9_.$]+)\s+)?function\s+([_$a-zA-Z][$\w]*)\s*\(/gi;
 const scriptFunctionArgPattern: RegExp = /((?:(required)\s+)?(?:\b([\w.]+)\b\s+)?(\b[_$a-zA-Z][$\w]*\b)(?:\s*=\s*(\{[^}]*\}|\[[^\]]*\]|\([^)]*\)|(?:(?!\b\w+\s*=).)+))?)(.*)?/i;
+const documentedParamPattern = /^(?:\{[^}\r\n]+\}\s+)?([a-z_$][\w$]*)(?:\s+|$)/i;
+const documentedReturnTypePattern = /^(?:\{([\w$.]+)\}|([a-z_$][\w$.]*))(?=\s|$)/i;
 export const functionValuePattern: RegExp = /^function\s*\(/i;
 export const normalizeSplit: RegExp = /(::|\?\.)/g;
 
@@ -324,7 +326,6 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 			break;
 		}
 		// Check if we found a docblock for this function
-		let fullDocBlock: string | undefined;
 		let docBlockRange: Range | undefined;
 		if (precedingCommentRange) {
 			const commentText = document.getText(precedingCommentRange);
@@ -333,7 +334,6 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 				// Check that the docblock is directly before the function
 				const textBetween = document.getText(new Range(precedingCommentRange.end, functionRange.start));
 				if (textBetween.trim().length == 0) {
-					fullDocBlock = commentText;
 					// Remove the leading "/**" and trailing "*/"
 					docBlockRange = new Range(precedingCommentRange.start.translate(0, 3), precedingCommentRange.end.translate(0, -2));
 				}
@@ -341,11 +341,9 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 		}
 
 		let scriptDocBlockParsed: DocBlockKeyValue[] = [];
-		if (fullDocBlock && docBlockRange) {
-			scriptDocBlockParsed = parseDocBlock(document,
-				docBlockRange
-			);
-			await Promise.all(scriptDocBlockParsed.map(async (docElem: DocBlockKeyValue) => {
+		if (docBlockRange) {
+			scriptDocBlockParsed = parseDocBlock(document, docBlockRange);
+			for (const docElem of scriptDocBlockParsed) {
 				if (docElem.key === "access") {
 					userFunction.access = Access.valueOf(docElem.value);
 				}
@@ -353,33 +351,39 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 					const [dataType, uri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
 					if (dataType) {
 						userFunction.returntype = dataType;
-
-						const returnTypeKeyMatch: RegExpExecArray | null = getKeyPattern("returnType").exec(fullDocBlock);
-						if (returnTypeKeyMatch) {
-							const returnTypePath: string = returnTypeKeyMatch[1];
-							if (scriptFunctionMatch) {
-								const returnTypeOffset: number = scriptFunctionMatch.index + returnTypeKeyMatch.index;
-								userFunction.returnTypeRange = new Range(
-									document.positionAt(returnTypeOffset),
-									document.positionAt(returnTypeOffset + returnTypePath.length)
-								);
-							}
-						}
-						if (uri) {
-							userFunction.returnTypeUri = uri;
-						}
+						userFunction.returnTypeUri = uri;
+						userFunction.returnTypeRange = docElem.valueRange;
 					}
 				}
 				else if (userFunctionBooleanAttributes.has(docElem.key)) {
 					userFunction[docElem.key] = DataType.isTruthy(docElem.value);
 				}
-				else if (docElem.key === "hint") {
+				else if (docElem.key === "hint" && !parsedAttributes.has("hint")) {
 					userFunction.description = docElem.value;
 				}
 				else if (docElem.key === "description" && userFunction.description === "") {
 					userFunction.description = docElem.value;
 				}
-			}));
+			}
+
+			const returns = scriptDocBlockParsed.filter(entry => !entry.subkey && (entry.key === "return" || entry.key === "returns")).at(-1);
+			if (returns) {
+				userFunction.returnDescription = returns.value;
+				const typeMatch = documentedReturnTypePattern.exec(returns.value);
+				if (typeMatch && returns.valueRange) {
+					const typeName = typeMatch[1] ?? typeMatch[2];
+					const [dataType, uri] = await DataType.getDataTypeAndUri(typeName, document.uri, _token);
+					if (dataType) {
+						userFunction.returnDescription = returns.value.slice(typeMatch[0].length).trimStart();
+						if (!returnType && !parsedAttributes.has("returntype") && !userFunction.returnTypeRange) {
+							const typeOffset = document.offsetAt(returns.valueRange.start) + (typeMatch[1] ? 1 : 0);
+							userFunction.returntype = dataType;
+							userFunction.returnTypeUri = uri;
+							userFunction.returnTypeRange = new Range(document.positionAt(typeOffset), document.positionAt(typeOffset + typeName.length));
+						}
+					}
+				}
+			}
 		}
 		const signature: UserFunctionSignature = {
 			parameters: await parseScriptFunctionArgs(documentStateContext, functionArgsRange, scriptDocBlockParsed, _token),
@@ -533,7 +537,7 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 			}
 
 			const matchingDocBlocks = docBlock.filter((docElem: DocBlockKeyValue) => {
-				return equalsIgnoreCase(docElem.key, argument.name);
+				return (docElem.key !== "param" || !!docElem.subkey) && equalsIgnoreCase(docElem.key, argument.name);
 			});
 
 			await Promise.all(matchingDocBlocks.map(async (docElem: DocBlockKeyValue) => {
@@ -558,6 +562,18 @@ export async function parseScriptFunctionArgs(documentStateContext: DocumentStat
 					}
 				}
 			}));
+
+			if (!argument.description) {
+				for (const entry of docBlock) {
+					if (entry.key !== "param" || entry.subkey) {
+						continue;
+					}
+					const param = documentedParamPattern.exec(entry.value);
+					if (param && equalsIgnoreCase(param[1], argument.name)) {
+						argument.description = entry.value.slice(param[0].length).replace(/^-\s+/, "");
+					}
+				}
+			}
 
 			return argument;
 		}

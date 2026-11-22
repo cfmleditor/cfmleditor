@@ -6,7 +6,7 @@ import { IPropertyData, IAtDirectiveData } from "../entities/css/cssLanguageType
 import { cssDataManager, getEntryDescription as getCSSEntryDescription, cssWordRegex } from "../entities/css/languageFacts";
 import { cssPropertyPattern } from "../entities/css/property";
 import { DataType } from "../entities/dataType";
-import { constructSyntaxString, Function, getFunctionSuffixPattern } from "../entities/function";
+import { constructSyntaxString, Function, getFunctionDocumentation, getFunctionSuffixPattern } from "../entities/function";
 import { GlobalFunction, GlobalTag, globalTagSyntaxToScript } from "../entities/globals";
 import { ITagData as HTMLTagData } from "../entities/html/htmlLanguageTypes";
 import { getTag as getHTMLTag, isKnownTag as isKnownHTMLTag } from "../entities/html/languageFacts";
@@ -333,7 +333,7 @@ export default class CFMLHoverProvider implements HoverProvider {
 			name: func.name,
 			syntax: constructSyntaxString(func),
 			symbolType: "function",
-			description: func.description,
+			description: getFunctionDocumentation(func),
 			params: paramArr,
 			returnType: returnType,
 		};
