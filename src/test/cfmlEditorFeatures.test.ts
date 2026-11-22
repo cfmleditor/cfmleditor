@@ -1,5 +1,5 @@
 import * as assert from "node:assert/strict";
-import { commands, CompletionItemKind, CompletionList, ConfigurationTarget, DefinitionLink, Disposable, DocumentSymbol, extensions, Position, Selection, Uri, window, workspace } from "vscode";
+import { commands, CompletionItemKind, CompletionList, ConfigurationTarget, DefinitionLink, Disposable, DocumentSymbol, extensions, InlayHint, InlayHintKind, Position, Range, Selection, Uri, window, workspace } from "vscode";
 import { matchAutoCloseTag } from "../features/autoCloseTagMatch";
 import { detectUntitledLanguage } from "../features/untitledLanguageDetection";
 import { findDefinition, findPosition } from "./testUtils";
@@ -57,6 +57,49 @@ describe("CFML editor features", function () {
 		const document = await workspace.openTextDocument({ language: "html", content: "<cfoutput>hello</cfoutput>" });
 		await detectUntitledLanguage(document);
 		assert.strictEqual(document.languageId, "html");
+	});
+
+	it("labels positional arguments in nested calls and skips names, declarations, strings, and comments", async function () {
+		const document = await fixture("ParameterHints.cfc");
+		const range = new Range(new Position(0, 0), document.positionAt(document.getText().length));
+		const hints = await commands.executeCommand<InlayHint[]>("vscode.executeInlayHintProvider", document.uri, range);
+		const expected = [
+			["|\"hello, world\"", "first:"],
+			["|this.combine(\"inner\", \"value\")", "second:"],
+			["this.combine(|\"inner\", \"value\")", "first:"],
+			["\"inner\", |\"value\"", "second:"],
+		];
+		assert.deepStrictEqual(hints.map(hint => [document.offsetAt(hint.position), hint.label, hint.kind]), expected.map(([marker, name]) =>
+			[document.offsetAt(findPosition(document, marker)), name, InlayHintKind.Parameter]));
+
+		const visibleRange = document.lineAt(findPosition(document, "|\"hello, world\"").line).range;
+		const visibleHints = await commands.executeCommand<InlayHint[]>("vscode.executeInlayHintProvider", document.uri, visibleRange);
+		assert.deepStrictEqual(visibleHints.map(hint => hint.label), ["first:"]);
+	});
+
+	it("labels arguments in a cfset expression and honors the inlay hint setting", async function () {
+		this.timeout(10_000);
+		const document = await fixture("ParameterHints.cfm");
+		const range = new Range(new Position(0, 0), document.positionAt(document.getText().length));
+		const settings = workspace.getConfiguration("cfml.inlayHints", document.uri);
+		const key = "parameterNames";
+		const previous = settings.inspect<boolean>(key)?.globalValue;
+		const labels = async () => (await commands.executeCommand<InlayHint[]>("vscode.executeInlayHintProvider", document.uri, range)).map(hint => hint.label);
+		assert.deepStrictEqual(await labels(), ["person:"]);
+		try {
+			await settings.update(key, false, ConfigurationTarget.Global);
+			assert.deepStrictEqual(await labels(), []);
+		}
+		finally {
+			await settings.update(key, previous, ConfigurationTarget.Global);
+		}
+	});
+
+	it("labels a standalone CFScript call that omits an optional argument", async function () {
+		const document = await fixture("ParameterHints.cfs");
+		const range = new Range(new Position(0, 0), document.positionAt(document.getText().length));
+		const hints = await commands.executeCommand<InlayHint[]>("vscode.executeInlayHintProvider", document.uri, range);
+		assert.deepStrictEqual(hints.map(hint => hint.label), ["person:"]);
 	});
 
 	const completions = [

@@ -1,0 +1,5 @@
+function greet(required string person, string punctuation = "!") {
+	return arguments.person & arguments.punctuation;
+}
+
+greet("script");

@@ -184,6 +184,12 @@
 					"default": true,
 					"scope": "resource"
 				},
+				"cfml.inlayHints.parameterNames": {
+					"type": "boolean",
+					"description": "Show parameter names before positional CFML call arguments.",
+					"default": true,
+					"scope": "resource"
+				},
 				"cfml.suggest.enable": {
 					"type": "boolean",
 					"description": "Whether completion help is enabled.",
