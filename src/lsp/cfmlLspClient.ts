@@ -11,6 +11,8 @@ import { BINARY_NAME, GITHUB_REPO, LEGACY_BINARY_NAME, ServerAsset, ServerChoice
 // packaging script, without every caller needing to know where that is.
 export { assetCandidates, chooseServer, pinnedTag, tagFromReleaseRedirect } from "./serverAsset";
 
+export const supportsNativeLsp = true;
+
 let client: LanguageClient | undefined;
 
 function getConfig() {

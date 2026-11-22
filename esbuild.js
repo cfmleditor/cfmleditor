@@ -1,4 +1,5 @@
 const esbuild = require('esbuild');
+const path = require('node:path');
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
 const polyfill = require('@esbuild-plugins/node-globals-polyfill');
@@ -77,6 +78,9 @@ const replacePath = () => {
     return {
         name: "replacePath",
         setup(build) {
+            build.onResolve({ filter: /\/cfmlLspClient$/ }, () => ({
+                path: path.join(__dirname, 'src/lsp/cfmlLspClient.web.ts'),
+            }));
             build.onResolve({ filter }, arg => ({
                 path: replace[arg.path],
             }));

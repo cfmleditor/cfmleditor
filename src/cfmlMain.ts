@@ -3,6 +3,7 @@ import {
 	FileSystemWatcher, IndentAction, LanguageConfiguration, languages, TextDocument, Uri, window, workspace,
 } from "vscode";
 import { GatedRegistration } from "./lsp/gatedRegistration";
+import { supportsNativeLsp } from "./lsp/cfmlLspClient";
 import { COMPONENT_FILE_GLOB } from "./entities/component";
 import { decreasingIndentingTags, goToMatchingTag, nonIndentingTags } from "./entities/tag";
 import { cacheComponentFromDocument, clearCachedComponent, removeApplicationVariables, cacheComponentFromUri, cacheApplicationFromDocument, hasComponent } from "./features/cachedEntities";
@@ -239,7 +240,7 @@ function syncOwnProviders(): void {
  * @returns true when the extension's own language features should stand down
  */
 function lspOwnsTheLanguage(): boolean {
-	return workspace.getConfiguration("cfml.lsp").get<boolean>("enabled", false);
+	return supportsNativeLsp && workspace.getConfiguration("cfml.lsp").get<boolean>("enabled", false);
 }
 
 /**
@@ -397,7 +398,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 			void syncOwnCaching();
 		}
 
-		if (evt.affectsConfiguration("cfml.format") || evt.affectsConfiguration("cfml.lsp")) {
+		if (supportsNativeLsp && (evt.affectsConfiguration("cfml.format") || evt.affectsConfiguration("cfml.lsp"))) {
 			// The server reads initializationOptions once, at initialize, so a
 			// changed formatting setting only reaches it through a restart.
 			void (async () => {
