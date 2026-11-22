@@ -1,5 +1,6 @@
 import * as assert from "node:assert/strict";
 import { commands, CompletionItemKind, CompletionList, ConfigurationTarget, DefinitionLink, DocumentSymbol, extensions, Selection, Uri, window, workspace } from "vscode";
+import { matchAutoCloseTag } from "../features/autoCloseTagMatch";
 import { findDefinition, findPosition } from "./testUtils";
 
 describe("CFML editor features", function () {
@@ -8,6 +9,14 @@ describe("CFML editor features", function () {
 		throw new Error("No workspace folder found");
 	}
 	const fixture = (name: string) => workspace.openTextDocument(Uri.joinPath(folder.uri, "cfml", name));
+
+	it("finds the final opening tag for auto-close", function () {
+		const attributes = Array.from({ length: 100 }, (_, index) => `data-field-${index}="field ${index}"`).join(" ");
+		assert.deepStrictEqual(matchAutoCloseTag(`<div>text<span ${attributes}>`)?.slice(1), ["span", ">"]);
+		assert.deepStrictEqual(matchAutoCloseTag("prefix <cf_custom item='a b' /")?.slice(1), ["cf_custom", "/"]);
+		assert.equal(matchAutoCloseTag("</div>"), null);
+		assert.equal(matchAutoCloseTag(`<div ${attributes} class=>`), null);
+	});
 
 	before(async function () {
 		this.timeout(10_000);
