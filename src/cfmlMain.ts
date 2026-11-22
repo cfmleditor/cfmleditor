@@ -22,6 +22,7 @@ import CFMLWorkspaceSymbolProvider from "./features/workspaceSymbolProvider";
 import CFDocsService from "./utils/cfdocs/cfDocsService";
 import { APPLICATION_CFM_GLOB, clearDocumentContextRangesCache, isApplicationFile, isCfcUri, shouldExcludeDocument } from "./utils/contextUtil";
 import { handleContentChanges } from "./features/autoclose";
+import { detectUntitledLanguage } from "./features/untitledLanguageDetection";
 // import { CFMLFlatPackageProvider } from "./views/components";
 
 export const LANGUAGE_ID: string = "cfml";
@@ -370,6 +371,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 	}));
 
 	context.subscriptions.push(workspace.onDidOpenTextDocument(async (document: TextDocument) => {
+		await detectUntitledLanguage(document);
 		await cacheOpenDocument(document, false);
 	}));
 
@@ -412,14 +414,20 @@ export async function activate(context: ExtensionContext): Promise<api> {
 		}
 	}));
 
-	workspace.onDidChangeTextDocument(async (event) => {
+	context.subscriptions.push(workspace.onDidChangeTextDocument(async (event) => {
 		clearDocumentContextRangesCache(event.document.uri);
+		if (event.contentChanges.length) {
+			void detectUntitledLanguage(event.document);
+		}
 		await handleContentChanges(event);
-	});
+	}));
 
 	context.subscriptions.push(workspace.onDidCloseTextDocument((document: TextDocument) => {
 		clearDocumentContextRangesCache(document.uri);
 	}));
+	for (const document of workspace.textDocuments) {
+		void detectUntitledLanguage(document);
+	}
 
 	// The global cache is CFDocs, not the workspace: `cfml.openCfDocs` and
 	// `cfml.openEngineDocs` stay registered whatever the server is doing, and it

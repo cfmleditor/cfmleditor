@@ -1,6 +1,7 @@
 import * as assert from "node:assert/strict";
-import { commands, CompletionItemKind, CompletionList, ConfigurationTarget, DefinitionLink, DocumentSymbol, extensions, Selection, Uri, window, workspace } from "vscode";
+import { commands, CompletionItemKind, CompletionList, ConfigurationTarget, DefinitionLink, Disposable, DocumentSymbol, extensions, Position, Selection, Uri, window, workspace } from "vscode";
 import { matchAutoCloseTag } from "../features/autoCloseTagMatch";
+import { detectUntitledLanguage } from "../features/untitledLanguageDetection";
 import { findDefinition, findPosition } from "./testUtils";
 
 describe("CFML editor features", function () {
@@ -23,6 +24,39 @@ describe("CFML editor features", function () {
 		const extension = extensions.getExtension("cfmleditor.cfmleditor");
 		assert.ok(extension);
 		await extension.activate();
+	});
+
+	for (const [content, language] of [
+		["<h1>Hello World</h1>\n<cf", "cfml"],
+		["// Hello World\ncomponent {", "cfs"],
+	]) {
+		it("detects " + language + " after editing an untitled document", async function () {
+			this.timeout(10_000);
+			const document = await workspace.openTextDocument({ language: "plaintext" });
+			const editor = await window.showTextDocument(document);
+			let subscription: Disposable | undefined;
+			const replacement = new Promise<string>((resolve) => {
+				subscription = workspace.onDidOpenTextDocument((opened) => {
+					if (opened.uri.toString() === document.uri.toString() && opened.languageId === language) {
+						resolve(opened.languageId);
+					}
+				});
+			});
+			try {
+				assert.ok(await editor.edit(edit => edit.insert(new Position(0, 0), content)));
+				assert.strictEqual(await replacement, language);
+			}
+			finally {
+				subscription?.dispose();
+				await commands.executeCommand("workbench.action.revertAndCloseActiveEditor");
+			}
+		});
+	}
+
+	it("preserves a language already set on an untitled document", async function () {
+		const document = await workspace.openTextDocument({ language: "html", content: "<cfoutput>hello</cfoutput>" });
+		await detectUntitledLanguage(document);
+		assert.strictEqual(document.languageId, "html");
 	});
 
 	const completions = [
