@@ -60,3 +60,30 @@ jobs:
           name: Tests (${{ matrix.os }})
           path: test-results.json
           reporter: mocha-json
+
+  web:
+    name: web (${{ matrix.browser }})
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Install browser
+        run: npx --no-install playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run web smoke test
+        run: npm run test:web -- --browser=${{ matrix.browser }}
