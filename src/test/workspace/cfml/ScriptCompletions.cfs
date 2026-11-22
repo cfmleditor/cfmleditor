@@ -1,0 +1,3 @@
+scriptWidget = new cfml.Widget();
+writeOutput(scriptW);
+scriptWidget.ren;

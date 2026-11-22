@@ -15,6 +15,7 @@ import DocBlockCompletions from "./features/docBlocker/docCompletionProvider";
 import CFMLDocumentLinkProvider from "./features/documentLinkProvider";
 import CFMLDocumentSymbolProvider from "./features/documentSymbolProvider";
 import CFMLHoverProvider from "./features/hoverProvider";
+import CFMLSelectionRangeProvider from "./features/selectionRangeProvider";
 import CFMLSignatureHelpProvider from "./features/signatureHelpProvider";
 import CFMLTypeDefinitionProvider from "./features/typeDefinitionProvider";
 import CFMLWorkspaceSymbolProvider from "./features/workspaceSymbolProvider";
@@ -304,6 +305,7 @@ export async function activate(context: ExtensionContext): Promise<api> {
 
 	languages.setLanguageConfiguration(LANGUAGE_ID, languageConfiguration);
 	languages.setLanguageConfiguration(LANGUAGE_CFS_ID, languageConfiguration);
+	context.subscriptions.push(languages.registerSelectionRangeProvider(DOCUMENT_SELECTOR, new CFMLSelectionRangeProvider()));
 
 	context.subscriptions.push(commands.registerCommand("cfml.refreshGlobalDefinitionCache", refreshGlobalDefinitionCache));
 	context.subscriptions.push(commands.registerCommand("cfml.refreshWorkspaceDefinitionCache", refreshWorkspaceDefinitionCache));
