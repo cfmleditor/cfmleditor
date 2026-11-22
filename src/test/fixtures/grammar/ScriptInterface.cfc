@@ -1,0 +1,4 @@
+interface
+{
+	void function hello();
+}

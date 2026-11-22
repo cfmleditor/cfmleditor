@@ -3,9 +3,45 @@
   "scopeName": "embedding.cfml",
   "patterns": [
     {
-      "begin": "(?i)(?=^\\s*(/\\*|//|import\\b|(component|abstract\\s*component|final\\s*component|interface)(\\s+|{)))",
+      "include": "#source-cfml-tag-comments"
+    },
+    {
+      "comment": "Highlight a leading script comment and resume checking for a declaration after it ends.",
+      "begin": "^[\\t ]*(?=/[/*])",
+      "end": "(?=)",
+      "applyEndPatternLast": true,
+      "patterns": [
+        {
+          "include": "#source-cfml-script-comments"
+        }
+      ]
+    },
+    {
+      "comment": "A leading import can precede a script component or interface.",
+      "begin": "(?ix) ^[\\t ]* (?= import[\\t ]+\n  (?: \"[^\"\\n]+\" | '[^'\\n]+' | [\\w$]+ (?:[\\t ]*\\.[\\t ]*[\\w$]+)* (?:[\\t ]*\\.[\\t ]*\\*)? )\n  (?:[\\t ]+as[\\t ]+[\\w$]+)? [\\t ]* (?: ; | $ | // | /\\* )\n)",
+      "end": "(?=\\n)",
+      "patterns": [
+        {
+          "include": "#source-cfml-script-keywords-top-level"
+        },
+        {
+          "name": "comment.line.double-slash.cfml",
+          "match": "(//).*",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.comment.cfml"
+            }
+          }
+        },
+        {
+          "include": "#source-cfml-script-comments"
+        }
+      ]
+    },
+    {
+      "begin": "(?ix) (?= ^[\\t ]* (?:(?:(?:abstract|final)[\\t ]+)?component|interface)\\b\n  (?: [\\t ]*(?:\\{|/[/*]|$) | [\\t ]+[\\w$-]+[\\t ]*= | [\\t ]+interface\\b[\\t ]*(?:\\{|$) )\n)",
       "contentName": "source.cfml.script",
-      "end": "(?=not)possible",
+      "end": "(?!)",
       "patterns": [
         {
           "include": "#source-cfml-script"
@@ -15,8 +51,14 @@
     {
       "begin": "(?=\\S)",
       "contentName": "text.html.cfml",
-      "end": "(?=not)possible",
+      "end": "(?!)",
       "patterns": [
+        {
+          "include": "#cfcomponent"
+        },
+        {
+          "include": "#cfinterface"
+        },
         {
           "include": "#cfml-tags"
         },
