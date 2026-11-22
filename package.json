@@ -27,6 +27,7 @@
 		"lucee"
 	],
 	"activationEvents": [
+		"onLanguage:plaintext",
 		"workspaceContains:**/*.cfm",
 		"workspaceContains:**/*.cfml",
 		"workspaceContains:**/*.cfc",
@@ -52,6 +53,10 @@
 			},
 			{
 				"id": "cfs",
+				"aliases": [
+					"CFScript",
+					"cfs"
+				],
 				"extensions": [
 					".cfs"
 				],
@@ -105,6 +110,12 @@
 			"type": "object",
 			"title": "CFML Configuration",
 			"properties": {
+				"cfml.untitledLanguageDetection.enable": {
+					"type": "boolean",
+					"description": "Detect CFML and CFScript in untitled plain-text editors.",
+					"default": true,
+					"scope": "window"
+				},
 				"cfml.globalDefinitions.source": {
 					"type": "string",
 					"description": "The source of the global definitions.",
