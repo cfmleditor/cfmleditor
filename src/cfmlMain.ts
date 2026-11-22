@@ -16,6 +16,7 @@ import DocBlockCompletions from "./features/docBlocker/docCompletionProvider";
 import CFMLDocumentLinkProvider from "./features/documentLinkProvider";
 import CFMLDocumentSymbolProvider from "./features/documentSymbolProvider";
 import CFMLHoverProvider from "./features/hoverProvider";
+import ParameterInlayHintsProvider from "./features/parameterInlayHintsProvider";
 import CFMLSelectionRangeProvider from "./features/selectionRangeProvider";
 import CFMLSignatureHelpProvider from "./features/signatureHelpProvider";
 import CFMLTypeDefinitionProvider from "./features/typeDefinitionProvider";
@@ -38,7 +39,7 @@ export const UNWANTED_EXTENSIONS: string[] = [
 	"trst.cfml-comment-tags",
 ];
 
-const DOCUMENT_SELECTOR: DocumentSelector = [
+const DOCUMENT_SELECTOR = [
 	{
 		language: LANGUAGE_ID,
 		scheme: "file",
@@ -51,7 +52,7 @@ const DOCUMENT_SELECTOR: DocumentSelector = [
 		language: LANGUAGE_ID,
 		scheme: "untitled",
 	},
-];
+] satisfies DocumentSelector;
 
 export let extensionContext: ExtensionContext;
 let bulkCaching: boolean = false;
@@ -95,6 +96,7 @@ function registerOwnProviders(): Disposable[] {
 		languages.registerHoverProvider(DOCUMENT_SELECTOR, new CFMLHoverProvider()),
 		registerOutlineProvider(),
 		languages.registerSignatureHelpProvider(DOCUMENT_SELECTOR, new CFMLSignatureHelpProvider(), "(", ","),
+		languages.registerInlayHintsProvider([...DOCUMENT_SELECTOR, { language: LANGUAGE_CFS_ID, scheme: "untitled" }], new ParameterInlayHintsProvider()),
 		languages.registerDocumentLinkProvider(DOCUMENT_SELECTOR, new CFMLDocumentLinkProvider()),
 		languages.registerWorkspaceSymbolProvider(new CFMLWorkspaceSymbolProvider()),
 		languages.registerCompletionItemProvider(DOCUMENT_SELECTOR, new CFMLCompletionItemProvider(), "."),

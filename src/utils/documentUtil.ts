@@ -45,7 +45,7 @@ export async function getDocumentStateContext(document: TextDocument, fast: bool
 
 	const docIsCfcFile: boolean = isCfcFile(document);
 	const docIsCfmFile: boolean = isCfmFile(document);
-	const docIsCfsFile: boolean = isCfsFile(document);
+	const docIsCfsFile: boolean = isCfsFile(document) || document.languageId === "cfs";
 	const thisComponent: Component | undefined = getComponent(document.uri);
 
 	// If we've already cached the component we already know if it is a script component
@@ -82,13 +82,24 @@ export async function getDocumentStateContext(document: TextDocument, fast: bool
  * @returns DocumentPositionStateContext
  */
 export async function getDocumentPositionStateContext(document: TextDocument, position: Position, fast: boolean = false, replaceComments: boolean = false, _token: CancellationToken | undefined, exclDocumentRanges: boolean = false): Promise<DocumentPositionStateContext> {
-	const cfmlDefinitionSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.definition", document.uri);
-	const lookbehindMaxLength: number = cfmlDefinitionSettings.get<number>("lookbehind.maxLength", -1);
 	const documentStateContext: DocumentStateContext = await getDocumentStateContext(document, fast, replaceComments, _token, exclDocumentRanges);
-	const docIsScript: boolean = documentStateContext.docIsScript;
-	const positionInComment: boolean = isInRanges(documentStateContext.commentRanges, position, false, _token);
 	const cfscriptRanges: Range[] = getCfScriptRanges(document, undefined, _token, documentStateContext.commentRanges, false, position, true);
-	const positionIsScript: boolean = docIsScript || isInRanges(cfscriptRanges, position, false, _token);
+	const positionIsScript: boolean = documentStateContext.docIsScript || isInRanges(cfscriptRanges, position, false, _token);
+	return getPositionStateContext(documentStateContext, position, positionIsScript, _token);
+}
+
+/**
+ * Adds cursor information to an existing document context.
+ * @param state The parsed document context.
+ * @param position The position to inspect.
+ * @param positionIsScript Whether this position is inside CFScript.
+ * @param token The cancellation token.
+ * @returns Context for the document at this position.
+ */
+export function getPositionStateContext(state: DocumentStateContext, position: Position, positionIsScript: boolean, token: CancellationToken | undefined): DocumentPositionStateContext {
+	const { document } = state;
+	const lookbehindMaxLength = workspace.getConfiguration("cfml.definition", document.uri).get<number>("lookbehind.maxLength", -1);
+	const positionInComment = isInRanges(state.commentRanges, position, false, token);
 
 	let wordRange: Range | undefined = document.getWordRangeAtPosition(position);
 	const currentWord: string = wordRange ? document.getText(wordRange) : "";
@@ -97,20 +108,17 @@ export async function getDocumentPositionStateContext(document: TextDocument, po
 	}
 	const wordRangeStartOffset = document.offsetAt(wordRange.start);
 	const documentSliceStart: number = lookbehindMaxLength > -1 ? Math.max(0, wordRangeStartOffset - lookbehindMaxLength) : 0;
-	const docPrefix: string = documentStateContext.sanitizedDocumentText.slice(documentSliceStart, wordRangeStartOffset);
+	const docPrefix: string = state.sanitizedDocumentText.slice(documentSliceStart, wordRangeStartOffset);
 
-	const documentPositionStateContext: DocumentPositionStateContext = Object.assign(documentStateContext,
-		{
-			position,
-			positionIsScript,
-			positionInComment,
-			docPrefix,
-			wordRange,
-			currentWord,
-			isContinuingExpression: isContinuingExpression(docPrefix, _token),
-			isMemberExpression: isMemberExpression(docPrefix),
-		}
-	);
-
-	return documentPositionStateContext;
+	return {
+		...state,
+		position,
+		positionIsScript,
+		positionInComment,
+		docPrefix,
+		wordRange,
+		currentWord,
+		isContinuingExpression: isContinuingExpression(docPrefix, token),
+		isMemberExpression: isMemberExpression(docPrefix),
+	};
 }
