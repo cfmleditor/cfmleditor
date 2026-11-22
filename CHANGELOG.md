@@ -4,7 +4,7 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
-- Platform builds now ship clif 0.7.0 (was 0.5.2).
+- Platform builds now ship clif 0.7.2. This release respects disabled tag self-closing, fixes Go to Definition on static component receivers, and resolves private methods called through `this` within their component.
 
 ## [0.7.8] - 2026-10-23
 
