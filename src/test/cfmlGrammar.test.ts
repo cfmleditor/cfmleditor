@@ -80,6 +80,15 @@ const fixtures: { file: string; checks: ScopeCheck[] }[] = [
 		],
 	},
 	{
+		file: "CommentedComponentAttribute.cfc",
+		checks: [
+			{ lineNumber: 1, text: "component", scope: "storage.type.class.cfml" },
+			{ lineNumber: 1, text: "parent class", scope: "comment.block.cfml" },
+			{ lineNumber: 2, text: "hello", scope: "entity.name.function.cfml" },
+			{ lineNumber: 3, text: "return", scope: "keyword.control.flow.cfml" },
+		],
+	},
+	{
 		file: "ScriptComponent.cfc",
 		checks: [
 			{ lineNumber: 2, text: "@hint", scope: "keyword.other.documentation.cfml" },
