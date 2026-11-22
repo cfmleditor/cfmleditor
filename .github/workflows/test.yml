@@ -86,4 +86,5 @@ jobs:
         run: npx --no-install playwright install --with-deps ${{ matrix.browser }}
 
       - name: Run web smoke test
+        timeout-minutes: 4
         run: npm run test:web -- --browser=${{ matrix.browser }}

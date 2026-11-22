@@ -833,7 +833,7 @@
 		"pretest": "npm run build-tests && npm run build ",
 		"test": "vscode-test",
 		"pretest:web": "npm run build-tests && npm run build",
-		"test:web": "vscode-test-web --quality=stable --extensionDevelopmentPath=. --extensionTestsPath=out/test/web/suite.js",
+		"test:web": "vscode-test-web --headless --quality=stable --extensionDevelopmentPath=. --extensionTestsPath=out/test/web/suite.js",
 		"vscode:prepublish": "npm run package",
 		"lint": "eslint src",
 		"lint:fix": "eslint src --fix",
