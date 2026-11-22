@@ -1,6 +1,7 @@
 "use strict";
 import { TextDocumentChangeEvent, TextDocumentChangeReason, workspace, window, Range, Position, Selection, TextDocumentContentChangeEvent, TextEditor, WorkspaceConfiguration, TextEditorEdit } from "vscode";
 import { nonClosingTags } from "../entities/tag";
+import { matchAutoCloseTag } from "./autoCloseTagMatch";
 
 /**
  * @param event
@@ -120,7 +121,7 @@ async function closeTag(contentChange: TextDocumentContentChangeEvent, editor: T
 	if (isRightAngleBracket || isForwardSlash) {
 		const textLine = editor.document.lineAt(selection.start);
 		const text = textLine.text.substring(0, selection.start.character + 1);
-		const result = /<([_a-zA-Z][a-zA-Z0-9:\-_.]*)(?:\s+[^<>]*?[^\s/<>=]+?)*?\s?(\/|>)$/.exec(text);
+		const result = matchAutoCloseTag(text);
 		if (result !== null && ((occurrenceCount(result[0], "'") % 2 === 0)
 			&& (occurrenceCount(result[0], "\"") % 2 === 0) && (occurrenceCount(result[0], "`") % 2 === 0))) {
 			if (result[2] === ">") {

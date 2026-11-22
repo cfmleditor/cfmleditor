@@ -266,7 +266,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 		}
 
 		// Assigned document variables
-		let allVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext, _token);
+		let allVariableAssignments: Variable[] = await collectDocumentVariableAssignments(documentPositionStateContext, _token, isContinuingExpression);
 
 		if (_token && _token.isCancellationRequested) {
 			return undefined;

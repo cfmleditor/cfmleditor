@@ -1,5 +1,6 @@
 import * as assert from "node:assert/strict";
 import { commands, CompletionItemKind, CompletionList, ConfigurationTarget, DefinitionLink, Disposable, DocumentSymbol, extensions, Position, Selection, Uri, window, workspace } from "vscode";
+import { matchAutoCloseTag } from "../features/autoCloseTagMatch";
 import { detectUntitledLanguage } from "../features/untitledLanguageDetection";
 import { findDefinition, findPosition } from "./testUtils";
 
@@ -9,6 +10,14 @@ describe("CFML editor features", function () {
 		throw new Error("No workspace folder found");
 	}
 	const fixture = (name: string) => workspace.openTextDocument(Uri.joinPath(folder.uri, "cfml", name));
+
+	it("finds the final opening tag for auto-close", function () {
+		const attributes = Array.from({ length: 100 }, (_, index) => `data-field-${index}="field ${index}"`).join(" ");
+		assert.deepStrictEqual(matchAutoCloseTag(`<div>text<span ${attributes}>`)?.slice(1), ["span", ">"]);
+		assert.deepStrictEqual(matchAutoCloseTag("prefix <cf_custom item='a b' /")?.slice(1), ["cf_custom", "/"]);
+		assert.equal(matchAutoCloseTag("</div>"), null);
+		assert.equal(matchAutoCloseTag(`<div ${attributes} class=>`), null);
+	});
 
 	before(async function () {
 		this.timeout(10_000);
@@ -67,6 +76,21 @@ describe("CFML editor features", function () {
 			assert.ok(result.items.some(item => (typeof item.label === "string" ? item.label : item.label.label) === expected));
 		});
 	}
+
+	it("uses the most recent component variable assignment before the cursor", async function () {
+		const document = await fixture("ReassignedMemberType.cfc");
+		for (const [cursor, expected] of [
+			["variables.later.ren|;", false],
+			["variables.mapper.re|;", false],
+			["variables.mapper.ren|;", true],
+			["variables.mapper.rend|;", false],
+		] as const) {
+			const result = await commands.executeCommand<CompletionList>("vscode.executeCompletionItemProvider", document.uri, findPosition(document, cursor));
+			const hasRender = result.items.some(item => item.kind === CompletionItemKind.Function
+				&& (typeof item.label === "string" ? item.label : item.label.label) === "render");
+			assert.strictEqual(hasRender, expected, cursor);
+		}
+	});
 
 	it("expands a word to its interpolation, tag contents, and full tag", async function () {
 		const document = await fixture("SelectionRanges.cfm");
