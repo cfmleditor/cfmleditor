@@ -875,15 +875,11 @@ export async function getFunctionFromPrefix(documentPositionStateContext: Docume
 				}
 			}
 			else if (documentPositionStateContext.isCfcFile && !varScope && (equalsIgnoreCase(varName, Scope.Variables) || equalsIgnoreCase(varName, Scope.This))) {
-				// TODO: Disallow implicit functions if using variables scope
-				let disallowedAccess: Access | undefined;
-				if (equalsIgnoreCase(varName, Scope.This)) {
-					disallowedAccess = Access.Private;
-				}
-				const disallowImplicit: boolean = equalsIgnoreCase(varName, Scope.Variables);
-
-				if (documentPositionStateContext.component) {
-					foundFunction = getFunctionFromComponent(documentPositionStateContext.component, functionKey, documentPositionStateContext.document.uri, disallowedAccess, disallowImplicit);
+				const component = documentPositionStateContext.component;
+				if (component) {
+					const isThis = equalsIgnoreCase(varName, Scope.This);
+					const ownFunction = isThis ? component.functions.get(functionKey) : undefined;
+					foundFunction = ownFunction ?? getFunctionFromComponent(component, functionKey, documentPositionStateContext.document.uri, isThis ? Access.Private : undefined, !isThis);
 				}
 			}
 			else if (documentPositionStateContext.isCfmFile && !varScope && equalsIgnoreCase(varName, Scope.Variables)) {

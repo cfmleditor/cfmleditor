@@ -40,6 +40,9 @@ describe("LSP initializationOptions", function () {
 	});
 
 	it("sends an explicitly set value", async function () {
+		// Updating and restoring settings goes through the VS Code workbench.
+		this.timeout(10_000);
+
 		const config = workspace.getConfiguration("cfml.format");
 		await config.update("braceStyle", "next-line", ConfigurationTarget.Global);
 

@@ -91,7 +91,7 @@ const ownProviders = new GatedRegistration(registerOwnProviders);
 function registerOwnProviders(): Disposable[] {
 	return [
 		languages.registerHoverProvider(DOCUMENT_SELECTOR, new CFMLHoverProvider()),
-		languages.registerDocumentSymbolProvider(DOCUMENT_SELECTOR, new CFMLDocumentSymbolProvider()),
+		registerOutlineProvider(),
 		languages.registerSignatureHelpProvider(DOCUMENT_SELECTOR, new CFMLSignatureHelpProvider(), "(", ","),
 		languages.registerDocumentLinkProvider(DOCUMENT_SELECTOR, new CFMLDocumentLinkProvider()),
 		languages.registerWorkspaceSymbolProvider(new CFMLWorkspaceSymbolProvider()),
@@ -101,6 +101,24 @@ function registerOwnProviders(): Disposable[] {
 		languages.registerTypeDefinitionProvider(DOCUMENT_SELECTOR, new CFMLTypeDefinitionProvider()),
 		languages.registerColorProvider(DOCUMENT_SELECTOR, new CFMLDocumentColorProvider()),
 	];
+}
+
+/**
+ * Registers the Outline provider and invalidates cached symbols when its setting changes.
+ * @returns A disposable for the current registration and its configuration listener.
+ */
+function registerOutlineProvider(): Disposable {
+	const provider = new CFMLDocumentSymbolProvider();
+	let registration = languages.registerDocumentSymbolProvider(DOCUMENT_SELECTOR, provider);
+	const listener = workspace.onDidChangeConfiguration((event) => {
+		if (event.affectsConfiguration("cfml.outline.showImplicitFunctions")) {
+			registration.dispose();
+			registration = languages.registerDocumentSymbolProvider(DOCUMENT_SELECTOR, provider);
+		}
+	});
+	return Disposable.from(listener, new Disposable(() => {
+		registration.dispose();
+	}));
 }
 
 /**

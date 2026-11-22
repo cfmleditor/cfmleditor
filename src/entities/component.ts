@@ -3,7 +3,7 @@ import { getComponent, hasComponent, cachedComponentPathToUri } from "../feature
 import { MySet } from "../utils/collections";
 import { isCfcFile } from "../utils/contextUtil";
 import { DocumentPositionStateContext, DocumentStateContext } from "../utils/documentUtil";
-import { fileExists, findUpWorkspaceFile, resolveBaseName, resolveCustomMappingPaths, resolveRelativePath, resolveRootPath } from "../utils/fileUtil";
+import { fileExists, findUpWorkspaceFile, resolveCustomMappingPaths, resolveRelativePath, resolveRootPath, uriBaseName } from "../utils/fileUtil";
 import { Attribute, Attributes, parseAttributes } from "./attribute";
 import { DataType } from "./dataType";
 import { DocBlockKeyValue, parseDocBlock } from "./docblock";
@@ -242,7 +242,7 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 	const componentAttributes: ComponentAttributes = {};
 	const component: Component = {
 		uri: document.uri,
-		name: resolveBaseName(document.fileName, COMPONENT_EXT),
+		name: uriBaseName(document.uri, COMPONENT_EXT),
 		isScript: componentIsScript,
 		isInterface: componentType === "interface",
 		declarationRange: new Range(document.positionAt(declarationStartOffset), document.positionAt(declarationStartOffset + componentType.length)),

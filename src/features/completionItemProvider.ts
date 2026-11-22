@@ -890,6 +890,7 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 	if (component) {
 		const addedFunctions: MySet<string> = new MySet();
 		const privateAccessPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.Variables], true).test(state.docPrefix);
+		const thisAccessPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.This], false).test(state.docPrefix);
 		const otherAccessPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.Variables, Scope.This], true).test(state.docPrefix);
 		const getterSetterPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.This], true).test(state.docPrefix);
 		let currComponent: Component | undefined = component;
@@ -900,7 +901,7 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 			currComponent.functions.filter((func: UserFunction, funcKey: string) => {
 				let hasValidScopes: boolean;
 				if (func.access === Access.Private) {
-					hasValidScopes = privateAccessPrefixMatched;
+					hasValidScopes = thisAccessPrefixMatched ? currComponent === component : privateAccessPrefixMatched;
 				}
 				else if (func.isImplicit) {
 					hasValidScopes = getterSetterPrefixMatched;
