@@ -62,6 +62,13 @@ const fixtures: { file: string; checks: ScopeCheck[] }[] = [
 		],
 	},
 	{
+		file: "unfinished-import-before-markup.cfm",
+		checks: [
+			{ lineNumber: 2, text: "cfoutput", scope: "entity.name.tag.cfml" },
+			{ lineNumber: 2, text: "message", scope: "meta.embedded.line.cfml" },
+		],
+	},
+	{
 		file: "script-block.cfm",
 		checks: [
 			{ lineNumber: 1, text: "cfscript", scope: "entity.name.tag.cfml" },
@@ -86,6 +93,56 @@ const fixtures: { file: string; checks: ScopeCheck[] }[] = [
 			{ lineNumber: 1, text: "parent class", scope: "comment.block.cfml" },
 			{ lineNumber: 2, text: "hello", scope: "entity.name.function.cfml" },
 			{ lineNumber: 3, text: "return", scope: "keyword.control.flow.cfml" },
+		],
+	},
+	{
+		file: "WrappedComponentAttribute.cfc",
+		checks: [
+			{ lineNumber: 2, text: "=", scope: "keyword.operator.assignment.cfml" },
+			{ lineNumber: 2, text: "app.Base", scope: "string.quoted.double.cfml" },
+			{ lineNumber: 3, text: "hello", scope: "entity.name.function.cfml" },
+		],
+	},
+	{
+		file: "MultilineCommentedAttribute.cfc",
+		checks: [
+			{ lineNumber: 1, text: "component", scope: "storage.type.class.cfml" },
+			{ lineNumber: 2, text: "class", scope: "comment.block.cfml" },
+			{ lineNumber: 3, text: "hello", scope: "entity.name.function.cfml" },
+		],
+	},
+	{
+		file: "LineCommentedAttribute.cfc",
+		checks: [
+			{ lineNumber: 1, text: "Parent class", scope: "comment.line.double-slash.cfml" },
+			{ lineNumber: 3, text: "hello", scope: "entity.name.function.cfml" },
+		],
+	},
+	{
+		file: "ComponentAfterPreambleComment.cfc",
+		checks: [
+			{ lineNumber: 1, text: "License", scope: "comment.block.cfml" },
+			{ lineNumber: 1, text: "component", scope: "storage.type.class.cfml" },
+			{ lineNumber: 2, text: "hello", scope: "entity.name.function.cfml" },
+		],
+	},
+	{
+		file: "InterfaceAfterDocComment.cfc",
+		checks: [
+			{ lineNumber: 2, text: "Interface docs", scope: "comment.block.documentation.cfml" },
+			{ lineNumber: 3, text: "interface", scope: "storage.type.interface.cfml" },
+			{ lineNumber: 4, text: "hello", scope: "entity.name.function.cfml" },
+		],
+	},
+	{
+		file: "ScriptWithWrappedImports.cfc",
+		checks: [
+			{ lineNumber: 1, text: "import", scope: "keyword.control.import.cfml" },
+			{ lineNumber: 1, text: "model", scope: "comment.block.cfml" },
+			{ lineNumber: 1, text: "app.Model", scope: "variable.other.readwrite.alias.cfml" },
+			{ lineNumber: 3, text: "app.Other", scope: "string.quoted.double.cfml" },
+			{ lineNumber: 5, text: "component", scope: "storage.type.class.cfml" },
+			{ lineNumber: 6, text: "hello", scope: "entity.name.function.cfml" },
 		],
 	},
 	{
