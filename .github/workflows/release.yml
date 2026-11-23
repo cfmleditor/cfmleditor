@@ -9,7 +9,7 @@ on:
         description: 'Publish to the VS Marketplace'
         type: boolean
         required: true
-        default: true
+        default: false
       publishOVSX:
         description: 'Publish to OpenVSX (paused: off unless ticked)'
         type: boolean
@@ -19,7 +19,10 @@ on:
         description: 'Publish to GitHub Releases'
         type: boolean
         required: true
-        default: true
+        default: false
+
+permissions:
+  contents: read
 
 jobs:
   meta:
@@ -85,7 +88,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
 
       - name: Install dependencies
-        run: npm i
+        run: npm ci
 
       - name: Bundle the language server
         if: matrix.target != ''
@@ -108,16 +111,50 @@ jobs:
           path: ./${{ steps.setup.outputs.packageName }}
           if-no-files-found: error
 
+  verify:
+    name: Verify release packages
+    runs-on: ubuntu-latest
+    needs: [meta, package]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+          pattern: '*.vsix'
+          merge-multiple: true
+      - name: Check all seven packages and record checksums
+        working-directory: packages
+        env:
+          VERSION: ${{ needs.meta.outputs.version }}
+        run: |
+          packages=("cfmleditor-$VERSION.vsix" "cfmleditor-$VERSION-"{win32-x64,win32-arm64,linux-x64,linux-arm64,darwin-x64,darwin-arm64}.vsix)
+          actual=(*.vsix)
+          test "${#actual[@]}" -eq "${#packages[@]}"
+          for package in "${packages[@]}"; do
+            unzip -tq "$package"
+          done
+          sha256sum "${packages[@]}" > SHA256SUMS.txt
+          cat SHA256SUMS.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SHA256SUMS
+          path: packages/SHA256SUMS.txt
+          if-no-files-found: error
+
   publishMS:
     name: Publish to VS marketplace
     runs-on: ubuntu-latest
-    needs: [meta, package]
+    needs: [meta, verify]
     # Pre-releases are packaged and attached to the GitHub release, but not sent
     # to the marketplaces: a pre-release published to the stable channel is not
     # something you can take back. Publishing those needs `--pre-release` and a
     # version scheme to match, which is a decision, not a default.
-    if: needs.meta.outputs.marketplaces == 'true' || github.event.inputs.publishMS == 'true'
+    if: needs.meta.outputs.marketplaces == 'true' || inputs.publishMS
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+      - run: npm ci --ignore-scripts
       - uses: actions/download-artifact@v4
         with:
           path: packages
@@ -129,31 +166,46 @@ jobs:
         # those users on the previous version. `--skip-duplicate` makes a re-run
         # after a half-finished release pick up where it stopped rather than
         # failing on the packages that already went up.
-        run: npx vsce publish --packagePath packages/*.vsix --skip-duplicate -p ${{ secrets.VSCE_PAT }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          : "${VSCE_PAT:?Set the VSCE_PAT repository secret}"
+          npx --no-install vsce publish --packagePath packages/*.vsix --skip-duplicate
 
   publishOVSX:
     name: Publish to OpenVSX
     runs-on: ubuntu-latest
-    needs: [meta, package]
+    needs: verify
     # Open VSX is paused. A published release goes to the VS Marketplace only;
     # this still runs when a manual dispatch asks for it, so turning it back on
     # is ticking a box rather than restoring a job.
-    if: github.event.inputs.publishOVSX == 'true'
+    if: inputs.publishOVSX
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+      - run: npm ci --ignore-scripts
       - uses: actions/download-artifact@v4
         with:
           path: packages
           pattern: '*.vsix'
           merge-multiple: true
       - name: Publish to OpenVSX
-        run: npx ovsx publish --packagePath packages/*.vsix --skip-duplicate -p ${{ secrets.OVSX_PAT }}
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          : "${OVSX_PAT:?Set the OVSX_PAT repository secret}"
+          npx --no-install ovsx publish --packagePath packages/*.vsix --skip-duplicate
 
   publishGH:
     name: Publish to GitHub releases
     runs-on: ubuntu-latest
-    needs: [meta, package]
+    needs: [meta, verify]
+    permissions:
+      contents: write
     # Every release gets the packages attached, pre-release or not.
-    if: github.event_name == 'release' || github.event.inputs.publishGH == 'true'
+    if: github.event_name == 'release' || inputs.publishGH
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -161,23 +213,39 @@ jobs:
           pattern: '*.vsix'
           merge-multiple: true
 
-      # Only a manual dispatch has to make the release. A release event already
-      # has one — the one that started this — and the assets go on to that.
-      - name: Create Release
-        if: github.event_name == 'workflow_dispatch'
-        id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v4
         with:
-          tag_name: ${{ needs.meta.outputs.tag }}
-          release_name: Release ${{ needs.meta.outputs.version }}
-          draft: false
-          prerelease: false
+          name: SHA256SUMS
+          path: packages
 
       - name: Upload assets to a Release
-        uses: AButler/upload-release-assets@v3.0
-        with:
-          files: 'packages/*.vsix'
-          release-tag: ${{ github.event_name == 'release' && github.event.release.tag_name || needs.meta.outputs.tag }}
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || needs.meta.outputs.tag }}
+          VERSION: ${{ needs.meta.outputs.version }}
+        run: |
+          cd packages
+          sha256sum --check SHA256SUMS.txt
+          if assets=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name'); then
+            existing=$(mktemp -d)
+            missing=()
+            for file in *.vsix SHA256SUMS.txt; do
+              if grep -Fxq "$file" <<< "$assets"; then
+                gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "$file" --dir "$existing"
+                if ! cmp -s "$file" "$existing/$file"; then
+                  echo "::error::Release $TAG already has different bytes for $file"
+                  exit 1
+                fi
+              else
+                missing+=("$file")
+              fi
+            done
+            if (( ${#missing[@]} )); then
+              gh release upload "$TAG" "${missing[@]}" --repo "$GITHUB_REPOSITORY"
+            fi
+          elif [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            gh release create "$TAG" *.vsix SHA256SUMS.txt --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --title "Release $VERSION" --generate-notes
+          else
+            exit 1
+          fi
