@@ -1,9 +1,10 @@
 import { DataType } from "./dataType";
 import { Signature, constructSignatureLabelParamsPart, constructSignatureLabelParamsPrefix } from "./signature";
-import { UserFunction } from "./userFunction";
+import { Argument, UserFunction } from "./userFunction";
 import { DocumentStateContext } from "../utils/documentUtil";
 import { Range, TextDocument, Position, CancellationToken } from "vscode";
 import { getNextCharacterPosition } from "../utils/contextUtil";
+import { getParameterName, Parameter } from "./parameter";
 import { COMPONENT_EXT } from "./component";
 import { uriBaseName } from "../utils/fileUtil";
 
@@ -27,6 +28,48 @@ export function getFunctionDocumentation(func: Function, description = func.desc
 	return func.returnDescription
 		? [description, "**Returns** " + func.returnDescription].filter(Boolean).join("\n\n")
 		: description;
+}
+
+/**
+ * Uses the published call order when a single signature can be matched to its documentation.
+ * @param parameters The structured signature parameters.
+ * @param syntax The published invocation example, if available.
+ * @returns Parameters in the documented call order.
+ */
+function parametersInCallOrder(parameters: Parameter[], syntax: string | undefined): Parameter[] {
+	const args = syntax?.match(/^[\w$]+\s*\(([^()]*)\)$/)?.[1];
+	if (!args) {
+		return parameters;
+	}
+	const names = args.split(",").map(arg => arg.replaceAll(/[[\]]/g, "").trim().split(/\s+/).at(-1)?.toLowerCase());
+	const byName = new Map(parameters.map(param => [getParameterName(param).toLowerCase(), param]));
+	if (names.length !== parameters.length || new Set(names).size !== names.length) {
+		return parameters;
+	}
+	const ordered = names.map(name => name && byName.get(name));
+	return ordered.every((param): param is Parameter => !!param) ? ordered : parameters;
+}
+
+/**
+ * Renders function signatures as CFScript declaration previews.
+ * @param func The function to display.
+ * @param syntax The published invocation for a built-in function, when available.
+ * @returns The declaration previews.
+ */
+export function functionHoverSyntax(func: Function, syntax?: string): string {
+	const declaredReturnType = (func as UserFunction).returnTypeName;
+	const returnType = declaredReturnType ?? getReturnTypeString(func);
+	const signatures = func.signatures.length ? func.signatures : [{ parameters: [] }];
+	return signatures.map((signature) => {
+		const parameters = signatures.length === 1 ? parametersInCallOrder(signature.parameters, syntax) : signature.parameters;
+		const signatureArgs = parameters.map((param) => {
+			const uri = (param as Argument).dataTypeComponentUri;
+			const qualifiedType = param.type && /^[\w$]+(?:\.[\w$]+)+$/.test(param.type) ? param.type : undefined;
+			const type = qualifiedType ?? (uri ? uriBaseName(uri, COMPONENT_EXT) : param.dataType || param.type || DataType.Any);
+			return (param.required ? "required " : "") + type + " " + getParameterName(param);
+		}).join(", ");
+		return returnType + " function " + func.name + "(" + signatureArgs + ")";
+	}).join("\n");
 }
 
 export enum MemberType {

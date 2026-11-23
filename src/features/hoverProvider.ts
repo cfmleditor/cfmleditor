@@ -1,12 +1,12 @@
 import { CancellationToken, Hover, HoverProvider, MarkdownString, Position, Range, TextDocument, TextLine, Uri, workspace, WorkspaceConfiguration } from "vscode";
-import { LANGUAGE_ID } from "../cfmlMain";
+import { LANGUAGE_CFS_ID, LANGUAGE_ID } from "../cfmlMain";
 import { VALUE_PATTERN } from "../entities/attribute";
-import { Component, COMPONENT_EXT, objectNewInstanceInitPrefix } from "../entities/component";
+import { Component, objectNewInstanceInitPrefix } from "../entities/component";
 import { IPropertyData, IAtDirectiveData } from "../entities/css/cssLanguageTypes";
 import { cssDataManager, getEntryDescription as getCSSEntryDescription, cssWordRegex } from "../entities/css/languageFacts";
 import { cssPropertyPattern } from "../entities/css/property";
 import { DataType } from "../entities/dataType";
-import { constructSyntaxString, Function, getFunctionDocumentation, getFunctionSuffixPattern } from "../entities/function";
+import { Function, functionHoverSyntax, getFunctionDocumentation, getFunctionSuffixPattern } from "../entities/function";
 import { GlobalFunction, GlobalTag, globalTagSyntaxToScript } from "../entities/globals";
 import { ITagData as HTMLTagData } from "../entities/html/htmlLanguageTypes";
 import { getTag as getHTMLTag, isKnownTag as isKnownHTMLTag } from "../entities/html/languageFacts";
@@ -20,9 +20,8 @@ import { MyMap, MySet } from "../utils/collections";
 import { getCssRanges, isCfmFile } from "../utils/contextUtil";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { equalsIgnoreCase, textToMarkdownCompatibleString, textToMarkdownString } from "../utils/textUtil";
-import { isGlobalFunction, getGlobalFunction, getGlobalTag, isGlobalTag, cachedComponentPathToUri, getGlobalEntityDefinition } from "./cachedEntities";
+import { getGlobalFunction, getGlobalTag, isGlobalFunction, isGlobalTag, cachedComponentPathToUri, getGlobalEntityDefinition } from "./cachedEntities";
 import { getComponent } from "./cachedEntities";
-import { uriBaseName } from "../utils/fileUtil";
 
 const cfDocsLinkPrefix = "https://cfdocs.org/";
 const mdnLinkPrefix = "https://developer.mozilla.org/docs/Web/";
@@ -314,34 +313,16 @@ export default class CFMLHoverProvider implements HoverProvider {
 			});
 		});
 
-		let returnType: string | undefined;
-		if ("returnTypeUri" in func) {
-			const userFunction: UserFunction = func as UserFunction;
-			if (userFunction.returnTypeUri) {
-				returnType = uriBaseName(userFunction.returnTypeUri, COMPONENT_EXT);
-			}
-		}
-
-		if (!returnType && func.returntype) {
-			returnType = func.returntype;
-		}
-		else {
-			returnType = DataType.Any;
-		}
-
+		const globalFunc = "syntax" in func ? func as GlobalFunction : undefined;
 		const hoverItem: HoverProviderItem = {
 			name: func.name,
-			syntax: constructSyntaxString(func),
+			syntax: functionHoverSyntax(func, globalFunc?.syntax),
 			symbolType: "function",
 			description: getFunctionDocumentation(func),
 			params: paramArr,
-			returnType: returnType,
 		};
 
-		if (isGlobalFunction(func.name)) {
-			const globalFunc = func as GlobalFunction;
-			// TODO: Use constructed syntax string instead. Indicate overloads/multiple signatures
-			hoverItem.syntax = globalFunc.syntax + ": " + returnType;
+		if (globalFunc) {
 			hoverItem.genericDocLink = cfDocsLinkPrefix + globalFunc.name;
 
 			const globalEntity: CFDocsDefinitionInfo | undefined = getGlobalEntityDefinition(globalFunc.name);
@@ -502,18 +483,13 @@ export default class CFMLHoverProvider implements HoverProvider {
 		const mdnIconUri: Uri = CFMLEngine.getIconUri("mdn");
 
 		const hoverTexts: MarkdownString[] = [];
-		let syntax: string = definition.syntax;
+		const syntax = definition.syntax;
 
 		const symbolType: string = definition.symbolType;
 		let language: string = "plaintext";
 		// let paramKind = "";
 		if (symbolType === "function") {
-			if (!syntax.startsWith("function ")) {
-				syntax = "function " + syntax;
-			}
-
-			language = definition.language ? definition.language : "typescript"; // cfml not coloring properly
-			// paramKind = "Parameter";
+			language = LANGUAGE_CFS_ID;
 		}
 		else if (symbolType === "tag") {
 			language = definition.language ? definition.language : LANGUAGE_ID;
@@ -531,7 +507,10 @@ export default class CFMLHoverProvider implements HoverProvider {
 			return undefined;
 		}
 
-		hoverTexts.push(new MarkdownString().appendCodeblock(syntax, language));
+		const previews = symbolType === "function" ? syntax.split("\n") : [syntax];
+		for (const preview of previews) {
+			hoverTexts.push(new MarkdownString().appendCodeblock(preview, language));
+		}
 
 		if (definition.description) {
 			hoverTexts.push(textToMarkdownString(definition.description));
