@@ -4,7 +4,7 @@ import { Component, getApplicationUri, getWebroot } from "../entities/component"
 import { UserFunction } from "../entities/userFunction";
 import CFDocsService from "../utils/cfdocs/cfDocsService";
 import { isCfcFile } from "../utils/contextUtil";
-import { clearAllGlobalFunctions, clearAllGlobalTags, clearAllGlobalEntityDefinitions, clearAllCustomSnippets, cacheAllComponents, getComponent } from "./cachedEntities";
+import { clearAllGlobalFunctions, clearAllGlobalMemberFunctions, clearAllGlobalTags, clearAllGlobalEntityDefinitions, clearAllCustomSnippets, cacheAllComponents, getComponent } from "./cachedEntities";
 import SnippetService from "../utils/snippetService";
 import { DocumentPositionStateContext, getDocumentPositionStateContext } from "../utils/documentUtil";
 import { convertPathToPackageName } from "../utils/cfcPackages";
@@ -14,6 +14,7 @@ import { convertPathToPackageName } from "../utils/cfcPackages";
  */
 export async function refreshGlobalDefinitionCache(): Promise<void> {
 	clearAllGlobalFunctions();
+	clearAllGlobalMemberFunctions();
 	clearAllGlobalTags();
 	clearAllGlobalEntityDefinitions();
 	clearAllCustomSnippets();

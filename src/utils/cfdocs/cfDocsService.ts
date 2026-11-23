@@ -99,7 +99,9 @@ export default class CFDocsService {
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
 			jsonDoc.links,
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
-			jsonDoc.examples
+			jsonDoc.examples,
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+			jsonDoc.member_details
 		);
 	}
 
@@ -142,26 +144,12 @@ export default class CFDocsService {
 		const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
 		const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
 		if (definition.type === "function" && definition.isCompatible(userEngine)) {
-			cachedEntity.setGlobalFunction(definition.toGlobalFunction());
-			// TODO: Add member function also
-			cachedEntity.setGlobalEntityDefinition(definition);
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Sets the given definition as a global function in the cached entities
-	 * @param definition The definition object to cache
-	 * @returns
-	 */
-	public static setGlobalMemberFunction(definition: CFDocsDefinitionInfo): boolean {
-		const cfmlEngineSettings: WorkspaceConfiguration = workspace.getConfiguration("cfml.engine");
-		const userEngineName: CFMLEngineName = CFMLEngineName.valueOf(cfmlEngineSettings.get<string>("name", "coldfusion"));
-		const userEngine: CFMLEngine = new CFMLEngine(userEngineName, cfmlEngineSettings.get<string>("version", "2021.0.0"));
-		if (definition.type === "function" && definition.isCompatible(userEngine)) {
-			cachedEntity.setGlobalMemberFunction(definition.toGlobalFunction());
-			// TODO: Add member function also
+			const globalFunction = definition.toGlobalFunction();
+			cachedEntity.setGlobalFunction(globalFunction);
+			const memberFunction = definition.toGlobalMemberFunction(globalFunction);
+			if (memberFunction) {
+				cachedEntity.setGlobalMemberFunction(memberFunction);
+			}
 			cachedEntity.setGlobalEntityDefinition(definition);
 			return true;
 		}

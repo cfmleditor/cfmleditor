@@ -20,7 +20,9 @@ export interface GlobalFunctions {
 	[name: string]: GlobalFunction;
 }
 
-export interface GlobalMemberFunction extends GlobalEntity, Function { }
+export interface GlobalMemberFunction extends GlobalEntity, Function {
+	receiverType: DataType;
+}
 export interface GlobalMemberFunctions {
 	[name: string]: GlobalMemberFunction;
 }
