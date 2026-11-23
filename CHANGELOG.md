@@ -4,7 +4,12 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.9] - 2026-11-23
+
 - Platform builds now ship clif 0.7.3. Hover help uses CFScript highlighting for typed function signatures and displays types for documented tag attributes. This update also improves array element type inference and reduces parser and index allocations. It includes the tag formatting and component navigation fixes from clif 0.7.2.
+- Built-in member completions use the receiver's type when known. Component completion uses the latest preceding assignment.
+- Untitled editors detect CFML and CFScript. The built-in editor also adds parameter-name inlay hints and improves component navigation, Outline filtering, Expand Selection, and docblock parsing.
+- Fixed CFML syntax highlighting regressions in mixed tag and script code and improved auto-close performance on long tags.
 
 ## [0.7.8] - 2026-10-23
 
