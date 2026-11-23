@@ -4,7 +4,7 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
-- Platform builds now ship clif 0.7.2. This release respects disabled tag self-closing, fixes Go to Definition on static component receivers, and resolves private methods called through `this` within their component.
+- Platform builds now ship clif 0.7.3. Hover help uses CFScript highlighting for typed function signatures and displays types for documented tag attributes. This update also improves array element type inference and reduces parser and index allocations. It includes the tag formatting and component navigation fixes from clif 0.7.2.
 
 ## [0.7.8] - 2026-10-23
 
