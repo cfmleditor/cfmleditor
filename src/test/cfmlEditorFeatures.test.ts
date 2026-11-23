@@ -152,6 +152,17 @@ describe("CFML editor features", function () {
 		]);
 	});
 
+	it("displays tag attributes with types and false or zero defaults", async function () {
+		const { tagAttributeDetails } = await import("../entities/parameter");
+		const { DataType } = await import("../entities/dataType");
+		const details = tagAttributeDetails([
+			{ name: "expand", dataType: DataType.Boolean, required: false, description: "Expand the view.", default: false as unknown as string },
+			{ name: "top", dataType: DataType.Numeric, required: true, description: "", default: 0 as unknown as string },
+		]).value;
+		assert.match(details, /- \*\*expand\*\* `boolean` \(default false\) — Expand the view\./);
+		assert.match(details, /- \*\*top\*\* `numeric` \*\(required\)\* \(default 0\)/);
+	});
+
 	it("labels positional arguments in nested calls and skips names, declarations, strings, and comments", async function () {
 		const document = await fixture("ParameterHints.cfc");
 		const range = new Range(new Position(0, 0), document.positionAt(document.getText().length));

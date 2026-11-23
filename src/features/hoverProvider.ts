@@ -10,7 +10,7 @@ import { Function, functionHoverSyntax, getFunctionDocumentation, getFunctionSuf
 import { GlobalFunction, GlobalTag, globalTagSyntaxToScript } from "../entities/globals";
 import { ITagData as HTMLTagData } from "../entities/html/htmlLanguageTypes";
 import { getTag as getHTMLTag, isKnownTag as isKnownHTMLTag } from "../entities/html/languageFacts";
-import { constructParameterLabel, getParameterName, Parameter } from "../entities/parameter";
+import { constructParameterLabel, getParameterName, Parameter, tagAttributeDetails } from "../entities/parameter";
 import { Signature } from "../entities/signature";
 import { expressionCfmlTags, getCfScriptTagAttributePattern, getCfTagAttributePattern, getTagPrefixPattern } from "../entities/tag";
 import { getFunctionFromPrefix, UserFunction } from "../entities/userFunction";
@@ -550,7 +550,12 @@ export default class CFMLHoverProvider implements HoverProvider {
 
 		const paramList: Parameter[] | undefined = definition.params;
 		if (paramList && paramList.length > 0) {
-			hoverTexts.push(this.paramsMarkdownPreview(paramList));
+			if (symbolType === "tag") {
+				hoverTexts.push(tagAttributeDetails(paramList));
+			}
+			else {
+				hoverTexts.push(this.paramsMarkdownPreview(paramList));
+			}
 		}
 
 		return hoverTexts;
