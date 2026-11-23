@@ -115,14 +115,41 @@ describe("CFML editor features", function () {
 			return results.flatMap(result => result.contents).map(value => typeof value === "string" ? value : value.value).join("\n");
 		};
 		const boolean = await hoverText("this.|isDocumentedGizmoEnabled()");
-		assert.match(boolean, /isDocumentedGizmoEnabled\(\): boolean/);
+		assert.match(boolean, /```cfs\nboolean function isDocumentedGizmoEnabled\(\)/);
 		assert.match(boolean, /\*\*Returns\*\* True when enabled\./);
 		const text = await hoverText("this.|describeDocumentedLabel(\"label\")");
-		assert.match(text, /describeDocumentedLabel\([^)]*\): string/);
+		assert.match(text, /```cfs\nstring function describeDocumentedLabel\(string label\)/);
 		assert.match(text, /Preferred hint\./);
 		assert.match(text, /Legacy name-based argument hint\./);
 		assert.match(text, /\*\*Returns\*\* An example documented return\./);
 		assert.doesNotMatch(text, /Additional prose|Fallback parameter text/);
+		const component = await hoverText("this.|buildDocumentedGizmo(\"template.cfm\", 42)");
+		assert.match(component, /```cfs\ncfscript\.Gizmo function buildDocumentedGizmo\(required string template, numeric line\)/);
+	});
+
+	it("preserves documented call order and renders each overload", async function () {
+		const { functionHoverSyntax } = await import("../entities/function");
+		const { DataType } = await import("../entities/dataType");
+		const prefix = { name: "prefix", dataType: DataType.String, required: true, description: "" };
+		const dir = { ...prefix, name: "dir", required: false };
+		const extension = { ...dir, name: "extension" };
+		const parameters = [dir, prefix, extension];
+		const func = {
+			name: "getTempFile", returntype: DataType.String, description: "",
+			signatures: [{ parameters }],
+		};
+		assert.strictEqual(
+			functionHoverSyntax(func, "getTempFile( string prefix, [string dir], [string extension] )"),
+			"string function getTempFile(required string prefix, string dir, string extension)",
+		);
+		assert.deepStrictEqual(parameters.map(param => param.name), ["dir", "prefix", "extension"]);
+		assert.deepStrictEqual(functionHoverSyntax({
+			...func,
+			signatures: [{ parameters: [prefix] }, { parameters: [prefix, dir] }],
+		}).split("\n"), [
+			"string function getTempFile(required string prefix)",
+			"string function getTempFile(required string prefix, string dir)",
+		]);
 	});
 
 	it("labels positional arguments in nested calls and skips names, declarations, strings, and comments", async function () {

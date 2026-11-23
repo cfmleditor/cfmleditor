@@ -137,6 +137,7 @@ export interface UserFunction extends Function {
 	abstract: boolean;
 	final: boolean;
 	returnTypeUri?: Uri; // Only when returntype is Component
+	returnTypeName?: string;
 	returnTypeRange?: Range;
 	nameRange: Range;
 	bodyRange?: Range;
@@ -278,6 +279,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 		};
 
 		if (returnType) {
+			userFunction.returnTypeName = returnType;
 			const [dataType, returnTypeUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(returnType, document.uri, _token);
 			if (dataType) {
 				userFunction.returntype = dataType;
@@ -351,6 +353,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 					const [dataType, uri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(docElem.value, document.uri, _token);
 					if (dataType) {
 						userFunction.returntype = dataType;
+						userFunction.returnTypeName = docElem.value;
 						userFunction.returnTypeUri = uri;
 						userFunction.returnTypeRange = docElem.valueRange;
 					}
@@ -378,6 +381,7 @@ export async function parseScriptFunctions(documentStateContext: DocumentStateCo
 						if (!returnType && !parsedAttributes.has("returntype") && !userFunction.returnTypeRange) {
 							const typeOffset = document.offsetAt(returns.valueRange.start) + (typeMatch[1] ? 1 : 0);
 							userFunction.returntype = dataType;
+							userFunction.returnTypeName = typeName;
 							userFunction.returnTypeUri = uri;
 							userFunction.returnTypeRange = new Range(document.positionAt(typeOffset), document.positionAt(typeOffset + typeName.length));
 						}
@@ -772,6 +776,7 @@ async function assignFunctionAttributes(userFunction: UserFunction, functionAttr
 				const [returntype, returnTypeUri]: [DataType | undefined, Uri | undefined] = await DataType.getDataTypeAndUri(attrVal, userFunction.location.uri, _token);
 				if (returntype) {
 					userFunction.returntype = returntype;
+					userFunction.returnTypeName = attrVal;
 					if (returnTypeUri) {
 						userFunction.returnTypeUri = returnTypeUri;
 					}
