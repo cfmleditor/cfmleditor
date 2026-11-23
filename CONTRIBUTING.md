@@ -60,12 +60,15 @@ so it is most of a platform package's ~37 MB.
   `server/` holds that target's binary, and will happily ship whichever one was
   left there. Delete `server/` before building a universal package, or it goes
   to everyone. `npm run pack` handles both, which is why it is the easier path.
-- The release workflow does the same thing, one target per job, and publishes
-  every package to the Marketplace, OpenVSX and the GitHub release under one
-  version. Publishing a GitHub release runs it; a pre-release is packaged and
-  its assets attached, but nothing goes to the marketplaces, since a
-  pre-release sent to the stable channel cannot be taken back. **Run workflow**
-  does whichever parts its inputs ask for. The universal package is the
+- The release workflow builds and checks all seven packages before publishing.
+  Each destination uses the VSIX files from that workflow run. The run summary
+  shows their SHA-256 checksums, which are also attached to GitHub releases.
+  Publishing a stable GitHub release attaches the packages and sends them to the
+  VS Marketplace using the `VSCE_PAT` repository secret. A GitHub prerelease
+  attaches the packages to GitHub only. **Run workflow** defaults to packaging
+  and verification. Choose the destinations explicitly when publishing from a
+  manual run. Open VSX is available on manual runs using `OVSX_PAT`.
+  The universal package is the
   fallback the Marketplace serves to platforms with no package of their own —
   armhf, alpine, web — and it downloads a server on demand.
 
