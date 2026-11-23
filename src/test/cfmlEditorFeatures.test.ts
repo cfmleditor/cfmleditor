@@ -163,6 +163,49 @@ describe("CFML editor features", function () {
 		assert.match(details, /- \*\*top\*\* `numeric` \*\(required\)\* \(default 0\)/);
 	});
 
+	it("uses member names and receiver types from CFDocs and Lucee", async function () {
+		const { CFDocsDefinitionInfo } = await import("../utils/cfdocs/definitionInfo");
+		const { DataType } = await import("../entities/dataType");
+		const cfdocs = new CFDocsDefinitionInfo("arrayAppend", "function", "arrayAppend(array, value)", "someArray.append(value)", "", "boolean", [],
+			"Append a value.", "", [{ name: "array", type: "array", required: true }, { name: "value", type: "any", required: true }], {}, [], []);
+		const legacyMember = cfdocs.toGlobalMemberFunction(cfdocs.toGlobalFunction());
+		assert.strictEqual(legacyMember?.name, "append");
+		assert.strictEqual(legacyMember.receiverType, DataType.Array);
+		assert.strictEqual(legacyMember.syntax, "someArray.append(value)");
+		assert.deepStrictEqual(legacyMember.signatures[0].parameters.map(param => param.name), ["value"]);
+
+		const lucee = new CFDocsDefinitionInfo("dateAdd", "function", "dateAdd(part, amount, value)", "", "", "date", [],
+			"Add time.", "", [
+				{ name: "part", type: "string", required: true },
+				{ name: "amount", type: "number", required: true },
+				{ name: "value", type: "datetime", required: true },
+			], {}, [], [], { name: "add", type: "datetime", returns: "datetime" });
+		const luceeMember = lucee.toGlobalMemberFunction(lucee.toGlobalFunction());
+		assert.strictEqual(luceeMember?.name, "add");
+		assert.strictEqual(luceeMember.receiverType, DataType.Date);
+		assert.strictEqual(luceeMember.returntype, DataType.Date);
+		assert.strictEqual(luceeMember.syntax, "date.add(part, amount)");
+	});
+
+	it("keeps same-name members for different receiver types and deduplicates unknown receivers", async function () {
+		const { getGlobalMemberFunctions, setGlobalMemberFunction, clearAllGlobalMemberFunctions } = await import("../features/cachedEntities");
+		const { DataType } = await import("../entities/dataType");
+		const entry = { name: "append", syntax: "array.append(value)", description: "", signatures: [], returntype: DataType.Array, receiverType: DataType.Array };
+		clearAllGlobalMemberFunctions();
+		try {
+			setGlobalMemberFunction(entry);
+			setGlobalMemberFunction({ ...entry, syntax: "struct.append(value)", receiverType: DataType.Struct });
+			setGlobalMemberFunction({ ...entry, name: "listAppend", syntax: "string.listAppend(value)", receiverType: DataType.String });
+			assert.deepStrictEqual(getGlobalMemberFunctions(DataType.Array).map(member => member.syntax), ["array.append(value)"]);
+			assert.deepStrictEqual(getGlobalMemberFunctions(DataType.Struct).map(member => member.syntax), ["struct.append(value)"]);
+			assert.deepStrictEqual(getGlobalMemberFunctions(DataType.String).map(member => member.name), ["listAppend"]);
+			assert.deepStrictEqual(getGlobalMemberFunctions(DataType.Any).map(member => member.name), ["append", "listAppend"]);
+		}
+		finally {
+			clearAllGlobalMemberFunctions();
+		}
+	});
+
 	it("labels positional arguments in nested calls and skips names, declarations, strings, and comments", async function () {
 		const document = await fixture("ParameterHints.cfc");
 		const range = new Range(new Position(0, 0), document.positionAt(document.getText().length));
@@ -223,6 +266,34 @@ describe("CFML editor features", function () {
 			assert.ok(result.items.some(item => (typeof item.label === "string" ? item.label : item.label.label) === expected));
 		});
 	}
+
+	it("completes built-in members using the receiver type", async function () {
+		const document = await fixture("BuiltinMemberCompletions.cfc");
+		await fixture("Widget.cfc");
+		const complete = async (cursor: string) => {
+			const { items } = await commands.executeCommand<CompletionList>("vscode.executeCompletionItemProvider", document.uri, findPosition(document, cursor), ".");
+			return items.filter(item => item.kind === CompletionItemKind.Function).map(item => ({
+				name: typeof item.label === "string" ? item.label : item.label.label,
+				detail: item.detail,
+			}));
+		};
+
+		const strings = await complete("textValue.|;");
+		assert.ok(strings.some(item => item.name === "listAppend"));
+		assert.ok(!strings.some(item => item.name === "append"));
+		for (const [cursor, receiver] of [["arrayValue.|;", /array/i], ["structValue.|;", /struct/i]] as const) {
+			const items = await complete(cursor);
+			assert.match(items.find(item => item.name === "append")?.detail ?? "", receiver);
+			assert.ok(!items.some(item => item.name === "listAppend"));
+		}
+
+		const unknown = await complete("unknownValue.|;");
+		assert.equal(unknown.filter(item => item.name === "append").length, 1);
+		assert.ok(unknown.some(item => item.name === "listAppend"));
+		const widget = await complete("widget.|;");
+		assert.ok(widget.some(item => item.name === "render"));
+		assert.ok(!widget.some(item => item.name === "listAppend"));
+	});
 
 	it("uses the most recent component variable assignment before the cursor", async function () {
 		const document = await fixture("ReassignedMemberType.cfc");

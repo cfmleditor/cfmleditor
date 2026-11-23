@@ -1,5 +1,5 @@
 import { DataType } from "../../entities/dataType";
-import { GlobalFunction, GlobalTag } from "../../entities/globals";
+import { GlobalFunction, GlobalMemberFunction, GlobalTag } from "../../entities/globals";
 import { Parameter } from "../../entities/parameter";
 import { Signature } from "../../entities/signature";
 import { equalsIgnoreCase } from "../textUtil";
@@ -15,6 +15,12 @@ export interface Param {
 	description?: string;
 	default?: string;
 	values?: string[];
+}
+
+export interface MemberDetails {
+	name: string;
+	type: string;
+	returns?: string;
 }
 
 export interface EngineCompatibilityDetail {
@@ -36,6 +42,24 @@ export interface Example {
 	code: string;
 	result: string;
 	runnable?: boolean;
+}
+
+/**
+ * Normalizes the receiver type used by the documentation sources.
+ * @param type The documented type.
+ * @returns The corresponding receiver type.
+ */
+function memberReceiverType(type: string | undefined): DataType {
+	switch (type?.toLowerCase()) {
+		case "datetime":
+			return DataType.Date;
+		case "list":
+			return DataType.String;
+		case "number":
+			return DataType.Numeric;
+		default:
+			return getParamDataType(type?.toLowerCase() ?? "");
+	}
 }
 
 /**
@@ -131,6 +155,7 @@ export class CFDocsDefinitionInfo {
 	public type: string;
 	public syntax: string;
 	public member?: string;
+	public memberDetails?: MemberDetails;
 	public script?: string;
 	public returns?: string;
 	public related?: string[];
@@ -156,15 +181,17 @@ export class CFDocsDefinitionInfo {
 	 * @param engines
 	 * @param links
 	 * @param examples
+	 * @param memberDetails The structured Lucee member metadata.
 	 */
 	constructor(
 		name: string, type: string, syntax: string, member: string, script: string, returns: string, related: string[],
-		description: string, discouraged: string, params: Param[], engines: EngineInfo, links: string[], examples: Example[]
+		description: string, discouraged: string, params: Param[], engines: EngineInfo, links: string[], examples: Example[], memberDetails?: MemberDetails
 	) {
 		this.name = name;
 		this.type = type;
 		this.syntax = syntax;
 		this.member = member;
+		this.memberDetails = memberDetails;
 		this.script = script;
 		this.returns = returns;
 		this.related = related;
@@ -268,6 +295,37 @@ export class CFDocsDefinitionInfo {
 			description: (this.description ? decode(this.description) : ""),
 			returntype: getReturnDataType(this.returns ? this.returns.toLowerCase() : "any"),
 			signatures: signatures,
+		};
+	}
+
+	/**
+	 * Converts a documented member form to a typed completion entry.
+	 * @param globalFunction The converted global form.
+	 * @returns The member entry when the docs describe one.
+	 */
+	public toGlobalMemberFunction(globalFunction: GlobalFunction): GlobalMemberFunction | undefined {
+		const memberSyntax = typeof this.member === "string" ? this.member.trim() : "";
+		const example = /^([\w$]+)\s*\.\s*([a-z_$][\w$]*)\s*\(/i.exec(memberSyntax);
+		const name = this.memberDetails?.name || example?.[2];
+		if (!name) {
+			return undefined;
+		}
+		const exampleType = example?.[1].match(/(array|string|struct|query|xml|datetime|date|numeric|binary|boolean)\d*$/i)?.[1];
+		const exampleReceiver = example && this.params?.find(param => equalsIgnoreCase(param.name, example[1]));
+		const receiverType = memberReceiverType(this.memberDetails?.type ?? exampleType ?? exampleReceiver?.type ?? this.params?.[0]?.type);
+		const receiver = (exampleReceiver ?? this.params?.find(param => memberReceiverType(param.type) === receiverType) ?? this.params?.[0])?.name.toLowerCase();
+		const signatures = globalFunction.signatures.map(signature => ({
+			...signature,
+			parameters: signature.parameters.filter(parameter => parameter.name.split("=")[0].toLowerCase() !== receiver),
+		}));
+		const syntax = example ? memberSyntax : receiverType + "." + name + "(" + (signatures[0]?.parameters.map(param => param.name).join(", ") ?? "") + ")";
+		return {
+			...globalFunction,
+			name,
+			syntax,
+			signatures,
+			returntype: this.memberDetails?.returns ? memberReceiverType(this.memberDetails.returns) : globalFunction.returntype,
+			receiverType,
 		};
 	}
 

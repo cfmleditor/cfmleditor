@@ -13,6 +13,7 @@ import { resolveCustomMappingPaths, resolveRelativePath, resolveRootPath, uriBas
 import TrieSearch from "trie-search";
 import { Snippet, Snippets } from "../entities/snippet";
 import { setBulkCaching } from "../cfmlMain";
+import { DataType } from "../entities/dataType";
 
 let allGlobalEntityDefinitions = new MyMap<string, CFDocsDefinitionInfo>();
 
@@ -100,24 +101,25 @@ export function clearAllGlobalFunctions(): void {
  * @param functionDefinition The global function object to cache
  */
 export function setGlobalMemberFunction(functionDefinition: GlobalMemberFunction): void {
-	allGlobalMemberFunctions[functionDefinition.name.toLowerCase()] = functionDefinition;
+	const key = functionDefinition.receiverType + ":" + functionDefinition.name.toLowerCase();
+	allGlobalMemberFunctions[key] = functionDefinition;
 }
 
 /**
- * Retrieves the cached global member function identified by the given function name
- * @param functionName The name of the global function to be retrieved
- * @returns
+ * Returns documented member functions for a known receiver or all names for an unknown one.
+ * @param receiverType The inferred receiver type.
+ * @returns One function per member name.
  */
-export function getGlobalMemberFunction(functionName: string): GlobalMemberFunction {
-	return allGlobalMemberFunctions[functionName.toLowerCase()];
-}
-
-/**
- * Returns all of the cached global member functions
- * @returns
- */
-export function getAllGlobalMemberFunctions(): GlobalMemberFunctions {
-	return allGlobalMemberFunctions;
+export function getGlobalMemberFunctions(receiverType?: DataType): GlobalMemberFunction[] {
+	const specificType = receiverType !== undefined && receiverType !== DataType.Any;
+	const byName = new Map<string, GlobalMemberFunction>();
+	for (const member of Object.values(allGlobalMemberFunctions)) {
+		const name = member.name.toLowerCase();
+		if ((!specificType || member.receiverType === receiverType) && !byName.has(name)) {
+			byName.set(name, member);
+		}
+	}
+	return [...byName.values()];
 }
 
 /**
