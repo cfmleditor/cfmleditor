@@ -1,3 +1,4 @@
+import { MarkdownString } from "vscode";
 import { uriBaseName } from "../utils/fileUtil";
 import { COMPONENT_EXT } from "./component";
 import { DataType } from "./dataType";
@@ -54,4 +55,31 @@ export function constructParameterLabel(param: Parameter): string {
 	}
 
 	return paramLabel;
+}
+
+/**
+ * Formats typed attribute details for a tag hover.
+ * @param parameters The tag attributes to document.
+ * @returns The attribute details as Markdown.
+ */
+export function tagAttributeDetails(parameters: Parameter[]): MarkdownString {
+	const attributes = new MarkdownString("**Attributes**\n\n");
+	for (const param of parameters) {
+		const name = getParameterName(param);
+		const type = param.dataType || param.type || DataType.Any;
+		attributes.appendMarkdown("- **").appendText(name).appendMarkdown("** ");
+		attributes.appendMarkdown("`" + type + "`");
+		if (param.required) {
+			attributes.appendMarkdown(" *(required)*");
+		}
+		if (param.default !== undefined && param.default !== null && param.default !== "") {
+			attributes.appendMarkdown(" (default ").appendText(String(param.default)).appendMarkdown(")");
+		}
+		if (param.description) {
+			attributes.appendMarkdown(" — " + param.description.replaceAll("\n", "\n  "));
+		}
+		attributes.appendMarkdown("\n");
+	}
+
+	return attributes;
 }
