@@ -870,7 +870,6 @@
 	"dependencies": {
 		"buffer": "^6.0.3",
 		"html-entities": "^2.6.0",
-		"isomorphic-fetch": "^3.0.0",
 		"jszip": "^3.10.2",
 		"micromatch": "~4.0.8",
 		"path-browserify": "^1.0.1",
@@ -897,7 +896,6 @@
 		"@eslint/eslintrc": "^3.3.7",
 		"@eslint/js": "^10.0.1",
 		"@stylistic/eslint-plugin": "^5.10.0",
-		"@types/isomorphic-fetch": "^0.0.39",
 		"@types/micromatch": "^4.0.10",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "^26.6.5",

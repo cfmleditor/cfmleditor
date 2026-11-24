@@ -1,6 +1,5 @@
 /* eslint-disable jsdoc/require-param */
 /* eslint-disable jsdoc/check-tag-names */
-import fetch from "isomorphic-fetch";
 import { commands, Position, Range, TextDocument, TextLine, Uri, window, workspace, WorkspaceConfiguration, TextEditor, env, CancellationToken, TextEditorEdit, ProgressLocation } from "vscode";
 import { getFunctionSuffixPattern } from "../../entities/function";
 import { GlobalEntity } from "../../entities/globals";
