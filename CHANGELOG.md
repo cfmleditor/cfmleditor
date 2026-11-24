@@ -4,6 +4,7 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
+- Text that looks like an assignment inside a string literal (`"<cfset a = 1>"`, `"x = 1; y = 2;"`) is no longer collected as a variable by the built-in providers.
 - Fixed nested tag comments (`<!--- a <!--- b ---> c --->`) ending at the first `--->` in the built-in providers' accurate comment scan, so the rest of the comment was read as live code. The fast scan already handled them.
 - **Proxy handling for server downloads is more forgiving and less quiet.** A proxy written without a scheme, such as `proxy.corp:3128`, was read as a URL with the protocol `proxy.corp:` and silently ignored, so downloads went direct. It is now treated as an HTTP proxy. `https://` proxies are reached over TLS before the tunnel is requested. A proxy with an unsupported protocol (such as `socks5://`) now fails with a message saying so, rather than quietly going direct.
 - Fixed the proxy tunnel's socket staying open after a request failed, timed out or finished, which left one open socket per redirect.

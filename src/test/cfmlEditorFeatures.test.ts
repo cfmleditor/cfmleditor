@@ -418,6 +418,21 @@ describe("CFML editor features", function () {
 		assert.deepEqual(links ?? [], []);
 	});
 
+	// Text that merely looks like an assignment inside a string is not a variable
+	it("does not collect variables declared inside string literals", async function () {
+		const document = await fixture("StringVariables.cfm");
+		const definitionLine = async (name: string) => {
+			const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, `#|${name}#`).translate(0, 1));
+			return links?.length ? links[0].targetRange.start.line + 1 : undefined;
+		};
+		assert.equal(await definitionLine("real"), 2);
+		assert.equal(await definitionLine("afterStrings"), 8);
+		assert.equal(await definitionLine("realTag"), 10);
+		assert.equal(await definitionLine("inString"), undefined);
+		assert.equal(await definitionLine("inString2"), undefined);
+		assert.equal(await definitionLine("inMultiline"), undefined);
+	});
+
 	it("hides implicit accessors from Outline while keeping their definitions", async function () {
 		const document = await fixture("ComponentFeatures.cfc");
 		const outline = workspace.getConfiguration("cfml.outline", document.uri);
