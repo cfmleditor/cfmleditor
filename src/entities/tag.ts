@@ -13,8 +13,9 @@ const cfTagAttributePattern: RegExp = /<((cf[a-z_]+)\s+)([^<>]*)$/i;
 const cfScriptTagAttributePattern: RegExp = /\b((cf[a-z_]+)\s*\(\s*)((?:"[^"]*"|'[^']*'|[^)"'])*(?:"[^"]*|'[^']*)?)$/i;
 const tagPrefixPattern: RegExp = /<\s*(\/)?\s*$/;
 const cfScriptTagPatternIgnoreBody: RegExp = /\b((cf[a-z_]+)\s*\(\s*)((?:"[^"]*"|'[^']*'|[^)"'])*)\)/gi;
-const cfStartTagPattern: RegExp = /(<(cf[a-z_]+)\s*)([^>]*?)>/gi;
-const cfTagPattern: RegExp = /(<(cf[a-z_]+)\s*)([^>]*?)(?:>([\s\S]*?)<\/\2>|\/?>)/gi;
+// Attributes may hold a > inside a quoted value, which does not end the tag
+const cfStartTagPattern: RegExp = /(<(cf[a-z_]+)\s*)((?:"[^"]*"|'[^']*'|[^>"'])*?)>/gi;
+const cfTagPattern: RegExp = /(<(cf[a-z_]+)\s*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(?:>([\s\S]*?)<\/\2>|\/?>)/gi;
 const cfScriptTagPattern: RegExp = /\b((cf[a-z_]+)\s*\(\s*)((?:"[^"]*"|'[^']*'|[^)"'])*)\)(?:\s*{([^}]*?)})?/gi;
 
 const SINGLE_QUOTE = "'".charCodeAt(0);

@@ -1,6 +1,6 @@
 import * as assert from "assert";
 
-import { getCfScriptTagAttributePattern, getCfScriptTagPattern, getCfScriptTagPatternIgnoreBody } from "../entities/tag";
+import { getCfScriptTagAttributePattern, getCfScriptTagPattern, getCfScriptTagPatternIgnoreBody, getCfStartTagPattern, getCfTagPattern } from "../entities/tag";
 
 describe("CFScript tag patterns", function () {
 	describe("attribute pattern (unclosed tag before the cursor)", function () {
@@ -37,5 +37,27 @@ describe("CFScript tag patterns", function () {
 			const ignoreBody = new RegExp(getCfScriptTagPatternIgnoreBody().source, "i").exec(text);
 			assert.strictEqual(ignoreBody?.[3], "name=\"a)b\", datasource=\"d\"");
 		});
+	});
+});
+
+describe("CFML tag patterns", function () {
+	// A > inside a quoted value used to end the tag, so the attributes were cut
+	// short and the rest of the tag was read as body text.
+	it("keeps a > inside a quoted value in the attributes of a start tag", function () {
+		const match = new RegExp(getCfStartTagPattern().source, "i").exec("<cfif a gt \"b>c\" and d>x</cfif>");
+		assert.strictEqual(match?.[3], "a gt \"b>c\" and d");
+	});
+
+	it("keeps a > inside a quoted value for a tag with a body", function () {
+		const match = new RegExp(getCfTagPattern().source, "i").exec("<cfquery name='q' sql=\"a > b\">body</cfquery>");
+		assert.strictEqual(match?.[3], "name='q' sql=\"a > b\"");
+		assert.strictEqual(match?.[4], "body");
+	});
+
+	it("still matches self-closing tags and plain attributes", function () {
+		const match = new RegExp(getCfTagPattern().source, "i").exec("<cfset x = 1 />");
+		assert.strictEqual(match?.[2], "cfset");
+		assert.strictEqual(match?.[3], "x = 1 ");
+		assert.strictEqual(new RegExp(getCfStartTagPattern().source, "i").exec("<cfoutput>")?.[3], "");
 	});
 });
