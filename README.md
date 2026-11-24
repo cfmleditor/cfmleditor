@@ -239,7 +239,7 @@ Thse provide best improvements for the least amount of feature loss, recommend s
 - Setting a positive `Cfml > Definition > Lookbehind: Max Length` value ( start with `1000` )
   - This can reduce the overhead when looking around based on the current cursor position. ( `-1` is the default, where the lookbehind is unlimited )
 
-### Good performance improvements but at a cost 
+### Good performance improvements but at a cost
 
 These can provide good performance benefits but reduce the feature set significantly
 
