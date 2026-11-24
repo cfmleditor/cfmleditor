@@ -469,10 +469,10 @@ describe("CFML editor features", function () {
 
 		for (const [name, marker, expected] of [
 			["a method two levels up, scoped", "this.|grandPublic()", ["ChainGrand.cfc:4"]],
-			["a method two levels up, unscoped", "\t\t|grandPublic();\n\t\tthis.parentPublic", ["ChainGrand.cfc:4"]],
+			["a method two levels up, unscoped", "\t\t|grandPublic();", ["ChainGrand.cfc:4"]],
 			["a method one level up", "this.|parentPublic()", ["ChainParent.cfc:4"]],
 			["super to the nearest override", "super.|overridden()", ["ChainParent.cfc:6"]],
-			["an override to the component's own method", "this.|overridden();\n\t\tvariables", ["ChainChild.cfc:3"]],
+			["an override to the component's own method", "this.|overridden()", ["ChainChild.cfc:3"]],
 			["an implicit accessor from a grandparent", "this.|getGrandProp()", ["ChainGrand.cfc:2"]],
 			["a grandparent method through a new component", "p.|grandPublic()", ["ChainGrand.cfc:4"]],
 			["a method on a createObject component", "g.|chainEnd()", ["ChainGrand.cfc:10"]],
