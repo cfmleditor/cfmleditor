@@ -125,6 +125,30 @@ describe("CFML editor features", function () {
 		});
 	});
 
+	// While typing, the closing parenthesis often is not there yet
+	describe("signature help in a call that is not closed yet", function () {
+		const signature = async (text: string) => {
+			const document = await workspace.openTextDocument({ content: text.replace("|", ""), language: "cfml" });
+			const result = await commands.executeCommand<SignatureHelp | undefined>("vscode.executeSignatureHelpProvider", document.uri, document.positionAt(text.indexOf("|")));
+			return result && result.signatures.length > 0 ? { label: result.signatures[0].label, active: result.activeParameter } : undefined;
+		};
+
+		for (const [name, text, active] of [
+			["the first argument", "<cfscript>\nx = max(|\n</cfscript>", 0],
+			["the second argument", "<cfscript>\nx = max(1, |\n</cfscript>", 1],
+			["the second argument before another statement", "<cfscript>\nx = max(1, |\ny = 2;\n</cfscript>", 1],
+			["the second argument at the end of the file", "<cfscript>\nx = max(1, |", 1],
+			["the second argument after a closed nested call", "<cfscript>\nx = max(min(1, 2), |\n</cfscript>", 1],
+			["the second argument inside a hash expression", "<cfoutput>#max(1, |</cfoutput>", 1],
+		] as const) {
+			it(`finds the call from ${name}`, async function () {
+				const result = await signature(text);
+				assert.match(result?.label ?? "", /^max\(/);
+				assert.equal(result?.active, active);
+			});
+		}
+	});
+
 	it("renders multiline docblocks with parameter and return descriptions in signature help", async function () {
 		const document = await fixture("DocBlockExamples.cfc");
 		const result = await commands.executeCommand<SignatureHelp>(

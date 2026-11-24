@@ -4,6 +4,7 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
+- Signature help now works from the second argument onwards in a call that has no closing parenthesis yet, which is the usual state while typing (`max(1, |`), in script and in `#...#` expressions. It only worked for the first argument.
 - Fixed the extension host hanging when components extend each other in a circle (`A extends B`, `B extends A`, or a component that extends itself). Every walk up an inheritance chain in completion, definition, signature help and variable lookup now stops when it reaches a component it has already visited.
 - Text that looks like an assignment inside a string literal (`"<cfset a = 1>"`, `"x = 1; y = 2;"`) is no longer collected as a variable by the built-in providers.
 - Fixed nested tag comments (`<!--- a <!--- b ---> c --->`) ending at the first `--->` in the built-in providers' accurate comment scan, so the rest of the comment was read as live code. The fast scan already handled them.
