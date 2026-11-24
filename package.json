@@ -869,7 +869,6 @@
 		"publish": "tsx ./src/scripts/publish-targets.ts"
 	},
 	"dependencies": {
-		"async_hooks": "^1.0.0",
 		"buffer": "^6.0.3",
 		"html-entities": "^2.6.0",
 		"isomorphic-fetch": "^3.0.0",
@@ -886,6 +885,9 @@
 		"vscode-uri": "^3.2.0"
 	},
 	"overrides": {
+		"vscode-languageclient": {
+			"minimatch": "^11.0.1"
+		},
 		"mocha": {
 			"diff": "^8.0.3",
 			"serialize-javascript": "^7.0.5"
