@@ -14,8 +14,8 @@ import { parseVariableAssignments, Variable } from "./variable";
 export const COMPONENT_EXT: string = ".cfc";
 export const COMPONENT_FILE_GLOB: string = "**/*" + COMPONENT_EXT;
 
-export const COMPONENT_TAG_PATTERN: RegExp = /((<cf)(component|interface)\b)([^>]*)/i;
-export const COMPONENT_SCRIPT_PATTERN: RegExp = /((\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s+)?(component|interface)\b)([^{]*)/i;
+export const COMPONENT_TAG_PATTERN: RegExp = /((<cf)(component|interface)\b)((?:"[^"]*"|'[^']*'|[^>"'])*)/i;
+export const COMPONENT_SCRIPT_PATTERN: RegExp = /((\/\*\*((?:\*(?!\/)|[^*])*)\*\/\s+)?(component|interface)\b)((?:"[^"]*"|'[^']*'|[^{"'])*)/i;
 
 export const componentExtendsPathPrefix: RegExp = /\b(extends|implements)\s*=\s*(['"])?([^'"#\s]*?)$/i;
 

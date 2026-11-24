@@ -149,6 +149,53 @@ describe("CFML editor features", function () {
 		}
 	});
 
+	// A > inside a quoted attribute value is not the end of the tag
+	describe("tag-based components with a > in an attribute value", function () {
+		const edge = () => fixture("TagEdgeCases.cfc");
+		const hoverText = async (marker: string) => {
+			const document = await edge();
+			const hovers = await commands.executeCommand<Hover[]>("vscode.executeHoverProvider", document.uri, findPosition(document, marker));
+			return hovers.flatMap(hover => hover.contents).map(content => typeof content === "string" ? content : content.value).join("\n");
+		};
+
+		it("keeps the function hint", async function () {
+			assert.match(await hoverText("this.|gtHint(1)"), /a > b means greater/);
+			assert.match(await hoverText("this.|afterGt("), /comes after a > in an attribute/);
+		});
+
+		it("keeps the argument hint", async function () {
+			assert.match(await hoverText("this.|gtHint(1)"), /x > y is true/);
+		});
+
+		it("still finds the functions defined after it", async function () {
+			const document = await edge();
+			const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, "this.|afterString()"));
+			assert.equal(links[0]?.targetRange.start.line, 19);
+		});
+
+		it("reads the extends attribute after a > in the component hint", async function () {
+			const document = await edge();
+			await fixture("ChainGrand.cfc");
+			const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, "this.|grandPublic()"));
+			assert.deepEqual(links.map(link => `${link.targetUri.path.split("/").pop()}:${link.targetRange.start.line + 1}`), ["ChainGrand.cfc:4"]);
+		});
+
+		it("reads the extends attribute after a { in a script component hint", async function () {
+			const document = await fixture("ScriptHintBrace.cfc");
+			await fixture("ChainGrand.cfc");
+			const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, "this.|grandPublic()"));
+			assert.deepEqual(links.map(link => `${link.targetUri.path.split("/").pop()}:${link.targetRange.start.line + 1}`), ["ChainGrand.cfc:4"]);
+		});
+
+		it("does not read a commented-out function or one in a string", async function () {
+			const document = await edge();
+			for (const marker of ["this.|ghost()", "this.|fake()"]) {
+				const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, marker));
+				assert.deepEqual(links ?? [], []);
+			}
+		});
+	});
+
 	it("renders multiline docblocks with parameter and return descriptions in signature help", async function () {
 		const document = await fixture("DocBlockExamples.cfc");
 		const result = await commands.executeCommand<SignatureHelp>(

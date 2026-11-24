@@ -519,7 +519,7 @@ const startScriptTagPatternCache = new Map<string, RegExp>();
  */
 export function getTagPattern(tagName: string): RegExp {
 	if (!tagPatternCache.has(tagName)) {
-		tagPatternCache.set(tagName, new RegExp(`(<${tagName}\\b\\s*)([^>]*?)(?:>([\\s\\S]*?)<\\/${tagName}>|\\/?>)`, "gi"));
+		tagPatternCache.set(tagName, new RegExp(`(<${tagName}\\b\\s*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(?:>([\\s\\S]*?)<\\/${tagName}>|\\/?>)`, "gi"));
 	}
 	return tagPatternCache.get(tagName)!;
 }
@@ -535,7 +535,7 @@ export function getTagPattern(tagName: string): RegExp {
  */
 export function getStartTagPattern(tagName: string): RegExp {
 	if (!startTagPatternCache.has(tagName)) {
-		startTagPatternCache.set(tagName, new RegExp(`(<${tagName}\\b\\s*)([^>]*?)(\\/)?>`, "gi"));
+		startTagPatternCache.set(tagName, new RegExp(`(<${tagName}\\b\\s*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\\/)?>`, "gi"));
 	}
 	return startTagPatternCache.get(tagName)!;
 }
