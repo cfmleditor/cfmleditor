@@ -58,7 +58,7 @@ describe("LSP initializationOptions", function () {
 		assert.strictEqual(buildInitializationOptions(), undefined);
 	});
 
-	it("forwards explicitly set cfml.inlayHints.parameterNames to features.inlayHints", async function () {
+	it("forwards explicitly set cfml.inlayHints.parameterNames to features", async function () {
 		this.timeout(10_000);
 
 		const config = workspace.getConfiguration("cfml.inlayHints");
@@ -66,11 +66,35 @@ describe("LSP initializationOptions", function () {
 
 		try {
 			assert.deepStrictEqual(buildInitializationOptions(), {
-				features: { inlayHints: true },
+				features: { inlayHints: true, inlayHintsParameterNames: true },
 			});
 		}
 		finally {
 			await config.update("parameterNames", undefined, ConfigurationTarget.Global);
+		}
+
+		assert.strictEqual(buildInitializationOptions(), undefined);
+	});
+
+	it("forwards explicitly set cfml.lsp.semanticTokens and renameCrossFile to features", async function () {
+		this.timeout(10_000);
+
+		const lspConfig = workspace.getConfiguration("cfml.lsp");
+		await lspConfig.update("semanticTokens", true, ConfigurationTarget.Global);
+		await lspConfig.update("renameCrossFile", true, ConfigurationTarget.Global);
+
+		try {
+			assert.deepStrictEqual(buildInitializationOptions(), {
+				features: {
+					semanticTokens: true,
+					renameCrossFile: true,
+					rename: true,
+				},
+			});
+		}
+		finally {
+			await lspConfig.update("semanticTokens", undefined, ConfigurationTarget.Global);
+			await lspConfig.update("renameCrossFile", undefined, ConfigurationTarget.Global);
 		}
 
 		assert.strictEqual(buildInitializationOptions(), undefined);

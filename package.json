@@ -190,6 +190,12 @@
 					"default": true,
 					"scope": "resource"
 				},
+				"cfml.inlayHints.componentPath": {
+					"type": "boolean",
+					"description": "Show the dotted component path beside a CFC declaration (requires LSP).",
+					"default": true,
+					"scope": "resource"
+				},
 				"cfml.suggest.enable": {
 					"type": "boolean",
 					"description": "Whether completion help is enabled.",
@@ -686,6 +692,18 @@
 					"default": "latest",
 					"markdownDescription": "Version of clif to run (e.g. `0.1.12`), downloaded unless the extension already ships it. Use `latest` for the most recent release, which falls back to the newest copy on this machine when GitHub cannot be reached.",
 					"scope": "machine-overridable"
+				},
+				"cfml.lsp.semanticTokens": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Enable opt-in buffer-local semantic token highlighting from `clif` (scopes, functions, methods, built-ins, parameters, and `new` types).",
+					"scope": "resource"
+				},
+				"cfml.lsp.renameCrossFile": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Enable opt-in cross-file rename for CFC methods and non-accessor properties in `clif` (also enables `features.rename`).",
+					"scope": "resource"
 				}
 			}
 		},
