@@ -211,6 +211,11 @@ export async function requestOnce(url: string, timeoutMs: number = IDLE_TIMEOUT_
 		: undefined;
 
 	return new Promise((resolve, reject) => {
+		// The tunnel is ours to close: once the request fails or times out, the
+		// agent is never used again and would otherwise keep the proxy socket open.
+		const release = () => {
+			tunnel?.destroy();
+		};
 		const request = https.request(
 			target,
 			{
@@ -218,13 +223,21 @@ export async function requestOnce(url: string, timeoutMs: number = IDLE_TIMEOUT_
 				headers: { "User-Agent": USER_AGENT },
 				...(tunnel ? { agent: new TunnelAgent(tunnel, target.hostname) } : {}),
 			},
-			resolve
+			(response) => {
+				// Close the tunnel once the body is finished or abandoned, so a
+				// redirect chain does not leave one open socket per hop.
+				response.on("close", release);
+				resolve(response);
+			}
 		);
 
 		request.setTimeout(timeoutMs, () => {
 			request.destroy(new Error(`Timed out after ${Math.round(timeoutMs / 1000)}s waiting for ${target.host}`));
 		});
-		request.on("error", reject);
+		request.on("error", (error) => {
+			release();
+			reject(error);
+		});
 		request.end();
 	});
 }
