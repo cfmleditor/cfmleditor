@@ -162,4 +162,24 @@ function generateTests_getDocumentContextRanges(fast: boolean) {
 			new Range(0, 0, 2, 3),
 		]);
 	});
+
+	// CFML tag comments nest, so the comment runs to the --->  that matches the first <!---
+	it("should parse nested tag comments as one comment", async function () {
+		const text = "<!--- a <!--- b ---> c ---><cfset a = 1>";
+		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, text);
+		const contextRanges = await getDocumentContextRanges(doc, false, docRange, fast, token, exclDocumentRanges);
+		assertRangeArrayEqual(contextRanges.commentRanges, [
+			new Range(0, 0, 0, text.indexOf("<cfset")),
+		]);
+	});
+
+	it("should parse a tag comment after a nested one separately", async function () {
+		const text = "<!--- a <!--- b ---> c ---><cfset a = 1><!--- d --->";
+		const doc = new LSTextDocument(Uri.parse("untitled"), "cfml", 1, text);
+		const contextRanges = await getDocumentContextRanges(doc, false, docRange, fast, token, exclDocumentRanges);
+		assertRangeArrayEqual(contextRanges.commentRanges, [
+			new Range(0, 0, 0, text.indexOf("<cfset")),
+			new Range(0, text.indexOf("<!--- d"), 0, text.length),
+		]);
+	});
 }
