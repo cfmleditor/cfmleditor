@@ -367,7 +367,7 @@ export const FORMAT_KEYS = [
  * settings existed.
  * @returns the payload, or undefined when nothing is set
  */
-export function buildInitializationOptions(): { formatting?: Record<string, unknown> } | undefined {
+export function buildInitializationOptions(): { formatting?: Record<string, unknown>; features?: Record<string, unknown> } | undefined {
 	const config = workspace.getConfiguration("cfml.format");
 	const formatting: Record<string, unknown> = {};
 
@@ -388,7 +388,26 @@ export function buildInitializationOptions(): { formatting?: Record<string, unkn
 		}
 	}
 
-	return Object.keys(formatting).length > 0 ? { formatting } : undefined;
+	const features: Record<string, unknown> = {};
+	const inlayInspected = workspace.getConfiguration("cfml.inlayHints").inspect<boolean>("parameterNames");
+	if (inlayInspected) {
+		const inlayValue = inlayInspected.workspaceFolderValue
+			?? inlayInspected.workspaceValue
+			?? inlayInspected.globalValue;
+		if (inlayValue !== undefined) {
+			features.inlayHints = inlayValue;
+		}
+	}
+
+	const out: { formatting?: Record<string, unknown>; features?: Record<string, unknown> } = {};
+	if (Object.keys(formatting).length > 0) {
+		out.formatting = formatting;
+	}
+	if (Object.keys(features).length > 0) {
+		out.features = features;
+	}
+
+	return Object.keys(out).length > 0 ? out : undefined;
 }
 
 /**

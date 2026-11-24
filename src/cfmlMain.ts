@@ -104,6 +104,7 @@ function registerOwnProviders(): Disposable[] {
 		languages.registerDefinitionProvider(DOCUMENT_SELECTOR, new CFMLDefinitionProvider()),
 		languages.registerTypeDefinitionProvider(DOCUMENT_SELECTOR, new CFMLTypeDefinitionProvider()),
 		languages.registerColorProvider(DOCUMENT_SELECTOR, new CFMLDocumentColorProvider()),
+		languages.registerSelectionRangeProvider(DOCUMENT_SELECTOR, new CFMLSelectionRangeProvider()),
 	];
 }
 
@@ -327,7 +328,6 @@ export async function activate(context: ExtensionContext): Promise<api> {
 
 	languages.setLanguageConfiguration(LANGUAGE_ID, languageConfiguration);
 	languages.setLanguageConfiguration(LANGUAGE_CFS_ID, languageConfiguration);
-	context.subscriptions.push(languages.registerSelectionRangeProvider(DOCUMENT_SELECTOR, new CFMLSelectionRangeProvider()));
 
 	context.subscriptions.push(commands.registerCommand("cfml.refreshGlobalDefinitionCache", refreshGlobalDefinitionCache));
 	context.subscriptions.push(commands.registerCommand("cfml.refreshWorkspaceDefinitionCache", refreshWorkspaceDefinitionCache));

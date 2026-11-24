@@ -57,4 +57,22 @@ describe("LSP initializationOptions", function () {
 
 		assert.strictEqual(buildInitializationOptions(), undefined);
 	});
+
+	it("forwards explicitly set cfml.inlayHints.parameterNames to features.inlayHints", async function () {
+		this.timeout(10_000);
+
+		const config = workspace.getConfiguration("cfml.inlayHints");
+		await config.update("parameterNames", true, ConfigurationTarget.Global);
+
+		try {
+			assert.deepStrictEqual(buildInitializationOptions(), {
+				features: { inlayHints: true },
+			});
+		}
+		finally {
+			await config.update("parameterNames", undefined, ConfigurationTarget.Global);
+		}
+
+		assert.strictEqual(buildInitializationOptions(), undefined);
+	});
 });
