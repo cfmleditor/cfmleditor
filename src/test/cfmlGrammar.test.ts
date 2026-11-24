@@ -20,6 +20,30 @@ interface ScopeCheck {
 
 const fixtures: { file: string; checks: ScopeCheck[] }[] = [
 	{
+		// ColdBox's `singleton` is a bare flag, which must not stop the header being read as script
+		file: "bare-component-attributes.cfc",
+		checks: [
+			{ lineNumber: 1, text: "component", scope: "storage.type.class.cfml" },
+			{ lineNumber: 2, text: "function", scope: "storage.type.function.cfml" },
+			{ lineNumber: 3, text: "return", scope: "keyword.control.flow.cfml" },
+		],
+	},
+	{
+		file: "bare-component-attributes-extra.cfc",
+		checks: [
+			{ lineNumber: 1, text: "component", scope: "storage.type.class.cfml" },
+			{ lineNumber: 2, text: "function", scope: "storage.type.function.cfml" },
+		],
+	},
+	{
+		// Prose that merely starts with the word is still plain text
+		file: "component-word-prose.cfm",
+		checks: [
+			{ lineNumber: 1, text: "items", scope: "text.html.cfml" },
+			{ lineNumber: 2, text: "p", scope: "entity.name.tag.block.any.html" },
+		],
+	},
+	{
 		file: "plain-html.cfm",
 		checks: [
 			{ lineNumber: 3, text: "span", scope: "entity.name.tag.inline.any.html" },
