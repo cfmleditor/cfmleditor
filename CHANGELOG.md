@@ -9,6 +9,7 @@ All notable changes to the CFML extension will be documented in this file.
 - Fixed a failed server extraction (for example, an HTML error page saved as the archive) leaving the archive open, which on Windows stopped it being deleted.
 - Fixed CFScript tag attributes after a `)` inside a quoted value (for example `cfquery(sql="f(x)", dat…`) getting no completion or hover, and such values truncating the tag's parsed attributes, in the built-in providers.
 - Fixed a `>` inside a quoted attribute value (for example `<cfif a gt "b>c">`) ending a tag early in the built-in providers, which cut its attributes short and read the rest of the tag as body text.
+- Struct literal keys such as `{ a = 1 }` in script (after `=`, `(`, `,`, `[`, `:`, `?`, `&` or `return`) are no longer treated as variable assignments by the built-in providers, so they stop showing up in variable completion and definitions.
 - Documented the language server and its settings in the README.
 - Removed the `preview` flag from the extension manifest.
 - Update dependencies: fixed the `minimatch` denial-of-service advisory (GHSA-g3hv-75wg-m249) pulled in by `vscode-languageclient`, and removed the unused `async_hooks` package. CI now runs on Node 24. The built-in `fetch` replaces `isomorphic-fetch`.
