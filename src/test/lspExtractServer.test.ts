@@ -39,7 +39,7 @@ describe("LSP server extraction", function () {
 	});
 
 	afterEach(function () {
-		fs.rmSync(dir, { recursive: true, force: true });
+		fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 	});
 
 	it("extracts the binary from a tar.gz, ignoring other entries", async function () {
