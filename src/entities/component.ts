@@ -341,10 +341,16 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 		}
 	}
 
+	// A persistent component gets accessors unless it says otherwise. This is read from the
+	// attributes, not the loop below, which only visits properties the component already has.
+	if (componentAttributes.persistent && componentAttributes.accessors === undefined) {
+		component.accessors = true;
+	}
+
 	const componentPropertyNames = Object.getOwnPropertyNames(component);
 
 	for (const propName of componentPropertyNames) {
-		// TODO: Is this just supposed to be checking for existence or also value? Because it is ignoring falsy property values too
+		// Boolean attributes are already parsed, so a false one is left at the default
 		if (componentAttributes[propName]) {
 			if (propName === "extends" && componentAttributes.extends) {
 				component.extends = await componentPathToUri(componentAttributes.extends, document.uri, _token);
@@ -360,9 +366,6 @@ export async function parseComponent(documentStateContext: DocumentStateContext,
 						component.implements.push(implementsUri);
 					}
 				}
-			}
-			else if (propName === "persistent" && componentAttributes.persistent) {
-				component.accessors = true;
 			}
 			else {
 				// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

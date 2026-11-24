@@ -406,6 +406,18 @@ describe("CFML editor features", function () {
 		}
 	});
 
+	// ColdFusion and Lucee generate accessors for a persistent component unless it says otherwise
+	it("generates accessors for a persistent component unless accessors is false", async function () {
+		const entity = await fixture("PersistentEntity.cfc");
+		const definition = await findDefinition(entity, "this.|getTitle()");
+		assert.strictEqual(definition.targetUri.toString(), entity.uri.toString());
+		assert.strictEqual(entity.getText(definition.targetSelectionRange), "title");
+
+		const optedOut = await fixture("PersistentNoAccessors.cfc");
+		const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", optedOut.uri, findPosition(optedOut, "this.|getTitle()"));
+		assert.deepEqual(links ?? [], []);
+	});
+
 	it("hides implicit accessors from Outline while keeping their definitions", async function () {
 		const document = await fixture("ComponentFeatures.cfc");
 		const outline = workspace.getConfiguration("cfml.outline", document.uri);
