@@ -58,6 +58,21 @@ _Open Definition to the Side:_ Win/Linux: `Ctrl`+`K` `F12`
 Provides a link to the definition of the type for a symbol. This only applies to user-defined types within the same workspace.  
 _No default shortcuts_
 
+## Language Server (clif)
+
+The extension can use [clif](https://github.com/cfmleditor/clif), a CFML language server, for completion, definitions, diagnostics, formatting, inlay hints and more. It is off by default; enable it with `cfml.lsp.enabled`. While it is running, the extension's own providers stand down so results are not duplicated. The extension's own providers are the whole implementation in the web version of the editor, and the fallback when the server is disabled or unavailable.
+
+Platform-specific packages bundle a server. Otherwise, or if a newer release exists, it is downloaded from GitHub on first use, going through `http.proxy` or the `https_proxy`/`no_proxy` environment variables (http and https proxies are supported; socks is not).
+
+- `cfml.lsp.enabled`: Use the language server. [_Default_: `false`]
+- `cfml.lsp.path`: [_Optional_] Path to a `clif` binary to use instead of the bundled or downloaded one.
+- `cfml.lsp.version`: Server version to use, or `latest`. [_Default_: `latest`]
+- `cfml.lsp.semanticTokens`: Enable semantic token highlighting from the server. [_Default_: `false`]
+- `cfml.lsp.renameCrossFile`: Allow rename to edit other files. [_Default_: `false`]
+- `cfml.inlayHints.parameterNames` / `cfml.inlayHints.componentPath`: Inlay hints for call-argument names and for a CFC's dotted component path (the latter requires the server). [_Default_: `true`]
+
+Use `CFML: Restart Language Server` to restart it after a failure.
+
 ## Settings
 
 The following are configurable Settings (Win/Linux: `Ctrl`+`Comma`; Mac: `Cmd`+`Comma`).
@@ -224,7 +239,7 @@ Thse provide best improvements for the least amount of feature loss, recommend s
 - Setting a positive `Cfml > Definition > Lookbehind: Max Length` value ( start with `1000` )
   - This can reduce the overhead when looking around based on the current cursor position. ( `-1` is the default, where the lookbehind is unlimited )
 
-### Good performance improvements but at a cost 
+### Good performance improvements but at a cost
 
 These can provide good performance benefits but reduce the feature set significantly
 

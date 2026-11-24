@@ -57,9 +57,18 @@ async function extractTarGz(archivePath: string, destDir: string, binaryName: st
 	// Simple tar.gz extraction for a single binary file
 	const { extract } = await import("tar-stream");
 	const extractStream = extract();
-	const input = fs.createReadStream(archivePath).pipe(zlib.createGunzip());
+	const source = fs.createReadStream(archivePath);
+	const input = source.pipe(zlib.createGunzip());
 
 	return new Promise((resolve, reject) => {
+		// A failed pipe does not close the file it was reading, and Windows will
+		// not delete or replace a file that is still open.
+		const fail = (error: Error) => {
+			source.destroy();
+			input.destroy();
+			reject(error);
+		};
+
 		extractStream.on("entry", (header, stream, next) => {
 			const name = path.basename(header.name);
 			if (name === binaryName) {
@@ -67,7 +76,7 @@ async function extractTarGz(archivePath: string, destDir: string, binaryName: st
 				const out = fs.createWriteStream(outPath, { mode: 0o755 });
 				stream.pipe(out);
 				out.on("finish", next);
-				out.on("error", reject);
+				out.on("error", fail);
 			}
 			else {
 				stream.resume();
@@ -75,8 +84,9 @@ async function extractTarGz(archivePath: string, destDir: string, binaryName: st
 			}
 		});
 		extractStream.on("finish", resolve);
-		extractStream.on("error", reject);
+		extractStream.on("error", fail);
 		input.pipe(extractStream);
-		input.on("error", reject);
+		input.on("error", fail);
+		source.on("error", fail);
 	});
 }

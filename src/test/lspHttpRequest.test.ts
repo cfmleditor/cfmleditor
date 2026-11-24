@@ -2,7 +2,7 @@ import * as assert from "assert";
 import * as net from "net";
 import { ConfigurationTarget, workspace } from "vscode";
 
-import { bypassesProxy, proxyForUrl, requestOnce } from "../lsp/httpRequest";
+import { bypassesProxy, parseProxyUrl, proxyForUrl, requestOnce } from "../lsp/httpRequest";
 
 /**
  * Turns VS Code's own proxy support off for a test.
@@ -98,6 +98,28 @@ describe("LSP HTTP requests", function () {
 			const env = { https_proxy: "http://p:1", no_proxy: "github.com" } as NodeJS.ProcessEnv;
 			assert.strictEqual(proxyForUrl("https://github.com/x", "http://p:1", env), undefined);
 			assert.strictEqual(proxyForUrl("https://objects.githubusercontent.com/x", "http://p:1", env), "http://p:1");
+		});
+	});
+
+	describe("proxy URL parsing", function () {
+		it("treats a bare host:port as an http proxy", function () {
+			const proxy = parseProxyUrl("proxy.corp:3128");
+			assert.strictEqual(proxy?.protocol, "http:");
+			assert.strictEqual(proxy?.hostname, "proxy.corp");
+			assert.strictEqual(proxy?.port, "3128");
+		});
+
+		it("keeps http and https proxies as written", function () {
+			assert.strictEqual(parseProxyUrl("https://p.corp:8443")?.protocol, "https:");
+			assert.strictEqual(parseProxyUrl("http://u:p@p.corp")?.username, "u");
+		});
+
+		it("rejects unsupported protocols rather than going direct", function () {
+			assert.throws(() => parseProxyUrl("socks5://p.corp:1080"), /Unsupported proxy protocol/);
+		});
+
+		it("returns undefined for an unparseable value", function () {
+			assert.strictEqual(parseProxyUrl("http://"), undefined);
 		});
 	});
 

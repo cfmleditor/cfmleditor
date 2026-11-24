@@ -94,15 +94,22 @@ export function proxyForUrl(target: string, settingProxy: string | undefined, en
 	return configured?.trim() || undefined;
 }
 
-function resolveProxy(target: URL): URL | undefined {
-	const setting = workspace.getConfiguration("http").get<string>("proxy");
-	const configured = proxyForUrl(target.href, setting, process.env);
-	if (!configured) {
-		return undefined;
-	}
+/**
+ * Turns a configured proxy value into a URL.
+ *
+ * Proxy settings are very often written without a scheme (`proxy.corp:3128`),
+ * which `new URL` reads as a URL whose protocol is `proxy.corp:` — so a bare
+ * host is taken to be an HTTP proxy, as curl and most tools do.
+ * @param configured the proxy value from settings or the environment
+ * @returns the proxy URL, or undefined when the value cannot be parsed
+ * @throws {Error} when the proxy uses a protocol that is not supported
+ */
+export function parseProxyUrl(configured: string): URL | undefined {
+	const value = /^[a-z][a-z0-9+.-]*:\/\//i.test(configured) ? configured : `http://${configured}`;
 
+	let proxy: URL;
 	try {
-		return new URL(configured);
+		proxy = new URL(value);
 	}
 	catch {
 		// A proxy nobody can parse is not a reason to fail the request — going
@@ -110,6 +117,21 @@ function resolveProxy(target: URL): URL | undefined {
 		// nothing useful about a setting the user probably did not just change.
 		return undefined;
 	}
+
+	if (proxy.protocol !== "http:" && proxy.protocol !== "https:") {
+		// Going direct here would quietly bypass a proxy the user meant to
+		// enforce, so say what is unsupported instead.
+		throw new Error(`Unsupported proxy protocol "${proxy.protocol}" in "${proxy.host}"; only http and https proxies are supported`);
+	}
+
+	return proxy;
+}
+
+function resolveProxy(target: URL): URL | undefined {
+	const setting = workspace.getConfiguration("http").get<string>("proxy");
+	const configured = proxyForUrl(target.href, setting, process.env);
+
+	return configured ? parseProxyUrl(configured) : undefined;
 }
 
 /**
@@ -124,7 +146,10 @@ function resolveProxy(target: URL): URL | undefined {
 function connectThroughProxy(proxy: URL, host: string, port: number, timeoutMs: number): Promise<net.Socket> {
 	return new Promise((resolve, reject) => {
 		const proxyPort = Number(proxy.port) || (proxy.protocol === "https:" ? 443 : 80);
-		const socket = net.connect({ host: proxy.hostname, port: proxyPort });
+		const secure = proxy.protocol === "https:";
+		const socket: net.Socket = secure
+			? tls.connect({ host: proxy.hostname, port: proxyPort, servername: proxy.hostname })
+			: net.connect({ host: proxy.hostname, port: proxyPort });
 
 		const fail = (error: Error) => {
 			socket.destroy();
@@ -134,7 +159,7 @@ function connectThroughProxy(proxy: URL, host: string, port: number, timeoutMs: 
 		socket.setTimeout(timeoutMs, () => fail(new Error(`Timed out talking to the proxy at ${proxy.host}`)));
 		socket.on("error", fail);
 
-		socket.on("connect", () => {
+		socket.on(secure ? "secureConnect" : "connect", () => {
 			const credentials = proxy.username
 				? `${decodeURIComponent(proxy.username)}:${decodeURIComponent(proxy.password)}`
 				: undefined;
@@ -211,6 +236,11 @@ export async function requestOnce(url: string, timeoutMs: number = IDLE_TIMEOUT_
 		: undefined;
 
 	return new Promise((resolve, reject) => {
+		// The tunnel is ours to close: once the request fails or times out, the
+		// agent is never used again and would otherwise keep the proxy socket open.
+		const release = () => {
+			tunnel?.destroy();
+		};
 		const request = https.request(
 			target,
 			{
@@ -218,13 +248,21 @@ export async function requestOnce(url: string, timeoutMs: number = IDLE_TIMEOUT_
 				headers: { "User-Agent": USER_AGENT },
 				...(tunnel ? { agent: new TunnelAgent(tunnel, target.hostname) } : {}),
 			},
-			resolve
+			(response) => {
+				// Close the tunnel once the body is finished or abandoned, so a
+				// redirect chain does not leave one open socket per hop.
+				response.on("close", release);
+				resolve(response);
+			}
 		);
 
 		request.setTimeout(timeoutMs, () => {
 			request.destroy(new Error(`Timed out after ${Math.round(timeoutMs / 1000)}s waiting for ${target.host}`));
 		});
-		request.on("error", reject);
+		request.on("error", (error) => {
+			release();
+			reject(error);
+		});
 		request.end();
 	});
 }

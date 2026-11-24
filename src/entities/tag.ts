@@ -9,13 +9,14 @@ import { HTML_EMPTY_ELEMENTS } from "./html/htmlTag";
 
 const tagAttributePattern: RegExp = /<(([a-z_]+)\s+)([^<>]*)$/i;
 const cfTagAttributePattern: RegExp = /<((cf[a-z_]+)\s+)([^<>]*)$/i;
-// FIXME: If an attribute value contains ) then subsequent attributes will not match this
-const cfScriptTagAttributePattern: RegExp = /\b((cf[a-z_]+)\s*\(\s*)([^)]*)$/i;
+// Script tag attributes run up to the closing parenthesis, but a ) inside a quoted value does not close the tag
+const cfScriptTagAttributePattern: RegExp = /\b((cf[a-z_]+)\s*\(\s*)((?:"[^"]*"|'[^']*'|[^)"'])*(?:"[^"]*|'[^']*)?)$/i;
 const tagPrefixPattern: RegExp = /<\s*(\/)?\s*$/;
-const cfScriptTagPatternIgnoreBody: RegExp = /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)/gi;
-const cfStartTagPattern: RegExp = /(<(cf[a-z_]+)\s*)([^>]*?)>/gi;
-const cfTagPattern: RegExp = /(<(cf[a-z_]+)\s*)([^>]*?)(?:>([\s\S]*?)<\/\2>|\/?>)/gi;
-const cfScriptTagPattern: RegExp = /\b((cf[a-z_]+)\s*\(\s*)([^)]*)\)(?:\s*{([^}]*?)})?/gi;
+const cfScriptTagPatternIgnoreBody: RegExp = /\b((cf[a-z_]+)\s*\(\s*)((?:"[^"]*"|'[^']*'|[^)"'])*)\)/gi;
+// Attributes may hold a > inside a quoted value, which does not end the tag
+const cfStartTagPattern: RegExp = /(<(cf[a-z_]+)\s*)((?:"[^"]*"|'[^']*'|[^>"'])*?)>/gi;
+const cfTagPattern: RegExp = /(<(cf[a-z_]+)\s*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(?:>([\s\S]*?)<\/\2>|\/?>)/gi;
+const cfScriptTagPattern: RegExp = /\b((cf[a-z_]+)\s*\(\s*)((?:"[^"]*"|'[^']*'|[^)"'])*)\)(?:\s*{([^}]*?)})?/gi;
 
 const SINGLE_QUOTE = "'".charCodeAt(0);
 const DOUBLE_QUOTE = "\"".charCodeAt(0);

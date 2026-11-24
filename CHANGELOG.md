@@ -4,6 +4,18 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
+- **Proxy handling for server downloads is more forgiving and less quiet.** A proxy written without a scheme, such as `proxy.corp:3128`, was read as a URL with the protocol `proxy.corp:` and silently ignored, so downloads went direct. It is now treated as an HTTP proxy. `https://` proxies are reached over TLS before the tunnel is requested. A proxy with an unsupported protocol (such as `socks5://`) now fails with a message saying so, rather than quietly going direct.
+- Fixed the proxy tunnel's socket staying open after a request failed, timed out or finished, which left one open socket per redirect.
+- Fixed a failed server extraction (for example, an HTML error page saved as the archive) leaving the archive open, which on Windows stopped it being deleted.
+- Fixed CFScript tag attributes after a `)` inside a quoted value (for example `cfquery(sql="f(x)", dat…`) getting no completion or hover, and such values truncating the tag's parsed attributes, in the built-in providers.
+- Fixed a `>` inside a quoted attribute value (for example `<cfif a gt "b>c">`) ending a tag early in the built-in providers, which cut its attributes short and read the rest of the tag as body text.
+- Struct literal keys such as `{ a = 1 }` in script (after `=`, `(`, `,`, `[`, `:`, `?`, `&` or `return`) are no longer treated as variable assignments by the built-in providers, so they stop showing up in variable completion and definitions.
+- A component with `persistent="true"` now gets implicit property accessors in the built-in providers, as it does at runtime, unless it sets `accessors="false"`. The check for it never ran.
+- Documented the language server and its settings in the README.
+- Removed the `preview` flag from the extension manifest.
+- Update dependencies: fixed the `minimatch` denial-of-service advisory (GHSA-g3hv-75wg-m249) pulled in by `vscode-languageclient`, and removed the unused `async_hooks` package. CI now runs on Node 24. The built-in `fetch` replaces `isomorphic-fetch`.
+- Setting `CFML_SKIP_DOCS_DOWNLOAD` skips the docs download that runs on `npm install`.
+
 ## [0.7.9] - 2026-11-23
 
 - Platform builds now ship clif 0.7.3. Hover help uses CFScript highlighting for typed function signatures and displays types for documented tag attributes. This update also improves array element type inference and reduces parser and index allocations. It includes the tag formatting and component navigation fixes from clif 0.7.2.

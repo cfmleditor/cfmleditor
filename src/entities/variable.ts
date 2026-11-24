@@ -16,8 +16,9 @@ import { DocumentStateContext, DocumentPositionStateContext } from "../utils/doc
 import { getScriptFunctionArgRanges } from "./function";
 import { constructParameterLabel } from "./parameter";
 import { uriBaseName } from "../utils/fileUtil";
+import { isStructLiteralBrace } from "./structLiteral";
 
-// FIXME: Erroneously matches implicit struct key assignments using = since '{' can also open a code block. Also matches within string or comment.
+// Matches the first assignment after a '{', which can also open a struct literal; see isStructLiteralBrace in structLiteral.ts
 const cfscriptVariableAssignmentPattern = /(((?:^|[;{}]|\bfor\s*\(|\bcase\s+.+?:|\bdefault\s*:|\bfinal)\s*(\bvar\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\5\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\7(?:\s*\])?)*\s*=\s*)([^=][^;]*)/gi;
 const forInVariableAssignmentPattern = /((?:\bfor\s*\()\s*(\bvar\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\4\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\6(?:\s*\])?)*(?:\s+in\s+)/gi;
 const tagVariableAssignmentPattern = /((<cfset\s+(?:final\s+)?(var\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\5\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\7(?:\s*\])?)*\s*=\s*)([^=][^>]*)/gi;
@@ -458,6 +459,10 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 	// variable assignments
 	const variableAssignmentPattern: RegExp = isScript ? cfscriptVariableAssignmentPattern : tagVariableAssignmentPattern;
 	for (const variableMatch of documentText.matchAll(variableAssignmentPattern)) {
+		if (isScript && variableMatch[0].startsWith("{") && isStructLiteralBrace(documentText, variableMatch.index)) {
+			continue;
+		}
+
 		const initValuePrefix: string = variableMatch[1];
 		const varPrefix: string = variableMatch[2];
 		const varScope: string = variableMatch[3];

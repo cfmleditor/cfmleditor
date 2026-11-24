@@ -91,6 +91,40 @@ describe("CFML editor features", function () {
 		assert.strictEqual(entries[4].valueRange, undefined);
 	});
 
+	describe("signature help with strings in the arguments", function () {
+		const signatureAt = async (marker: string) => {
+			const document = await fixture("SignatureStrings.cfc");
+			const result = await commands.executeCommand<SignatureHelp | undefined>(
+				"vscode.executeSignatureHelpProvider", document.uri, findPosition(document, marker),
+			);
+			return result;
+		};
+
+		it("finds the call from inside a string argument containing a (", async function () {
+			const result = await signatureAt("this.pair(\"a(b|\", 42)");
+			assert.match(result?.signatures[0]?.label ?? "", /pair\(/);
+			assert.equal(result?.activeParameter, 0);
+		});
+
+		it("finds the call from inside a string argument containing a comma", async function () {
+			const result = await signatureAt("this.pair(\"a,b|\", 42)");
+			assert.match(result?.signatures[0]?.label ?? "", /pair\(/);
+			assert.equal(result?.activeParameter, 0);
+		});
+
+		it("counts arguments after a string that contains a (", async function () {
+			const result = await signatureAt("this.pair(\"a(b\", |42)");
+			assert.match(result?.signatures[0]?.label ?? "", /pair\(/);
+			assert.equal(result?.activeParameter, 1);
+		});
+
+		it("finds the call from inside a single-quoted string with a doubled quote and a (", async function () {
+			const result = await signatureAt("this.pair('it''s (|odd', 42)");
+			assert.match(result?.signatures[0]?.label ?? "", /pair\(/);
+			assert.equal(result?.activeParameter, 0);
+		});
+	});
+
 	it("renders multiline docblocks with parameter and return descriptions in signature help", async function () {
 		const document = await fixture("DocBlockExamples.cfc");
 		const result = await commands.executeCommand<SignatureHelp>(
@@ -370,6 +404,18 @@ describe("CFML editor features", function () {
 				&& (typeof item.label === "string" ? item.label : item.label.label) === expected);
 			assert.strictEqual(matchingItems.length > 0, offered, JSON.stringify(matchingItems));
 		}
+	});
+
+	// ColdFusion and Lucee generate accessors for a persistent component unless it says otherwise
+	it("generates accessors for a persistent component unless accessors is false", async function () {
+		const entity = await fixture("PersistentEntity.cfc");
+		const definition = await findDefinition(entity, "this.|getTitle()");
+		assert.strictEqual(definition.targetUri.toString(), entity.uri.toString());
+		assert.strictEqual(entity.getText(definition.targetSelectionRange), "title");
+
+		const optedOut = await fixture("PersistentNoAccessors.cfc");
+		const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", optedOut.uri, findPosition(optedOut, "this.|getTitle()"));
+		assert.deepEqual(links ?? [], []);
 	});
 
 	it("hides implicit accessors from Outline while keeping their definitions", async function () {
