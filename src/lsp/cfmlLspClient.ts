@@ -389,13 +389,42 @@ export function buildInitializationOptions(): { formatting?: Record<string, unkn
 	}
 
 	const features: Record<string, unknown> = {};
-	const inlayInspected = workspace.getConfiguration("cfml.inlayHints").inspect<boolean>("parameterNames");
-	if (inlayInspected) {
-		const inlayValue = inlayInspected.workspaceFolderValue
-			?? inlayInspected.workspaceValue
-			?? inlayInspected.globalValue;
-		if (inlayValue !== undefined) {
-			features.inlayHints = inlayValue;
+	const explicitBool = (section: string, key: string): boolean | undefined => {
+		const inspected = workspace.getConfiguration(section).inspect<boolean>(key);
+		if (!inspected) {
+			return undefined;
+		}
+		return inspected.workspaceFolderValue
+			?? inspected.workspaceValue
+			?? inspected.globalValue;
+	};
+
+	const paramHints = explicitBool("cfml.inlayHints", "parameterNames");
+	if (paramHints !== undefined) {
+		features.inlayHintsParameterNames = paramHints;
+		if (paramHints) {
+			features.inlayHints = true;
+		}
+	}
+
+	const compPathHints = explicitBool("cfml.inlayHints", "componentPath");
+	if (compPathHints !== undefined) {
+		features.inlayHintsComponentPath = compPathHints;
+		if (compPathHints) {
+			features.inlayHints = true;
+		}
+	}
+
+	const semanticTokens = explicitBool("cfml.lsp", "semanticTokens");
+	if (semanticTokens !== undefined) {
+		features.semanticTokens = semanticTokens;
+	}
+
+	const renameCrossFile = explicitBool("cfml.lsp", "renameCrossFile");
+	if (renameCrossFile !== undefined) {
+		features.renameCrossFile = renameCrossFile;
+		if (renameCrossFile) {
+			features.rename = true;
 		}
 	}
 
