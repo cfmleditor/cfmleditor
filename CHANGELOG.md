@@ -9,7 +9,8 @@ All notable changes to the CFML extension will be documented in this file.
 - Fixed a failed server extraction (for example, an HTML error page saved as the archive) leaving the archive open, which on Windows stopped it being deleted.
 - Documented the language server and its settings in the README.
 - Removed the `preview` flag from the extension manifest.
-- Update dependencies: fixed the `minimatch` denial-of-service advisory (GHSA-g3hv-75wg-m249) pulled in by `vscode-languageclient`, and removed the unused `async_hooks` package. CI now runs on Node 24.
+- Update dependencies: fixed the `minimatch` denial-of-service advisory (GHSA-g3hv-75wg-m249) pulled in by `vscode-languageclient`, and removed the unused `async_hooks` package. CI now runs on Node 24. The built-in `fetch` replaces `isomorphic-fetch`.
+- Setting `CFML_SKIP_DOCS_DOWNLOAD` skips the docs download that runs on `npm install`.
 
 ## [0.7.9] - 2026-11-23
 

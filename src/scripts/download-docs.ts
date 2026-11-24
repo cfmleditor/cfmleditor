@@ -16,6 +16,11 @@ const downloadFolder = path.join(rootDir, "resources", ".docs-download");
 const totalAbort = new AbortController();
 
 async function run() {
+	// Lets offline installs and CI jobs that do not need fresh docs skip the network entirely
+	if (process.env.CFML_SKIP_DOCS_DOWNLOAD) {
+		console.log("Skipping docs update, CFML_SKIP_DOCS_DOWNLOAD is set");
+		process.exit(0);
+	}
 	const timer = setTimeout(() => totalAbort.abort(new Error(`timed out after ${TOTAL_TIMEOUT_MS / 1000}s`)), TOTAL_TIMEOUT_MS);
 	try {
 		await main();

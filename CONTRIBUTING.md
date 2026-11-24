@@ -9,7 +9,8 @@ If you would like to contribute enhancements or fixes, please read this document
 - Install [Node.js with npm](https://nodejs.org) if not already installed
 - Open this project as the workspace in VS Code
 - Install the recommended extensions in `.vscode/extensions.json`
-- Run `npm install` at workspace root to install dependencies
+- Run `npm install` at workspace root to install dependencies  
+  (this also downloads the CFML docs; set `CFML_SKIP_DOCS_DOWNLOAD=1` to skip that when offline)
 
 ## Working
 
