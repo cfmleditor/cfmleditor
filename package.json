@@ -4,7 +4,6 @@
 	"description": "CFML Language Editor",
 	"version": "0.7.9",
 	"cfmlLspVersion": "0.7.3",
-	"preview": true,
 	"author": "cfmleditor",
 	"publisher": "cfmleditor",
 	"license": "MIT",
