@@ -602,6 +602,25 @@ export function getWebroot(fileUri: Uri): Uri | undefined {
 }
 
 /**
+ * Gets the component a component extends, for walking up an inheritance chain.
+ *
+ * The caller keeps `visited` for the whole walk. Components can extend each other in a
+ * circle (or themselves), and a walk that does not notice never ends, which hangs the
+ * extension host; a base that has already been visited ends the chain instead.
+ * @param component The component whose base to get
+ * @param visited The URIs already walked, which this adds the component to
+ * @returns The base component, or undefined at the top of the chain, for a base that cannot be found, or when the chain loops
+ */
+export function getBaseComponent(component: Component, visited: Set<string>): Component | undefined {
+	visited.add(component.uri.toString());
+	if (!component.extends || visited.has(component.extends.toString())) {
+		return undefined;
+	}
+
+	return getComponent(component.extends);
+}
+
+/**
  * Checks whether `checkComponent` is a subcomponent or equal to `baseComponent`
  * @param checkComponent The candidate subcomponent
  * @param baseComponent The candidate base component
@@ -609,17 +628,13 @@ export function getWebroot(fileUri: Uri): Uri | undefined {
  */
 export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: Component): boolean {
 	let localCheckComponent: Component | undefined = checkComponent;
+	const visited = new Set<string>();
 	while (localCheckComponent) {
 		if (localCheckComponent.uri.toString() === baseComponent.uri.toString()) {
 			return true;
 		}
 
-		if (localCheckComponent.extends) {
-			localCheckComponent = getComponent(localCheckComponent.extends);
-		}
-		else {
-			localCheckComponent = undefined;
-		}
+		localCheckComponent = getBaseComponent(localCheckComponent, visited);
 	}
 
 	return false;
@@ -632,25 +647,15 @@ export function isSubcomponentOrEqual(checkComponent: Component, baseComponent: 
  * @returns
  */
 export function isSubcomponent(checkComponent: Component, baseComponent: Component): boolean {
-	let localCheckComponent: Component | undefined = checkComponent;
-	if (localCheckComponent.extends) {
-		localCheckComponent = getComponent(localCheckComponent.extends);
-	}
-	else {
-		return false;
-	}
+	const visited = new Set<string>();
+	let localCheckComponent: Component | undefined = getBaseComponent(checkComponent, visited);
 
 	while (localCheckComponent) {
 		if (localCheckComponent.uri.toString() === baseComponent.uri.toString()) {
 			return true;
 		}
 
-		if (localCheckComponent.extends) {
-			localCheckComponent = getComponent(localCheckComponent.extends);
-		}
-		else {
-			localCheckComponent = undefined;
-		}
+		localCheckComponent = getBaseComponent(localCheckComponent, visited);
 	}
 
 	return false;

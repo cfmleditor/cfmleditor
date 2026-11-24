@@ -2,7 +2,7 @@ import { CancellationToken, Command, CompletionContext, CompletionItem, Completi
 import { AttributeQuoteType, Attributes, IncludeAttributesCustom, IncludeAttributesSetType, parseAttributes, VALUE_PATTERN } from "../entities/attribute";
 import { CatchInfo, catchProperties, CatchPropertyDetails, parseCatches } from "../entities/catch";
 import { cgiVariables } from "../entities/cgi";
-import { Component, COMPONENT_EXT, componentDottedPathPrefix, componentExtendsPathPrefix, isInComponentHead, isSubcomponentOrEqual } from "../entities/component";
+import { Component, COMPONENT_EXT, componentDottedPathPrefix, componentExtendsPathPrefix, getBaseComponent, isInComponentHead, isSubcomponentOrEqual } from "../entities/component";
 import { IPropertyData, IAtDirectiveData } from "../entities/css/cssLanguageTypes";
 import { cssDataManager, getEntryDescription as getCSSEntryDescription, cssWordRegex } from "../entities/css/languageFacts";
 import { DataType } from "../entities/dataType";
@@ -416,6 +416,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 					if (thisComponent && thisComponent.extends) {
 						const baseComponent: Component | undefined = getComponent(thisComponent.extends);
 						let currComponent: Component | undefined = baseComponent;
+						const visited = new Set<string>([thisComponent.uri.toString()]);
 						while (currComponent) {
 							currComponent.functions.filter((_func: UserFunction, funcKey: string) => {
 								return currentWordMatches(funcKey) && !addedFunctions.has(funcKey);
@@ -428,12 +429,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 								}
 							});
 
-							if (currComponent.extends) {
-								currComponent = getComponent(currComponent.extends);
-							}
-							else {
-								currComponent = undefined;
-							}
+							currComponent = getBaseComponent(currComponent, visited);
 						}
 					}
 					// From variable
@@ -463,6 +459,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 								}
 
 								let foundComponent: Component | undefined = initialFoundComp;
+								const foundVisited = new Set<string>();
 								while (foundComponent) {
 									// component functions
 									foundComponent.functions.filter((func: UserFunction, funcKey: string) => {
@@ -495,12 +492,7 @@ export default class CFMLCompletionItemProvider implements CompletionItemProvide
 										addedVariables.add(varKey);
 									});
 
-									if (foundComponent.extends) {
-										foundComponent = getComponent(foundComponent.extends);
-									}
-									else {
-										foundComponent = undefined;
-									}
+									foundComponent = getBaseComponent(foundComponent, foundVisited);
 								}
 							}
 							// From other variable type
@@ -898,6 +890,7 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 		const otherAccessPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.Variables, Scope.This], true).test(state.docPrefix);
 		const getterSetterPrefixMatched: boolean = getValidScopesPrefixPattern([Scope.This], true).test(state.docPrefix);
 		let currComponent: Component | undefined = component;
+		const visited = new Set<string>();
 		while (currComponent) {
 			if (_token && _token.isCancellationRequested) {
 				break;
@@ -926,12 +919,7 @@ function getComponentFunctionCompletions(state: CompletionState, component: Comp
 				}
 			});
 
-			if (currComponent.extends) {
-				currComponent = getComponent(currComponent.extends);
-			}
-			else {
-				currComponent = undefined;
-			}
+			currComponent = getBaseComponent(currComponent, visited);
 		}
 	}
 

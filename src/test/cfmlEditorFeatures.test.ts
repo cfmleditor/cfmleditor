@@ -433,6 +433,48 @@ describe("CFML editor features", function () {
 		assert.equal(await definitionLine("inMultiline"), undefined);
 	});
 
+	describe("definitions across inherited components", function () {
+		const chain = async (marker: string) => {
+			const document = await fixture("ChainChild.cfc");
+			for (const name of ["ChainGrand", "ChainParent", "ChainTagKid", "ChainCycleA", "ChainCycleB", "ChainOrphan"]) {
+				await fixture(`${name}.cfc`);
+			}
+			const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, marker));
+			return (links ?? []).map(link => `${link.targetUri.path.split("/").pop()}:${link.targetRange.start.line + 1}`);
+		};
+
+		for (const [name, marker, expected] of [
+			["a method two levels up, scoped", "this.|grandPublic()", ["ChainGrand.cfc:4"]],
+			["a method two levels up, unscoped", "\t\t|grandPublic();\n\t\tthis.parentPublic", ["ChainGrand.cfc:4"]],
+			["a method one level up", "this.|parentPublic()", ["ChainParent.cfc:4"]],
+			["super to the nearest override", "super.|overridden()", ["ChainParent.cfc:6"]],
+			["an override to the component's own method", "this.|overridden();\n\t\tvariables", ["ChainChild.cfc:3"]],
+			["an implicit accessor from a grandparent", "this.|getGrandProp()", ["ChainGrand.cfc:2"]],
+			["a grandparent method through a new component", "p.|grandPublic()", ["ChainGrand.cfc:4"]],
+			["a method on a createObject component", "g.|chainEnd()", ["ChainGrand.cfc:10"]],
+			["an inherited method of a tag-based component", "viaTag.|tagInherited()", ["ChainTagKid.cfc:4"]],
+			["the extends path itself", "extends=\"cfml.|ChainParent\"", ["ChainParent.cfc:1"]],
+		] as const) {
+			it(`finds ${name}`, async function () {
+				assert.deepEqual(await chain(marker), expected);
+			});
+		}
+
+		// Components that extend each other in a circle used to send every walk up the chain round forever
+		it("finds a method of a component in an inheritance cycle", async function () {
+			assert.deepEqual(await chain("cyc.|cycleOwn()"), ["ChainCycleA.cfc:2"]);
+		});
+
+		it("returns nothing for a method that is not in an inheritance cycle", async function () {
+			assert.deepEqual(await chain("cyc.|neverFound()"), []);
+		});
+
+		it("returns nothing for a method of a missing parent", async function () {
+			assert.deepEqual(await chain("orphan.|missingInherited()"), []);
+			assert.deepEqual(await chain("orphan.|orphanOwn()"), ["ChainOrphan.cfc:2"]);
+		});
+	});
+
 	it("hides implicit accessors from Outline while keeping their definitions", async function () {
 		const document = await fixture("ComponentFeatures.cfc");
 		const outline = workspace.getConfiguration("cfml.outline", document.uri);

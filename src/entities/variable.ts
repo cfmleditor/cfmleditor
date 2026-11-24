@@ -2,7 +2,7 @@ import { DataType } from "./dataType";
 import { Scope, unscopedPrecedence } from "./scope";
 import { Location, TextDocument, Range, Uri, Position, WorkspaceConfiguration, workspace, CancellationToken } from "vscode";
 import { getCfScriptRanges, isCfcFile, getClosingPosition, getDocumentContextRanges, isInRanges } from "../utils/contextUtil";
-import { COMPONENT_EXT, Component, getApplicationUri, getServerUri } from "./component";
+import { COMPONENT_EXT, Component, getApplicationUri, getBaseComponent, getServerUri } from "./component";
 import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, UserFunctionVariable, parseScriptFunctionArgs, functionValuePattern, isUserFunctionVariable } from "./userFunction";
 import { getCachedApplicationVariables, getCachedServerVariables, getComponent } from "../features/cachedEntities";
 import { equalsIgnoreCase } from "../utils/textUtil";
@@ -933,6 +933,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 
 			// component variables
 			let currComponent: Component | undefined = thisComponent;
+			const visited = new Set<string>();
 			let componentVariables: Variable[] = [];
 			while (currComponent) {
 				const currComponentVariables: Variable[] = currComponent.variables.filter((variable: Variable) => {
@@ -961,12 +962,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 
 				allVariableAssignments = allVariableAssignments.concat(componentVariables);
 
-				if (currComponent.extends) {
-					currComponent = getComponent(currComponent.extends);
-				}
-				else {
-					currComponent = undefined;
-				}
+				currComponent = getBaseComponent(currComponent, visited);
 			}
 
 			// function arguments
