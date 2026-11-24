@@ -4,6 +4,13 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
+- **Proxy handling for server downloads is more forgiving and less quiet.** A proxy written without a scheme, such as `proxy.corp:3128`, was read as a URL with the protocol `proxy.corp:` and silently ignored, so downloads went direct. It is now treated as an HTTP proxy. `https://` proxies are reached over TLS before the tunnel is requested. A proxy with an unsupported protocol (such as `socks5://`) now fails with a message saying so, rather than quietly going direct.
+- Fixed the proxy tunnel's socket staying open after a request failed, timed out or finished, which left one open socket per redirect.
+- Fixed a failed server extraction (for example, an HTML error page saved as the archive) leaving the archive open, which on Windows stopped it being deleted.
+- Documented the language server and its settings in the README.
+- Removed the `preview` flag from the extension manifest.
+- Update dependencies: fixed the `minimatch` denial-of-service advisory (GHSA-g3hv-75wg-m249) pulled in by `vscode-languageclient`, and removed the unused `async_hooks` package. CI now runs on Node 24.
+
 ## [0.7.9] - 2026-11-23
 
 - Platform builds now ship clif 0.7.3. Hover help uses CFScript highlighting for typed function signatures and displays types for documented tag attributes. This update also improves array element type inference and reduces parser and index allocations. It includes the tag formatting and component navigation fixes from clif 0.7.2.
