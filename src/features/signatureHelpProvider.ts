@@ -54,7 +54,10 @@ export default class CFMLSignatureHelpProvider implements SignatureHelpProvider 
 		}
 
 		const startSigPosition: Position = document.positionAt(document.offsetAt(iteratedSigPosition) + 2);
-		const endSigPosition: Position = getClosingPosition(documentPositionStateContext, document.offsetAt(startSigPosition), ")", _token).translate(0, -1);
+		// With no closing parenthesis yet, which is usual while typing, getClosingPosition answers
+		// with where it started. The arguments then run as far as the cursor, not backwards.
+		const closingPosition: Position = getClosingPosition(documentPositionStateContext, document.offsetAt(startSigPosition), ")", _token);
+		const endSigPosition: Position = closingPosition.isEqual(startSigPosition) ? position : closingPosition.translate(0, -1);
 		const functionArgRanges: Range[] = getScriptFunctionArgRanges(documentPositionStateContext, new Range(startSigPosition, endSigPosition), ",", _token);
 
 		let paramIndex: number = functionArgRanges.findIndex((range: Range) => {

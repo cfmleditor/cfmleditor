@@ -660,8 +660,12 @@ function getCommentAndStringRangesIterated(document: TextDocument, isScript: boo
 		}
 
 		if (commentContext.inComment) {
+			// Tag comments nest, so another opener inside one has to be closed too
+			if (commentContext.activeComment === tagBlockComment && lineText.endsWith(tagBlockComment[0])) {
+				commentContext.depth++;
+			}
 			// Check for end of block comment
-			if (commentContext.commentType === CommentType.Block && commentContext.activeComment && lineLen >= 2 && lineText.endsWith(commentContext.activeComment[1])) {
+			else if (commentContext.commentType === CommentType.Block && commentContext.activeComment && lineLen >= 2 && lineText.endsWith(commentContext.activeComment[1])) {
 				if (commentContext.depth > 1) {
 					commentContext.depth--;
 				}

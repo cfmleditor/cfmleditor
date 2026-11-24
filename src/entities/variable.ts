@@ -1,8 +1,8 @@
 import { DataType } from "./dataType";
 import { Scope, unscopedPrecedence } from "./scope";
 import { Location, TextDocument, Range, Uri, Position, WorkspaceConfiguration, workspace, CancellationToken } from "vscode";
-import { getCfScriptRanges, isCfcFile, getClosingPosition } from "../utils/contextUtil";
-import { COMPONENT_EXT, Component, getApplicationUri, getServerUri } from "./component";
+import { getCfScriptRanges, isCfcFile, getClosingPosition, getDocumentContextRanges, isInRanges } from "../utils/contextUtil";
+import { COMPONENT_EXT, Component, getApplicationUri, getBaseComponent, getServerUri } from "./component";
 import { UserFunction, UserFunctionSignature, Argument, getLocalVariables, UserFunctionVariable, parseScriptFunctionArgs, functionValuePattern, isUserFunctionVariable } from "./userFunction";
 import { getCachedApplicationVariables, getCachedServerVariables, getComponent } from "../features/cachedEntities";
 import { equalsIgnoreCase } from "../utils/textUtil";
@@ -18,7 +18,7 @@ import { constructParameterLabel } from "./parameter";
 import { uriBaseName } from "../utils/fileUtil";
 import { isStructLiteralBrace } from "./structLiteral";
 
-// Matches the first assignment after a '{', which can also open a struct literal; see isStructLiteralBrace in structLiteral.ts
+// Matches the first assignment after a '{', which can also open a struct literal; see isStructLiteralBrace in structLiteral.ts. Matches inside strings are filtered out where it is used.
 const cfscriptVariableAssignmentPattern = /(((?:^|[;{}]|\bfor\s*\(|\bcase\s+.+?:|\bdefault\s*:|\bfinal)\s*(\bvar\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\5\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\7(?:\s*\])?)*\s*=\s*)([^=][^;]*)/gi;
 const forInVariableAssignmentPattern = /((?:\bfor\s*\()\s*(\bvar\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\4\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\6(?:\s*\])?)*(?:\s+in\s+)/gi;
 const tagVariableAssignmentPattern = /((<cfset\s+(?:final\s+)?(var\s+)?(?:(application|arguments|attributes|caller|cffile|cgi|client|cookie|flash|form|local|request|server|session|static|this|thistag|thread|url|variables)\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])))?)([a-zA-Z_$][$\w]*)\5\s*\]?(?:\s*(?:\?\.|\.\s*|::\s*|\[\s*(['"])?)[$\w]+\7(?:\s*\])?)*\s*=\s*)([^=][^>]*)/gi;
@@ -458,6 +458,9 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 
 	// variable assignments
 	const variableAssignmentPattern: RegExp = isScript ? cfscriptVariableAssignmentPattern : tagVariableAssignmentPattern;
+	// The state context usually comes from the fast scan, which does not find strings. They are
+	// only needed once there is something that looks like an assignment, and the scan is cached.
+	let stringRanges: Range[] | undefined = documentStateContext.stringRanges;
 	for (const variableMatch of documentText.matchAll(variableAssignmentPattern)) {
 		if (isScript && variableMatch[0].startsWith("{") && isStructLiteralBrace(documentText, variableMatch.index)) {
 			continue;
@@ -484,6 +487,12 @@ export async function parseVariableAssignments(documentStateContext: DocumentSta
 			document.positionAt(varMatchStartOffset),
 			document.positionAt(varMatchStartOffset + varName.length)
 		);
+
+		// Text that looks like an assignment inside a string literal is not one
+		stringRanges ??= (await getDocumentContextRanges(document, documentStateContext.docIsScript, undefined, false, _token)).stringRanges ?? [];
+		if (isInRanges(stringRanges, varRange.start, true, _token)) {
+			continue;
+		}
 
 		const matchingVars: Variable[] = preferRecentAssignments ? [] : getMatchingVariables(variables, varName, scopeVal);
 		if (matchingVars.length > 0) {
@@ -924,6 +933,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 
 			// component variables
 			let currComponent: Component | undefined = thisComponent;
+			const visited = new Set<string>();
 			let componentVariables: Variable[] = [];
 			while (currComponent) {
 				const currComponentVariables: Variable[] = currComponent.variables.filter((variable: Variable) => {
@@ -952,12 +962,7 @@ export async function collectDocumentVariableAssignments(documentPositionStateCo
 
 				allVariableAssignments = allVariableAssignments.concat(componentVariables);
 
-				if (currComponent.extends) {
-					currComponent = getComponent(currComponent.extends);
-				}
-				else {
-					currComponent = undefined;
-				}
+				currComponent = getBaseComponent(currComponent, visited);
 			}
 
 			// function arguments

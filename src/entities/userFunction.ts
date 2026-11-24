@@ -3,7 +3,7 @@ import { Location, Uri, TextDocument, Position, Range, CancellationToken } from 
 import { Function, getScriptFunctionArgRanges } from "./function";
 import { Parameter } from "./parameter";
 import { Signature } from "./signature";
-import { Component, isSubcomponentOrEqual } from "./component";
+import { Component, getBaseComponent, isSubcomponentOrEqual } from "./component";
 import { Variable, parseVariableAssignments, collectDocumentVariableAssignments, getApplicationVariables, getBestMatchingVariable, getVariableExpressionPrefixPattern, getVariableCallExpressionPrefixPattern } from "./variable";
 import { Scope } from "./scope";
 import { DocBlockKeyValue, parseDocBlock } from "./docblock";
@@ -974,6 +974,7 @@ export function getFunctionFromComponent(component: Component, lowerFunctionName
 	}
 
 	let currComponent: Component | undefined = component;
+	const visited = new Set<string>();
 	while (currComponent) {
 		if (currComponent.functions.has(lowerFunctionName)) {
 			const foundFunc: UserFunction | undefined = currComponent.functions.get(lowerFunctionName);
@@ -982,12 +983,7 @@ export function getFunctionFromComponent(component: Component, lowerFunctionName
 			}
 		}
 
-		if (currComponent.extends) {
-			currComponent = getComponent(currComponent.extends);
-		}
-		else {
-			currComponent = undefined;
-		}
+		currComponent = getBaseComponent(currComponent, visited);
 	}
 
 	return undefined;

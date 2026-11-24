@@ -4,6 +4,11 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
+- A `>` inside a quoted attribute of a tag-based component (`<cffunction hint="a > b">`, `<cfargument hint="x > y">`, `<cfcomponent hint="a > b" extends="...">`) no longer ends the tag early in the built-in providers, which lost the function and argument hints and any attribute after it, such as `extends`. A `{` in the hint of a script component (`component hint="uses {name}" extends="..." {`) had the same effect.
+- Signature help now works from the second argument onwards in a call that has no closing parenthesis yet, which is the usual state while typing (`max(1, |`), in script and in `#...#` expressions. It only worked for the first argument.
+- Fixed the extension host hanging when components extend each other in a circle (`A extends B`, `B extends A`, or a component that extends itself). Every walk up an inheritance chain in completion, definition, signature help and variable lookup now stops when it reaches a component it has already visited.
+- Text that looks like an assignment inside a string literal (`"<cfset a = 1>"`, `"x = 1; y = 2;"`) is no longer collected as a variable by the built-in providers.
+- Fixed nested tag comments (`<!--- a <!--- b ---> c --->`) ending at the first `--->` in the built-in providers' accurate comment scan, so the rest of the comment was read as live code. The fast scan already handled them.
 - **Proxy handling for server downloads is more forgiving and less quiet.** A proxy written without a scheme, such as `proxy.corp:3128`, was read as a URL with the protocol `proxy.corp:` and silently ignored, so downloads went direct. It is now treated as an HTTP proxy. `https://` proxies are reached over TLS before the tunnel is requested. A proxy with an unsupported protocol (such as `socks5://`) now fails with a message saying so, rather than quietly going direct.
 - Fixed the proxy tunnel's socket staying open after a request failed, timed out or finished, which left one open socket per redirect.
 - Fixed a failed server extraction (for example, an HTML error page saved as the archive) leaving the archive open, which on Windows stopped it being deleted.

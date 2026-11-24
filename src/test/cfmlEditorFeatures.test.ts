@@ -125,6 +125,77 @@ describe("CFML editor features", function () {
 		});
 	});
 
+	// While typing, the closing parenthesis often is not there yet
+	describe("signature help in a call that is not closed yet", function () {
+		const signature = async (text: string) => {
+			const document = await workspace.openTextDocument({ content: text.replace("|", ""), language: "cfml" });
+			const result = await commands.executeCommand<SignatureHelp | undefined>("vscode.executeSignatureHelpProvider", document.uri, document.positionAt(text.indexOf("|")));
+			return result && result.signatures.length > 0 ? { label: result.signatures[0].label, active: result.activeParameter } : undefined;
+		};
+
+		for (const [name, text, active] of [
+			["the first argument", "<cfscript>\nx = max(|\n</cfscript>", 0],
+			["the second argument", "<cfscript>\nx = max(1, |\n</cfscript>", 1],
+			["the second argument before another statement", "<cfscript>\nx = max(1, |\ny = 2;\n</cfscript>", 1],
+			["the second argument at the end of the file", "<cfscript>\nx = max(1, |", 1],
+			["the second argument after a closed nested call", "<cfscript>\nx = max(min(1, 2), |\n</cfscript>", 1],
+			["the second argument inside a hash expression", "<cfoutput>#max(1, |</cfoutput>", 1],
+		] as const) {
+			it(`finds the call from ${name}`, async function () {
+				const result = await signature(text);
+				assert.match(result?.label ?? "", /^max\(/);
+				assert.equal(result?.active, active);
+			});
+		}
+	});
+
+	// A > inside a quoted attribute value is not the end of the tag
+	describe("tag-based components with a > in an attribute value", function () {
+		const edge = () => fixture("TagEdgeCases.cfc");
+		const hoverText = async (marker: string) => {
+			const document = await edge();
+			const hovers = await commands.executeCommand<Hover[]>("vscode.executeHoverProvider", document.uri, findPosition(document, marker));
+			return hovers.flatMap(hover => hover.contents).map(content => typeof content === "string" ? content : content.value).join("\n");
+		};
+
+		it("keeps the function hint", async function () {
+			assert.match(await hoverText("this.|gtHint(1)"), /a > b means greater/);
+			assert.match(await hoverText("this.|afterGt("), /comes after a > in an attribute/);
+		});
+
+		it("keeps the argument hint", async function () {
+			assert.match(await hoverText("this.|gtHint(1)"), /x > y is true/);
+		});
+
+		it("still finds the functions defined after it", async function () {
+			const document = await edge();
+			const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, "this.|afterString()"));
+			assert.equal(links[0]?.targetRange.start.line, 19);
+		});
+
+		it("reads the extends attribute after a > in the component hint", async function () {
+			const document = await edge();
+			await fixture("ChainGrand.cfc");
+			const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, "this.|grandPublic()"));
+			assert.deepEqual(links.map(link => `${link.targetUri.path.split("/").pop()}:${link.targetRange.start.line + 1}`), ["ChainGrand.cfc:4"]);
+		});
+
+		it("reads the extends attribute after a { in a script component hint", async function () {
+			const document = await fixture("ScriptHintBrace.cfc");
+			await fixture("ChainGrand.cfc");
+			const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, "this.|grandPublic()"));
+			assert.deepEqual(links.map(link => `${link.targetUri.path.split("/").pop()}:${link.targetRange.start.line + 1}`), ["ChainGrand.cfc:4"]);
+		});
+
+		it("does not read a commented-out function or one in a string", async function () {
+			const document = await edge();
+			for (const marker of ["this.|ghost()", "this.|fake()"]) {
+				const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, marker));
+				assert.deepEqual(links ?? [], []);
+			}
+		});
+	});
+
 	it("renders multiline docblocks with parameter and return descriptions in signature help", async function () {
 		const document = await fixture("DocBlockExamples.cfc");
 		const result = await commands.executeCommand<SignatureHelp>(
@@ -416,6 +487,63 @@ describe("CFML editor features", function () {
 		const optedOut = await fixture("PersistentNoAccessors.cfc");
 		const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", optedOut.uri, findPosition(optedOut, "this.|getTitle()"));
 		assert.deepEqual(links ?? [], []);
+	});
+
+	// Text that merely looks like an assignment inside a string is not a variable
+	it("does not collect variables declared inside string literals", async function () {
+		const document = await fixture("StringVariables.cfm");
+		const definitionLine = async (name: string) => {
+			const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, `#|${name}#`).translate(0, 1));
+			return links?.length ? links[0].targetRange.start.line + 1 : undefined;
+		};
+		assert.equal(await definitionLine("real"), 2);
+		assert.equal(await definitionLine("afterStrings"), 8);
+		assert.equal(await definitionLine("realTag"), 10);
+		assert.equal(await definitionLine("inString"), undefined);
+		assert.equal(await definitionLine("inString2"), undefined);
+		assert.equal(await definitionLine("inMultiline"), undefined);
+	});
+
+	describe("definitions across inherited components", function () {
+		const chain = async (marker: string) => {
+			const document = await fixture("ChainChild.cfc");
+			for (const name of ["ChainGrand", "ChainParent", "ChainTagKid", "ChainCycleA", "ChainCycleB", "ChainOrphan"]) {
+				await fixture(`${name}.cfc`);
+			}
+			const links = await commands.executeCommand<DefinitionLink[]>("vscode.executeDefinitionProvider", document.uri, findPosition(document, marker));
+			return (links ?? []).map(link => `${link.targetUri.path.split("/").pop()}:${link.targetRange.start.line + 1}`);
+		};
+
+		for (const [name, marker, expected] of [
+			["a method two levels up, scoped", "this.|grandPublic()", ["ChainGrand.cfc:4"]],
+			["a method two levels up, unscoped", "\t\t|grandPublic();", ["ChainGrand.cfc:4"]],
+			["a method one level up", "this.|parentPublic()", ["ChainParent.cfc:4"]],
+			["super to the nearest override", "super.|overridden()", ["ChainParent.cfc:6"]],
+			["an override to the component's own method", "this.|overridden()", ["ChainChild.cfc:3"]],
+			["an implicit accessor from a grandparent", "this.|getGrandProp()", ["ChainGrand.cfc:2"]],
+			["a grandparent method through a new component", "p.|grandPublic()", ["ChainGrand.cfc:4"]],
+			["a method on a createObject component", "g.|chainEnd()", ["ChainGrand.cfc:10"]],
+			["an inherited method of a tag-based component", "viaTag.|tagInherited()", ["ChainTagKid.cfc:4"]],
+			["the extends path itself", "extends=\"cfml.|ChainParent\"", ["ChainParent.cfc:1"]],
+		] as const) {
+			it(`finds ${name}`, async function () {
+				assert.deepEqual(await chain(marker), expected);
+			});
+		}
+
+		// Components that extend each other in a circle used to send every walk up the chain round forever
+		it("finds a method of a component in an inheritance cycle", async function () {
+			assert.deepEqual(await chain("cyc.|cycleOwn()"), ["ChainCycleA.cfc:2"]);
+		});
+
+		it("returns nothing for a method that is not in an inheritance cycle", async function () {
+			assert.deepEqual(await chain("cyc.|neverFound()"), []);
+		});
+
+		it("returns nothing for a method of a missing parent", async function () {
+			assert.deepEqual(await chain("orphan.|missingInherited()"), []);
+			assert.deepEqual(await chain("orphan.|orphanOwn()"), ["ChainOrphan.cfc:2"]);
+		});
 	});
 
 	it("hides implicit accessors from Outline while keeping their definitions", async function () {
