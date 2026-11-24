@@ -1369,12 +1369,11 @@ export function getStartSigPosition(iterator: BackwardIterator, _token: Cancella
 				break;
 			case DOUBLE_QUOTE:
 			case SINGLE_QUOTE:
-				// FIXME: If position is within string, this does not work
+				// A quote the string ranges above did not cover: skip back to its partner.
+				// A cursor inside a string never gets here, because the ranges jump past it,
+				// and CFML escapes a quote by doubling it, which this loop passes over as an empty string.
 				while (iterator.hasNext()) {
 					const nch: number = iterator.next(_token);
-					// find the closing quote or double quote
-
-					// TODO: Ignore if escaped
 					if (ch === nch) {
 						break;
 					}

@@ -91,6 +91,40 @@ describe("CFML editor features", function () {
 		assert.strictEqual(entries[4].valueRange, undefined);
 	});
 
+	describe("signature help with strings in the arguments", function () {
+		const signatureAt = async (marker: string) => {
+			const document = await fixture("SignatureStrings.cfc");
+			const result = await commands.executeCommand<SignatureHelp | undefined>(
+				"vscode.executeSignatureHelpProvider", document.uri, findPosition(document, marker),
+			);
+			return result;
+		};
+
+		it("finds the call from inside a string argument containing a (", async function () {
+			const result = await signatureAt("this.pair(\"a(b|\", 42)");
+			assert.match(result?.signatures[0]?.label ?? "", /pair\(/);
+			assert.equal(result?.activeParameter, 0);
+		});
+
+		it("finds the call from inside a string argument containing a comma", async function () {
+			const result = await signatureAt("this.pair(\"a,b|\", 42)");
+			assert.match(result?.signatures[0]?.label ?? "", /pair\(/);
+			assert.equal(result?.activeParameter, 0);
+		});
+
+		it("counts arguments after a string that contains a (", async function () {
+			const result = await signatureAt("this.pair(\"a(b\", |42)");
+			assert.match(result?.signatures[0]?.label ?? "", /pair\(/);
+			assert.equal(result?.activeParameter, 1);
+		});
+
+		it("finds the call from inside a single-quoted string with a doubled quote and a (", async function () {
+			const result = await signatureAt("this.pair('it''s (|odd', 42)");
+			assert.match(result?.signatures[0]?.label ?? "", /pair\(/);
+			assert.equal(result?.activeParameter, 0);
+		});
+	});
+
 	it("renders multiline docblocks with parameter and return descriptions in signature help", async function () {
 		const document = await fixture("DocBlockExamples.cfc");
 		const result = await commands.executeCommand<SignatureHelp>(
