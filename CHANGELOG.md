@@ -7,6 +7,7 @@ All notable changes to the CFML extension will be documented in this file.
 - **Proxy handling for server downloads is more forgiving and less quiet.** A proxy written without a scheme, such as `proxy.corp:3128`, was read as a URL with the protocol `proxy.corp:` and silently ignored, so downloads went direct. It is now treated as an HTTP proxy. `https://` proxies are reached over TLS before the tunnel is requested. A proxy with an unsupported protocol (such as `socks5://`) now fails with a message saying so, rather than quietly going direct.
 - Fixed the proxy tunnel's socket staying open after a request failed, timed out or finished, which left one open socket per redirect.
 - Fixed a failed server extraction (for example, an HTML error page saved as the archive) leaving the archive open, which on Windows stopped it being deleted.
+- Fixed CFScript tag attributes after a `)` inside a quoted value (for example `cfquery(sql="f(x)", dat…`) getting no completion or hover, and such values truncating the tag's parsed attributes, in the built-in providers.
 - Documented the language server and its settings in the README.
 - Removed the `preview` flag from the extension manifest.
 - Update dependencies: fixed the `minimatch` denial-of-service advisory (GHSA-g3hv-75wg-m249) pulled in by `vscode-languageclient`, and removed the unused `async_hooks` package. CI now runs on Node 24. The built-in `fetch` replaces `isomorphic-fetch`.
