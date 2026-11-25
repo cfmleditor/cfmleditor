@@ -36,7 +36,7 @@ export function removeBundledServer(): void {
  * published for, so a first run needs no network: the download path stays, but
  * only as a way to move to a newer server than the one that shipped.
  * @param target the VS Code packaging target, e.g. `darwin-arm64`
- * @param version the server version to bundle, defaulting to `cfmlLspVersion`
+ * @param version the server version to bundle, defaulting to `clifVersion`
  * @returns the tag that was bundled
  */
 export async function bundleServer(target: string, version?: string): Promise<string> {
@@ -115,9 +115,9 @@ function parseArgs(argv: string[]): { target?: string; version?: string } {
  * @returns the configured version, or `latest` when none is pinned
  */
 function readBundledVersion(rootDir: string): string {
-	const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "package.json"), "utf8")) as { cfmlLspVersion?: string };
+	const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "package.json"), "utf8")) as { clifVersion?: string; cfmlLspVersion?: string };
 
-	return manifest.cfmlLspVersion ?? "latest";
+	return manifest.clifVersion ?? manifest.cfmlLspVersion ?? "latest";
 }
 
 async function resolveLatestTag(): Promise<string> {

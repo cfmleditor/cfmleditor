@@ -26,7 +26,7 @@ If you would like to contribute enhancements or fixes, please read this document
 Released packages are platform-specific: each carries the `clif` binary (formerly `cfmleditor-lsp`)
 for its own platform in `server/`, so a first run needs no network and the
 download path only ever fetches a *newer* server than the one that shipped. The
-version that ships is `cfmlLspVersion` in `package.json`.
+version that ships is `clifVersion` in `package.json`.
 
 CFLint goes in the same directory, pinned by `cflintVersion`. The server runs
 CFLint itself and looks for `cflint` on PATH before its own cache or a

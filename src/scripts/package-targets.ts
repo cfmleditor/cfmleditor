@@ -36,7 +36,7 @@ export interface PackageOptions {
 	targets?: string[];
 	/** Where the packages go, relative to the repository root. */
 	out?: string;
-	/** A server version to bundle instead of `cfmlLspVersion`. */
+	/** A server version to bundle instead of `clifVersion`. */
 	version?: string;
 	/** Whether to build the universal fallback package as well. */
 	universal?: boolean;
