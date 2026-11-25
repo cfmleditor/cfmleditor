@@ -4,6 +4,9 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
+## [0.7.10] - 2026-11-25
+
+- Platform builds now ship clif 0.7.7 (up from 0.7.3). Includes parameter-name inlay hints, smart selection range, type and call hierarchy, semantic tokens, linked tag editing, Go to Implementation (with transitive sub-interface support), quick-fix and "Implement missing interface methods" code actions, coordinated cross-file hierarchy rename, expanded MCP server tools/resources/prompts, formatter fixes for `#` text and commented-out markup, per-archive `.sha256` checksums, unified `lint` naming, and default-on LSP features.
 - Fixed syntax highlighting being lost for a script component whose first attribute has no value, such as ColdBox's `component singleton {` or `component persistent {` (#195). The whole body was highlighted as plain text. A bare attribute after another attribute, or with a value, already worked.
 - A `>` inside a quoted attribute of a tag-based component (`<cffunction hint="a > b">`, `<cfargument hint="x > y">`, `<cfcomponent hint="a > b" extends="...">`) no longer ends the tag early in the built-in providers, which lost the function and argument hints and any attribute after it, such as `extends`. A `{` in the hint of a script component (`component hint="uses {name}" extends="..." {`) had the same effect.
 - Signature help now works from the second argument onwards in a call that has no closing parenthesis yet, which is the usual state while typing (`max(1, |`), in script and in `#...#` expressions. It only worked for the first argument.
