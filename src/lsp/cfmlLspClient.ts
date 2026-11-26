@@ -217,6 +217,7 @@ async function fetchBinary(tag: string, assets: ServerAsset[], versionDir: strin
 				versionDir,
 				binaryName,
 				onProgress: message => progress.report({ message }),
+				onWarning: message => void window.showWarningMessage(`CFML LSP: ${message}`),
 			});
 		}
 	);

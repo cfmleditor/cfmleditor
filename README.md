@@ -62,7 +62,7 @@ _No default shortcuts_
 
 The extension can use [clif](https://github.com/cfmleditor/clif), a CFML language server, for completion, definitions, diagnostics, formatting, inlay hints and more. It is off by default; enable it with `cfml.lsp.enabled`. While it is running, the extension's own providers stand down so results are not duplicated. The extension's own providers are the whole implementation in the web version of the editor, and the fallback when the server is disabled or unavailable.
 
-Platform-specific packages bundle a server. Otherwise, or if a newer release exists, it is downloaded from GitHub on first use, going through `http.proxy` or the `https_proxy`/`no_proxy` environment variables (http and https proxies are supported; socks is not).
+Platform-specific packages bundle a server. Otherwise, or if a newer release exists, it is downloaded from GitHub on first use, going through `http.proxy` or the `https_proxy`/`no_proxy` environment variables (http and https proxies are supported; socks is not). A downloaded server is checked against the SHA-256 its release publishes (`<archive>.sha256`) before anything is unpacked, and is refused if it does not match. Releases from 0.7.6 on must publish one; an older release that `cfml.lsp.version` pins has none, so it installs with a warning that it was not verified.
 
 - `cfml.lsp.enabled`: Use the language server. [_Default_: `false`]
 - `cfml.lsp.path`: [_Optional_] Path to a `clif` binary to use instead of the bundled or downloaded one.

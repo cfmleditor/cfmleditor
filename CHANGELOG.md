@@ -4,6 +4,8 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
+- **A downloaded language server is checked against its release's published SHA-256 before anything is unpacked.** clif releases from 0.7.6 publish a `<archive>.sha256` beside every archive. The extension fetches it, hashes the download, and refuses the install on a mismatch, so a corrupted download, a bad mirror or a swapped asset no longer gets as far as being run. A release that should publish a checksum and does not is refused too. A release older than 0.7.6, which has none and which `cfml.lsp.version` can still pin, installs with a warning that it was not verified. The packaging script applies the same check to the server it bundles, and a mismatch fails the build.
+
 ## [0.7.10] - 2026-11-25
 
 - Platform builds now ship clif 0.7.7 (up from 0.7.3). Includes parameter-name inlay hints, smart selection range, type and call hierarchy, semantic tokens, linked tag editing, Go to Implementation (with transitive sub-interface support), quick-fix and "Implement missing interface methods" code actions, coordinated cross-file hierarchy rename, expanded MCP server tools/resources/prompts, formatter fixes for `#` text and commented-out markup, per-archive `.sha256` checksums, unified `lint` naming, and default-on LSP features.
