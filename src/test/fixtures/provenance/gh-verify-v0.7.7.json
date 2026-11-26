@@ -1,0 +1,199 @@
+[
+  {
+    "verificationResult": {
+      "signature": {
+        "certificate": {
+          "certificateIssuer": "CN=sigstore-intermediate,O=sigstore.dev",
+          "subjectAlternativeName": "https://github.com/cfmleditor/clif/.github/workflows/release.yml@refs/tags/v0.7.7",
+          "issuer": "https://token.actions.githubusercontent.com",
+          "githubWorkflowTrigger": "push",
+          "githubWorkflowSHA": "895b9856bfa963c670b148662709079fee15a1b8",
+          "githubWorkflowName": "Release",
+          "githubWorkflowRepository": "cfmleditor/clif",
+          "githubWorkflowRef": "refs/tags/v0.7.7",
+          "buildSignerURI": "https://github.com/cfmleditor/clif/.github/workflows/release.yml@refs/tags/v0.7.7",
+          "buildSignerDigest": "895b9856bfa963c670b148662709079fee15a1b8",
+          "runnerEnvironment": "github-hosted",
+          "sourceRepositoryURI": "https://github.com/cfmleditor/clif",
+          "sourceRepositoryDigest": "895b9856bfa963c670b148662709079fee15a1b8",
+          "sourceRepositoryRef": "refs/tags/v0.7.7",
+          "sourceRepositoryIdentifier": "1224461265",
+          "sourceRepositoryOwnerURI": "https://github.com/cfmleditor",
+          "sourceRepositoryOwnerIdentifier": "153613449",
+          "buildConfigURI": "https://github.com/cfmleditor/clif/.github/workflows/release.yml@refs/tags/v0.7.7",
+          "buildConfigDigest": "895b9856bfa963c670b148662709079fee15a1b8",
+          "buildTrigger": "push",
+          "runInvocationURI": "https://github.com/cfmleditor/clif/actions/runs/45570083334/attempts/1",
+          "sourceRepositoryVisibilityAtSigning": "public"
+        }
+      },
+      "statement": {
+        "predicateType": "https://slsa.dev/provenance/v1",
+        "subject": [
+          {
+            "name": "cfmleditor-lsp-darwin-amd64.tar.gz",
+            "digest": {
+              "sha256": "20652bd8cb4cee5e3fb13617a6d551aebfc918245cc967b90d18c3b2f5993c09"
+            }
+          },
+          {
+            "name": "cfmleditor-lsp-darwin-amd64.tar.gz.sha256",
+            "digest": {
+              "sha256": "ef871a6965c22219d78c23ce509470c50f39fab1ed4b113c6d055960704af9fb"
+            }
+          },
+          {
+            "name": "cfmleditor-lsp-darwin-arm64.tar.gz",
+            "digest": {
+              "sha256": "f9afe8d8f6f2295be52f9a7d7d9b01459a3abe66880f05a418964a97ebcec1c9"
+            }
+          },
+          {
+            "name": "cfmleditor-lsp-darwin-arm64.tar.gz.sha256",
+            "digest": {
+              "sha256": "c288c40f8ffdadd032398d3f7f6bbec727336c28df8f88e8744548c022524cbf"
+            }
+          },
+          {
+            "name": "cfmleditor-lsp-linux-amd64.tar.gz",
+            "digest": {
+              "sha256": "70a446ba720d90209be38aedd5929a0060bcbe7734fb62fb031c03c73b103feb"
+            }
+          },
+          {
+            "name": "cfmleditor-lsp-linux-amd64.tar.gz.sha256",
+            "digest": {
+              "sha256": "2f1a8904dadcd055d14f6520914d802b567eebf8bf5c503a93e14de7928e6853"
+            }
+          },
+          {
+            "name": "cfmleditor-lsp-linux-arm64.tar.gz",
+            "digest": {
+              "sha256": "76be939a94fa7f3337d985f6b943a13dd1efd54da061c9cc71a5d3ce5941ebfe"
+            }
+          },
+          {
+            "name": "cfmleditor-lsp-linux-arm64.tar.gz.sha256",
+            "digest": {
+              "sha256": "6d6588d7e2ecb13183b51bc8e9d0a36dc1dfe668bb03613e0b1691e62024a3c6"
+            }
+          },
+          {
+            "name": "cfmleditor-lsp-windows-amd64.tar.gz",
+            "digest": {
+              "sha256": "879f23f338e1948a49508106d357fa0205f2d504ff5c76ff2f4eadad3d580562"
+            }
+          },
+          {
+            "name": "cfmleditor-lsp-windows-amd64.tar.gz.sha256",
+            "digest": {
+              "sha256": "7780c56196bfa01d23c38a3fd87cd1d4aa6c872fa56692b55888f359b4f20305"
+            }
+          },
+          {
+            "name": "cfmleditor-lsp-windows-amd64.zip",
+            "digest": {
+              "sha256": "e415564b9e022465a2bedd2e31ec4ab9e080d4441b435b6dc0f128323fe9b013"
+            }
+          },
+          {
+            "name": "cfmleditor-lsp-windows-amd64.zip.sha256",
+            "digest": {
+              "sha256": "061cf8b9750a16970799624da1a75b68619b29172961c9ad66c11f98f22cf3cd"
+            }
+          },
+          {
+            "name": "checksums.txt",
+            "digest": {
+              "sha256": "cc4310ff754c7af8dd4493b11d212b1642c45e24438fdc690ef4d20e34530012"
+            }
+          },
+          {
+            "name": "clif-0.7.7-source.tar.gz",
+            "digest": {
+              "sha256": "14b74fc031ecef5b4f6a5766196033886bbab9d4f9bc4893744e1a8ee49f9f6b"
+            }
+          },
+          {
+            "name": "clif-0.7.7-source.tar.gz.sha256",
+            "digest": {
+              "sha256": "1d97d393e383949b7b9d170541ef2a202cabbbca92c5f75cd81bf2887dcffa60"
+            }
+          },
+          {
+            "name": "clif-darwin-amd64.tar.gz",
+            "digest": {
+              "sha256": "f68674c25f18b283b9863917827788a8ff30f8df38522119087748e4adfad3cb"
+            }
+          },
+          {
+            "name": "clif-darwin-amd64.tar.gz.sha256",
+            "digest": {
+              "sha256": "9c7dd8b8432a7c974b02abc2564dac6e218198cfa95d29fa14e3bcca135f83b1"
+            }
+          },
+          {
+            "name": "clif-darwin-arm64.tar.gz",
+            "digest": {
+              "sha256": "d5b0b1925f2f401cf44fb44799922cf0758e681cfa334dfab9590882b73198d7"
+            }
+          },
+          {
+            "name": "clif-darwin-arm64.tar.gz.sha256",
+            "digest": {
+              "sha256": "f1f3db7089714c13abd037eeef133f64f8ed9fcdb145cf532a6d124854eb1164"
+            }
+          },
+          {
+            "name": "clif-linux-amd64.tar.gz",
+            "digest": {
+              "sha256": "3db017233867c01a2002c8b2ffef79f7cc5d1ca60d7b8aa2b59e92986ebcf56f"
+            }
+          },
+          {
+            "name": "clif-linux-amd64.tar.gz.sha256",
+            "digest": {
+              "sha256": "73c2e6446a298fded3ef62d4f32b5908d7bda461056f862fbe85901069c44ced"
+            }
+          },
+          {
+            "name": "clif-linux-arm64.tar.gz",
+            "digest": {
+              "sha256": "0841deeb61f6681978ea31ba1499446897d128779d368a188ec6f01b1e39f0c9"
+            }
+          },
+          {
+            "name": "clif-linux-arm64.tar.gz.sha256",
+            "digest": {
+              "sha256": "6cbd11a6a3511d93f08ef5bb7dd60279c0372a663b8a5fb9aa2d877afce0a5b8"
+            }
+          },
+          {
+            "name": "clif-windows-amd64.tar.gz",
+            "digest": {
+              "sha256": "b484df6de8e05f4abdbcec7caaa374831144ba4d7e8bd4dcd1f2228549023579"
+            }
+          },
+          {
+            "name": "clif-windows-amd64.tar.gz.sha256",
+            "digest": {
+              "sha256": "d4e59c5232deea5200155c63ffbade96398b6e0eef36156df40df6d917728491"
+            }
+          },
+          {
+            "name": "clif-windows-amd64.zip",
+            "digest": {
+              "sha256": "3ad641d605b2077d521edf83a114fe9a737a42cc7f7141c20a00d6c9d3546899"
+            }
+          },
+          {
+            "name": "clif-windows-amd64.zip.sha256",
+            "digest": {
+              "sha256": "c606eb9e305fe565410743a272fb6e9ca25bbd8eff39ed75da12a23448c5c3c2"
+            }
+          }
+        ]
+      }
+    }
+  }
+]

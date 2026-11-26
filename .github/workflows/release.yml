@@ -92,6 +92,11 @@ jobs:
 
       - name: Bundle the language server
         if: matrix.target != ''
+        # The bundled server is checked against its release's checksum and its build
+        # attestation (gh attestation verify, on the runner's own gh). The token only
+        # lifts the anonymous rate limit on the attestation lookup.
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: npm run bundle-server -- --target ${{ matrix.target }}
 
       - name: Setup package path

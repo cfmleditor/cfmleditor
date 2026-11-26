@@ -28,7 +28,13 @@ for its own platform in `server/`, so a first run needs no network and the
 download path only ever fetches a *newer* server than the one that shipped. The
 version that ships is `clifVersion` in `package.json`. Packaging checks each archive it downloads
 against the release's published `<archive>.sha256`, by the same rules the extension applies at run time
-(`src/lsp/checksum.ts`), and a mismatch fails the build.
+(`src/lsp/checksum.ts`), and a mismatch fails the build. It then checks the archive's build
+attestation with `gh attestation verify` (`src/scripts/provenance.ts`): the archive must have been
+built and attested by clif's `release.yml` at that tag, on a GitHub-hosted runner, and its digest
+must be among the attested files. In CI a failure, or no `gh`, fails the build. On a developer's
+machine a missing `gh` is a warning, and `CFML_SKIP_PROVENANCE=1` skips the check so packaging
+works offline; a definite failure still fails. Releases before 0.7.6 have no attestation and are
+not checked.
 
 CFLint goes in the same directory, pinned by `cflintVersion`. The server runs
 CFLint itself and looks for `cflint` on PATH before its own cache or a

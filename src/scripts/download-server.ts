@@ -4,6 +4,7 @@ import { rimrafSync } from "rimraf";
 
 import { verifyArchive } from "../lsp/checksum";
 import { extractServerAsset } from "../lsp/extractServer";
+import { verifyProvenance } from "./provenance";
 import { BINARY_NAME, GITHUB_REPO, assetCandidates, pinnedTag, platformForTarget, tagFromReleaseRedirect } from "../lsp/serverAsset";
 
 /**
@@ -73,7 +74,8 @@ export async function bundleServer(target: string, version?: string): Promise<st
 		}
 
 		// What is bundled is what every user of this build runs first, so it is checked
-		// by the rules the extension applies to a download, and a mismatch stops the build.
+		// by the rules the extension applies to a download, then against the release's build
+		// attestation, and a failure of either stops the build.
 		try {
 			await verifyArchive({
 				tag,
@@ -82,13 +84,25 @@ export async function bundleServer(target: string, version?: string): Promise<st
 				checksumText: await fetchSmallText(`${url}.sha256`),
 				warn: message => console.warn("WARNING".padEnd(26), "=>", message),
 			});
+
+			// The checksum comes from the same release as the archive. This is what ties the
+			// archive to clif's release workflow, at this tag.
+			const signer = await verifyProvenance({
+				tag,
+				assetName,
+				archivePath,
+				warn: message => console.warn("WARNING".padEnd(26), "=>", message),
+			});
+			if (signer) {
+				console.log("Provenance".padEnd(26), "=>", `${assetName} built by ${signer}`);
+			}
 		}
 		catch (e: unknown) {
 			fs.rmSync(archivePath, { force: true });
 			throw e;
 		}
 
-		console.log("Verified".padEnd(26), "=>", assetName);
+		console.log("Checksum verified".padEnd(26), "=>", assetName);
 
 		await extractServerAsset(archivePath, serverDir, asset.binary, binaryName);
 		fs.rmSync(archivePath, { force: true });

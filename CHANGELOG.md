@@ -4,6 +4,7 @@ All notable changes to the CFML extension will be documented in this file.
 
 ## [Unreleased]
 
+- Release builds now check the build attestation of the language server they bundle, not just its checksum: the archive must have been built and attested by clif's release workflow at that tag, on a GitHub-hosted runner. A release whose server fails the check does not build. This is build-time only, so nothing changes in the extension itself.
 - **A downloaded language server is checked against its release's published SHA-256 before anything is unpacked.** clif releases from 0.7.6 publish a `<archive>.sha256` beside every archive. The extension fetches it, hashes the download, and refuses the install on a mismatch, so a corrupted download, a bad mirror or a swapped asset no longer gets as far as being run. A release that should publish a checksum and does not is refused too. A release older than 0.7.6, which has none and which `cfml.lsp.version` can still pin, installs with a warning that it was not verified. The packaging script applies the same check to the server it bundles, and a mismatch fails the build.
 
 ## [0.7.10] - 2026-11-25
