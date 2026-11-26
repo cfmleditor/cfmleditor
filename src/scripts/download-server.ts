@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { rimrafSync } from "rimraf";
 
+import { verifyArchive } from "../lsp/checksum";
 import { extractServerAsset } from "../lsp/extractServer";
 import { BINARY_NAME, GITHUB_REPO, assetCandidates, pinnedTag, platformForTarget, tagFromReleaseRedirect } from "../lsp/serverAsset";
 
@@ -71,6 +72,24 @@ export async function bundleServer(target: string, version?: string): Promise<st
 			continue;
 		}
 
+		// What is bundled is what every user of this build runs first, so it is checked
+		// by the rules the extension applies to a download, and a mismatch stops the build.
+		try {
+			await verifyArchive({
+				tag,
+				assetName,
+				archivePath,
+				checksumText: await fetchSmallText(`${url}.sha256`),
+				warn: message => console.warn("WARNING".padEnd(26), "=>", message),
+			});
+		}
+		catch (e: unknown) {
+			fs.rmSync(archivePath, { force: true });
+			throw e;
+		}
+
+		console.log("Verified".padEnd(26), "=>", assetName);
+
 		await extractServerAsset(archivePath, serverDir, asset.binary, binaryName);
 		fs.rmSync(archivePath, { force: true });
 
@@ -135,6 +154,29 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 	}
 
 	fs.writeFileSync(dest, Buffer.from(await response.arrayBuffer()));
+}
+
+/**
+ * Reads a small text file, such as a `.sha256`.
+ * @param url the URL to fetch
+ * @returns the text, or undefined when there is no such file
+ */
+async function fetchSmallText(url: string): Promise<string | undefined> {
+	const response = await fetch(url);
+	if (response.status === 404) {
+		return undefined;
+	}
+
+	if (!response.ok) {
+		throw new Error(`HTTP ${response.status} downloading ${url}`);
+	}
+
+	const text = await response.text();
+	if (text.length > 4096) {
+		throw new Error(`${url} is larger than a checksum file can be`);
+	}
+
+	return text;
 }
 
 /**

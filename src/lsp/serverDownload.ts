@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as http from "http";
 import * as os from "os";
 import * as path from "path";
+import { verifyArchive } from "./checksum";
 import { extractServerAsset } from "./extractServer";
 import { HttpStatusError, requestFollowingRedirects, requestOnce } from "./httpRequest";
 import { GITHUB_REPO, ServerAsset, nextReleaseRedirect } from "./serverAsset";
@@ -53,6 +54,49 @@ export async function downloadFile(url: string, dest: string, request: RequestFo
 		file.on("close", resolve);
 		response.pipe(file);
 	});
+}
+
+/** The most a checksum file may hold. They are one line; anything bigger is not one. */
+const MAX_CHECKSUM_BYTES = 4096;
+
+/**
+ * Reads a small text file, such as a `.sha256`.
+ * @param url the URL to fetch
+ * @param request how to make the request, which tests replace
+ * @returns the text, or undefined when there is no such file
+ * @throws {HttpStatusError} for any other status than 200 or 404
+ * @throws {Error} when the response is larger than a checksum can be
+ */
+export async function fetchSmallText(url: string, request: RequestFollowingRedirects = requestFollowingRedirects): Promise<string | undefined> {
+	const response = await request(url);
+
+	if (response.statusCode === 404) {
+		response.resume();
+
+		return undefined;
+	}
+
+	if (response.statusCode !== 200) {
+		response.resume();
+		throw new HttpStatusError(response.statusCode ?? 0, `HTTP ${response.statusCode} downloading ${url}`);
+	}
+
+	const chunks: Buffer[] = [];
+	let size = 0;
+
+	for await (const chunk of response) {
+		const buffer = Buffer.from(chunk as Uint8Array);
+		size += buffer.length;
+
+		if (size > MAX_CHECKSUM_BYTES) {
+			response.destroy();
+			throw new Error(`${url} is larger than a checksum file can be`);
+		}
+
+		chunks.push(buffer);
+	}
+
+	return Buffer.concat(chunks).toString("utf8");
 }
 
 /**
@@ -112,6 +156,8 @@ export interface InstallServerOptions {
 	binaryName: string;
 	/** Told what is happening, for display. */
 	onProgress?: (message: string) => void;
+	/** Told when an archive is accepted without a checksum, because its release predates them. */
+	onWarning?: (message: string) => void;
 	/** How to make requests, which tests replace. */
 	request?: RequestFollowingRedirects;
 	/** Where release assets are downloaded from, which tests replace. */
@@ -128,6 +174,7 @@ export interface InstallServerOptions {
 export async function installServer(options: InstallServerOptions): Promise<void> {
 	const { tag, assets, versionDir, binaryName } = options;
 	const report = options.onProgress ?? (() => undefined);
+	const warn = options.onWarning ?? (() => undefined);
 	const releasesUrl = options.releasesUrl ?? RELEASES_URL;
 	const platform = options.platform ?? os.platform();
 
@@ -140,8 +187,18 @@ export async function installServer(options: InstallServerOptions): Promise<void
 		const archivePath = path.join(versionDir, assetName);
 
 		try {
+			const assetUrl = `${releasesUrl}/download/${tag}/${assetName}`;
+
 			report(`Downloading ${tag}...`);
-			await downloadFile(`${releasesUrl}/download/${tag}/${assetName}`, archivePath, options.request);
+			await downloadFile(assetUrl, archivePath, options.request);
+
+			// Before anything is unpacked, let alone run. A failure here removes the
+			// archive like any other, but none of it can look like a missing asset to the
+			// handling below: a missing checksum comes back as undefined and a bad one is
+			// a ChecksumError, so neither sends the install on to the next candidate.
+			report("Verifying...");
+			const checksumText = await fetchSmallText(`${assetUrl}.sha256`, options.request);
+			await verifyArchive({ tag, assetName, archivePath, checksumText, warn });
 
 			report("Extracting...");
 			await extractServerAsset(archivePath, versionDir, asset.binary, binaryName);
